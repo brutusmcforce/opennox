@@ -50,7 +50,20 @@ func newWindowFromString(g *gui.GUI, src string, fnc gui.WindowFunc) *gui.Window
 }
 
 func newWindowFromReader(g *gui.GUI, r io.Reader, fnc gui.WindowFunc) *gui.Window {
-	return newGUIParser(g, strMan, r).ParseRoot(fnc)
+	win := newGUIParser(g, strMan, r).ParseRoot(fnc)
+	recordFileRect(g, win)
+	return win
+}
+
+// recordFileRect remembers where the window and its children were placed in the file (see relayoutGUI).
+func recordFileRect(g *gui.GUI, win *gui.Window) {
+	if win == nil {
+		return
+	}
+	g.SetFileRect(win, image.Rectangle{Min: win.Offs(), Max: win.Offs().Add(win.Size())})
+	for sub := win.Field100(); sub != nil; sub = sub.Prev() {
+		recordFileRect(g, sub)
+	}
 }
 
 func newGUIParser(g *gui.GUI, sm *strman.StringManager, r io.Reader) *guiParser {

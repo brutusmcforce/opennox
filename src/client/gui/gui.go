@@ -109,6 +109,23 @@ type GUI struct {
 	WinYYY    *Window
 	ValXXX    int
 	ValYYY    int
+
+	fileRect map[*Window]image.Rectangle
+}
+
+// SetFileRect records the placement of the window in the file it was loaded from (relative to the parent).
+func (g *GUI) SetFileRect(win *Window, r image.Rectangle) {
+	if g.fileRect == nil {
+		g.fileRect = make(map[*Window]image.Rectangle)
+	}
+	g.fileRect[win] = r
+}
+
+// FileRect returns the placement of the window in the file it was loaded from (relative to the parent).
+// It allows to tell if the window was moved after loading.
+func (g *GUI) FileRect(win *Window) (image.Rectangle, bool) {
+	r, ok := g.fileRect[win]
+	return r, ok
 }
 
 func (g *GUI) SetBorders(b Borders) {
@@ -348,6 +365,7 @@ func (g *GUI) destroyWindow(win *Window) {
 		return
 	}
 	win.Flags |= StatusDestroyed
+	delete(g.fileRect, win)
 
 	if g.captured == win {
 		g.captured = nil

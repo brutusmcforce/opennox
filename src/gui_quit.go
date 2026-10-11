@@ -1,6 +1,7 @@
 package opennox
 
 import (
+	"image"
 	"unsafe"
 
 	"github.com/opennox/libs/common"
@@ -27,14 +28,8 @@ func nox_xxx_wndLoadQuitMenu_445790() int {
 		noxClient.r.DrawRectFilledAlpha(pos.X, pos.Y, sz.X, sz.Y)
 		return 1
 	}, nil)
-	sz := win.Size()
 	win.DrawData().SetBackgroundColor(nox_color_black_2650656)
-	win.Off.X = int(nox_win_width-sz.X) / 2
-	win.EndPos.X = win.Off.X + sz.X
-	if nox_win_height > 768 {
-		win.Off.Y = (nox_win_height - sz.Y - nox_win_height/3) / 2
-		win.EndPos.Y = win.Off.Y + sz.Y
-	}
+	win.SetPos(quitMenuPos(win, image.Pt(nox_win_width, nox_win_height)))
 	legacy.Sub_445C40()
 	dword_5d4594_825752 = 0
 	dword_5d4594_825768 = 0
@@ -119,4 +114,18 @@ func clientLoadCoopAuto445B40() int {
 	str := strMan.GetStringInFile("GUISave.c:SaveErrorTitle", "guiquit.c")
 	NewDialogWindow(nil, str, str, gui.DialogOKButton|gui.DialogFlag6, nil, nil)
 	return 1
+}
+
+// quitMenuPos returns the position of the quit menu for a given GUI size.
+func quitMenuPos(win *gui.Window, screen image.Point) image.Point {
+	sz := win.Size()
+	pos := win.Offs()
+	if r, ok := win.GUI().FileRect(win); ok {
+		pos = r.Min
+	}
+	pos.X = (screen.X - sz.X) / 2
+	if screen.Y > 768 {
+		pos.Y = (screen.Y - sz.Y - screen.Y/3) / 2
+	}
+	return pos
 }

@@ -486,12 +486,27 @@ func (r *NoxRender) SplitStringWrapped(fnt font.Face, s string, maxW int) []stri
 	return lines
 }
 
+// advanceString returns the position after a string drawn at a given position, without drawing it.
+//
+// It must advance exactly as drawString does (fractional advances and kerning),
+// otherwise measured text may wrap differently than the drawn text.
 func (r *NoxRender) advanceString(fnt font.Face, s string, p image.Point) int {
-	x := p.X
+	r.text.face.f = fnt
+	face := r.text.face
+	dot := fixed.I(p.X)
+	prev := rune(-1)
 	for _, c := range s {
-		x += r.getStringRuneAdvance(fnt, c)
+		if prev >= 0 {
+			dot += face.Kern(prev, c)
+		}
+		adv, ok := face.GlyphAdvance(c)
+		if !ok {
+			adv, _ = face.GlyphAdvance('?')
+		}
+		dot += adv
+		prev = c
 	}
-	return x
+	return dot.Round()
 }
 
 func (r *NoxRender) GetStringSizeWrapped(fnt font.Face, s string, maxW int) image.Point { // nox_xxx_drawGetStringSize_43F840

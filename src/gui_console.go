@@ -6,7 +6,9 @@ import (
 	"image"
 	"image/color"
 	"log/slog"
+	"slices"
 	"strings"
+	"unsafe"
 
 	"github.com/opennox/libs/client/keybind"
 	"github.com/opennox/libs/console"
@@ -197,6 +199,27 @@ func (c *guiConsole) Init(sz image.Point) *gui.Window {
 	c.wantsPass = false
 	c.password = ""
 	return c.root
+}
+
+// Resize recreates the console window for a new GUI size, keeping its contents.
+func (c *guiConsole) Resize(sz image.Point) {
+	if c.root == nil || c.scrollbox == nil {
+		return
+	}
+	if !c.root.GetFlags().IsHidden() {
+		c.Hide()
+	}
+	old := (*gui.ScrollListBoxData)(c.scrollbox.WidgetData)
+	items := slices.Clone(unsafe.Slice(old.Items, old.Count))
+	lines, top := old.Field_11_0, old.Field_11_1
+	c.root.Destroy()
+
+	c.Init(sz)
+	*memmap.PtrPtr(0x5D4594, 1096352) = unsafe.Pointer(c.root.C())
+	c.ReloadColors()
+	cur := (*gui.ScrollListBoxData)(c.scrollbox.WidgetData)
+	copy(unsafe.Slice(cur.Items, cur.Count), items)
+	cur.Field_11_0, cur.Field_11_1 = lines, top
 }
 
 func (c *guiConsole) Hide() bool {
