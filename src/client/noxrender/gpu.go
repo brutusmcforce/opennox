@@ -75,6 +75,11 @@ type GPU interface {
 	Sprite(img Image16, pos image.Point, rows int, st *SpriteState, clip image.Rectangle)
 	// Glyph draws a glyph mask with a given color.
 	Glyph(key GlyphKey, dr image.Rectangle, mask image.Image, maskp image.Point, c color.NRGBA, clip image.Rectangle)
+	// TargetScale returns the ratio of the physical size of the current render target to its logical size.
+	// All coordinates passed to the GPU are logical, but the target may be drawn at a higher resolution.
+	TargetScale() (sx, sy float64)
+	// GlyphHiRes is similar to Glyph, but dr is given in physical pixels of the render target (see TargetScale).
+	GlyphHiRes(key GlyphKey, dr image.Rectangle, mask image.Image, maskp image.Point, c color.NRGBA, clip image.Rectangle)
 	// Subtract a value from each color channel of the destination.
 	Subtract(rc image.Rectangle, v uint8, clip image.Rectangle)
 	// ReadPixels reads back the content of the render target associated with a given pixel buffer.
@@ -216,13 +221,40 @@ func (r *NoxRender) DrawImageGradientGPU(img Image16, pos image.Point, cut int, 
 }
 
 // gpuDrawString draws a string on the GPU. It mimics font.Drawer.DrawString.
+//
+// If the render target has a higher resolution than its logical size, outline fonts are drawn at the full resolution.
+// The text layout is not affected: glyphs are positioned using the font at its original size.
 func (r *NoxRender) gpuDrawString(s string, dot fixed.Point26_6, clip image.Rectangle) fixed.Int26_6 {
 	face := r.text.face
 	c := toNRGBA(r.p.TextColor(), 0xff)
+	var (
+		hi     font.Face
+		sx, sy float64
+	)
+	of, _ := face.f.(*outlineFace)
+	if of != nil {
+		sx, sy = r.gpu.TargetScale()
+		if sx > 1.01 || sy > 1.01 {
+			hi = of.scaledFace(sx)
+		}
+	}
 	prev := rune(-1)
 	for _, ch := range s {
 		if prev >= 0 {
 			dot.X += face.Kern(prev, ch)
+		}
+		if hi != nil && of.hasGlyph(ch) {
+			pdot := fixed.Point26_6{X: fixed.Int26_6(float64(dot.X) * sx), Y: fixed.Int26_6(float64(dot.Y+of.yOff) * sy)}
+			dr, mask, maskp, _, ok := hi.Glyph(pdot, ch)
+			if ok && !dr.Empty() {
+				key := GlyphKey{Face: hi, Rune: ch, Frac: fixed.Point26_6{X: pdot.X & 0x3f, Y: pdot.Y & 0x3f}}
+				r.gpu.GlyphHiRes(key, dr, mask, maskp, c, clip)
+			}
+			if adv, ok := face.GlyphAdvance(ch); ok {
+				dot.X += adv
+			}
+			prev = ch
+			continue
 		}
 		dr, mask, maskp, advance, ok := face.Glyph(dot, ch)
 		if !ok {

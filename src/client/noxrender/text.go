@@ -26,19 +26,30 @@ type fontFile struct {
 	Size    int
 	Font    font.Face
 	Ptr     unsafe.Pointer
+	// Smooth is a bundled outline font that replaces the original bitmap font (see SmoothFonts).
+	Smooth string
+	// Samples are texts used to match the size of the outline font with the original font.
+	Samples []string
+}
+
+var fontSamplesText = []string{
+	"The quick brown fox jumps over the lazy dog.",
+	"THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+	"0123456789x.:%",
 }
 
 var noxFontFiles = []fontFile{
-	{Name: noxfont.DefaultName, File: noxfont.DefaultFile, Size: 10},
-	{Name: noxfont.LargeName, File: noxfont.LargeFile, FileAlt: noxfont.DefaultFile, Size: 16},
-	{Name: noxfont.NumbersName, File: noxfont.NumbersFile, Size: 7},
-	{Name: noxfont.SmallName, File: noxfont.SmallFile, Size: 9},
+	{Name: noxfont.DefaultName, File: noxfont.DefaultFile, Size: 10, Smooth: bundledFontText, Samples: fontSamplesText},
+	{Name: noxfont.LargeName, File: noxfont.LargeFile, FileAlt: noxfont.DefaultFile, Size: 16, Smooth: bundledFontLarge, Samples: fontSamplesText},
+	{Name: noxfont.NumbersName, File: noxfont.NumbersFile, Size: 7, Smooth: bundledFontText, Samples: []string{"0123456789"}},
+	{Name: noxfont.SmallName, File: noxfont.SmallFile, Size: 9, Smooth: bundledFontText, Samples: fontSamplesText},
 }
 
 type RenderFonts struct {
-	byName map[string]*fontFile
-	byPtr  map[unsafe.Pointer]*fontFile
-	def    font.Face
+	byName  map[string]*fontFile
+	byPtr   map[unsafe.Pointer]*fontFile
+	def     font.Face
+	derived []*fontFile
 }
 
 func (r *RenderFonts) Load(lang int) error {
@@ -58,6 +69,14 @@ func (r *RenderFonts) Load(lang int) error {
 		if err != nil {
 			return fmt.Errorf("cannot load font: %w", err)
 		}
+		if _, outline := fnt.(*outlineFace); !outline && SmoothFonts && f.Smooth != "" {
+			// replace the original bitmap font
+			if data, err := bundledFonts.ReadFile(f.Smooth); err == nil {
+				if face, err := newReplacementFace(data, fnt, f.Samples); err == nil {
+					fnt = face
+				}
+			}
+		}
 		f.Font = fnt
 		f.Ptr = handles.NewPtr()
 		r.byPtr[f.Ptr] = f
@@ -67,6 +86,12 @@ func (r *RenderFonts) Load(lang int) error {
 }
 
 func (r *RenderFonts) Free() {
+	for _, f := range r.derived {
+		f.Font.Close()
+		delete(r.byName, f.Name)
+		delete(r.byPtr, f.Ptr)
+	}
+	r.derived = nil
 	for i := range noxFontFiles {
 		f := &noxFontFiles[i]
 		if f.Font != nil {
@@ -75,6 +100,33 @@ func (r *RenderFonts) Free() {
 		}
 		f.Ptr = nil
 	}
+}
+
+// ScaledFontPtr returns a handle of a font scaled by a given factor.
+// Only outline fonts can be scaled, for other fonts it returns the font itself.
+func (r *RenderFonts) ScaledFontPtr(name string, scale float64) unsafe.Pointer {
+	base := r.byName[strings.ToLower(name)]
+	if base == nil {
+		Log.Printf("font not found: %q", name)
+		return nil
+	}
+	of, ok := base.Font.(*outlineFace)
+	if !ok || scale == 1 {
+		return base.Ptr
+	}
+	key := fmt.Sprintf("%s@%g", base.Name, scale)
+	if f := r.byName[key]; f != nil {
+		return f.Ptr
+	}
+	face, err := of.derive(scale)
+	if err != nil {
+		return base.Ptr
+	}
+	f := &fontFile{Name: key, Font: face, Ptr: handles.NewPtr()}
+	r.byName[key] = f
+	r.byPtr[f.Ptr] = f
+	r.derived = append(r.derived, f)
+	return f.Ptr
 }
 
 func (r *RenderFonts) DefaultFont() font.Face {
@@ -128,14 +180,7 @@ func loadFont(path string, size int) (font.Face, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", filepath.Base(f.Name()), err)
 		}
-		face, err := opentype.NewFace(fnt, &opentype.FaceOptions{
-			Size: float64(size), DPI: 72,
-			Hinting: font.HintingNone,
-		})
-		if err != nil {
-			return nil, err
-		}
-		return face, nil
+		return newOutlineFace(fnt, float64(size), nil)
 	}
 	f, err = ifs.Open(path + noxfont.Ext)
 	if err != nil {
@@ -327,6 +372,9 @@ func (r *NoxRender) doStringWrapped(font font.Face, s string, rect image.Rectang
 	}
 
 	dy := font.Metrics().CapHeight.Round()
+	if of, ok := font.(*outlineFace); ok {
+		dy += of.lineGap
+	}
 	r.text.lineStart = rect.Min.X
 	str := []rune(s)
 

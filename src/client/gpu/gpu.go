@@ -47,7 +47,8 @@ const (
 
 // target is a render target backing a CPU pixel buffer.
 type target struct {
-	size image.Point
+	size image.Point // physical size
+	log  image.Point // logical size; drawing coordinates are scaled from it to the physical size
 	fbo  uint32
 	tex  uint32
 	used uint64
@@ -73,8 +74,10 @@ type Renderer struct {
 	present        uint32
 	locPresTex     int32
 	locPresGamma   int32
-	locPresFlip    int32
+	locPresSrc     int32
 	locPresOpacity int32
+	locPresTexSize int32
+	locPresScale   int32
 
 	vao, vbo uint32
 	emptyVAO uint32 // used for drawing fullscreen quads
@@ -93,7 +96,8 @@ type Renderer struct {
 	glyphs  map[noxrender.GlyphKey]texRegion
 
 	targets map[*noximage.Image16]*target
-	scratch *target // temporary target for Zoom
+	phys    map[*noximage.Image16]image.Point // physical sizes of render targets, if they differ from the image size
+	scratch *target                           // temporary target for Zoom
 	cur     *target
 	frame   uint64
 
@@ -132,8 +136,10 @@ func New(log *slog.Logger) (*Renderer, error) {
 	}
 	r.locPresTex = gl.GetUniformLocation(r.present, gl.Str("uTex\x00"))
 	r.locPresGamma = gl.GetUniformLocation(r.present, gl.Str("uGamma\x00"))
-	r.locPresFlip = gl.GetUniformLocation(r.present, gl.Str("uFlip\x00"))
+	r.locPresSrc = gl.GetUniformLocation(r.present, gl.Str("uSrc\x00"))
 	r.locPresOpacity = gl.GetUniformLocation(r.present, gl.Str("uOpacity\x00"))
+	r.locPresTexSize = gl.GetUniformLocation(r.present, gl.Str("uTexSize\x00"))
+	r.locPresScale = gl.GetUniformLocation(r.present, gl.Str("uScale\x00"))
 	if err = r.floor.init(); err != nil {
 		return nil, fmt.Errorf("floor shader: %w", err)
 	}
@@ -199,21 +205,56 @@ func (t *target) free() {
 }
 
 func (r *Renderer) targetFor(img *noximage.Image16) *target {
-	sz := img.Rect.Size()
+	lsz := img.Rect.Size()
+	sz := lsz
+	if p, ok := r.phys[img]; ok {
+		sz = p
+	}
 	t := r.targets[img]
-	if t != nil && t.size == sz {
+	if t != nil && t.size == sz && t.log == lsz {
 		return t
 	}
 	if t != nil {
+		if r.cur == t {
+			r.flush()
+			r.cur = nil
+		}
 		t.free()
 	}
 	t = r.newTarget(sz)
+	t.log = lsz
 	r.targets[img] = t
 	return t
 }
 
+// SetTargetSize sets the physical size of the render target associated with an image.
+// Drawing coordinates are still given in the image coordinates, and are scaled to the physical size.
+// Zero size resets the physical size to the image size.
+func (r *Renderer) SetTargetSize(img *noximage.Image16, sz image.Point) {
+	if sz == (image.Point{}) || sz == img.Rect.Size() {
+		delete(r.phys, img)
+	} else {
+		if r.phys == nil {
+			r.phys = make(map[*noximage.Image16]image.Point)
+		}
+		r.phys[img] = sz
+	}
+	if r.cur != nil && r.targets[img] == r.cur {
+		r.cur = r.targetFor(img)
+	}
+}
+
+// TargetScale implements noxrender.GPU.
+func (r *Renderer) TargetScale() (sx, sy float64) {
+	t := r.cur
+	if t == nil || t.log.X <= 0 || t.log.Y <= 0 {
+		return 1, 1
+	}
+	return float64(t.size.X) / float64(t.log.X), float64(t.size.Y) / float64(t.log.Y)
+}
+
 func (r *Renderer) newTarget(sz image.Point) *target {
-	t := &target{size: sz}
+	t := &target{size: sz, log: sz}
 	gl.GenTextures(1, &t.tex)
 	gl.BindTexture(gl.TEXTURE_2D, t.tex)
 	setTexParams(gl.NEAREST)
@@ -247,6 +288,7 @@ func (r *Renderer) pruneTargets() {
 		if t != r.cur && r.frame-t.used > 600 {
 			t.free()
 			delete(r.targets, img)
+			delete(r.phys, img)
 		}
 	}
 }
@@ -292,13 +334,16 @@ func (r *Renderer) quad(dst image.Rectangle, reg texRegion, src image.Rectangle,
 
 // quadGrad draws a quad with a horizontal color gradient from c to c2.
 func (r *Renderer) quadGrad(dst image.Rectangle, reg texRegion, src image.Rectangle, c, c2 [4]float32, mode float32) {
+	r.quadGradF(float32(dst.Min.X), float32(dst.Min.Y), float32(dst.Max.X), float32(dst.Max.Y), reg, src, c, c2, mode)
+}
+
+// quadGradF is similar to quadGrad, but accepts fractional coordinates of the destination.
+func (r *Renderer) quadGradF(x0, y0, x1, y1 float32, reg texRegion, src image.Rectangle, c, c2 [4]float32, mode float32) {
 	ps := float32(reg.page.size)
 	u0 := float32(reg.rect.Min.X+src.Min.X) / ps
 	v0 := float32(reg.rect.Min.Y+src.Min.Y) / ps
 	u1 := float32(reg.rect.Min.X+src.Max.X) / ps
 	v1 := float32(reg.rect.Min.Y+src.Max.Y) / ps
-	x0, y0 := float32(dst.Min.X), float32(dst.Min.Y)
-	x1, y1 := float32(dst.Max.X), float32(dst.Max.Y)
 	r.verts = append(r.verts,
 		x0, y0, u0, v0, c[0], c[1], c[2], c[3], mode,
 		x1, y0, u1, v0, c2[0], c2[1], c2[2], c2[3], mode,
@@ -321,7 +366,8 @@ func (r *Renderer) flush() {
 	gl.Viewport(0, 0, int32(t.size.X), int32(t.size.Y))
 	gl.UseProgram(r.prog)
 	gl.BindVertexArray(r.vao)
-	gl.Uniform2f(r.locSize, float32(t.size.X), float32(t.size.Y))
+	// coordinates are logical, the viewport is physical
+	gl.Uniform2f(r.locSize, float32(t.log.X), float32(t.log.Y))
 	gl.Uniform1i(r.locTex, 0)
 	gl.Uniform1i(r.locMat, 1)
 	if !r.palOK || r.pal != st.palette {
@@ -349,8 +395,15 @@ func (r *Renderer) flush() {
 		gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 	}
 	if !st.clip.Empty() {
+		clip := st.clip
+		if t.size != t.log {
+			clip = image.Rect(
+				clip.Min.X*t.size.X/t.log.X, clip.Min.Y*t.size.Y/t.log.Y,
+				(clip.Max.X*t.size.X+t.log.X-1)/t.log.X, (clip.Max.Y*t.size.Y+t.log.Y-1)/t.log.Y,
+			)
+		}
 		gl.Enable(gl.SCISSOR_TEST)
-		gl.Scissor(int32(st.clip.Min.X), int32(t.size.Y-st.clip.Max.Y), int32(st.clip.Dx()), int32(st.clip.Dy()))
+		gl.Scissor(int32(clip.Min.X), int32(t.size.Y-clip.Max.Y), int32(clip.Dx()), int32(clip.Dy()))
 	} else {
 		gl.Disable(gl.SCISSOR_TEST)
 	}
@@ -445,6 +498,28 @@ func (r *Renderer) Glyph(key noxrender.GlyphKey, dr image.Rectangle, mask image.
 	if r.cur == nil {
 		return
 	}
+	reg := r.glyphRegion(key, dr, mask, maskp)
+	r.setState(reg.page, clip, blendOver, nil)
+	r.quad(dr, reg, image.Rect(0, 0, dr.Dx(), dr.Dy()), rgbaF(c), modeNormal)
+}
+
+// GlyphHiRes implements noxrender.GPU.
+func (r *Renderer) GlyphHiRes(key noxrender.GlyphKey, dr image.Rectangle, mask image.Image, maskp image.Point, c color.NRGBA, clip image.Rectangle) {
+	t := r.cur
+	if t == nil {
+		return
+	}
+	reg := r.glyphRegion(key, dr, mask, maskp)
+	r.setState(reg.page, clip, blendOver, nil)
+	sx := float32(t.log.X) / float32(t.size.X)
+	sy := float32(t.log.Y) / float32(t.size.Y)
+	col := rgbaF(c)
+	r.quadGradF(float32(dr.Min.X)*sx, float32(dr.Min.Y)*sy, float32(dr.Max.X)*sx, float32(dr.Max.Y)*sy,
+		reg, image.Rect(0, 0, dr.Dx(), dr.Dy()), col, col, modeNormal)
+}
+
+// glyphRegion returns an atlas region with a glyph mask, uploading it if necessary.
+func (r *Renderer) glyphRegion(key noxrender.GlyphKey, dr image.Rectangle, mask image.Image, maskp image.Point) texRegion {
 	reg, ok := r.glyphs[key]
 	if !ok {
 		w, h := dr.Dx(), dr.Dy()
@@ -460,8 +535,7 @@ func (r *Renderer) Glyph(key noxrender.GlyphKey, dr image.Rectangle, mask image.
 		reg = r.atlas.add(w, h, rgba, mat)
 		r.glyphs[key] = reg
 	}
-	r.setState(reg.page, clip, blendOver, nil)
-	r.quad(dr, reg, image.Rect(0, 0, dr.Dx(), dr.Dy()), rgbaF(c), modeNormal)
+	return reg
 }
 
 // ReadPixels implements noxrender.GPU.
@@ -498,7 +572,7 @@ func (r *Renderer) Composite(dst, src *noximage.Image16) {
 	gl.Enable(gl.BLEND)
 	gl.BlendEquation(gl.FUNC_ADD)
 	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-	r.drawTexture(ts.tex, r.Filtering, 1, false, 1)
+	r.drawTexture(texDraw{tex: ts.tex, size: ts.size, out: td.size, gamma: 1, opacity: 1})
 	r.restore()
 }
 
@@ -518,14 +592,19 @@ func (r *Renderer) Zoom(img *noximage.Image16, src image.Rectangle) {
 	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, t.fbo)
 	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, r.scratch.fbo)
 	gl.BlitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST)
-	filter := uint32(gl.NEAREST)
-	if r.Filtering {
-		filter = gl.LINEAR
-	}
+
+	gl.BindFramebuffer(gl.FRAMEBUFFER, t.fbo)
+	gl.Viewport(0, 0, w, h)
+	gl.Disable(gl.BLEND)
 	// render targets have the bottom-left origin
-	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, r.scratch.fbo)
-	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, t.fbo)
-	gl.BlitFramebuffer(int32(src.Min.X), h-int32(src.Max.Y), int32(src.Max.X), h-int32(src.Min.Y), 0, 0, w, h, gl.COLOR_BUFFER_BIT, filter)
+	r.drawTexture(texDraw{
+		tex:     r.scratch.tex,
+		size:    t.size,
+		src:     image.Rect(src.Min.X, t.size.Y-src.Max.Y, src.Max.X, t.size.Y-src.Min.Y),
+		out:     t.size,
+		gamma:   1,
+		opacity: 1,
+	})
 	r.restore()
 }
 
@@ -549,30 +628,50 @@ func (r *Renderer) Present(img *noximage.Image16, view image.Rectangle, win imag
 	t := r.targetFor(img)
 	gl.Viewport(int32(view.Min.X), int32(win.Y-view.Max.Y), int32(view.Dx()), int32(view.Dy()))
 	gl.Disable(gl.BLEND)
-	r.drawTexture(t.tex, r.Filtering, r.Gamma, false, 1)
+	r.drawTexture(texDraw{tex: t.tex, size: t.size, out: view.Size(), gamma: r.Gamma, opacity: 1})
 	r.restore()
 }
 
+// texDraw describes a texture drawn over the whole viewport.
+type texDraw struct {
+	tex     uint32
+	size    image.Point     // texture size
+	src     image.Rectangle // part of the texture to draw (bottom-left origin); empty means the whole texture
+	out     image.Point     // viewport size
+	gamma   float32
+	opacity float32
+}
+
 // drawTexture draws a texture over the whole viewport.
-func (r *Renderer) drawTexture(tex uint32, filter bool, gamma float32, flip bool, opacity float32) {
+//
+// With filtering enabled, the texture is scaled using sharp bilinear filtering: texels stay sharp,
+// and only the edges between them are interpolated. Otherwise, the nearest neighbour filtering is used.
+func (r *Renderer) drawTexture(d texDraw) {
+	src := d.src
+	if src.Empty() {
+		src = image.Rectangle{Max: d.size}
+	}
 	gl.UseProgram(r.present)
 	gl.BindVertexArray(r.emptyVAO)
 	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, tex)
+	gl.BindTexture(gl.TEXTURE_2D, d.tex)
 	f := int32(gl.NEAREST)
-	if filter {
+	if r.Filtering {
 		f = gl.LINEAR
 	}
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, f)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, f)
 	gl.Uniform1i(r.locPresTex, 0)
-	gl.Uniform1f(r.locPresGamma, gamma)
-	gl.Uniform1f(r.locPresOpacity, opacity)
-	fl := float32(0)
-	if flip {
-		fl = 1
+	gl.Uniform1f(r.locPresGamma, d.gamma)
+	gl.Uniform1f(r.locPresOpacity, d.opacity)
+	tw, th := float32(d.size.X), float32(d.size.Y)
+	gl.Uniform4f(r.locPresSrc, float32(src.Min.X)/tw, float32(src.Min.Y)/th, float32(src.Dx())/tw, float32(src.Dy())/th)
+	gl.Uniform2f(r.locPresTexSize, tw, th)
+	if r.Filtering {
+		gl.Uniform2f(r.locPresScale, float32(d.out.X)/float32(src.Dx()), float32(d.out.Y)/float32(src.Dy()))
+	} else {
+		gl.Uniform2f(r.locPresScale, 0, 0)
 	}
-	gl.Uniform1f(r.locPresFlip, fl)
 	// the vertex shader generates a fullscreen triangle strip from vertex IDs
 	gl.DrawArrays(gl.TRIANGLE_STRIP, 0, 4)
 	// restore nearest filtering for render targets
@@ -685,11 +784,11 @@ void main() {
 `
 
 const presentVert = `#version 330 core
-uniform float uFlip;
+uniform vec4 uSrc; // source rectangle in texture coordinates: xy is the origin, zw is the size
 out vec2 vUV;
 void main() {
 	vec2 p = vec2(float(gl_VertexID & 1), float((gl_VertexID >> 1) & 1));
-	vUV = vec2(p.x, mix(p.y, 1.0 - p.y, uFlip));
+	vUV = uSrc.xy + p * uSrc.zw;
 	gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
 }
 `
@@ -699,9 +798,20 @@ in vec2 vUV;
 uniform sampler2D uTex;
 uniform float uGamma;
 uniform float uOpacity;
+uniform vec2 uTexSize; // texture size in texels
+uniform vec2 uScale;   // output pixels per texel; zero disables sharp filtering
 out vec4 oColor;
 void main() {
-	vec4 c = texture(uTex, vUV);
+	vec2 uv = vUV;
+	if (uScale.x > 0.0) {
+		// sharp bilinear: sample the texel center, except for a one pixel wide band at texel edges
+		vec2 scale = max(uScale, vec2(1.0));
+		vec2 t = uv * uTexSize;
+		vec2 d = fract(t) - 0.5;
+		vec2 r = 0.5 - 0.5 / scale;
+		uv = (floor(t) + 0.5 + (d - clamp(d, -r, r)) * scale) / uTexSize;
+	}
+	vec4 c = texture(uTex, uv);
 	c.rgb = pow(c.rgb, vec3(1.0 / uGamma));
 	oColor = c * uOpacity;
 }

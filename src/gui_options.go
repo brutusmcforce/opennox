@@ -102,10 +102,11 @@ func guiEnhanceInputCfg(root *gui.Window) {
 
 func guiEnhanceOptions(root *gui.Window) {
 	c := noxClient
-	small := c.r.Fonts.FontPtrByName(noxfont.SmallName)
 	// change resolution options to a new ones
 	// if you decide to change these, check carefully in other places, especially in C
 	resOpts := getResolutionOptions()
+	// the labels barely fit, so use a slightly smaller font, if possible
+	resFont := c.r.Fonts.ScaledFontPtr(noxfont.SmallName, 0.9)
 	// exactly 3 options in the menu (321-323)
 	for i := 0; i < 3; i++ {
 		if w := root.ChildByID(uint(321 + i)); w != nil {
@@ -127,7 +128,7 @@ func guiEnhanceOptions(root *gui.Window) {
 		text := fmt.Sprintf("%4dx%d", res.X, res.Y)
 		b := NewRadioButton(c.GUI, root, uint(guiIDMenuExt+i), 112+resWidth*xi, 135+resHeight*yi, resWidth, resHeight, 1, text)
 		draw := b.DrawData()
-		draw.SetFont(small)
+		draw.SetFont(resFont)
 		draw.SetImagePoint(image.Point{Y: -2})
 	}
 

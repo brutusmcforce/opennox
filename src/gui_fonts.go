@@ -3,11 +3,23 @@ package opennox
 import (
 	"unsafe"
 
+	"github.com/spf13/viper"
+
+	"github.com/opennox/opennox/v1/client/noxrender"
+
 	"github.com/opennox/opennox/v1/common/memmap"
 	"github.com/opennox/opennox/v1/legacy"
 )
 
+// configVideoSmoothFonts enables bundled outline fonts instead of the original bitmap fonts (see noxrender.SmoothFonts).
+const configVideoSmoothFonts = "video.smooth_fonts"
+
+func init() {
+	viper.SetDefault(configVideoSmoothFonts, true)
+}
+
 func (c *Client) loadGameFonts() error {
+	noxrender.SmoothFonts = viper.GetBool(configVideoSmoothFonts)
 	if err := c.r.Fonts.Load(c.Strings().Lang()); err != nil {
 		return err
 	}

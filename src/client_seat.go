@@ -57,6 +57,16 @@ func (c *Client) initGPU() {
 		g.Gamma = getGamma()
 		g.Filtering = c.Win.GetFiltering()
 		g.Present(img, view, win)
+		if img != nil && uiScaleState.world == nil {
+			// Menus are drawn at a low resolution and stretched to the window.
+			// Draw them at the window resolution instead, so that the text stays smooth.
+			// It's not done in game, because the world drawing expects the target to match the image.
+			sz := image.Point{}
+			if nox_client_gui_flag_815132 != 0 && view.Dx() > img.Rect.Dx() && view.Dy() > img.Rect.Dy() {
+				sz = view.Size()
+			}
+			g.SetTargetSize(img, sz)
+		}
 	})
 }
 
