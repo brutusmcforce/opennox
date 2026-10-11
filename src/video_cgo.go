@@ -24,16 +24,13 @@ import (
 )
 
 var (
-	nox_win_width             int = noxDefaultWidth
-	nox_win_height            int = noxDefaultHeight
-	nox_pixbuffer_3798788_arr []byte
-	dword_5d4594_805860       bool
-	nox_enable_threads        = true
-	noxPixBuffer              struct {
+	nox_win_width       int = noxDefaultWidth
+	nox_win_height      int = noxDefaultHeight
+	dword_5d4594_805860 bool
+	nox_enable_threads  = true
+	noxPixBuffer        struct {
+		// img identifies the current render target and its (logical) size; its pixels are not used
 		img      *noximage.Image16
-		free     func()
-		rows     []*uint16
-		freeRows func()
 		onResize []func(sz image.Point)
 	}
 	dword_5d4594_1311936 bool
@@ -385,28 +382,12 @@ func nox_free_pixbuffers_486110() {
 	videoFreeWorldBuffer()
 	if memmap.Uint32(0x5D4594, 1193200) == 0 {
 		noxPixBuffer.img = nil
-		if noxPixBuffer.free != nil {
-			noxPixBuffer.free()
-			noxPixBuffer.free = nil
-		}
-
-		if nox_pixbuffer_3798788_arr != nil {
-			alloc.FreeSlice(nox_pixbuffer_3798788_arr)
-			nox_pixbuffer_3798788_arr = nil
-		}
-	}
-	noxPixBuffer.rows = nil
-	if noxPixBuffer.freeRows != nil {
-		noxPixBuffer.freeRows()
-		noxPixBuffer.freeRows = nil
-		legacy.Set_nox_pixbuffer_rows_3798784(nil)
 	}
 }
 
 func nox_video_initPixbuffer_486090(sz image.Point) {
 	videoLog.Printf("initializing pixbuffer: %v", sz)
 	nox_video_initPixbufferData_4861D0(sz)
-	nox_video_initPixbufferRows_486230()
 	videoInitWorldBuffer(sz)
 	for _, fnc := range noxPixBuffer.onResize {
 		fnc(sz)
@@ -417,26 +398,8 @@ func nox_video_initPixbufferData_4861D0(sz image.Point) {
 	if memmap.Uint32(0x5D4594, 1193200) != 0 {
 		return
 	}
-	data, free := alloc.Make([]uint16{}, sz.X*sz.Y)
-	noxPixBuffer.free = free
-	noxPixBuffer.img = noximage.NewImage16WithData(data, sz)
+	noxPixBuffer.img = noximage.NewImage16(image.Rectangle{Max: sz})
 	noxClient.r.SetPixBuffer(noxPixBuffer.img)
-	if nox_video_renderTargetFlags&0x40 == 0 {
-		return
-	}
-
-	nox_pixbuffer_3798788_arr, _ = alloc.Make([]byte{}, len(data))
-}
-
-func nox_video_initPixbufferRows_486230() {
-	sz := noxPixBuffer.img.Size()
-	ptrs, freeRows := alloc.Make([]*uint16{}, sz.Y)
-	noxPixBuffer.rows = ptrs
-	noxPixBuffer.freeRows = freeRows
-	legacy.Set_nox_pixbuffer_rows_3798784(unsafe.Pointer(&noxPixBuffer.rows[0]))
-	for y := 0; y < sz.Y; y++ {
-		noxPixBuffer.rows[y] = &noxPixBuffer.img.Row(y)[0]
-	}
 }
 
 func (r *NoxRender) noxDrawCursor(a1 *noxrender.Image, pos image.Point) int {

@@ -20,30 +20,25 @@ func New(sc seat.Screen) (*Renderer, error) {
 		fullscreen: -4, // unset
 		filtering:  true,
 	}
-	if err := r.Init(sz); err != nil {
-		return nil, err
-	}
+	Log.Printf("screen size: %dx%d", sz.X, sz.Y)
 	sc.OnScreenResize(func(sz image.Point) {
 		r.present(nil)
 	})
 	return r, nil
 }
 
+// Renderer manages the window and presents frames drawn by the GPU renderer.
 type Renderer struct {
-	ticks       uint32 // atomic
-	sc          seat.Screen
-	backbuf     seat.Surface
-	backbufFilt bool
-	view        image.Rectangle
-	fullscreen  int
-	borderless  bool // only used for toggle
-	filtering   bool
-	stretch     bool
-	rotate      bool
-	rotated     bool
-	onResize    []func(view image.Rectangle)
-	buf         *noximage.Image16
-	prev        *noximage.Image16
+	ticks      uint32 // atomic
+	sc         seat.Screen
+	view       image.Rectangle
+	fullscreen int
+	borderless bool // only used for toggle
+	filtering  bool
+	stretch    bool
+	rotate     bool
+	rotated    bool
+	onResize   []func(view image.Rectangle)
 
 	presentFunc PresentFunc
 	last        *noximage.Image16
@@ -53,8 +48,8 @@ type Renderer struct {
 // View is the area of the screen (top-left origin) and win is the screen size.
 type PresentFunc func(img *noximage.Image16, view image.Rectangle, win image.Point)
 
-// SetPresentFunc sets a custom function for presenting frames (e.g. a GPU renderer).
-// When set, the image content is not uploaded to the screen; only its size is used.
+// SetPresentFunc sets a function for presenting frames (the GPU renderer).
+// Only the size of the image is used; its pixels are drawn by the GPU.
 func (r *Renderer) SetPresentFunc(fnc PresentFunc) {
 	r.presentFunc = fnc
 }
@@ -62,17 +57,6 @@ func (r *Renderer) SetPresentFunc(fnc PresentFunc) {
 // Ticks returns the number of present ticks since the last Reset or Init.
 func (r *Renderer) Ticks() uint {
 	return uint(atomic.LoadUint32(&r.ticks))
-}
-
-// Init the renderer.
-func (r *Renderer) Init(sz image.Point) error {
-	if r.backbuf != nil {
-		return nil
-	}
-	Log.Printf("creating surface: %dx%d", sz.X, sz.Y)
-	r.backbuf = r.sc.NewSurface(sz, r.filtering)
-	r.backbufFilt = r.filtering
-	return nil
 }
 
 // Reset the renderer.
@@ -86,48 +70,15 @@ func (r *Renderer) OnViewResize(fnc func(view image.Rectangle)) {
 	fnc(r.view)
 }
 
-// CopyBuffer copies given 16 bit image into the buffer and presents it.
+// CopyBuffer presents the render target associated with a given image.
 func (r *Renderer) CopyBuffer(img *noximage.Image16) {
 	r.present(img)
 }
 
 func (r *Renderer) present(img *noximage.Image16) {
-	if r.presentFunc != nil {
-		r.presentCustom(img)
+	if r.presentFunc == nil {
 		return
 	}
-	sz := img.Size()
-	view := r.setViewport(float32(sz.X) / float32(sz.Y))
-	if r.view != view {
-		r.view = view
-		for _, fnc := range r.onResize {
-			fnc(view)
-		}
-	}
-	if img != nil {
-		if r.buf == nil || r.buf.Rect != img.Rect {
-			r.buf = noximage.NewImage16(img.Rect)
-		}
-		copy(r.buf.Pix, img.Pix)
-		if bsz := r.backbuf.Size(); sz != bsz || r.filtering != r.backbufFilt {
-			Log.Printf("recreating surface: %dx%d -> %dx%d", bsz.X, bsz.Y, sz.X, sz.Y)
-			if r.backbuf != nil {
-				r.backbuf.Destroy()
-				r.backbuf = nil
-			}
-			r.backbuf = r.sc.NewSurface(sz, r.filtering)
-			r.backbufFilt = r.filtering
-		}
-		r.backbuf.Update(r.buf)
-		r.prev, r.buf = r.buf, r.prev
-	}
-	r.sc.Clear()
-	r.backbuf.Draw(view)
-	r.sc.Present()
-	atomic.AddUint32(&r.ticks, 1)
-}
-
-func (r *Renderer) presentCustom(img *noximage.Image16) {
 	if img == nil {
 		img = r.last
 	}

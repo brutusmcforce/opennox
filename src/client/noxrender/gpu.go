@@ -60,8 +60,8 @@ type FloorParams struct {
 	Step     int         // light grid step, in pixels
 }
 
-// GPU is a hardware-accelerated drawing backend. When set, all drawing goes through it
-// instead of the CPU pixel buffer. The pixel buffer is still used to identify render targets and their size.
+// GPU is the drawing backend. All drawing goes through it.
+// Pixel buffers are only used to identify render targets and their (logical) size; their pixels are not used.
 //
 // Colors are passed in non-premultiplied form. An empty clip rectangle means no clipping.
 type GPU interface {
@@ -86,7 +86,7 @@ type GPU interface {
 	ReadPixels(img *noximage.Image16) *image.NRGBA
 }
 
-// SetGPU sets a GPU drawing backend. Nil restores software rendering.
+// SetGPU sets the GPU drawing backend. Nothing is drawn without it.
 func (r *NoxRender) SetGPU(g GPU) {
 	r.gpu = g
 	if g != nil && r.pix != nil {

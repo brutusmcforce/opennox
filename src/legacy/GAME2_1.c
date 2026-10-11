@@ -6018,7 +6018,6 @@ LABEL_64:
 		}
 		nox_client_drawEnableAlpha_434560(1);
 		nox_client_drawSetAlpha_434580(0x80u);
-		sub_47D400(nox_client_highResFrontWalls_80820 == 0, a1[5]);
 		v68 = v47;
 		v67 = v46;
 		v51 = nox_xxx_getWallSprite_46A3B0(v3[1], v84, v3[2], v73);
@@ -6037,10 +6036,8 @@ LABEL_64:
 		nox_draw_setColorMultAndIntensityRGB_433CD0(v60, v58, v59);
 		if (!(v72 & 2)) {
 			if (sub_47D380(a3, a4)) {
-				sub_47D400(nox_client_highResFrontWalls_80820 == 0, a1[5]);
 				v61 = nox_xxx_getWallSprite_46A3B0(v3[1], v84, v3[2], v73);
 				nox_client_drawImageAt_47D2C0(v61, v56, v57);
-				sub_47D400(0, 0);
 			}
 			goto LABEL_106;
 		}
@@ -6049,13 +6046,11 @@ LABEL_64:
 		}
 		nox_client_drawEnableAlpha_434560(1);
 		nox_client_drawSetAlpha_434580(0x80u);
-		sub_47D400(nox_client_highResFrontWalls_80820 == 0, a1[5]);
 		v68 = v57;
 		v67 = v56;
 		v51 = nox_xxx_getWallSprite_46A3B0(v3[1], v84, v3[2], v73);
 	}
 	nox_client_drawImageAt_47D2C0(v51, v67, v68);
-	sub_47D400(0, 0);
 	nox_client_drawEnableAlpha_434560(0);
 LABEL_106:
 	sub_4345F0(0);

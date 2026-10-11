@@ -775,7 +775,6 @@ extern unsigned int dword_5d4594_1305748;
 extern int nox_win_width;
 extern int nox_win_height;
 
-extern uint8_t** nox_pixbuffer_rows_3798784;
 extern uint32_t dword_5d4594_823776;
 
 extern nox_render_data_t* nox_draw_curDrawData_3799572;
@@ -1238,9 +1237,6 @@ func Set_nox_color_yellow_2589772(v uint32) {
 }
 func Set_dword_5d4594_1305748(v int) {
 	C.dword_5d4594_1305748 = C.uint(v)
-}
-func Set_nox_pixbuffer_rows_3798784(v unsafe.Pointer) {
-	C.nox_pixbuffer_rows_3798784 = (**C.uchar)(v)
 }
 func Set_dword_5d4594_1193188(v int) {
 	C.dword_5d4594_1193188 = C.uint(v)

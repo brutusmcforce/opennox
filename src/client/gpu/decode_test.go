@@ -26,7 +26,7 @@ func TestDecodeSpriteRLE(t *testing.T) {
 	require.Equal(t, 1, d.H)
 	require.Equal(t, []byte{
 		0, 0, 0, 0,
-		0xFF, 0, 0, 0xFF, // same conversion as the software renderer (SplitColor16)
+		0xFF, 0, 0, 0xFF, // same conversion as SplitColor16
 		0x80, 0x80, 0x80, 0xFF,
 		0xFF, 0xFF, 0xFF, 0xFF,
 	}, d.RGBA)

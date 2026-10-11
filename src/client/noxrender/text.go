@@ -313,15 +313,11 @@ func (r *NoxRender) drawString(fnt font.Face, s string, pos image.Point) int {
 	// TODO: handle invalid chars by blinking the replacement char
 	dy := fnt.Metrics().CapHeight.Round()
 	r.text.face.f = fnt
-	if r.gpu != nil {
-		x := r.gpuDrawString(s, fixed.P(pos.X, pos.Y+dy), r.p.ClipRect())
-		return x.Round()
+	if r.gpu == nil {
+		return pos.X
 	}
-	r.text.Src = image.NewUniform(r.p.TextColor())
-	r.text.Dst = r.pix.SubImage(r.p.ClipRect())
-	r.text.Dot = fixed.P(pos.X, pos.Y+dy)
-	r.text.DrawString(s)
-	return r.text.Dot.X.Round()
+	x := r.gpuDrawString(s, fixed.P(pos.X, pos.Y+dy), r.p.ClipRect())
+	return x.Round()
 }
 
 func (r *NoxRender) DrawStringWrapped(font font.Face, s string, rect image.Rectangle) int { // nox_xxx_drawStringWrap_43FAF0

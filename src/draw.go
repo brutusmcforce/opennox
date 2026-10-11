@@ -42,11 +42,6 @@ type tileMapXxx struct {
 	arr [32]int
 }
 
-type nox_arr_84EB20_t struct {
-	Y  int
-	Cl [common.GridStep]noxrender.RGB
-}
-
 type clientTileData struct {
 	noxTilesGpx    int
 	noxTilesGpy    int
@@ -63,10 +58,8 @@ type clientTileData struct {
 	dword_5d4594_3798808 int
 	dword_5d4594_3798804 int
 
-	nox_arr2_853BC0  [lightGridW][lightGridH]noxrender.RGB
-	nox_arr_84EB20   [lightGridW]nox_arr_84EB20_t
-	lightsOutBuf     []uint32
-	nox_light_8529A0 [512]int
+	nox_arr2_853BC0 [lightGridW][lightGridH]noxrender.RGB
+	lightsOutBuf    []uint32
 }
 
 func sub_473970(a1 image.Point) image.Point {
@@ -287,20 +280,6 @@ func (r *NoxRender) SetRectFullScreen() { // sub_437290
 	r.setClipRects(image.Pt(0, 0), sz)
 }
 
-func sub_480860(dst, src []uint16, w int, a4p, a5p []uint32) {
-	for i := 0; i < w; i++ {
-		c := noxrender.SplitColor16(src[i])
-		c.R = uint16((a4p[0] * uint32(c.R)) >> 16)
-		c.G = uint16((a4p[1] * uint32(c.G)) >> 16)
-		c.B = uint16((a4p[2] * uint32(c.B)) >> 16)
-		dst[i] = c.Make16()
-
-		a4p[0] += a5p[0]
-		a4p[1] += a5p[1]
-		a4p[2] += a5p[2]
-	}
-}
-
 type NoxRender struct {
 	*noxrender.NoxRender
 
@@ -380,30 +359,6 @@ func (c *Client) Sub469920(p image.Point) []uint32 {
 	return dst
 }
 
-func (c *Client) noxTileUpdateLightXxx(p image.Point) {
-	c1 := c.tiles.nox_arr2_853BC0[p.X][p.Y+0]
-	c1r := c1.R >> 8
-	c1g := c1.G >> 8
-	c1b := c1.B >> 8
-
-	c2 := c.tiles.nox_arr2_853BC0[p.X][p.Y+1]
-	c2r := c2.R >> 8
-	c2g := c2.G >> 8
-	c2b := c2.B >> 8
-
-	dcr := c.tiles.nox_light_8529A0[255+(c2r-c1r)>>8]
-	dcg := c.tiles.nox_light_8529A0[255+(c2g-c1g)>>8]
-	dcb := c.tiles.nox_light_8529A0[255+(c2b-c1b)>>8]
-
-	for i := 0; i < lightGrid; i++ {
-		c.tiles.nox_arr_84EB20[p.X].Cl[i] = noxrender.RGB{R: c1r, G: c1g, B: c1b}
-		c1r += dcr
-		c1g += dcg
-		c1b += dcb
-	}
-	c.tiles.nox_arr_84EB20[p.X].Y = p.Y
-}
-
 func nox_xxx_setupSomeVideo_47FEF0() {
 	*memmap.PtrPtr(0x973F18, 7716) = legacy.Get_sub_480250()
 	*memmap.PtrPtr(0x973F18, 5248) = legacy.Get_sub_480220()
@@ -450,14 +405,6 @@ func (c *Client) nox_xxx_initSight_485F80() {
 			v4 -= 2
 			v6 += 4
 		}
-	}
-
-	for i := 0; i < 253; i++ {
-		c.tiles.nox_light_8529A0[i] = ((i - 253) * 256) / 22
-	}
-	c.tiles.nox_light_8529A0[256] = 0
-	for i := 0; i < 256; i++ {
-		c.tiles.nox_light_8529A0[255+i] = (i * 256) / 22
 	}
 }
 
@@ -564,7 +511,6 @@ func sub_47D200() {
 	*memmap.PtrUint32(0x973F18, 68) = 0
 	noxClient.GUI.ValYYY = 0
 	noxClient.GUI.ValXXX = 0
-	noxClient.r.SetInterlacing(false, 0)
 }
 
 func (r *NoxRender) initColorTables() {

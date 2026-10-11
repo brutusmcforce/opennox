@@ -33,7 +33,6 @@ var (
 	Nox_xxx_cliUpdateCameraPos_435600    func(x, y int)
 	Sub_437260                           func()
 	Get_nox_client_texturedFloors_154956 func() bool
-	Sub_480860                           func(dst, src []uint16, w int, a4p, a5p []uint32)
 	Sub_473970                           func(a1 image.Point) image.Point
 	Nox_client_isConnected               func() bool
 	Nox_video_inFadeTransition_44E0D0    func() int
@@ -184,11 +183,6 @@ func sub_47D370(a1 int) {
 	GetClient().R2().Set_dword_5d4594_3799484(a1)
 }
 
-//export sub_47D400
-func sub_47D400(a1 int, a2 C.char) {
-	GetClient().R2().SetInterlacing(a1 != 0, int(a2))
-}
-
 //export sub_49F7C0_def
 func sub_49F7C0_def() {
 	GetClient().R2().Sub_49F7C0_def_go()
@@ -228,15 +222,6 @@ func nox_client_drawLineFromPoints_49E4B0() int {
 //export sub_49E4F0
 func sub_49E4F0(a1 int) int {
 	return bool2int(GetClient().R2().DrawParticles49ED80(a1))
-}
-
-//export sub_480860
-func sub_480860(a1, a2 *C.ushort, w int, a4, a5 *C.int) {
-	dst := unsafe.Slice((*uint16)(unsafe.Pointer(a1)), w)
-	src := unsafe.Slice((*uint16)(unsafe.Pointer(a2)), w)
-	a4p := unsafe.Slice((*uint32)(unsafe.Pointer(a4)), 3)
-	a5p := unsafe.Slice((*uint32)(unsafe.Pointer(a5)), 3)
-	Sub_480860(dst, src, w, a4p, a5p)
 }
 
 //export nox_draw_setColorMultAndIntensityRGB_433CD0

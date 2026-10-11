@@ -123,7 +123,7 @@ func (d *decodedSprite) setRGB555(i int, v uint16) {
 }
 
 func (d *decodedSprite) setRGB565(i int, v uint16) {
-	// additive particles; see pixBlendPremult
+	// additive particles: colors are added to the destination
 	p := d.RGBA[4*i:]
 	p[0] = byte(v>>8)&0xF8 | 7
 	p[1] = byte(v>>3)&0xFC | 3

@@ -57,11 +57,11 @@ type interpSaved struct {
 type renderInterp struct {
 	maxFPS int
 
-	tickAt    time.Duration // time of the last tick when the world was drawn
-	tickFrame uint32        // game frame of the last tick when the world was drawn
-	nextFrame time.Duration // scheduled time of the next presented frame
-	hasTick   bool          // world was drawn on the last tick
-	frameCost time.Duration // estimated time needed to draw an additional frame
+	tickAt    time.Duration    // time of the last tick when the world was drawn
+	tickFrame uint32           // game frame of the last tick when the world was drawn
+	nextFrame time.Duration    // scheduled time of the next presented frame
+	hasTick   bool             // world was drawn on the last tick
+	frameCost [2]time.Duration // estimated time needed to draw an additional frame, for each betweenTicksMode
 
 	camPrev, camCur image.Point
 	camOK           bool
@@ -273,30 +273,38 @@ func (c *Client) waitAndRender(dt time.Duration) {
 	}
 	r := &c.interp
 	deadline := platform.Ticks() + dt
-	if c.betweenTicksMode() != betweenTicksNone {
-		for {
-			// start drawing so that the frame is presented at the scheduled time
-			start := max(r.nextFrame-r.frameCost, platform.Ticks())
-			// don't draw if the frame won't be ready before the next tick
-			if start+r.frameCost >= deadline {
-				break
+	for {
+		mode := c.betweenTicksMode()
+		if mode == betweenTicksNone {
+			break
+		}
+		est := &r.frameCost[mode-betweenTicksWorld]
+		// start drawing so that the frame is presented at the scheduled time
+		start := max(r.nextFrame-*est, platform.Ticks())
+		// don't draw if the frame won't be ready before the next tick
+		if start+*est >= deadline {
+			if r.nextFrame < deadline && *est > r.tickDur()/4 {
+				// A frame is due, but the estimate says it won't fit. The estimate is only updated
+				// when frames are drawn, so a single slow frame could disable additional frames forever.
+				// Let a suspiciously high estimate decay, so that the frame cost is measured again.
+				*est = *est * 7 / 8
 			}
-			if now := platform.Ticks(); start > now {
-				c.srv.LoopSleep(start - now)
-			}
-			mode := c.betweenTicksMode()
-			if mode == betweenTicksNone {
-				break
-			}
-			t0 := platform.Ticks()
-			c.drawBetweenTicks(mode)
-			// keep a moving average of the frame cost
-			cost := platform.Ticks() - t0
-			if r.frameCost == 0 {
-				r.frameCost = cost
-			} else {
-				r.frameCost = (r.frameCost*7 + cost) / 8
-			}
+			break
+		}
+		if now := platform.Ticks(); start > now {
+			c.srv.LoopSleep(start - now)
+		}
+		if c.betweenTicksMode() != mode {
+			continue
+		}
+		t0 := platform.Ticks()
+		c.drawBetweenTicks(mode)
+		// keep a moving average of the frame cost; limit the effect of a single slow frame
+		cost := platform.Ticks() - t0
+		if *est == 0 {
+			*est = cost
+		} else {
+			*est = (*est*7 + min(cost, 2**est)) / 8
 		}
 	}
 	if now := platform.Ticks(); deadline > now {

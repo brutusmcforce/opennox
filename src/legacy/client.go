@@ -68,7 +68,6 @@ type Client interface {
 type Render2 interface {
 	Data() *noxrender.RenderData
 	SetRectFullScreen()
-	SetInterlacing(enable bool, y int)
 	SetTextSmooting(enabled bool)
 	SetColorMultAndIntensityRGB(cr, cg, cb byte) byte
 	ClearPoints()

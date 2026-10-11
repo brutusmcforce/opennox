@@ -243,7 +243,6 @@ func init() {
 	legacy.Nox_xxx_cliUpdateCameraPos_435600 = nox_xxx_cliUpdateCameraPos_435600
 	legacy.Sub_437260 = sub_437260
 	legacy.Get_nox_client_texturedFloors_154956 = get_nox_client_texturedFloors_154956
-	legacy.Sub_480860 = sub_480860
 	legacy.Sub_473970 = sub_473970_screen
 	legacy.Nox_client_isConnected = nox_client_isConnected
 	legacy.Nox_xxx_pickupDefault_4F31E0 = nox_xxx_pickupDefault_4F31E0

@@ -43,6 +43,8 @@ type gpuBackend interface {
 	Floor(p *noxrender.FloorParams, spans []image.Rectangle)
 	// Zoom replaces the content of a render target with a part of it, scaled to fill the whole target.
 	Zoom(img *noximage.Image16, src image.Rectangle)
+	// Upload replaces the content of the render target associated with an image with the image pixels.
+	Upload(img *noximage.Image16)
 	// SetTargetSize sets the physical size of the render target associated with an image (zero resets it).
 	// Drawing coordinates are still in the image coordinates, and are scaled to the physical size.
 	SetTargetSize(img *noximage.Image16, sz image.Point)
@@ -75,7 +77,7 @@ type Client struct {
 	guiAdv                 guiAdvOptions
 	guiFPS                 guiFPS
 	interp                 renderInterp
-	gpu                    gpuBackend // nil for software rendering
+	gpu                    gpuBackend // OpenGL renderer; nil before the window is created
 	fps                    fpsOverlay
 	gpuFloor               noxrender.FloorParams
 	gpuFloorSpans          []image.Rectangle

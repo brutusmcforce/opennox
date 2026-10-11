@@ -3,6 +3,7 @@
 package opennox
 
 import (
+	"fmt"
 	"image"
 	"unicode/utf16"
 
@@ -21,28 +22,16 @@ import (
 	"github.com/opennox/opennox/v1/legacy"
 )
 
-const (
-	configVideoRenderer = "video.renderer"
-
-	rendererSoftware = "software"
-	rendererGL       = "gl"
-)
-
 func init() {
 	viper.SetDefault(configVideoFiltering, true)
 	viper.SetDefault(configVideoStretch, false)
-	viper.SetDefault(configVideoRenderer, rendererGL)
 }
 
-// initGPU enables GPU rendering, if it's selected in the config.
-func (c *Client) initGPU() {
-	if env.IsE2E() || viper.GetString(configVideoRenderer) != rendererGL {
-		return
-	}
+// initGPU initializes the OpenGL renderer. All drawing is done on the GPU.
+func (c *Client) initGPU() error {
 	g, err := gpu.New(c.Log)
 	if err != nil {
-		c.Log.Error("cannot initialize GPU renderer, using software rendering", "err", err)
-		return
+		return fmt.Errorf("cannot initialize OpenGL renderer (OpenGL 3.3 is required): %w", err)
 	}
 	c.gpu = g
 	c.r.SetGPU(g)
@@ -57,7 +46,7 @@ func (c *Client) initGPU() {
 		g.Gamma = getGamma()
 		g.Filtering = c.Win.GetFiltering()
 		g.Present(img, view, win)
-		if img != nil && uiScaleState.world == nil {
+		if img != nil && img != movieFrame && uiScaleState.world == nil {
 			// Menus are drawn at a low resolution and stretched to the window.
 			// Draw them at the window resolution instead, so that the text stays smooth.
 			// It's not done in game, because the world drawing expects the target to match the image.
@@ -68,6 +57,7 @@ func (c *Client) initGPU() {
 			g.SetTargetSize(img, sz)
 		}
 	})
+	return nil
 }
 
 func (c *Client) initSeat(sz image.Point) error {
@@ -106,8 +96,7 @@ func (c *Client) initSeat(sz image.Point) error {
 
 	c.Win.SetFiltering(viper.GetBool(configVideoFiltering))
 	c.Win.SetStretched(viper.GetBool(configVideoStretch))
-	c.initGPU()
-	if err != nil {
+	if err := c.initGPU(); err != nil {
 		return err
 	}
 	sst.SetGamma(getGamma())

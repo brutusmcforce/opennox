@@ -13,7 +13,6 @@ import (
 	"github.com/opennox/libs/client/seat"
 	"github.com/opennox/libs/noximage"
 
-	"github.com/opennox/opennox/v1/client/render"
 	"github.com/opennox/opennox/v1/legacy/client/audio/ail"
 
 	"github.com/opennox/vqa-decode/movies"
@@ -26,13 +25,16 @@ type Frame struct {
 	Audio [][2]int16
 }
 
+// DisplayFunc shows a movie frame on the screen.
+type DisplayFunc func(img *noximage.Image16)
+
 type MoviePlayer struct {
 	queue        chan *Frame
 	movie        *movies.VqaFile
 	file         io.Closer
 	seat         seat.Seat
 	oldInputs    seat.InputConfig
-	renderer     *render.Renderer
+	display      DisplayFunc
 	audioDrv     ail.Driver
 	audioSrc     ail.Sample
 	audioBuffers openal.Buffers
@@ -69,13 +71,8 @@ func (player *MoviePlayer) decode() {
 	}
 }
 
-func NewPlayerWithHandle(file io.ReadSeekCloser, mvSeat seat.Seat, audioDrv ail.Driver) (plr *MoviePlayer, err error) {
+func NewPlayerWithHandle(file io.ReadSeekCloser, mvSeat seat.Seat, audioDrv ail.Driver, display DisplayFunc) (plr *MoviePlayer, err error) {
 	vqa, err := movies.OpenMovieWithHandle(file)
-	if err != nil {
-		return nil, err
-	}
-
-	rend, err := render.New(mvSeat)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +95,7 @@ func NewPlayerWithHandle(file io.ReadSeekCloser, mvSeat seat.Seat, audioDrv ail.
 		movie:     vqa,
 		file:      file,
 		seat:      mvSeat,
-		renderer:  rend,
+		display:   display,
 		audioDrv:  audioDrv,
 		audioSrc:  audioSrc,
 		stop:      stop,
@@ -131,13 +128,13 @@ func NewPlayerWithHandle(file io.ReadSeekCloser, mvSeat seat.Seat, audioDrv ail.
 	return player, nil
 }
 
-func NewPlayer(fname string, mvSeat seat.Seat, audioDrv ail.Driver) (plr *MoviePlayer, err error) {
+func NewPlayer(fname string, mvSeat seat.Seat, audioDrv ail.Driver, display DisplayFunc) (plr *MoviePlayer, err error) {
 	vqaFile, err := os.Open(fname)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewPlayerWithHandle(vqaFile, mvSeat, audioDrv)
+	return NewPlayerWithHandle(vqaFile, mvSeat, audioDrv, display)
 }
 
 func (player *MoviePlayer) Close() {
@@ -338,7 +335,7 @@ loop:
 			}
 		}
 
-		player.renderer.CopyBuffer(nextFrame.Image)
+		player.display(nextFrame.Image)
 		samplesWithCommitedFrames += len(nextFrame.Audio)
 		currentFrame++
 	}

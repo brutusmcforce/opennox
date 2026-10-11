@@ -3,7 +3,6 @@ package noxrender
 import (
 	"image"
 	"image/color"
-	"image/draw"
 	"log/slog"
 	"unsafe"
 
@@ -373,8 +372,6 @@ type NoxRender struct {
 
 	dword_5d4594_3799476 int
 	dword_5d4594_3799484 uint32
-	interlacingY         int
-	interlacing          bool
 
 	HookImageDrawXxx func(pos image.Point, sz image.Point)
 }
@@ -429,24 +426,19 @@ func (r *NoxRender) initColorTablesRev() {
 	}
 }
 
+// CopyPixBuffer reads back the content of the current render target.
 func (r *NoxRender) CopyPixBuffer() *image.NRGBA {
-	if r.gpu != nil {
-		return r.gpu.ReadPixels(r.pix)
+	if r.gpu == nil {
+		return nil
 	}
-	img := image.NewNRGBA(r.pix.Rect)
-	draw.Draw(img, img.Rect, r.pix, r.pix.Rect.Min, draw.Src)
-	return img
+	return r.gpu.ReadPixels(r.pix)
 }
 
 func (r *NoxRender) ClearScreen(cl color.Color) {
-	if r.gpu != nil {
-		r.gpu.Clear(color16NRGBA(SplitColor(noxcolor.ToRGBA5551Color(cl)), 0xff))
+	if r.gpu == nil {
 		return
 	}
-	u16 := noxcolor.ModelRGBA5551.Convert16(cl).Color16()
-	for i := range r.pix.Pix {
-		r.pix.Pix[i] = u16
-	}
+	r.gpu.Clear(color16NRGBA(SplitColor(noxcolor.ToRGBA5551Color(cl)), 0xff))
 }
 
 func (r *NoxRender) Set_dword_5d4594_3799484(v int) { // sub_47D370
@@ -454,11 +446,6 @@ func (r *NoxRender) Set_dword_5d4594_3799484(v int) { // sub_47D370
 		v = 0
 	}
 	r.dword_5d4594_3799484 = uint32(v)
-}
-
-func (r *NoxRender) SetInterlacing(enable bool, y int) {
-	r.interlacing = enable
-	r.interlacingY = y & 0x1
 }
 
 func (r *NoxRender) Reset_dword_5d4594_3799476() {

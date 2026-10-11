@@ -2,7 +2,6 @@ package opennox
 
 import (
 	"image"
-	"unsafe"
 
 	"github.com/opennox/libs/noximage"
 
@@ -22,21 +21,17 @@ import (
 // While the world is being drawn, the world buffer temporarily replaces the main pixel buffer
 // and the logical screen size is set to the world size (see beginWorldDraw).
 //
-// After the world is drawn, it is downscaled into the GUI buffer, so that translucent GUI elements
-// can be blended with it. Then the GUI is drawn on top. Finally, all GUI buffer pixels that changed
-// are upscaled back into the world buffer, which is presented on the screen (see composeUI).
+// After the world is drawn, the GUI is drawn into a separate transparent render target at the full resolution
+// (coordinates are still in GUI pixels, see gpu.Renderer.SetTargetSize), which is then composed over the world
+// (see composeUI). The world buffer is presented on the screen.
 var uiScaleState struct {
 	worldSize image.Point // requested size for the world buffer; zero if UI scaling is disabled
 
-	world      *noximage.Image16
-	worldFree  func()
-	worldRows  []*uint16
-	worldRFree func()
+	world *noximage.Image16
 
 	inWorld bool
 	saved   struct {
 		img   *noximage.Image16
-		rows  []*uint16
 		win   image.Point
 		clip  bool
 		rect1 image.Rectangle
@@ -44,8 +39,7 @@ var uiScaleState struct {
 		rect3 image.Rectangle
 	}
 
-	snap    []uint16 // GUI buffer contents before the GUI was drawn
-	hasSnap bool
+	worldReady bool // the world was drawn in this frame
 
 	// cursor is drawn at full resolution, so that it is not scaled with the GUI
 	cursorPos image.Point // in GUI coordinates
@@ -196,22 +190,12 @@ func videoNeedWorldBuffer(need bool) {
 }
 
 func videoAllocWorldBuffer(sz image.Point) {
-	data, free := alloc.Make([]uint16{}, sz.X*sz.Y)
-	img := noximage.NewImage16WithData(data, sz)
-	rows, freeRows := alloc.Make([]*uint16{}, sz.Y)
-	for y := 0; y < sz.Y; y++ {
-		rows[y] = &img.Row(y)[0]
-	}
-	uiScaleState.world = img
+	uiScaleState.world = noximage.NewImage16(image.Rectangle{Max: sz})
 	if g := noxClient.gpu; g != nil && noxPixBuffer.img != nil {
 		// draw the GUI at the full resolution; it allows drawing smooth text
 		g.SetTargetSize(noxPixBuffer.img, sz)
 	}
-	uiScaleState.worldFree = free
-	uiScaleState.worldRows = rows
-	uiScaleState.worldRFree = freeRows
-	uiScaleState.snap = make([]uint16, len(noxPixBuffer.img.Pix))
-	uiScaleState.hasSnap = false
+	uiScaleState.worldReady = false
 }
 
 func videoFreeWorldBuffer() {
@@ -221,24 +205,12 @@ func videoFreeWorldBuffer() {
 	if g := noxClient.gpu; g != nil && uiScaleState.world != nil && noxPixBuffer.img != nil {
 		g.SetTargetSize(noxPixBuffer.img, image.Point{})
 	}
-	if uiScaleState.worldFree != nil {
-		uiScaleState.worldFree()
-	}
-	if uiScaleState.worldRFree != nil {
-		uiScaleState.worldRFree()
-	}
 	uiScaleState.world = nil
-	uiScaleState.worldFree = nil
-	uiScaleState.worldRows = nil
-	uiScaleState.worldRFree = nil
-	uiScaleState.snap = nil
-	uiScaleState.hasSnap = false
+	uiScaleState.worldReady = false
 }
 
-func (c *Client) setPixTarget(img *noximage.Image16, rows []*uint16) {
+func (c *Client) setPixTarget(img *noximage.Image16) {
 	noxPixBuffer.img = img
-	noxPixBuffer.rows = rows
-	legacy.Set_nox_pixbuffer_rows_3798784(unsafe.Pointer(&rows[0]))
 	c.r.SetPixBuffer(img)
 }
 
@@ -252,13 +224,13 @@ func (c *Client) beginWorldDraw() {
 	st.inWorld = true
 	d := c.r.Data()
 	sv := &st.saved
-	sv.img, sv.rows = noxPixBuffer.img, noxPixBuffer.rows
+	sv.img = noxPixBuffer.img
 	sv.win = videoGetWindowSize()
 	sv.clip = d.Clip()
 	sv.rect1, sv.rect2, sv.rect3 = d.ClipRect(), d.ClipRect2(), d.Rect3()
 
 	sz := st.world.Size()
-	c.setPixTarget(st.world, st.worldRows)
+	c.setPixTarget(st.world)
 	videoSetWindowSize(sz)
 	d.SetClipRect(image.Rectangle{Max: sz})
 	d.SetClipRect2(image.Rectangle{Max: image.Pt(sz.X-1, sz.Y-1)})
@@ -273,47 +245,36 @@ func (c *Client) endWorldDraw() {
 	}
 	st.inWorld = false
 	sv := &st.saved
-	c.setPixTarget(sv.img, sv.rows)
+	c.setPixTarget(sv.img)
 	videoSetWindowSize(sv.win)
 	d := c.r.Data()
 	d.SetClip(sv.clip)
 	d.SetClipRect(sv.rect1)
 	d.SetClipRect2(sv.rect2)
 	d.SetRect3(sv.rect3)
-	sv.img, sv.rows = nil, nil
+	sv.img = nil
 }
 
 // worldDrawn must be called after the world is drawn into the world buffer.
-// It downscales the world into the GUI buffer and remembers the result,
-// so that later we can detect which pixels were drawn by the GUI.
+// It applies the zoom and prepares the GUI target.
 func (c *Client) worldDrawn() {
 	st := &uiScaleState
-	if st.world == nil || st.inWorld {
+	if st.world == nil || st.inWorld || c.gpu == nil {
 		return
 	}
-	st.hasSnap = true
+	st.worldReady = true
 	c.applyZoom(st.world)
-	if c.gpu != nil {
-		// GUI is drawn into a separate transparent target, so we don't need the world under it
-		c.gpu.ClearTransparent()
-		return
-	}
-	ui := noxPixBuffer.img
-	scaleNearest16(ui, st.world)
-	copy(st.snap, ui.Pix)
+	// GUI is drawn into a separate transparent target, which is composed over the world later
+	c.gpu.ClearTransparent()
 }
 
-// composeUI copies all the GUI pixels drawn since worldDrawn into the world buffer, upscaling them.
+// composeUI draws the GUI over the world buffer.
 func (c *Client) composeUI() {
 	st := &uiScaleState
-	if st.world == nil || st.inWorld || !st.hasSnap {
+	if st.world == nil || st.inWorld || !st.worldReady || c.gpu == nil {
 		return
 	}
-	if c.gpu != nil {
-		c.gpu.Composite(st.world, noxPixBuffer.img)
-		return
-	}
-	composeChanged16(st.world, noxPixBuffer.img, st.snap)
+	c.gpu.Composite(st.world, noxPixBuffer.img)
 }
 
 // deferCursorDraw remembers the cursor position, if the cursor must be drawn at full resolution.
@@ -341,7 +302,7 @@ func (c *Client) drawDeferredCursor() {
 // It returns false if UI scaling is disabled.
 func (c *Client) presentScaled(draw func()) bool {
 	st := &uiScaleState
-	if st.world == nil || st.inWorld || !st.hasSnap {
+	if st.world == nil || st.inWorld || !st.worldReady {
 		return false
 	}
 	c.composeUI()
@@ -350,53 +311,4 @@ func (c *Client) presentScaled(draw func()) bool {
 	draw()
 	c.copyPixBuffer()
 	return true
-}
-
-// scaleNearest16 scales src image into dst using nearest neighbour sampling.
-func scaleNearest16(dst, src *noximage.Image16) {
-	dsz, ssz := dst.Size(), src.Size()
-	if dsz.X <= 0 || dsz.Y <= 0 {
-		return
-	}
-	xs := make([]int, dsz.X)
-	for x := range xs {
-		xs[x] = (2*x + 1) * ssz.X / (2 * dsz.X)
-	}
-	for y := 0; y < dsz.Y; y++ {
-		srow := src.Row((2*y + 1) * ssz.Y / (2 * dsz.Y))
-		drow := dst.Row(y)
-		for x, sx := range xs {
-			drow[x] = srow[sx]
-		}
-	}
-}
-
-// composeChanged16 upscales each pixel of src that differs from prev into dst.
-func composeChanged16(dst, src *noximage.Image16, prev []uint16) {
-	dsz, ssz := dst.Size(), src.Size()
-	if ssz.X <= 0 || ssz.Y <= 0 || len(prev) < ssz.X*ssz.Y {
-		return
-	}
-	// pixel i in src covers [xs[i], xs[i+1]) range in dst
-	xs := make([]int, ssz.X+1)
-	for x := range xs {
-		xs[x] = x * dsz.X / ssz.X
-	}
-	for y := 0; y < ssz.Y; y++ {
-		srow := src.Row(y)
-		prow := prev[y*ssz.X : (y+1)*ssz.X]
-		y0, y1 := y*dsz.Y/ssz.Y, (y+1)*dsz.Y/ssz.Y
-		for x, c := range srow {
-			if c == prow[x] {
-				continue
-			}
-			x0, x1 := xs[x], xs[x+1]
-			for dy := y0; dy < y1; dy++ {
-				drow := dst.Row(dy)[x0:x1]
-				for i := range drow {
-					drow[i] = c
-				}
-			}
-		}
-	}
 }

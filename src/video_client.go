@@ -8,6 +8,7 @@ import (
 	"image/color"
 
 	"github.com/opennox/libs/ifs"
+	"github.com/opennox/libs/noximage"
 	"github.com/opennox/libs/platform"
 
 	"github.com/opennox/opennox/v1/client/gui"
@@ -49,13 +50,29 @@ func (c *Client) playMovieFile(name string) {
 	videoLog.Printf("playMovieFile: %q", name)
 	if f, err := ifs.Open(name); err == nil {
 		defer f.Close()
-		if plr, err := noxmovie.NewPlayerWithHandle(f, noxClient.Seat, audioDev); err == nil {
+		if plr, err := noxmovie.NewPlayerWithHandle(f, noxClient.Seat, audioDev, c.showMovieFrame); err == nil {
 			defer plr.Close()
 			plr.SetAudioGain(configGetVolumeGain(VolumeMusic))
 			plr.Start()
 			plr.Play()
 		}
 	}
+}
+
+// movieFrame is a render target for movie frames.
+var movieFrame *noximage.Image16
+
+// showMovieFrame uploads a movie frame to the GPU and presents it.
+func (c *Client) showMovieFrame(img *noximage.Image16) {
+	if c.gpu == nil {
+		return
+	}
+	if movieFrame == nil || movieFrame.Rect != img.Rect {
+		movieFrame = noximage.NewImage16(img.Rect)
+	}
+	copy(movieFrame.Pix, img.Pix)
+	c.gpu.Upload(movieFrame)
+	c.Win.CopyBuffer(movieFrame)
 }
 
 func (c *Client) clientDraw() bool {

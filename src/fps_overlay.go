@@ -21,7 +21,7 @@ func init() {
 	})
 	noxConsole.Register(&console.Command{
 		Token: "fps",
-		Help:  "fps: toggle frame rate and renderer display in the upper left corner",
+		Help:  "fps: toggle frame rate display in the upper left corner",
 		Flags: console.ClientServer,
 		Func: func(ctx context.Context, c *console.Console, tokens []string) bool {
 			if len(tokens) != 0 {
@@ -35,7 +35,7 @@ func init() {
 	})
 }
 
-// fpsOverlay shows the frame rate and the renderer in the upper left corner.
+// fpsOverlay shows the frame rate in the upper left corner.
 type fpsOverlay struct {
 	enabled bool
 	frames  int
@@ -58,19 +58,12 @@ func (c *Client) countFrame() {
 	}
 }
 
-func (c *Client) rendererName() string {
-	if c.gpu != nil {
-		return "OpenGL"
-	}
-	return "Software"
-}
-
-// drawFPSOverlay draws the frame rate and the renderer name, if enabled.
+// drawFPSOverlay draws the frame rate, if enabled.
 func (c *Client) drawFPSOverlay() {
 	if !c.fps.enabled {
 		return
 	}
-	str := fmt.Sprintf("FPS: %.0f  Renderer: %s", c.fps.fps, c.rendererName())
+	str := fmt.Sprintf("FPS: %.0f", c.fps.fps)
 	r := c.r
 	sz := r.GetStringSizeWrapped(nil, str, 0)
 	const pad = 3

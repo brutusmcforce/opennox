@@ -19,6 +19,7 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 
+	noxcolor "github.com/opennox/libs/color"
 	"github.com/opennox/libs/noximage"
 
 	"github.com/opennox/opennox/v1/client/noxrender"
@@ -573,6 +574,30 @@ func (r *Renderer) Composite(dst, src *noximage.Image16) {
 	gl.BlendEquation(gl.FUNC_ADD)
 	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 	r.drawTexture(texDraw{tex: ts.tex, size: ts.size, out: td.size, gamma: 1, opacity: 1})
+	r.restore()
+}
+
+// Upload replaces the content of the render target associated with an image with the image pixels.
+// It's used for images decoded on the CPU, e.g. movie frames.
+func (r *Renderer) Upload(img *noximage.Image16) {
+	r.flush()
+	delete(r.phys, img)
+	t := r.targetFor(img)
+	sz := t.size
+	buf := make([]byte, 4*sz.X*sz.Y)
+	for y := 0; y < sz.Y; y++ {
+		// render targets have the bottom-left origin
+		row := img.Row(y)
+		dst := buf[4*sz.X*(sz.Y-1-y):]
+		for x, v := range row[:sz.X] {
+			c := noxcolor.RGBA5551(v).ColorNRGBA()
+			p := dst[4*x:]
+			p[0], p[1], p[2], p[3] = c.R, c.G, c.B, 0xff
+		}
+	}
+	gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
+	gl.BindTexture(gl.TEXTURE_2D, t.tex)
+	gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(sz.X), int32(sz.Y), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(buf))
 	r.restore()
 }
 

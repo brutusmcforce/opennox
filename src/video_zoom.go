@@ -60,7 +60,6 @@ type worldZoom struct {
 	target float64       // requested zoom
 	cur    float64       // current zoom, approaching the target
 	last   time.Duration // time of the last update
-	tmp    []uint16      // temporary buffer for zooming in software
 }
 
 // level returns the current zoom factor.
@@ -143,39 +142,12 @@ func (c *Client) windowToWorldScreen(p image.Point) image.Point {
 
 // applyZoom scales the visible part of the world buffer to fill the whole buffer.
 func (c *Client) applyZoom(img *noximage.Image16) {
-	if img == nil || c.zoom.level() == zoomMin {
+	if img == nil || c.gpu == nil || c.zoom.level() == zoomMin {
 		return
 	}
 	src := c.zoomRect(img.Size())
 	if src.Empty() || src == img.Rect {
 		return
 	}
-	if c.gpu != nil {
-		c.gpu.Zoom(img, src)
-		return
-	}
-	if len(c.zoom.tmp) != len(img.Pix) {
-		c.zoom.tmp = make([]uint16, len(img.Pix))
-	}
-	copy(c.zoom.tmp, img.Pix)
-	zoomNearest16(img, noximage.NewImage16WithData(c.zoom.tmp, img.Size()), src)
-}
-
-// zoomNearest16 scales a part of the src image to fill the whole dst image, using nearest neighbour sampling.
-func zoomNearest16(dst, src *noximage.Image16, sr image.Rectangle) {
-	dsz := dst.Size()
-	if dsz.X <= 0 || dsz.Y <= 0 {
-		return
-	}
-	xs := make([]int, dsz.X)
-	for x := range xs {
-		xs[x] = sr.Min.X + (2*x+1)*sr.Dx()/(2*dsz.X)
-	}
-	for y := 0; y < dsz.Y; y++ {
-		srow := src.Row(sr.Min.Y + (2*y+1)*sr.Dy()/(2*dsz.Y))
-		drow := dst.Row(y)
-		for x, sx := range xs {
-			drow[x] = srow[sx]
-		}
-	}
+	c.gpu.Zoom(img, src)
 }
