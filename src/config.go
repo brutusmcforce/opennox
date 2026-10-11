@@ -17,26 +17,39 @@ func init() {
 		wd = "."
 	}
 	viper.SetConfigName(configName)
-	viper.AddConfigPath(wd)
-	if sdir := env.AppUserDir(); sdir != "" {
-		viper.AddConfigPath(sdir)
-		configPath = filepath.Join(sdir, configName+"."+configExt)
+	// user config directory is checked first, and new config files are created there
+	if udir := configUserDir(); udir != "" {
+		viper.AddConfigPath(udir)
+		configPath = filepath.Join(udir, configName+"."+configExt)
 	} else {
 		configPath = filepath.Join(wd, configName+"."+configExt)
 	}
+	viper.AddConfigPath(wd)
 	viper.AddConfigPath(filepath.Dir(os.Args[0]))
-	if runtime.GOOS != "windows" {
-		if dir := os.Getenv("XDG_CONFIG_HOME"); dir != "" {
-			viper.AddConfigPath(filepath.Join(dir, "opennox"))
-		}
-		if home, err := os.UserHomeDir(); err == nil {
-			// Linux Snapcraft installation replaces HOME variable
-			if rhome := os.Getenv("SNAP_REAL_HOME"); rhome != "" {
-				home = rhome
-			}
-			viper.AddConfigPath(filepath.Join(home, ".config/opennox"))
-		}
+}
+
+// configUserDir returns the default directory for the config file.
+//
+// On Linux it's ~/.config/opennox (or $XDG_CONFIG_HOME/opennox).
+func configUserDir() string {
+	if sdir := env.AppUserDir(); sdir != "" {
+		return sdir
 	}
+	if runtime.GOOS == "windows" {
+		return ""
+	}
+	if dir := os.Getenv("XDG_CONFIG_HOME"); dir != "" {
+		return filepath.Join(dir, "opennox")
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	// Linux Snapcraft installation replaces HOME variable
+	if rhome := os.Getenv("SNAP_REAL_HOME"); rhome != "" {
+		home = rhome
+	}
+	return filepath.Join(home, ".config", "opennox")
 }
 
 const (
@@ -63,6 +76,10 @@ func writeConfig() error {
 		return nil
 	}
 	configLog.Printf("writing to %q", configPath)
+	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+		configLog.Printf("cannot create config dir: %v", err)
+		return err
+	}
 	if err := viper.WriteConfigAs(configPath); err != nil {
 		configLog.Printf("cannot save file: %v", err)
 		return err

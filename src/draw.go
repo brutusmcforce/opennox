@@ -797,7 +797,8 @@ type circleSegments struct {
 }
 
 func (c *circleSegments) Init(r *NoxRender) {
-	height := r.PixBufferRect().Dy()
+	// the same buffer is used for both GUI and world buffers
+	height := max(r.PixBufferRect().Dy(), videoWorldSize().Y)
 	c.byY = make([]*circleSeg, height)
 	c.arr = make([]circleSeg, height*8)
 }

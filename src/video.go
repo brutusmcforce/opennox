@@ -4,6 +4,7 @@ import (
 	"context"
 	"image"
 	"strconv"
+	"strings"
 
 	"github.com/opennox/libs/client/seat"
 	"github.com/opennox/libs/console"
@@ -22,6 +23,14 @@ const (
 	gammaDef = 1.0
 	gammaMax = 3.0
 	gammaInc = 0.1
+)
+
+const (
+	configVideoUIScale = "video.ui_scale"
+
+	videoUIScaleMin = 100
+	videoUIScaleDef = 100
+	videoUIScaleMax = 400
 )
 
 var (
@@ -43,7 +52,8 @@ var (
 		{2560, 1440},
 		{3840, 2160},
 	}
-	noxVideoGamma = float32(gammaDef)
+	noxVideoGamma   = float32(gammaDef)
+	noxVideoUIScale = videoUIScaleDef
 
 	nox_video_cutSize = 100
 
@@ -52,6 +62,30 @@ var (
 )
 
 func init() {
+	viper.SetDefault(configVideoUIScale, videoUIScaleDef)
+	registerOnConfigRead(func() {
+		videoSetUIScale(viper.GetInt(configVideoUIScale))
+	})
+	noxConsole.Register(&console.Command{
+		Token: "ui_scale",
+		Help:  "ui_scale [percent]: get or set UI scale in percent (100-400), applied on the next game start",
+		Flags: console.ClientServer,
+		Func: func(ctx context.Context, c *console.Console, tokens []string) bool {
+			if len(tokens) == 0 {
+				c.Printf(console.ColorLightYellow, "ui_scale = %d%%", videoGetUIScale())
+				return true
+			} else if len(tokens) > 1 {
+				return false
+			}
+			v, err := strconv.Atoi(strings.TrimSuffix(tokens[0], "%"))
+			if err != nil {
+				return false
+			}
+			videoSetUIScaleOpts(v)
+			c.Printf(console.ColorLightYellow, "ui_scale = %d%% (applied on the next game start)", videoGetUIScale())
+			return true
+		},
+	})
 	noxConsole.Register(&console.Command{
 		Token:  "gamma",
 		HelpID: "gammahelp",
@@ -212,4 +246,56 @@ func setGamma(v float32) {
 	videoLog.Printf("gamma: %v", v)
 	noxVideoGamma = v
 	noxClient.SetScreenGamma(v)
+}
+
+// videoGetUIScale returns UI scale in percent.
+func videoGetUIScale() int {
+	return noxVideoUIScale
+}
+
+// videoSetUIScale sets UI scale in percent. It will be applied on the next video mode reset.
+func videoSetUIScale(perc int) {
+	if perc < videoUIScaleMin {
+		perc = videoUIScaleMin
+	} else if perc > videoUIScaleMax {
+		perc = videoUIScaleMax
+	}
+	if noxVideoUIScale == perc {
+		return
+	}
+	videoLog.Printf("ui scale: %d%%", perc)
+	noxVideoUIScale = perc
+}
+
+func videoSetUIScaleOpts(perc int) {
+	videoSetUIScale(perc)
+	viper.Set(configVideoUIScale, videoGetUIScale())
+	writeConfigLater()
+}
+
+// videoUIBufferSize returns the size of the GUI buffer for a given window size and current UI scale.
+// The GUI is rendered at this (lower) resolution and then upscaled to the window size,
+// while the world is still rendered at full resolution (see video_uiscale.go).
+func videoUIBufferSize(mode image.Point) image.Point {
+	scale := videoGetUIScale()
+	if scale <= 100 || mode.X <= 0 || mode.Y <= 0 {
+		return mode
+	}
+	ratio := float64(mode.Y) / float64(mode.X)
+	// Nox requires buffer width to be aligned to 32 pixels.
+	w := (mode.X * 100 / scale) &^ 31
+	if w < noxDefaultWidth {
+		w = noxDefaultWidth
+	}
+	h := int(float64(w)*ratio + 0.5)
+	if h < noxDefaultHeight {
+		// keep the minimal height required by the GUI, adjust width to preserve aspect ratio
+		h = noxDefaultHeight
+		w = (int(float64(h)/ratio+31) &^ 31)
+	}
+	if w > mode.X || h > mode.Y {
+		// the window is too small to scale it down
+		return mode
+	}
+	return image.Point{X: w, Y: h}
 }

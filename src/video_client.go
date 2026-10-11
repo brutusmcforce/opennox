@@ -91,11 +91,24 @@ func (c *Client) gameResetVideoMode(inMenu, force bool) error {
 		}
 		mode = c.videoGetGameMode()
 	}
-	videoLog.Printf("mode switch: %+v (menu: %v)", mode, inMenu)
+	var world image.Point
+	if !inMenu {
+		// the world is always rendered at full resolution, only the GUI is scaled
+		world = c.videoGetGameMode()
+		if max := videoGetMaxSize(); world.X > max.X || world.Y > max.Y {
+			world = image.Point{X: min(world.X, max.X), Y: min(world.Y, max.Y)}
+		}
+		mode = videoUIBufferSize(world)
+		if world == mode {
+			world = image.Point{}
+		}
+	}
+	videoLog.Printf("mode switch: %+v (menu: %v, world: %+v)", mode, inMenu, world)
 	videoResizeView(mode)
-	if !force && mode == noxPixBuffer.img.Size() {
+	if !force && mode == noxPixBuffer.img.Size() && world == uiScaleState.worldSize {
 		return nil
 	}
+	videoSetWorldSize(world)
 	if err := recreateBuffersAndTarget(mode); err != nil {
 		return err
 	}

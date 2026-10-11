@@ -108,7 +108,7 @@ func (c *Client) nox_xxx_client_435F80_draw() bool {
 		return true
 	}
 	vp := c.Viewport()
-	ipos := vp.ToWorldPos(mpos)
+	ipos := vp.ToWorldPos(uiToWorldScreen(mpos))
 	if !c.clientSendInputMouse(server.HostPlayerIndex, ipos) {
 		return true
 	}
@@ -132,7 +132,10 @@ func (c *Client) nox_xxx_client_435F80_draw() bool {
 	c.nox_xxx_clientDrawAll_436100_draw()
 	c.sub_49BB40()
 	c.sub_49BA70()
-	c.maybeScreenshot()
+	if !videoUIScaled() {
+		// with UI scaling, the screenshot is taken from the final full-resolution image
+		c.maybeScreenshot()
+	}
 	if memmap.Uint32(0x5D4594, 826068) != 0 {
 		legacy.Nox_xxx_motd_4467F0()
 	}
@@ -160,6 +163,7 @@ func (c *Client) nox_xxx_clientDrawAll_436100_draw() {
 	noxflags.UnsetEngine(noxflags.EnginePause)
 	*memmap.PtrUint64(0x5D4594, 814532) = v0
 	*memmap.PtrUint32(0x5D4594, 811916) = c.srv.Frame()
+	c.beginWorldDraw()
 	vp := c.Viewport()
 	if memmap.Uint32(0x587000, 85744) != 0 {
 		vp.Size.Y = vp.Size.X * nox_win_height / nox_win_width
@@ -185,9 +189,15 @@ func (c *Client) nox_xxx_clientDrawAll_436100_draw() {
 		legacy.Nox_xxx_clientDrawAll_436100_draw_A()
 	} else if c.ClientPlayerUnit() != nil && nox_client_isConnected() {
 		c.nox_xxx_drawAllMB_475810_draw(vp)
+		c.endWorldDraw()
+		c.worldDrawn()
 		legacy.Nox_xxx_drawMinimapAndLines_4738E0()
 	} else {
 		c.r.ClearScreen(color.Black)
+	}
+	if uiScaleState.inWorld {
+		c.endWorldDraw()
+		c.worldDrawn()
 	}
 	c.DrawPerfmon(noxPerfmon)
 	if legacy.Get_dword_5d4594_811904() != 0 {
@@ -203,7 +213,8 @@ func (c *Client) nox_xxx_clientDrawAll_436100_draw() {
 		legacy.Nox_xxx_clientDrawAll_436100_draw_B()
 	}
 	if memmap.Uint32(0x587000, 85744) != 0 {
-		legacy.Sub_430B50(0, 0, nox_win_width-1, nox_win_height-1)
+		wsz := videoWorldSize()
+		legacy.Sub_430B50(0, 0, wsz.X-1, wsz.Y-1)
 		c.r.ClearScreen(color.Black)
 		*memmap.PtrUint32(0x587000, 85744) = 0
 	}

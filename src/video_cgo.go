@@ -261,7 +261,7 @@ func recreateBuffersAndTarget(sz image.Point) error {
 		return err
 	}
 	videoLog.Println("recreate render target: ok")
-	if err := noxClient.nox_video_initFloorBuffer_430BA0(sz); err != nil {
+	if err := noxClient.nox_video_initFloorBuffer_430BA0(videoWorldSize()); err != nil {
 		return err
 	}
 	return nil
@@ -381,6 +381,7 @@ func nox_client_clearScreen_440900() {
 }
 
 func nox_free_pixbuffers_486110() {
+	videoFreeWorldBuffer()
 	if memmap.Uint32(0x5D4594, 1193200) == 0 {
 		noxPixBuffer.img = nil
 		if noxPixBuffer.free != nil {
@@ -405,6 +406,7 @@ func nox_video_initPixbuffer_486090(sz image.Point) {
 	videoLog.Printf("initializing pixbuffer: %v", sz)
 	nox_video_initPixbufferData_4861D0(sz)
 	nox_video_initPixbufferRows_486230()
+	videoInitWorldBuffer(sz)
 	for _, fnc := range noxPixBuffer.onResize {
 		fnc(sz)
 	}
@@ -448,7 +450,7 @@ func nox_draw_setCutSize_476700(cutPerc int, a2 int) {
 }
 func (c *Client) nox_draw_setCutSize(perc int, a2 int) {
 	vp := c.Viewport()
-	bsz := noxPixBuffer.img.Size()
+	bsz := videoWorldSize()
 	v2 := a2
 	v4 := vp.Size.X
 	if a2 != 0 {

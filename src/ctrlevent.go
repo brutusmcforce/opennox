@@ -109,12 +109,13 @@ func (c *CtrlEventHandler) nox_xxx_clientControl_42D6B0(mpos image.Point, a4 *Ct
 
 func (c *CtrlEventHandler) nox_xxx_clientControl_42D6B0_orientation(mpos image.Point) {
 	// calculates player orientation
+	mpos = uiToWorldScreen(mpos)
 	x := mpos.X
 	y := mpos.Y
 	if v15 := legacy.Nox_xxx_spriteGetMB_476F80(); v15 != nil {
 		y = sub_4739D0(v15.Pos().Y)
 	}
-	wsz := videoGetWindowSize()
+	wsz := videoWorldSize()
 	cx := x - wsz.X/2
 	cy := y - wsz.Y/2
 	rad := math.Atan2(float64(cy), float64(cx))

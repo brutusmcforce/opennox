@@ -154,9 +154,17 @@ func (c *Client) mainloopDrawAndPresent() {
 	if !noxflags.HasEngine(noxflags.EngineNoRendering) || noxflags.HasEngine(noxflags.EngineFlag9) || nox_client_gui_flag_815132 != 0 {
 		c.nox_client_drawCursorAndTooltips_477830() // Draw cursor
 	}
+	present := !noxflags.HasEngine(noxflags.EngineNoRendering) || noxflags.HasEngine(noxflags.EngineFlag9) || nox_client_gui_flag_815132 != 0
+	if present && c.presentScaled(func() {
+		// draw full-screen effects in full resolution
+		c.r.DrawFade(true)
+		c.maybeScreenshot()
+	}) {
+		return
+	}
 	c.r.DrawFade(true)
 	c.maybeScreenshot()
-	if !noxflags.HasEngine(noxflags.EngineNoRendering) || noxflags.HasEngine(noxflags.EngineFlag9) || nox_client_gui_flag_815132 != 0 {
+	if present {
 		c.copyPixBuffer()
 	}
 }

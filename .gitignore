@@ -35,3 +35,7 @@ src/includes
 # Omit other source analysis dirs
 gonox/
 gonoxh/
+
+src/opennox
+src/opennox-hd
+src/opennox-server
