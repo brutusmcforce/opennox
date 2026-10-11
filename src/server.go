@@ -100,6 +100,8 @@ type Server struct {
 	quest           questServer
 	springs         serverSprings
 	mapSwitchWPName string
+	// scriptObject is the raw script section of the current map. It's written back when the map is saved.
+	scriptObject []byte
 
 	flag1548704 bool
 	flag3592    bool

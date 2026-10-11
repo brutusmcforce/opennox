@@ -76,6 +76,7 @@ func init() {
 	legacy.Sub_40A1A0 = sub_40A1A0
 	legacy.PlatformTicks = platformTicks
 	legacy.Nox_ticks_reset_416D40 = nox_ticks_reset_416D40
+	legacy.Nox_xxx_mapGenUseBlendScript = nox_xxx_mapGenUseBlendScript
 	legacy.Nox_xxx_spellAwardAll1_4EFD80 = nox_xxx_spellAwardAll1_4EFD80
 	legacy.Nox_xxx_spellAwardAll2_4EFC80 = nox_xxx_spellAwardAll2_4EFC80
 	legacy.Nox_xxx_spellAwardAll3_4EFE10 = nox_xxx_spellAwardAll3_4EFE10

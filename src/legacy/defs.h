@@ -146,6 +146,7 @@ int nox_video_bag_image_type(nox_video_bag_image_t* img);
 int nox_client_gpu_edgeDraw(nox_video_bag_image_t* img, int x, int y, int* a4, int* a5, int x0, int y0, int x1, int y1,
 							int cut);
 void nox_client_worldToDrawScreen(int x, int y, int* sx, int* sy);
+int nox_xxx_mapGenUseBlendScript();
 
 typedef struct {
 	char name[32]; // 0, 0

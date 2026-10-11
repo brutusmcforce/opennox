@@ -1,6 +1,7 @@
 package opennox
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -18,7 +19,6 @@ import (
 	"github.com/opennox/libs/log"
 	"github.com/opennox/libs/object"
 	"github.com/opennox/noxcrypt"
-	"github.com/opennox/noxscript/ns/asm"
 
 	noxflags "github.com/opennox/opennox/v1/common/flags"
 	"github.com/opennox/opennox/v1/common/memmap"
@@ -76,36 +76,28 @@ func nox_xxx_mapSetCrcMB_409B10(crc uint32) {
 	}
 }
 
+// nox_server_mapRWScriptObject_505A40 reads or writes the map script section.
+//
+// The original game extracted the script section to a temporary file (nc.obj) in the game directory,
+// and copied it back from that file when saving a map. Multiple game instances that share the game directory
+// could overwrite each other's script and corrupt the saves. Instead, the script section of the current map
+// is kept in memory (see Server.scriptObject).
 func nox_server_mapRWScriptObject_505A40(cf *cryptfile.CryptFile, a1 unsafe.Pointer) (gout error) {
 	defer func() {
 		if gout != nil {
-			log.Printf("nox_server_mapRWScriptObject_505A40: %w (%s)", gout, caller(1))
+			log.Printf("nox_server_mapRWScriptObject_505A40: %v (%s)", gout, caller(1))
 		}
 	}()
 	s := noxServer
-	fname := datapath.Data(asm.NCobjName)
 	legacy.Set_dword_5d4594_1599644(0)
 	if cf.File.Mode() != binfile.ReadOnly {
 		cf.WriteU16(1)
-		f, err := ifs.Open(fname)
-		if os.IsNotExist(err) {
-			cf.WriteU32(0)
-			return nil
-		} else if err != nil {
-			mapLog.Println(err)
-			return err
-		}
-		defer f.Close()
-		fi, _ := f.Stat()
-		sz := fi.Size()
-		cf.WriteU32(uint32(sz))
-		if sz == 0 {
-			return nil
-		}
-		_, err = io.CopyN(cf, f, sz)
-		if err != nil {
-			mapLog.Println(err)
-			return err
+		cf.WriteU32(uint32(len(s.scriptObject)))
+		if len(s.scriptObject) != 0 {
+			if _, err := cf.Write(s.scriptObject); err != nil {
+				mapLog.Println(err)
+				return err
+			}
 		}
 		return nil
 	}
@@ -113,40 +105,43 @@ func nox_server_mapRWScriptObject_505A40(cf *cryptfile.CryptFile, a1 unsafe.Poin
 	if int16(v10) < 1 {
 		return fmt.Errorf("unsupported version: %d", v10)
 	}
-	if !cf.ReadOnly() {
-		return fmt.Errorf("unexpected crypt file state")
-	}
-	f, err := ifs.Create(fname)
-	if err != nil {
-		mapLog.Println(err)
-		return err
-	}
-	defer f.Close()
 	sz, err := cf.ReadU32()
 	if err != nil {
 		mapLog.Println(err)
 		return err
 	}
-	legacy.Set_dword_5d4594_1599644(int(sz))
-	if sz > 0 {
-		_, err = io.CopyN(f, cf, int64(sz))
-		if err != nil {
-			mapLog.Println(err)
-			return err
-		}
-	}
-	if sz <= 0 || noxflags.HasGame(noxflags.GameFlag22|noxflags.GameFlag23) {
-		return nil
-	}
-	_, err = f.Seek(0, io.SeekStart)
-	if err != nil {
+	data := make([]byte, sz)
+	if _, err = io.ReadFull(cf, data); err != nil {
 		mapLog.Println(err)
 		return err
 	}
-	if err := s.noxScript.ReadScript(f); err != nil {
+	s.scriptObject = data
+	legacy.Set_dword_5d4594_1599644(int(sz))
+	if sz <= 0 || noxflags.HasGame(noxflags.GameFlag22|noxflags.GameFlag23) {
+		return nil
+	}
+	if err := s.noxScript.ReadScript(bytes.NewReader(data)); err != nil {
 		return fmt.Errorf("cannot read scripts: %w", err)
 	}
 	return nil
+}
+
+// nox_xxx_mapGenUseBlendScript sets the script for a generated map from the blend.obj file.
+// The file is removed after reading, as the original game did. A missing file means no script.
+func nox_xxx_mapGenUseBlendScript() bool {
+	s := noxServer
+	s.scriptObject = nil
+	path := datapath.Data("blend.obj")
+	data, err := os.ReadFile(ifs.Normalize(path))
+	if os.IsNotExist(err) {
+		return true
+	} else if err != nil {
+		mapLog.Println(err)
+		return false
+	}
+	s.scriptObject = data
+	_ = ifs.Remove(path)
+	return true
 }
 
 func init() {
@@ -197,6 +192,8 @@ func nox_common_checkMapFile(name string) error {
 
 func (s *Server) nox_xxx_serverParseEntireMap_4CFCE0(cf *cryptfile.CryptFile) error {
 	mapLog.Printf("server reading map sections")
+	// the map may have no script section
+	s.scriptObject = nil
 	v5a, _ := cf.ReadU32()
 	v5b, _ := cf.ReadU32()
 	nox_xxx_mapWall_426A80(v5a, v5b)
@@ -292,6 +289,10 @@ func nox_xxx_mapCliReadAllA(path string) error {
 	v9a, _ := cf.ReadU32()
 	v9b, _ := cf.ReadU32()
 	nox_xxx_mapWall_426A80(v9a, v9b)
+	if !noxflags.HasGame(noxflags.GameHost) {
+		// the map may have no script section; when hosting, it's read by the server instead
+		noxServer.scriptObject = nil
+	}
 	for {
 		sect, err := cf.ReadString8()
 		if err != nil {

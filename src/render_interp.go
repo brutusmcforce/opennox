@@ -232,13 +232,20 @@ func (r *renderInterp) presented(now time.Duration) {
 	if !r.enabled() {
 		return
 	}
-	period := time.Second / time.Duration(r.maxFPS)
+	period := r.framePeriod()
 	// Frames follow a fixed schedule, so that a frame delayed by a game tick is caught up later.
 	// Don't catch up if we are too far behind, it would only cause a burst of frames.
 	if r.nextFrame == 0 || now-r.nextFrame > 2*period {
 		r.nextFrame = now
 	}
-	r.nextFrame += period
+	// Frames presented early (e.g. while the game is paused) must not move the schedule into the future,
+	// otherwise no additional frames would be drawn until the time catches up with it.
+	r.nextFrame = min(r.nextFrame+period, now+period)
+}
+
+// framePeriod returns the minimal time between presented frames.
+func (r *renderInterp) framePeriod() time.Duration {
+	return time.Second / time.Duration(r.maxFPS)
 }
 
 type betweenTicksMode int
@@ -268,10 +275,18 @@ func (c *Client) betweenTicksMode() betweenTicksMode {
 
 // waitAndRender waits for the next game tick. If enabled, it draws additional interpolated frames while waiting.
 func (c *Client) waitAndRender(dt time.Duration) {
+	r := &c.interp
 	if dt <= 0 {
+		// The game is behind its schedule, or paused (the game time doesn't advance). Don't wait for the tick,
+		// but still respect the frame rate limit: while paused, a frame is drawn on each iteration.
+		// When the game is catching up, frames are not presented, so the schedule is in the past and we don't wait.
+		if r.enabled() {
+			if wait := r.nextFrame - platform.Ticks(); wait > 0 && wait <= r.framePeriod() {
+				c.srv.LoopSleep(wait)
+			}
+		}
 		return
 	}
-	r := &c.interp
 	deadline := platform.Ticks() + dt
 	for {
 		mode := c.betweenTicksMode()

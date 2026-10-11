@@ -41,7 +41,16 @@ var (
 	mapLog                            = log.New("map")
 	Nox_common_checkMapFile           func(name string) error
 	Nox_xxx_mapWriteSectionsMB_426E20 func(a1 unsafe.Pointer) int
+	Nox_xxx_mapGenUseBlendScript      func() bool
 )
+
+//export nox_xxx_mapGenUseBlendScript
+func nox_xxx_mapGenUseBlendScript() int {
+	if Nox_xxx_mapGenUseBlendScript == nil || !Nox_xxx_mapGenUseBlendScript() {
+		return 0
+	}
+	return 1
+}
 
 //export nox_common_checkMapFile_4CFE10
 func nox_common_checkMapFile_4CFE10(name *C.char) int {
