@@ -2334,23 +2334,26 @@ int sub_495BF0(int a1, int a2, int a3) {
 		v7 = v15;
 		v6 = v14;
 	}
-	v10 = *(unsigned char*)(a2 + 56);
-	if (v10 > 0) {
-		v11 = (uint32_t*)(a2 + 8 * v10);
-		do {
-			v11[2] = *v11;
-			v11[3] = v11[1];
-			v11 -= 2;
-			--v10;
-		} while (v10);
-	}
 	*(uint32_t*)(a1 + 12) = v6;
 	*(uint32_t*)(a1 + 16) = v7;
-	v12 = *(uint8_t*)(a2 + 56);
-	*(uint32_t*)(a2 + 8) = v6;
-	*(uint32_t*)(a2 + 12) = v7;
-	if (v12 != 5) {
-		*(uint8_t*)(a2 + 56) = v12 + 1;
+	if (nox_client_drawIsTick) {
+		// the position history is only updated on game ticks
+		v10 = *(unsigned char*)(a2 + 56);
+		if (v10 > 0) {
+			v11 = (uint32_t*)(a2 + 8 * v10);
+			do {
+				v11[2] = *v11;
+				v11[3] = v11[1];
+				v11 -= 2;
+				--v10;
+			} while (v10);
+		}
+		v12 = *(uint8_t*)(a2 + 56);
+		*(uint32_t*)(a2 + 8) = v6;
+		*(uint32_t*)(a2 + 12) = v7;
+		if (v12 != 5) {
+			*(uint8_t*)(a2 + 56) = v12 + 1;
+		}
 	}
 	nox_client_drawEnableAlpha_434560(0);
 	return 1;
@@ -2461,21 +2464,24 @@ int sub_495D00(uint32_t* a1, int a2, uint32_t* a3) {
 			++v27;
 		} while (v18);
 	}
-	v19 = *(unsigned char*)(v12 + 56);
-	if (v19 > 0) {
-		v20 = (uint32_t*)(v12 + 8 * v19);
-		do {
-			v20[2] = *v20;
-			v20[3] = v20[1];
-			v20 -= 2;
-			--v19;
-		} while (v19);
-	}
-	*(uint32_t*)(v12 + 8) = v6[3];
-	*(uint32_t*)(v12 + 12) = v6[4];
-	v21 = *(uint8_t*)(v12 + 56);
-	if (v21 != 5) {
-		*(uint8_t*)(v12 + 56) = v21 + 1;
+	if (nox_client_drawIsTick) {
+		// the position history is only updated on game ticks
+		v19 = *(unsigned char*)(v12 + 56);
+		if (v19 > 0) {
+			v20 = (uint32_t*)(v12 + 8 * v19);
+			do {
+				v20[2] = *v20;
+				v20[3] = v20[1];
+				v20 -= 2;
+				--v19;
+			} while (v19);
+		}
+		*(uint32_t*)(v12 + 8) = v6[3];
+		*(uint32_t*)(v12 + 12) = v6[4];
+		v21 = *(uint8_t*)(v12 + 56);
+		if (v21 != 5) {
+			*(uint8_t*)(v12 + 56) = v21 + 1;
+		}
 	}
 	nox_client_drawEnableAlpha_434560(0);
 	return 1;

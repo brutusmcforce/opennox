@@ -100,7 +100,9 @@ int nox_thing_pixie_draw(int* a1, nox_drawable* dr) {
 
 	v2 = nox_common_randomIntMinMax_415FF0(0, 100, "C:\\NoxPost\\src\\Client\\Draw\\Glowdraw.c", 503) < 50;
 	v3 = *(uint16_t*)(a2 + 104);
-	if (v2) {
+	if (!nox_client_drawIsTick) {
+		// don't move between the ticks
+	} else if (v2) {
 		if (v3 > 0) {
 			v4 = v3 - 1;
 			*(uint16_t*)(a2 + 104) = v4;
@@ -156,7 +158,7 @@ int nox_thing_blue_rain_spark_draw(uint32_t* a1, nox_drawable* dr) {
 	int a2 = dr;
 
 	result = sub_4B6970(a1, dr, nox_color_white_2523948, *(int*)&dword_5d4594_1313540);
-	if (result == 1 && *(uint8_t*)(a2 + 296) >= 5) {
+	if (result == 1 && *(uint8_t*)(a2 + 296) >= 5 && nox_client_drawIsTick) {
 		v3 = *getMemU32Ptr(0x5D4594, 1313688);
 		if (!*getMemU32Ptr(0x5D4594, 1313688)) {
 			v3 = nox_xxx_getTTByNameSpriteMB_44CFC0("WhiteSpark");
@@ -242,8 +244,10 @@ int nox_thing_rain_orb_draw(uint32_t* a1, nox_drawable* dr) {
 		nox_client_drawAddPoint_49F500(xLeft.field_0, xLeft.field_4);
 		nox_xxx_rasterPointRel_49F570(0, v19);
 		nox_client_drawLineFromPoints_49E4B0();
-		*(uint16_t*)(a2 + 440) = *(uint16_t*)(a2 + 104);
-		*(uint16_t*)(a2 + 104) += *(char*)(a2 + 296);
+		if (nox_client_drawIsTick) {
+			*(uint16_t*)(a2 + 440) = *(uint16_t*)(a2 + 104);
+			*(uint16_t*)(a2 + 104) += *(char*)(a2 + 296);
+		}
 		nox_client_drawSetColor_434460(*getMemIntPtr(0x5D4594, 1313592));
 		nox_xxx_drawPointMB_499B70(xLeft.field_0, xLeft.field_4, *(unsigned char*)(a2 + 442) / 3);
 		result = 1;

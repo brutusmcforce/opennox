@@ -1338,6 +1338,14 @@ func Set_nox_client_translucentFrontWalls_805844(v int) {
 func Set_nox_client_highResFrontWalls_80820(v int) {
 	C.nox_client_highResFrontWalls_80820 = C.uint(v)
 }
+func Set_nox_client_drawIsTick(v bool) {
+	if v {
+		C.nox_client_drawIsTick = 1
+	} else {
+		C.nox_client_drawIsTick = 0
+	}
+}
+
 func Set_nox_client_highResFloors_154952(v int) {
 	C.nox_client_highResFloors_154952 = C.uint(v)
 }

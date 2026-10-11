@@ -25,6 +25,7 @@ type Handler struct {
 	nox_input_seq      uint
 	nox_input_seq_prev uint
 	onQuit             []func()
+	liveMouse          bool
 }
 
 // New creates a new input handler.
@@ -66,7 +67,16 @@ func (h *Handler) SetSensitivity(v float32) {
 
 // GetMousePos returns current mouse position in canvas coordinates.
 func (h *Handler) GetMousePos() image.Point {
+	if h.liveMouse {
+		return h.m.LiveMousePos()
+	}
 	return h.m.GetMousePos()
+}
+
+// SetLiveMouse makes GetMousePos return the live mouse position (see LiveMousePos).
+// It is used when drawing frames between the game ticks.
+func (h *Handler) SetLiveMouse(v bool) {
+	h.liveMouse = v
 }
 
 // GetMouseRel returns relative mouse position in canvas coordinates.
@@ -254,4 +264,17 @@ func (h *Handler) Tick() {
 		h.nox_input_seq_prev = h.nox_input_seq
 	}
 	h.nox_input_seq++
+	h.m.markTick()
+}
+
+// Poll input events without processing them. Events will be processed on the next Tick.
+//
+// It allows tracking the mouse position more often than the game ticks (see LiveMousePos).
+func (h *Handler) Poll() {
+	h.inp.InputTick()
+}
+
+// LiveMousePos returns current mouse position in canvas coordinates, including the movement since the last Tick.
+func (h *Handler) LiveMousePos() image.Point {
+	return h.m.LiveMousePos()
 }

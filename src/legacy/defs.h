@@ -1291,4 +1291,9 @@ typedef struct timer timer;
 // See timer.go for definition
 typedef struct timerGroup timerGroup;
 
+// nox_client_drawIsTick is set when the world is drawn as a part of a game tick.
+// It's unset for additional frames drawn between the ticks (for high refresh rates),
+// which must not advance any state (particle movement, timers, spawning effects, etc).
+extern uint32_t nox_client_drawIsTick;
+
 #endif // NOX_DEFS_H

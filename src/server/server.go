@@ -270,6 +270,11 @@ func (s *Server) SetRateLimit(fps int) {
 	s.rateNext = platform.Ticks() + step
 }
 
+// RateUntil returns the time left until the next frame, according to SetRateLimit.
+func (s *Server) RateUntil() time.Duration {
+	return s.rateNext - platform.Ticks()
+}
+
 func (s *Server) RateWait() {
 	ticks := platform.Ticks()
 	dt := s.rateNext - ticks

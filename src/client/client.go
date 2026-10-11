@@ -90,10 +90,31 @@ type Client struct {
 	FrontWalls []*server.Wall
 	WallsYyy   []*server.Wall
 
+	// InWorldDraw is set while the world is being drawn.
+	InWorldDraw bool
+	// drawMoved tracks objects that are moved by their draw functions (client-side effects),
+	// as opposed to objects moved by the game logic. It maps them to the last frame when it happened.
+	drawMoved map[*Drawable]uint32
+
 	Debug struct {
 		DrawCnt       int
 		ShowSight     bool
 		showSightData [][]image.Point
+	}
+}
+
+// MovedByDraw checks if the object was moved by its draw function since a given frame.
+func (c *Client) MovedByDraw(dr *Drawable, since uint32) bool {
+	frame, ok := c.drawMoved[dr]
+	return ok && frame >= since
+}
+
+// ForgetMovedByDraw removes records about objects moved by draw functions before a given frame.
+func (c *Client) ForgetMovedByDraw(before uint32) {
+	for dr, frame := range c.drawMoved {
+		if frame < before {
+			delete(c.drawMoved, dr)
+		}
 	}
 }
 

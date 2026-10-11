@@ -55,6 +55,7 @@ type Client struct {
 	mapsend                clientMapDownload
 	guiAdv                 guiAdvOptions
 	guiFPS                 guiFPS
+	interp                 renderInterp
 	screenshots            screenshots
 	tiles                  clientTileData
 	info                   clientDrawInfo

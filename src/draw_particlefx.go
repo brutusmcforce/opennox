@@ -153,11 +153,17 @@ func (pfx *partFXes) Draw() {
 				p.drawFunc(p)
 			}
 		}
+		if !drawIsTick {
+			continue
+		}
 		if p.updateFunc != nil {
 			if !p.updateFunc(p) {
 				p.free()
 			}
 		}
+	}
+	if !drawIsTick {
+		return
 	}
 	for i := range pfx.types {
 		it := &pfx.types[i]

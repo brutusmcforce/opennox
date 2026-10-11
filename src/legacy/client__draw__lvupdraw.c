@@ -14,6 +14,9 @@ uint32_t* nox_thing_falling_sparks_draw_4B7740(int a1, int a2, nox_drawable* dr)
 	uint32_t* result; // eax
 	int2 a2a;         // [esp+10h] [ebp-8h]
 
+	if (!nox_client_drawIsTick) {
+		return 0;
+	}
 	v3 = (int2*)(a3 + 12);
 	v4 = 2;
 	do {

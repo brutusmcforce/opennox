@@ -24,6 +24,10 @@ int nox_client_screenParticleDraw_489700(void* a1p, nox_screenParticle* p) {
 	sub_4B6720(&xLeft, p->field_8, p->field_40[0], p->field_40[0]);
 	nox_client_drawSetColor_434460(p->field_12);
 	nox_xxx_drawPointMB_499B70(xLeft.field_0, xLeft.field_4, p->field_40[0] >> 1);
+	if (!nox_client_drawIsTick) {
+		// particles only move on game ticks
+		return 1;
+	}
 	char v3 = p->field_40[1];
 	p->field_20 += p->field_36;
 	if (v3) {

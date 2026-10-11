@@ -359,6 +359,10 @@ type NoxRender struct {
 	Part  renderParticles
 	pix   *noximage.Image16
 
+	// noStep is set when drawing additional frames between game ticks.
+	// Animations (fades, etc) must not advance in this case.
+	noStep bool
+
 	colors struct {
 		revTable []byte // map[Color16]byte
 	}
@@ -381,6 +385,12 @@ func (r *NoxRender) ColorIntensity(cr, cg, cb byte) byte {
 
 func (r *NoxRender) PixBufferRect() image.Rectangle {
 	return r.pix.Rect
+}
+
+// SetDrawIsTick sets if the current frame is drawn as a part of a game tick.
+// Animated effects only advance on such frames.
+func (r *NoxRender) SetDrawIsTick(v bool) {
+	r.noStep = !v
 }
 
 func (r *NoxRender) PixBuffer() *noximage.Image16 {

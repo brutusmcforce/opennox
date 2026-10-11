@@ -7,7 +7,6 @@ import (
 	"image/png"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 type screenshots struct {
@@ -24,7 +23,7 @@ func init() {
 
 func (c *Client) maybeScreenshot() {
 	select {
-	case <-time.After(time.Millisecond):
+	default:
 		return
 	case out := <-c.screenshots.req:
 		defer close(out)

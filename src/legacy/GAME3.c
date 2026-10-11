@@ -5268,11 +5268,13 @@ int sub_4B6970(uint32_t* a1, nox_drawable* dr, int a3, int a4) {
 
 	int a2 = dr;
 
-	v4 = *(uint32_t*)(a2 + 440);
-	*(uint32_t*)(a2 + 432) += v4 * *getMemIntPtr(0x587000, 192088 + 8 * *(unsigned char*)(a2 + 299));
-	v5 = v4 * *getMemIntPtr(0x587000, 192092 + 8 * *(unsigned char*)(a2 + 299)) + *(uint32_t*)(a2 + 436);
-	*(uint32_t*)(a2 + 436) = v5;
-	nox_xxx_updateSpritePosition_49AA90((uint32_t*)a2, *(uint32_t*)(a2 + 432) >> 12, v5 >> 12);
+	if (nox_client_drawIsTick) {
+		v4 = *(uint32_t*)(a2 + 440);
+		*(uint32_t*)(a2 + 432) += v4 * *getMemIntPtr(0x587000, 192088 + 8 * *(unsigned char*)(a2 + 299));
+		v5 = v4 * *getMemIntPtr(0x587000, 192092 + 8 * *(unsigned char*)(a2 + 299)) + *(uint32_t*)(a2 + 436);
+		*(uint32_t*)(a2 + 436) = v5;
+		nox_xxx_updateSpritePosition_49AA90((uint32_t*)a2, *(uint32_t*)(a2 + 432) >> 12, v5 >> 12);
+	}
 	sub_4B69F0(a2);
 	return sub_4B6880(a1, a2, a3, a4);
 }
@@ -5283,6 +5285,9 @@ short sub_4B69F0(int a1) {
 	short result; // ax
 	int v3;       // edx
 
+	if (!nox_client_drawIsTick) {
+		return *(uint16_t*)(a1 + 104);
+	}
 	v1 = *(uint8_t*)(a1 + 296);
 	*(uint16_t*)(a1 + 104) += v1;
 	result = *(uint16_t*)(a1 + 104);
@@ -5358,7 +5363,7 @@ int sub_4B6B80(int* a1, nox_drawable* dr, int a3) {
 		v19 = dword_5d4594_1313532;
 	}
 LABEL_14:
-	if (a3) {
+	if (a3 && nox_client_drawIsTick) {
 		v6 = *(unsigned short*)(v3 + 432) - *(uint32_t*)(v3 + 12);
 		v7 = *(unsigned short*)(v3 + 434) - *(uint32_t*)(v3 + 16);
 		v8 = sub_48C6B0(v6, v7);
@@ -5398,7 +5403,7 @@ LABEL_14:
 	nox_xxx_rasterPointRel_49F570(v14, v15);
 	nox_client_drawLineFromPoints_49E4B0();
 	v16 = *(uint8_t*)(v3 + 445);
-	if (!v16) {
+	if (!v16 || !nox_client_drawIsTick) {
 		return 1;
 	}
 	v17 = *(uint8_t*)(v3 + 446) - 1;

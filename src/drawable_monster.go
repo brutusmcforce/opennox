@@ -144,7 +144,7 @@ func (c *Client) drawMonsterUpdate(dr *client.Drawable) {
 	if dr.AnimInd != 8 { // IDLE
 		return
 	}
-	if c.Server.Frame()&3 != 0 {
+	if c.Server.Frame()&3 != 0 || !drawIsTick {
 		return
 	}
 	switch dr.AnimFrameSlave {

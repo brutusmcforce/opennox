@@ -73,8 +73,10 @@ int nox_thing_vortex_draw(int* a1, nox_drawable* dr) {
 		nox_client_drawSetColor_434460(*(int*)&dword_5d4594_1313816);
 	}
 	nox_client_drawLineFromPoints_49E4B0();
-	*(uint8_t*)(a2 + 448) += *(uint8_t*)(a2 + 449);
-	*(uint16_t*)(a2 + 104) += *(unsigned char*)(a2 + 451);
+	if (nox_client_drawIsTick) {
+		*(uint8_t*)(a2 + 448) += *(uint8_t*)(a2 + 449);
+		*(uint16_t*)(a2 + 104) += *(unsigned char*)(a2 + 451);
+	}
 	sub_4739E0(a1, (int2*)(a2 + 12), &a3);
 	v11 = (double)*(short*)(a2 + 104) * 0.0024999999 * 50.0;
 	v9 = nox_float2int(v11);

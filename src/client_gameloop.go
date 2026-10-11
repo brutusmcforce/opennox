@@ -163,7 +163,10 @@ func (c *Client) mainloopDrawAndPresent() {
 		return
 	}
 	c.r.DrawFade(true)
-	c.maybeScreenshot()
+	if !c.interp.renderOnly {
+		// keep screenshots consistent with the original frame timing
+		c.maybeScreenshot()
+	}
 	if present {
 		c.copyPixBuffer()
 	}

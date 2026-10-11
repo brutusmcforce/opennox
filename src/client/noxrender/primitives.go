@@ -51,8 +51,17 @@ func (r *NoxRender) DrawLineHorizontal(x1, y, x2 int, cl color.Color) {
 			pix.Pix[ind] = bc.OverAlpha(alpha, c).Make16()
 		}
 	} else {
-		for x := xmin; x <= xmax; x++ {
-			pix.SetRGBA5551(x, y, cl16)
+		if y < pix.Rect.Min.Y || y >= pix.Rect.Max.Y {
+			return
+		}
+		xmin, xmax = max(xmin, pix.Rect.Min.X), min(xmax, pix.Rect.Max.X-1)
+		if xmin > xmax {
+			return
+		}
+		off := pix.PixOffset(xmin, y)
+		row := pix.Pix[off : off+xmax-xmin+1]
+		for i := range row {
+			row[i] = uint16(cl16)
 		}
 	}
 }
@@ -423,11 +432,17 @@ func (r *NoxRender) drawRectFilledOpaque(x, y, w, h int, cl color.Color) {
 	if h <= 0 || w <= 0 {
 		return
 	}
-	c := noxcolor.ToRGBA5551Color(cl)
+	c := uint16(noxcolor.ToRGBA5551Color(cl))
 	pix := r.PixBuffer()
-	for i := 0; i < h; i++ {
-		for j := 0; j < w; j++ {
-			pix.SetRGBA5551(x+j, y+i, c)
+	rc := image.Rect(x, y, x+w, y+h).Intersect(pix.Rect)
+	if rc.Empty() {
+		return
+	}
+	for yi := rc.Min.Y; yi < rc.Max.Y; yi++ {
+		off := pix.PixOffset(rc.Min.X, yi)
+		row := pix.Pix[off : off+rc.Dx()]
+		for i := range row {
+			row[i] = c
 		}
 	}
 }

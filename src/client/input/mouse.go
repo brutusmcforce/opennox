@@ -155,6 +155,8 @@ type mouseHandler struct {
 
 	queue chan noxMouseEvent
 
+	tickRaw image.Point // raw mouse position in draw space at the last tick
+
 	onMouseWheel []func(dv int)
 }
 
@@ -284,6 +286,20 @@ func (h *mouseHandler) setMousePos(p image.Point) {
 
 func (h *mouseHandler) GetMousePos() image.Point {
 	return h.getMousePos()
+}
+
+func (h *mouseHandler) rawDrawPos() image.Point {
+	return h.win.toDrawSpace(h.pos.Point())
+}
+
+func (h *mouseHandler) markTick() {
+	h.tickRaw = h.rawDrawPos()
+}
+
+// LiveMousePos returns the mouse position, including the movement since the last tick.
+func (h *mouseHandler) LiveMousePos() image.Point {
+	p := h.getMousePos().Add(h.rawDrawPos().Sub(h.tickRaw))
+	return clamp(h.bounds, p)
 }
 
 func (h *mouseHandler) GetMouseRel() image.Point {

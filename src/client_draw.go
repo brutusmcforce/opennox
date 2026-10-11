@@ -186,22 +186,21 @@ func (c *Client) nox_xxx_clientDrawAll_436100_draw() {
 		}
 	}
 	if noxflags.HasEngine(noxflags.EngineNoRendering) {
+		c.interpReset()
 		legacy.Nox_xxx_clientDrawAll_436100_draw_A()
 	} else if c.ClientPlayerUnit() != nil && nox_client_isConnected() {
-		c.nox_xxx_drawAllMB_475810_draw(vp)
+		c.interpOnTick(vp)
+		c.drawWorldInterp(vp)
 		c.endWorldDraw()
 		c.worldDrawn()
 		legacy.Nox_xxx_drawMinimapAndLines_4738E0()
 	} else {
+		c.interpReset()
 		c.r.ClearScreen(color.Black)
 	}
 	if uiScaleState.inWorld {
 		c.endWorldDraw()
 		c.worldDrawn()
-	}
-	c.DrawPerfmon(noxPerfmon)
-	if legacy.Get_dword_5d4594_811904() != 0 {
-		legacy.Sub_436F50()
 	}
 	if noxflags.HasGame(noxflags.GameFlag4) {
 		v13 := platformTicks() - memmap.Uint64(0x5D4594, 811908)
@@ -209,14 +208,23 @@ func (c *Client) nox_xxx_clientDrawAll_436100_draw() {
 			noxflags.UnsetGame(noxflags.GameFlag4)
 		}
 	}
-	if noxflags.HasGame(noxflags.GameFlag4) {
-		legacy.Nox_xxx_clientDrawAll_436100_draw_B()
-	}
+	c.drawWorldOverlays()
 	if memmap.Uint32(0x587000, 85744) != 0 {
 		wsz := videoWorldSize()
 		legacy.Sub_430B50(0, 0, wsz.X-1, wsz.Y-1)
 		c.r.ClearScreen(color.Black)
 		*memmap.PtrUint32(0x587000, 85744) = 0
+	}
+}
+
+// drawWorldOverlays draws additional information on top of the world.
+func (c *Client) drawWorldOverlays() {
+	c.DrawPerfmon(noxPerfmon)
+	if legacy.Get_dword_5d4594_811904() != 0 {
+		legacy.Sub_436F50()
+	}
+	if noxflags.HasGame(noxflags.GameFlag4) {
+		legacy.Nox_xxx_clientDrawAll_436100_draw_B()
 	}
 }
 
@@ -257,6 +265,10 @@ func (c *Client) sub_468F80(vp *noxrender.Viewport) {
 }
 
 func (c *Client) nox_xxx_drawAllMB_475810_draw(vp *noxrender.Viewport) {
+	c.InWorldDraw = true
+	defer func() {
+		c.InWorldDraw = false
+	}()
 	r := c.r
 	c.nox_xxx_drawAllMB_475810_draw_A(vp)
 	if vp.Jiggle12 < 0 {
@@ -1310,13 +1322,16 @@ func (c *Client) noxTileDrawTextured(a1 image.Point, a2 int, a3, sz int, dst []u
 		_ = dst[csz:]
 		_ = buf[bi:]
 		for i := 0; i < csz; i++ {
-			cl := buf[bi%len(buf)]
+			cl := buf[bi]
 			r := uint16((uint32(c1.R)*uint32((cl>>7)&0xF8))>>16) & 0xF8
 			g := uint16((uint32(c1.G)*uint32((cl>>2)&0xF8))>>16) & 0xF8
 			b := uint16((uint32(c1.B)*uint32((cl>>0)&0x1F))>>13) & 0xF8
 			dst[i] = (r << 7) | (g << 2) | (b >> 3)
 
-			bi++
+			// the buffer is circular; avoid modulo for each pixel
+			if bi++; bi == len(buf) {
+				bi = 0
+			}
 			c1.R += lr
 			c1.G += lg
 			c1.B += lb

@@ -87,12 +87,10 @@ func (c *Client) mainloopFrameLimit() {
 		if noxflags.HasEngine(noxflags.EnginePause) {
 			return
 		}
-		if dt := nox_ticks_getNext(); dt > 0 {
-			c.srv.LoopSleep(dt)
-		}
+		c.waitAndRender(nox_ticks_getNext())
 		return
 	}
-	noxServer.RateWait()
+	c.waitAndRender(noxServer.RateUntil())
 }
 
 func mainloopStop() {

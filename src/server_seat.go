@@ -4,6 +4,7 @@ package opennox
 
 import (
 	"image"
+	"time"
 
 	"github.com/opennox/libs/log"
 
@@ -33,6 +34,12 @@ func (c *Client) gameResetVideoMode(inMenu, force bool) error {
 func (c *Client) clientDraw() bool { return true }
 
 func (c *Client) drawAndPresent() {}
+
+type renderInterp struct{}
+
+func (c *Client) waitAndRender(dt time.Duration) {
+	c.srv.LoopSleep(dt)
+}
 
 func (c *Client) map_download_start() {}
 

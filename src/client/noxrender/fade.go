@@ -68,6 +68,9 @@ func (r *NoxRender) DrawFade(menu bool) int {
 			continue
 		}
 		f.drawFunc(f)
+		if r.noStep {
+			continue
+		}
 		if f.remaining > 0 {
 			f.remaining--
 			continue
@@ -133,7 +136,7 @@ func (r *NoxRender) FadeInCinema(perc float32, t int, cl color.Color) bool {
 		dv  = v / float32(t)
 	)
 	f.drawFunc = func(f *fade) {
-		if f.remaining != 0 {
+		if f.remaining != 0 && !r.noStep {
 			cur += dv
 		}
 		r.drawFadeCinema(int(cur), cl)
@@ -157,7 +160,9 @@ func (r *NoxRender) FadeOutCinema(perc float32, t int, cl color.Color) bool {
 			r.StopFade(FadeInCinemaKey)
 			flag = true
 		}
-		cur -= dv
+		if !r.noStep {
+			cur -= dv
+		}
 		r.drawFadeCinema(int(cur), cl)
 	}
 	return true
@@ -208,7 +213,9 @@ func (r *NoxRender) FadeInScreen(t int, menu bool, done func()) bool {
 		c := int(cur)
 		pix := r.PixBuffer()
 		r.drawFadeScreen(pix.Rect, c)
-		cur += dv
+		if !r.noStep {
+			cur += dv
+		}
 	}
 	return true
 }
@@ -232,7 +239,9 @@ func (r *NoxRender) FadeOutScreen(t int, menu bool, done func()) int {
 		c := int(cur)
 		pix := r.PixBuffer()
 		r.drawFadeScreen(pix.Rect, c)
-		cur -= dv
+		if !r.noStep {
+			cur -= dv
+		}
 	}
 	r.StopFade(FadeClearScreenKey)
 	return 1

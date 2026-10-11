@@ -17,7 +17,7 @@ int nox_thing_blue_rain_draw(int a1, nox_drawable* dr) {
 
 	int a2 = dr;
 
-	if (nox_common_gameFlags_check_40A5C0(0x200000)) {
+	if (nox_common_gameFlags_check_40A5C0(0x200000) || !nox_client_drawIsTick) {
 		return 1;
 	}
 	if (!*getMemU32Ptr(0x5D4594, 1313716)) {

@@ -79,6 +79,12 @@ func (c *Client) Nox_xxx_updateSpritePosition_49AA90(dr *Drawable, x, y int) {
 	dr.PosVec.Y = y
 	dr.Field_10 = dr.Field_5
 	dr.Field_5 = c.Server.Frame()
+	if c.InWorldDraw {
+		if c.drawMoved == nil {
+			c.drawMoved = make(map[*Drawable]uint32)
+		}
+		c.drawMoved[dr] = dr.Field_5
+	}
 	c.Objs.AddIndex2D(dr)
 }
 

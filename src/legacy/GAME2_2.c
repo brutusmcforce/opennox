@@ -105,6 +105,7 @@ int (*func_587000_154944)(int, int) = nox_xxx_drawTexEdgesProbably_481900;
 
 void* nox_client_spriteUnderCursorXxx_1096644 = 0;
 uint32_t nox_client_highResFloors_154952 = 1;
+uint32_t nox_client_drawIsTick = 1;
 void* nox_video_tileBuf_ptr_3798796 = 0;
 void* nox_video_tileBuf_end_3798844 = 0;
 
