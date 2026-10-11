@@ -163,6 +163,7 @@ func (c *Client) nox_xxx_clientDrawAll_436100_draw() {
 	noxflags.UnsetEngine(noxflags.EnginePause)
 	*memmap.PtrUint64(0x5D4594, 814532) = v0
 	*memmap.PtrUint32(0x5D4594, 811916) = c.srv.Frame()
+	c.updateZoom()
 	c.beginWorldDraw()
 	vp := c.Viewport()
 	if memmap.Uint32(0x587000, 85744) != 0 {

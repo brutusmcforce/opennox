@@ -41,6 +41,8 @@ type gpuBackend interface {
 	Composite(dst, src *noximage.Image16)
 	// Floor draws floor tiles in given screen spans.
 	Floor(p *noxrender.FloorParams, spans []image.Rectangle)
+	// Zoom replaces the content of a render target with a part of it, scaled to fill the whole target.
+	Zoom(img *noximage.Image16, src image.Rectangle)
 	Close()
 }
 
@@ -75,6 +77,7 @@ type Client struct {
 	gpuFloor               noxrender.FloorParams
 	gpuFloorSpans          []image.Rectangle
 	sel                    selCircle
+	zoom                   worldZoom
 	screenshots            screenshots
 	tiles                  clientTileData
 	info                   clientDrawInfo

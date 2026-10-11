@@ -71,8 +71,8 @@ func videoWorldSize() image.Point {
 	return videoGetWindowSize()
 }
 
-// uiToWorldScreen converts screen position from GUI coordinates to world buffer coordinates.
-func uiToWorldScreen(p image.Point) image.Point {
+// uiToWindow converts screen position from GUI coordinates to the full resolution screen coordinates.
+func uiToWindow(p image.Point) image.Point {
 	w := uiScaleState.world
 	if w == nil || noxPixBuffer.img == nil {
 		return p
@@ -91,6 +91,11 @@ func uiToWorldScreen(p image.Point) image.Point {
 	}
 }
 
+// uiToWorldScreen converts screen position from GUI coordinates to world buffer coordinates.
+func uiToWorldScreen(p image.Point) image.Point {
+	return noxClient.windowToWorldScreen(uiToWindow(p))
+}
+
 func init() {
 	legacy.GetDrawViewport = func() *noxrender.Viewport {
 		return noxClient.drawViewport()
@@ -105,9 +110,9 @@ func drawingUI() bool {
 	return uiScaleState.world != nil && !uiScaleState.inWorld && noxPixBuffer.img != nil
 }
 
-// worldToUIScreen converts screen position from world buffer coordinates to GUI coordinates.
+// windowToUI converts screen position from the full resolution screen coordinates to GUI coordinates.
 // It must only be called when drawingUI returns true.
-func worldToUIScreen(p image.Point) image.Point {
+func windowToUI(p image.Point) image.Point {
 	usz, wsz := noxPixBuffer.img.Size(), uiScaleState.world.Size()
 	if wsz.X <= 0 || wsz.Y <= 0 {
 		return p
@@ -119,7 +124,7 @@ func worldToUIScreen(p image.Point) image.Point {
 func (c *Client) worldToDrawScreen(p image.Point) image.Point {
 	p = c.Viewport().ToScreenPos(p)
 	if drawingUI() {
-		p = worldToUIScreen(p)
+		p = windowToUI(c.worldScreenToWindow(p))
 	}
 	return p
 }
@@ -140,8 +145,8 @@ func (c *Client) drawViewport() *noxrender.Viewport {
 		uiViewport, _ = alloc.New(noxrender.Viewport{})
 	}
 	*uiViewport = *vp
-	uiViewport.Screen = image.Rectangle{Min: worldToUIScreen(vp.Screen.Min), Max: worldToUIScreen(vp.Screen.Max)}
-	uiViewport.Size = worldToUIScreen(vp.Size)
+	uiViewport.Screen = image.Rectangle{Min: windowToUI(vp.Screen.Min), Max: windowToUI(vp.Screen.Max)}
+	uiViewport.Size = windowToUI(vp.Size)
 	return uiViewport
 }
 
@@ -173,6 +178,24 @@ func videoInitWorldBuffer(ui image.Point) {
 		return
 	}
 	videoLog.Printf("initializing world buffer: %v (ui: %v)", sz, ui)
+	videoAllocWorldBuffer(sz)
+}
+
+// videoNeedWorldBuffer creates or frees the world buffer when UI scaling is disabled.
+// In this case, the world buffer has the same size as the GUI buffer, and it is only needed for zooming.
+func videoNeedWorldBuffer(need bool) {
+	st := &uiScaleState
+	if st.worldSize != (image.Point{}) || st.inWorld || noxPixBuffer.img == nil || need == (st.world != nil) {
+		return
+	}
+	if need {
+		videoAllocWorldBuffer(noxPixBuffer.img.Size())
+	} else {
+		videoFreeWorldBuffer()
+	}
+}
+
+func videoAllocWorldBuffer(sz image.Point) {
 	data, free := alloc.Make([]uint16{}, sz.X*sz.Y)
 	img := noximage.NewImage16WithData(data, sz)
 	rows, freeRows := alloc.Make([]*uint16{}, sz.Y)
@@ -262,6 +285,7 @@ func (c *Client) worldDrawn() {
 		return
 	}
 	st.hasSnap = true
+	c.applyZoom(st.world)
 	if c.gpu != nil {
 		// GUI is drawn into a separate transparent target, so we don't need the world under it
 		c.gpu.ClearTransparent()
@@ -303,7 +327,7 @@ func (c *Client) drawDeferredCursor() {
 		return
 	}
 	st.hasCursor = false
-	c.nox_video_cursorDrawImpl_477A30(uiToWorldScreen(st.cursorPos))
+	c.nox_video_cursorDrawImpl_477A30(uiToWindow(st.cursorPos))
 }
 
 // presentScaled draws final full-screen effects on the world buffer and presents it.

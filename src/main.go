@@ -363,7 +363,7 @@ func runArgs(args []string, loopFunc func() error) (gerr error) {
 	if err := nox_common_scanAllMaps_4D07F0(noxServer.Log); err != nil {
 		return fmt.Errorf("cannot find maps: %w", err)
 	}
-	keyBinding = keybind.New(noxClient.Strings())
+	keyBinding = newBindEvents(keybind.New(noxClient.Strings()))
 	nox_xxx_mapSetDataDefault_416500()
 	if err := nox_common_readcfgfile("nox.cfg", false); err != nil {
 		return fmt.Errorf("failed to load config file: %w", err)

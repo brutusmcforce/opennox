@@ -94,12 +94,14 @@ func nox_xxx_bindevent_bindNameByTitle_42EA40(title string) *keybind.BindEvent {
 func sub_4C3CB0() {
 	noxClient.ctrl.Reset()
 	nox_common_readcfgfile("default.cfg", true)
+	noxClient.ctrl.applyDefaultExtBindings()
 	sub_4C3B70()
 }
 
 func sub_4CBF40() {
 	noxClient.ctrl.Reset()
 	nox_common_readcfgfile("default.cfg", true)
+	noxClient.ctrl.applyDefaultExtBindings()
 	sub_4CBBF0()
 }
 

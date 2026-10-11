@@ -272,6 +272,12 @@ func (c *CtrlEventHandler) nox_xxx_clientControl_42D6B0_A(a4 *CtrlEventBinding) 
 				c.nox_ctrlevent_action_42E780(player.CCCastSpell5, 0)
 			case keybind.EventSpellSet1, keybind.EventSpellSet2, keybind.EventSpellSet3, keybind.EventSpellSet4, keybind.EventSpellSet5:
 				legacy.Nox_xxx_clientUpdateButtonRow_45E110(int(k - keybind.EventSpellSet1))
+			case eventZoomIn, eventZoomOut:
+				// limit the zoom speed when the key is held
+				if inputKeyCheckTimeout(k, fps/10) {
+					inputSetKeyTimeout(k)
+					noxClient.zoomStep(k == eventZoomIn)
+				}
 			case keybind.EventMapZoomIn:
 				c.nox_ctrlevent_action_42E670(player.CCMapZoomIn, 0)
 			case keybind.EventMapZoomOut:

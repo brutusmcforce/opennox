@@ -30,13 +30,17 @@ func init() {
 
 // configUserDir returns the default directory for the config file.
 //
-// On Linux it's ~/.config/opennox (or $XDG_CONFIG_HOME/opennox).
+// On Linux it's ~/.config/opennox (or $XDG_CONFIG_HOME/opennox), on Windows it's %AppData%\OpenNox.
 func configUserDir() string {
 	if sdir := env.AppUserDir(); sdir != "" {
 		return sdir
 	}
 	if runtime.GOOS == "windows" {
-		return ""
+		dir, err := os.UserConfigDir()
+		if err != nil {
+			return ""
+		}
+		return filepath.Join(dir, "OpenNox")
 	}
 	if dir := os.Getenv("XDG_CONFIG_HOME"); dir != "" {
 		return filepath.Join(dir, "opennox")

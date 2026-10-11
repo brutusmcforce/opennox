@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"unsafe"
@@ -34,6 +35,24 @@ func nox_common_writecfgfile(str string) {
 	}
 }
 
+const legacyConfigName = "nox.cfg"
+
+// legacyConfigPath returns the path of a legacy config file with a given name.
+//
+// The game keeps nox.cfg in the game directory. OpenNox keeps it in the config directory instead,
+// so that the game files stay unmodified. If it doesn't exist yet,
+// it's created from default.cfg with OpenNox changes to default key bindings (see nox_common_readcfgfile).
+func legacyConfigPath(name string) string {
+	if !strings.EqualFold(name, legacyConfigName) {
+		return name
+	}
+	dir := configUserDir()
+	if dir == "" {
+		return name
+	}
+	return filepath.Join(dir, legacyConfigName)
+}
+
 func noxConfigRead(path string, skip bool) error {
 	c := noxClient
 	configLog.Printf("reading legacy: %q", path)
@@ -55,21 +74,23 @@ func nox_common_readcfgfile(path string, skip bool) error {
 		c.ctrl.Reset()
 		return parseLegacyConfig(strings.NewReader(e2eInputConf), skip)
 	}
-	err := noxConfigRead(path, skip)
+	upath := legacyConfigPath(path)
+	err := noxConfigRead(upath, skip)
 	if err == nil {
 		return nil
 	} else if !os.IsNotExist(err) {
 		return err
 	}
-	// not found: read default and write config back
 	orig := err
+	// not found: read defaults and write the config back
 	err = noxConfigRead("default.cfg", skip)
 	if os.IsNotExist(err) {
 		return orig
 	} else if err != nil {
 		return err
 	}
-	writeConfigLegacy("nox.cfg")
+	c.ctrl.applyDefaultExtBindings()
+	writeConfigLegacy(legacyConfigName)
 	return nil
 }
 
@@ -660,10 +681,16 @@ func writeConfigLegacy(path string) error {
 	if env.IsE2E() {
 		return nil
 	}
+	path = legacyConfigPath(path)
 	configLog.Printf("writing legacy: %q", path)
 	cfile := &cfg.File{Sections: make([]cfg.Section, 2)}
 	writeConfigLegacyMain(&cfile.Sections[0])
 	writeConfigHotkeys(&cfile.Sections[1])
+	if dir := filepath.Dir(path); dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return err
+		}
+	}
 	f, err := ifs.Create(path)
 	if err != nil {
 		return err

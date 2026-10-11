@@ -1,13 +1,11 @@
 package opennox
 
 import (
-	"github.com/opennox/libs/client/keybind"
-
 	"github.com/opennox/opennox/v1/common/memmap"
 )
 
 var (
-	keyBinding *keybind.Binding
+	keyBinding *bindEvents
 )
 
 var noxMouseSelectOpt = []string{

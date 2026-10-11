@@ -93,6 +93,7 @@ type Renderer struct {
 	glyphs  map[noxrender.GlyphKey]texRegion
 
 	targets map[*noximage.Image16]*target
+	scratch *target // temporary target for Zoom
 	cur     *target
 	frame   uint64
 
@@ -169,6 +170,10 @@ func (r *Renderer) Close() {
 		t.free()
 	}
 	r.targets = nil
+	if r.scratch != nil {
+		r.scratch.free()
+		r.scratch = nil
+	}
 	r.atlas.free()
 	r.floor.free()
 	gl.DeleteBuffers(1, &r.vbo)
@@ -202,7 +207,13 @@ func (r *Renderer) targetFor(img *noximage.Image16) *target {
 	if t != nil {
 		t.free()
 	}
-	t = &target{size: sz}
+	t = r.newTarget(sz)
+	r.targets[img] = t
+	return t
+}
+
+func (r *Renderer) newTarget(sz image.Point) *target {
+	t := &target{size: sz}
 	gl.GenTextures(1, &t.tex)
 	gl.BindTexture(gl.TEXTURE_2D, t.tex)
 	setTexParams(gl.NEAREST)
@@ -216,7 +227,6 @@ func (r *Renderer) targetFor(img *noximage.Image16) *target {
 	gl.ClearColor(0, 0, 0, 1)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-	r.targets[img] = t
 	r.log.Info("created render target", "size", sz)
 	return t
 }
@@ -489,6 +499,33 @@ func (r *Renderer) Composite(dst, src *noximage.Image16) {
 	gl.BlendEquation(gl.FUNC_ADD)
 	gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 	r.drawTexture(ts.tex, r.Filtering, 1, false, 1)
+	r.restore()
+}
+
+// Zoom replaces the content of the render target associated with an image with a part of it
+// (in top-left origin coordinates), scaled to fill the whole target.
+func (r *Renderer) Zoom(img *noximage.Image16, src image.Rectangle) {
+	r.flush()
+	t := r.targetFor(img)
+	if r.scratch == nil || r.scratch.size != t.size {
+		if r.scratch != nil {
+			r.scratch.free()
+		}
+		r.scratch = r.newTarget(t.size)
+	}
+	w, h := int32(t.size.X), int32(t.size.Y)
+	gl.Disable(gl.SCISSOR_TEST)
+	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, t.fbo)
+	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, r.scratch.fbo)
+	gl.BlitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST)
+	filter := uint32(gl.NEAREST)
+	if r.Filtering {
+		filter = gl.LINEAR
+	}
+	// render targets have the bottom-left origin
+	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, r.scratch.fbo)
+	gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, t.fbo)
+	gl.BlitFramebuffer(int32(src.Min.X), h-int32(src.Max.Y), int32(src.Max.X), h-int32(src.Min.Y), 0, 0, w, h, gl.COLOR_BUFFER_BIT, filter)
 	r.restore()
 }
 

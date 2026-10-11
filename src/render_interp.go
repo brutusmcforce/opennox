@@ -327,6 +327,7 @@ func (c *Client) drawBetweenTicks(mode betweenTicksMode) {
 
 // drawWorldFrame draws the game world for an additional frame. See nox_xxx_clientDrawAll_436100_draw.
 func (c *Client) drawWorldFrame() {
+	c.updateZoom()
 	c.beginWorldDraw()
 	vp := c.Viewport()
 	legacy.Sub_430B50(vp.Screen.Min.X, vp.Screen.Min.Y, vp.Screen.Max.X, vp.Screen.Max.Y)
