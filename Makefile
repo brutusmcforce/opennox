@@ -7,11 +7,11 @@ build-server:
 
 build-client:
 	cd ./src; \
-	go run ./internal/noxbuild client client-hd
+	go run ./internal/noxbuild client
 
 build-client-win:
 	cd ./src; \
-	go run ./internal/noxbuild --os=windows client client-hd
+	go run ./internal/noxbuild --os=windows client
 
 build-server-docker:
 	GIT_SHA=$$(git rev-parse --short HEAD); \
@@ -29,6 +29,5 @@ build-client-docker:
 	docker build -t ghcr.io/opennox/opennox-client:dev -f ./docker/Dockerfile_client --build-arg GIT_SHA=$$GIT_SHA  --build-arg GIT_TAG=$$GIT_TAG ./src
 	mkdir -p ./build
 	ID=$$(docker create ghcr.io/opennox/opennox-client:dev) && \
-	docker cp $$ID:/home/runner/opennox/opennox ./build/ && \
 	docker cp $$ID:/home/runner/opennox/opennox-hd ./build/ && \
 	docker rm -f $$ID

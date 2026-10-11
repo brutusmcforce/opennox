@@ -64,8 +64,29 @@ func sub_4C5630(a1 int, a2 int, a3 int) int {
 	return GetClient().Sub4C5630(a1, a2, a3)
 }
 
+// GetDrawViewport returns the viewport for the current drawing pass. It may differ from the client viewport
+// when the GUI is drawn at a different resolution than the world (UI scaling).
+var GetDrawViewport func() *noxrender.Viewport
+
+// WorldToDrawScreen converts world position to a screen position in the coordinates of the current drawing pass.
+var WorldToDrawScreen func(p image.Point) image.Point
+
+//export nox_client_worldToDrawScreen
+func nox_client_worldToDrawScreen(x, y C.int, sx, sy *C.int) {
+	p := image.Pt(int(x), int(y))
+	if WorldToDrawScreen != nil {
+		p = WorldToDrawScreen(p)
+	} else {
+		p = GetClient().Viewport().ToScreenPos(p)
+	}
+	*sx, *sy = C.int(p.X), C.int(p.Y)
+}
+
 //export nox_draw_getViewport_437250
 func nox_draw_getViewport_437250() *nox_draw_viewport_t {
+	if GetDrawViewport != nil {
+		return (*nox_draw_viewport_t)(GetDrawViewport().C())
+	}
 	return (*nox_draw_viewport_t)(GetClient().Viewport().C())
 }
 
@@ -380,6 +401,25 @@ func nox_video_drawCircle_4B0B90(a1, a2, a3 int) {
 	GetClient().R2().DrawCircle(a1, a2, a3, GetClient().R2().Data().Color2())
 }
 
+// Nox_client_gpu_edgeDraw draws a lit wall sprite on the GPU. It returns false if GPU rendering is disabled.
+var Nox_client_gpu_edgeDraw func(img *noxrender.Image, pos image.Point, left, right [3]int, clip image.Rectangle, cut int) bool
+
+//export nox_client_gpu_edgeDraw
+func nox_client_gpu_edgeDraw(img *nox_video_bag_image_t, x, y C.int, a4, a5 *C.int, x0, y0, x1, y1, cut C.int) C.int {
+	if Nox_client_gpu_edgeDraw == nil {
+		return 0
+	}
+	l := unsafe.Slice(a4, 3)
+	r := unsafe.Slice(a5, 3)
+	ok := Nox_client_gpu_edgeDraw(asImage(img), image.Pt(int(x), int(y)),
+		[3]int{int(l[0]), int(l[1]), int(l[2])}, [3]int{int(r[0]), int(r[1]), int(r[2])},
+		image.Rect(int(x0), int(y0), int(x1), int(y1)), int(cut))
+	if ok {
+		return 1
+	}
+	return 0
+}
+
 //export nox_client_drawImageAt_47D2C0
 func nox_client_drawImageAt_47D2C0(img *nox_video_bag_image_t, x, y int) {
 	GetClient().R2().DrawImageAt(asImage(img), image.Point{X: x, Y: y})
@@ -482,7 +522,7 @@ func setRect(cr *C.nox_rect, r image.Rectangle) {
 }
 
 func Sub_437180() {
-	C.sub_48D990((*nox_draw_viewport_t)(GetClient().Viewport().C()))
+	C.sub_48D990(nox_draw_getViewport_437250())
 }
 
 func Sub_476AE0(vp *noxrender.Viewport, dr *client.Drawable) {

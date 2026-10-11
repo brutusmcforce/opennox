@@ -22,4 +22,4 @@ RUN go mod download
 
 ADD . .
 
-RUN go run ./internal/noxbuild client client-hd && ./opennox -h && ./opennox-hd -h
+RUN go run ./internal/noxbuild client && ./opennox-hd -h

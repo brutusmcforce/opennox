@@ -255,6 +255,12 @@ func (r *NoxRender) drawFadeScreen(rc image.Rectangle, bc int) {
 			return
 		}
 	}
+	if r.gpu != nil {
+		if bc > 0 {
+			r.gpu.Subtract(rc, uint8(min(bc, 255)), image.Rectangle{})
+		}
+		return
+	}
 	pix := r.PixBuffer()
 	for y := rc.Min.Y; y < rc.Max.Y; y++ {
 		for x := rc.Min.X; x < rc.Max.X; x++ {

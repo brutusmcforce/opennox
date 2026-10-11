@@ -84,7 +84,7 @@ func get_nox_client_texturedFloors_154956() bool {
 }
 
 func sub_437260() {
-	vp := noxClient.Viewport()
+	vp := noxClient.drawViewport()
 	noxClient.r.setClipRects(vp.Screen.Min, vp.Size)
 }
 
@@ -430,7 +430,7 @@ func (c *Client) nox_xxx_initSight_485F80() {
 	v1 := 0
 	v2 := 1
 	for i := common.GridStep; i > 0; i-- {
-		*memmap.PtrUint32(0x973CE0, 0+4*uintptr(v1)) = uint32(v0)
+		*memmap.PtrUint32(0x973CE0, +4*uintptr(v1)) = uint32(v0)
 		*memmap.PtrUint32(0x973CE0, 192+4*uintptr(v1)) = uint32(i)
 		*memmap.PtrUint32(0x973CE0, 384+4*uintptr(v1)) = uint32(v2)
 		v0 += v2
@@ -442,7 +442,7 @@ func (c *Client) nox_xxx_initSight_485F80() {
 		v5 := v1 - 22
 		v6 := 4 * v1
 		for v7 := 2*common.GridStep - v1; v7 != 0; v7-- {
-			*memmap.PtrUint32(0x973CE0, 0+uintptr(v6)) = uint32(v0)
+			*memmap.PtrUint32(0x973CE0, +uintptr(v6)) = uint32(v0)
 			*memmap.PtrUint32(0x973CE0, 192+uintptr(v6)) = uint32(v5)
 			*memmap.PtrUint32(0x973CE0, 384+uintptr(v6)) = uint32(v4)
 			v0 += v4

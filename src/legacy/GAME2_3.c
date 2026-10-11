@@ -888,8 +888,7 @@ void sub_48DCF0(uint32_t* a1) {
 			}
 			v10 = *(uint16_t*)(v2 + 646);
 			v11 = (uint32_t*)(v2 + 672);
-			*(uint32_t*)(v2 + 648) = *v3 + *(unsigned short*)(v2 + 644) - v3[4];
-			*(uint32_t*)(v2 + 652) = v3[1] + v10 - v3[5];
+			nox_client_worldToDrawScreen(*(unsigned short*)(v2 + 644), v10, (int*)(v2 + 648), (int*)(v2 + 652));
 			nox_xxx_drawGetStringSize_43F840(0, (unsigned short*)v2, (int*)(v2 + 672), (uint32_t*)(v2 + 676), 128);
 			if (*(uint32_t*)(v2 + 672) > 128) {
 				*v11 = 128;

@@ -75,11 +75,7 @@ func init() {
 			if noxflags.HasEngine(noxflags.EngineNoRendering) {
 				players--
 			}
-			subVer := ""
-			if noxHighRes {
-				subVer = " HD"
-			}
-			c.Printf(console.ColorRed, "OpenNox%s %s", subVer, version.ClientVersion())
+			c.Printf(console.ColorRed, "OpenNox HD %s", version.ClientVersion())
 			if noxflags.HasGame(noxflags.GameOnline) {
 				sname := s.getServerName()
 				str := c.Strings().GetStringInFile("Name", "parsecmd.c")
@@ -457,7 +453,7 @@ func (v xwisInfoShort) GameInfo() discover.GameInfo {
 			Res: lobby.Resolution{
 				Width:   v.Res.X,
 				Height:  v.Res.Y,
-				HighRes: noxHighRes,
+				HighRes: true,
 			},
 			Mode: gameFlagsToMode(v.Flags),
 			Vers: version.Version(),
@@ -1351,13 +1347,13 @@ func (s *Server) nox_xxx_mapExitAndCheckNext_4D1860_server() error {
 }
 
 func sub_4D2230() {
-	if noxflags.HasGame(0xC000) {
+	if noxflags.HasGame(noxflags.GameFlag15 | noxflags.GameFlag16) {
 		if legacy.Nox_xxx_servGamedataGet_40A020(uint16(noxflags.GetGame())) == 0 {
 			if legacy.Sub_40A180(noxflags.GetGame()) == 0 {
 				legacy.Sub_409FB0_settings(uint16(noxflags.GetGame()), 0xF)
 			}
 		}
-	} else if noxflags.HasGame(1024) && legacy.Nox_xxx_servGamedataGet_40A020(1024) == 0 {
+	} else if noxflags.HasGame(noxflags.GameModeElimination) && legacy.Nox_xxx_servGamedataGet_40A020(1024) == 0 {
 		legacy.Sub_409FB0_settings(1024, 0xF)
 	}
 }

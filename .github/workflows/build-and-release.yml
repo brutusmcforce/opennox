@@ -46,10 +46,8 @@ jobs:
         with:
           name: opennox-win
           path: |
-            build/opennox.exe
             build/opennox-hd.exe
-            build/opennox-debug.exe
-            build/opennox-debug-hd.exe
+            build/opennox-hd-debug.exe
             build/opennox-server.exe
             build/*.dll
           if-no-files-found: error
@@ -85,10 +83,8 @@ jobs:
         with:
           name: opennox-win7
           path: |
-            build/opennox.exe
             build/opennox-hd.exe
-            build/opennox-debug.exe
-            build/opennox-debug-hd.exe
+            build/opennox-hd-debug.exe
             build/opennox-server.exe
             build/*.dll
           if-no-files-found: error
@@ -121,7 +117,6 @@ jobs:
         with:
           name: opennox-linux
           path: |
-            build/opennox
             build/opennox-hd
             build/opennox-server
           if-no-files-found: error

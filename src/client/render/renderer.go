@@ -44,6 +44,19 @@ type Renderer struct {
 	onResize    []func(view image.Rectangle)
 	buf         *noximage.Image16
 	prev        *noximage.Image16
+
+	presentFunc PresentFunc
+	last        *noximage.Image16
+}
+
+// PresentFunc draws a render target associated with a given image to the screen.
+// View is the area of the screen (top-left origin) and win is the screen size.
+type PresentFunc func(img *noximage.Image16, view image.Rectangle, win image.Point)
+
+// SetPresentFunc sets a custom function for presenting frames (e.g. a GPU renderer).
+// When set, the image content is not uploaded to the screen; only its size is used.
+func (r *Renderer) SetPresentFunc(fnc PresentFunc) {
+	r.presentFunc = fnc
 }
 
 // Ticks returns the number of present ticks since the last Reset or Init.
@@ -79,6 +92,10 @@ func (r *Renderer) CopyBuffer(img *noximage.Image16) {
 }
 
 func (r *Renderer) present(img *noximage.Image16) {
+	if r.presentFunc != nil {
+		r.presentCustom(img)
+		return
+	}
 	sz := img.Size()
 	view := r.setViewport(float32(sz.X) / float32(sz.Y))
 	if r.view != view {
@@ -106,6 +123,27 @@ func (r *Renderer) present(img *noximage.Image16) {
 	}
 	r.sc.Clear()
 	r.backbuf.Draw(view)
+	r.sc.Present()
+	atomic.AddUint32(&r.ticks, 1)
+}
+
+func (r *Renderer) presentCustom(img *noximage.Image16) {
+	if img == nil {
+		img = r.last
+	}
+	r.last = img
+	var view image.Rectangle
+	if img != nil {
+		sz := img.Size()
+		view = r.setViewport(float32(sz.X) / float32(sz.Y))
+		if r.view != view {
+			r.view = view
+			for _, fnc := range r.onResize {
+				fnc(view)
+			}
+		}
+	}
+	r.presentFunc(img, view, r.sc.ScreenSize())
 	r.sc.Present()
 	atomic.AddUint32(&r.ticks, 1)
 }

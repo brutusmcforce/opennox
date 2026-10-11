@@ -358,6 +358,7 @@ type NoxRender struct {
 	Fonts RenderFonts
 	Part  renderParticles
 	pix   *noximage.Image16
+	gpu   GPU
 
 	// noStep is set when drawing additional frames between game ticks.
 	// Animations (fades, etc) must not advance in this case.
@@ -399,6 +400,9 @@ func (r *NoxRender) PixBuffer() *noximage.Image16 {
 
 func (r *NoxRender) SetPixBuffer(pix *noximage.Image16) {
 	r.pix = pix
+	if r.gpu != nil && pix != nil {
+		r.gpu.SetTarget(pix)
+	}
 }
 
 func (r *NoxRender) Data() *RenderData {
@@ -426,12 +430,19 @@ func (r *NoxRender) initColorTablesRev() {
 }
 
 func (r *NoxRender) CopyPixBuffer() *image.NRGBA {
+	if r.gpu != nil {
+		return r.gpu.ReadPixels(r.pix)
+	}
 	img := image.NewNRGBA(r.pix.Rect)
 	draw.Draw(img, img.Rect, r.pix, r.pix.Rect.Min, draw.Src)
 	return img
 }
 
 func (r *NoxRender) ClearScreen(cl color.Color) {
+	if r.gpu != nil {
+		r.gpu.Clear(color16NRGBA(SplitColor(noxcolor.ToRGBA5551Color(cl)), 0xff))
+		return
+	}
 	u16 := noxcolor.ModelRGBA5551.Convert16(cl).Color16()
 	for i := range r.pix.Pix {
 		r.pix.Pix[i] = u16

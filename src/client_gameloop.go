@@ -145,12 +145,24 @@ func (c *Client) mapDownloadLoop(first bool) (bool, error) {
 	return false, nil
 }
 
-func (c *Client) mainloopDrawAndPresent() {
+// drawUnitChat draws chat messages over units. They are drawn with the GUI, but follow the world.
+func (c *Client) drawUnitChat() {
+	if c.interp.renderOnly {
+		// follow interpolated positions of units and the camera
+		vp := c.Viewport()
+		c.interpApply(vp)
+		defer c.interpRestore(vp)
+	}
 	sub_437180()
+}
+
+func (c *Client) mainloopDrawAndPresent() {
+	c.drawUnitChat()
 	if legacy.Get_nox_client_gui_flag_1556112() == 0 {
 		c.GUI.Draw() // Draw game windows
 	}
 	c.DrawSparks()
+	c.drawFPSOverlay()
 	if !noxflags.HasEngine(noxflags.EngineNoRendering) || noxflags.HasEngine(noxflags.EngineFlag9) || nox_client_gui_flag_815132 != 0 {
 		c.nox_client_drawCursorAndTooltips_477830() // Draw cursor
 	}

@@ -65,6 +65,7 @@ func (c *Client) clientDraw() bool {
 func (c *Client) copyPixBuffer() {
 	c.Win.CopyBuffer(noxPixBuffer.img)
 	c.interp.lastPresent = platform.Ticks()
+	c.countFrame()
 	*memmap.PtrUint32(0x973A20, 496)++
 }
 

@@ -14,6 +14,13 @@ func (c *Client) drawSelection(vp *noxrender.Viewport) {
 	if dr == nil {
 		return
 	}
+	// the color sparkles, but only changes on game ticks (frames may be drawn more often)
+	if frame := c.srv.Frame(); frame == c.selColorFrame && dr == c.selColorDr && c.selColor != nil {
+		if (dr.ObjClass & 0x200) == 0 {
+			c.drawSelectionCursor(vp, c.selColor, dr)
+		}
+		return
+	}
 	var cl color.Color
 	if dr.ObjClass&6 != 0 && legacy.Sub_495A80(dr.NetCode32) == 0 {
 		switch c.srv.Rand.Other.Int(0, 1) {
@@ -32,6 +39,7 @@ func (c *Client) drawSelection(vp *noxrender.Viewport) {
 			cl = nox_color_cyan_2649820
 		}
 	}
+	c.selColor, c.selColorDr, c.selColorFrame = cl, dr, c.srv.Frame()
 	if (dr.ObjClass & 0x200) == 0 {
 		c.drawSelectionCursor(vp, cl, dr)
 	}

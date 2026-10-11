@@ -30,21 +30,8 @@ environment:
 
 apps:
   opennox:
-    command: bin/opennox
-    desktop: usr/share/applications/opennox.desktop
-    plugs:
-      - home
-      - desktop
-      - desktop-legacy
-      - x11
-      - wayland
-      - opengl
-      - audio-playback
-      - network
-      - network-bind
-  hd:
     command: bin/opennox-hd
-    desktop: usr/share/applications/opennox.hd.desktop
+    desktop: usr/share/applications/opennox.desktop
     plugs:
       - home
       - desktop
@@ -92,7 +79,6 @@ parts:
       - libgl1:i386
       - libopenal1:i386
     organize:
-      src/opennox: bin/
       src/opennox-hd: bin/
       src/opennox-server: bin/
       snap/*.desktop: usr/share/applications/

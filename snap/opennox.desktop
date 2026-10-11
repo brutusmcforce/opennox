@@ -2,10 +2,5 @@
 Type=Application
 Name=OpenNox
 Icon=${SNAP}/usr/share/icons/hicolor/256x256/apps/opennox
-Exec=${SNAP}/bin/opennox
+Exec=${SNAP}/bin/opennox-hd
 Categories=Game;ActionGame;RolePlaying;
-Actions=HighRes;
-
-[Desktop Action HighRes]
-Name=High resolution
-Exec=${SNAP}/bin/opennox.hd

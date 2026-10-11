@@ -13,15 +13,9 @@
 #define NOX_DEFAULT_HEIGHT 480
 #define NOX_DEFAULT_DEPTH 16
 
-#ifdef NOX_HIGH_RES
 #define NOX_MAX_WIDTH 3840
 #define NOX_MAX_HEIGHT 2160
 #define NOX_CLIENT_VERS_CODE 0x000F039A
-#else // NOX_HIGH_RES
-#define NOX_MAX_WIDTH 1024
-#define NOX_MAX_HEIGHT 768
-#define NOX_CLIENT_VERS_CODE 0x0001039A
-#endif // NOX_HIGH_RES
 
 #define NOX_PLAYER_MAX_LEVEL 10
 
@@ -149,6 +143,9 @@ static inline int noxSetRect(nox_rect* lprc, int xLeft, int yTop, int xRight, in
 
 typedef struct nox_video_bag_image_t nox_video_bag_image_t;
 int nox_video_bag_image_type(nox_video_bag_image_t* img);
+int nox_client_gpu_edgeDraw(nox_video_bag_image_t* img, int x, int y, int* a4, int* a5, int x0, int y0, int x1, int y1,
+							int cut);
+void nox_client_worldToDrawScreen(int x, int y, int* sx, int* sy);
 
 typedef struct {
 	char name[32]; // 0, 0

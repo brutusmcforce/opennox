@@ -14,9 +14,7 @@ import (
 )
 
 const (
-	BinOpenNox        = "opennox"
 	BinOpenNoxHD      = "opennox-hd"
-	BinOpenNoxDebug   = "opennox-debug"
 	BinOpenNoxHDDebug = "opennox-hd-debug"
 	BinServer         = "opennox-server"
 )
@@ -27,7 +25,7 @@ const (
 
 var (
 	defTargets = []string{
-		BinOpenNox, BinOpenNoxHD, BinServer,
+		BinOpenNoxHD, BinServer,
 	}
 	fOut     = flag.String("o", "", "output directory")
 	fSrc     = flag.String("s", "", "source directory")
@@ -47,7 +45,7 @@ func main() {
 
 func build(args []string) error {
 	if *fOS == "windows" {
-		defTargets = append(defTargets, BinOpenNoxDebug, BinOpenNoxHDDebug)
+		defTargets = append(defTargets, BinOpenNoxHDDebug)
 	}
 	targets := args
 	if len(targets) == 0 {
@@ -74,21 +72,13 @@ func buildTarget(target string) error {
 		return goBuild("opennox", BinServer, &buildOpts{
 			CGO: true, Tags: []string{"server"},
 		})
-	case BinOpenNox, "client":
-		return goBuild("opennox", BinOpenNox, &buildOpts{
+	case BinOpenNoxHD, "client", "client-hd", "hd":
+		return goBuild("opennox", BinOpenNoxHD, &buildOpts{
 			CGO: true, GUI: true,
 		})
-	case BinOpenNoxHD, "client-hd", "hd":
-		return goBuild("opennox", BinOpenNoxHD, &buildOpts{
-			CGO: true, GUI: true, Tags: []string{"highres"},
-		})
-	case BinOpenNoxDebug, "client-debug":
-		return goBuild("opennox", BinOpenNoxDebug, &buildOpts{
-			CGO: true,
-		})
-	case BinOpenNoxHDDebug, "client-hd-debug":
+	case BinOpenNoxHDDebug, "client-debug", "client-hd-debug":
 		return goBuild("opennox", BinOpenNoxHDDebug, &buildOpts{
-			CGO: true, Tags: []string{"highres"},
+			CGO: true,
 		})
 	}
 }

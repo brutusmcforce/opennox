@@ -836,11 +836,59 @@ func (c *Client) nox_xxx_tileDrawMB_481C20(vp *noxrender.Viewport) {
 		legacy.Nox_xxx_tileDrawMB_481C20_A(vp, dp.X)
 		legacy.Nox_xxx_tileDrawMB_481C20_B(vp, dp.Y)
 	}
-	if nox_client_texturedFloors_154956 {
+	if c.gpu != nil {
+		c.gpuDrawFloor(vp, dp)
+	} else if nox_client_texturedFloors_154956 {
 		c.nox_xxx_tileDrawMB_481C20_C_textured(vp, dp)
 	} else {
 		c.nox_xxx_tileDrawMB_481C20_C_solid(vp, dp)
 	}
+}
+
+// gpuDrawFloor draws floor tiles on the GPU. See nox_xxx_tileDrawMB_481C20_C_textured.
+func (c *Client) gpuDrawFloor(vp *noxrender.Viewport, dp image.Point) {
+	c.sub4745F0(vp)
+	t := &c.tiles
+	p := &c.gpuFloor
+	p.Tiles = t.noxTileBuf
+	p.Pitch = t.dword_5d4594_3798804 / 2
+	p.Off = image.Point{
+		X: dp.X + int(legacy.Get_dword_5d4594_3798836()) - int(legacy.Get_dword_5d4594_3798820()),
+		Y: dp.Y + int(legacy.Get_dword_5d4594_3798840()) - int(legacy.Get_dword_5d4594_3798824()),
+	}
+	p.Lit = nox_client_texturedFloors_154956 && !noxflags.HasEngine(noxflags.EngineNoSoftLights)
+	if p.Lit {
+		p.LightW, p.LightH = lightGridW, lightGridH
+		if len(p.Light) != 3*lightGridW*lightGridH {
+			p.Light = make([]float32, 3*lightGridW*lightGridH)
+		}
+		// light values are 8.16 fixed point, where 256 is the full intensity
+		const scale = 1.0 / (1 << 24)
+		for i := 0; i < lightGridW; i++ {
+			for j := 0; j < lightGridH; j++ {
+				cl := t.nox_arr2_853BC0[i][j]
+				k := 3 * (j*lightGridW + i)
+				p.Light[k+0] = float32(cl.R) * scale
+				p.Light[k+1] = float32(cl.G) * scale
+				p.Light[k+2] = float32(cl.B) * scale
+			}
+		}
+		p.LightOff = image.Point{X: dp.X - t.noxTilesGpx, Y: dp.Y - t.noxTilesGpy}
+		p.Step = common.GridStep
+	}
+	spans := c.gpuFloorSpans[:0]
+	for y := t.dword_5d4594_3679320; y < t.dword_5d4594_3798156; y++ {
+		n := t.nox_arr_956A00[y]
+		arr := t.nox_arr_957820[y].arr[:]
+		for i := 0; i < (n+1)/2; i++ {
+			x1, x2 := int(arr[2*i]), int(arr[2*i+1])
+			if x2 > x1 {
+				spans = append(spans, image.Rect(x1, y, x2, y+1))
+			}
+		}
+	}
+	c.gpuFloorSpans = spans
+	c.gpu.Floor(p, spans)
 }
 
 func (c *Client) Sub4C5630(a1 int, a2 int, a3 int) int {

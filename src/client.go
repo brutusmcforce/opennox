@@ -2,13 +2,16 @@ package opennox
 
 import (
 	"image"
+	"image/color"
 	"log/slog"
 	"unsafe"
 
 	"github.com/opennox/libs/console"
+	"github.com/opennox/libs/noximage"
 	"github.com/spf13/viper"
 
 	"github.com/opennox/opennox/v1/client"
+	"github.com/opennox/opennox/v1/client/noxrender"
 	noxflags "github.com/opennox/opennox/v1/common/flags"
 	"github.com/opennox/opennox/v1/common/memmap"
 	"github.com/opennox/opennox/v1/legacy"
@@ -29,6 +32,18 @@ const (
 	configVideoFiltering = "video.filtering"
 	configVideoStretch   = "video.stretch"
 )
+
+// gpuBackend is an optional GPU renderer (see client/gpu).
+type gpuBackend interface {
+	noxrender.GPU
+	// ClearTransparent clears the current render target to a transparent color.
+	ClearTransparent()
+	// Composite draws one render target over another one, scaling it to fit.
+	Composite(dst, src *noximage.Image16)
+	// Floor draws floor tiles in given screen spans.
+	Floor(p *noxrender.FloorParams, spans []image.Rectangle)
+	Close()
+}
 
 func NewClient(log *slog.Logger, pr console.Printer, srv *Server) (*Client, error) {
 	cl := client.NewClient(log, pr, srv.Server)
@@ -56,6 +71,13 @@ type Client struct {
 	guiAdv                 guiAdvOptions
 	guiFPS                 guiFPS
 	interp                 renderInterp
+	gpu                    gpuBackend // nil for software rendering
+	fps                    fpsOverlay
+	gpuFloor               noxrender.FloorParams
+	gpuFloorSpans          []image.Rectangle
+	selColor               color.Color
+	selColorDr             *client.Drawable
+	selColorFrame          uint32
 	screenshots            screenshots
 	tiles                  clientTileData
 	info                   clientDrawInfo

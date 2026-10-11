@@ -6,6 +6,7 @@ import (
 
 	"github.com/opennox/libs/noximage"
 
+	"github.com/opennox/opennox/v1/client/noxrender"
 	"github.com/opennox/opennox/v1/legacy"
 	"github.com/opennox/opennox/v1/legacy/common/alloc"
 )
@@ -84,6 +85,60 @@ func uiToWorldScreen(p image.Point) image.Point {
 		X: p.X * wsz.X / usz.X,
 		Y: p.Y * wsz.Y / usz.Y,
 	}
+}
+
+func init() {
+	legacy.GetDrawViewport = func() *noxrender.Viewport {
+		return noxClient.drawViewport()
+	}
+	legacy.WorldToDrawScreen = func(p image.Point) image.Point {
+		return noxClient.worldToDrawScreen(p)
+	}
+}
+
+// drawingUI checks if the GUI is currently drawn at a different resolution than the world.
+func drawingUI() bool {
+	return uiScaleState.world != nil && !uiScaleState.inWorld && noxPixBuffer.img != nil
+}
+
+// worldToUIScreen converts screen position from world buffer coordinates to GUI coordinates.
+// It must only be called when drawingUI returns true.
+func worldToUIScreen(p image.Point) image.Point {
+	usz, wsz := noxPixBuffer.img.Size(), uiScaleState.world.Size()
+	if wsz.X <= 0 || wsz.Y <= 0 {
+		return p
+	}
+	return image.Point{X: p.X * usz.X / wsz.X, Y: p.Y * usz.Y / wsz.Y}
+}
+
+// worldToDrawScreen converts world position to a screen position in the coordinates of the current render target.
+func (c *Client) worldToDrawScreen(p image.Point) image.Point {
+	p = c.Viewport().ToScreenPos(p)
+	if drawingUI() {
+		p = worldToUIScreen(p)
+	}
+	return p
+}
+
+// uiViewport is a copy of the client viewport, scaled to GUI coordinates.
+var uiViewport *noxrender.Viewport
+
+// drawViewport returns the viewport for the current render target.
+//
+// The client viewport is in world buffer coordinates. Legacy GUI code that positions things relative to it
+// (e.g. centered messages) must use a scaled copy when drawing to the GUI buffer.
+func (c *Client) drawViewport() *noxrender.Viewport {
+	vp := c.Viewport()
+	if !drawingUI() {
+		return vp
+	}
+	if uiViewport == nil {
+		uiViewport, _ = alloc.New(noxrender.Viewport{})
+	}
+	*uiViewport = *vp
+	uiViewport.Screen = image.Rectangle{Min: worldToUIScreen(vp.Screen.Min), Max: worldToUIScreen(vp.Screen.Max)}
+	uiViewport.Size = worldToUIScreen(vp.Size)
+	return uiViewport
 }
 
 // GetMousePos returns the mouse position in the coordinates of the current render target.
@@ -202,16 +257,25 @@ func (c *Client) worldDrawn() {
 	if st.world == nil || st.inWorld {
 		return
 	}
+	st.hasSnap = true
+	if c.gpu != nil {
+		// GUI is drawn into a separate transparent target, so we don't need the world under it
+		c.gpu.ClearTransparent()
+		return
+	}
 	ui := noxPixBuffer.img
 	scaleNearest16(ui, st.world)
 	copy(st.snap, ui.Pix)
-	st.hasSnap = true
 }
 
 // composeUI copies all the GUI pixels drawn since worldDrawn into the world buffer, upscaling them.
 func (c *Client) composeUI() {
 	st := &uiScaleState
 	if st.world == nil || st.inWorld || !st.hasSnap {
+		return
+	}
+	if c.gpu != nil {
+		c.gpu.Composite(st.world, noxPixBuffer.img)
 		return
 	}
 	composeChanged16(st.world, noxPixBuffer.img, st.snap)
