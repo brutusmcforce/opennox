@@ -46,6 +46,10 @@ var uiScaleState struct {
 
 	snap    []uint16 // GUI buffer contents before the GUI was drawn
 	hasSnap bool
+
+	// cursor is drawn at full resolution, so that it is not scaled with the GUI
+	cursorPos image.Point // in GUI coordinates
+	hasCursor bool
 }
 
 // videoUIScaled checks if the world and the GUI are rendered at different resolutions.
@@ -279,6 +283,27 @@ func (c *Client) composeUI() {
 		return
 	}
 	composeChanged16(st.world, noxPixBuffer.img, st.snap)
+}
+
+// deferCursorDraw remembers the cursor position, if the cursor must be drawn at full resolution.
+// It returns false if the cursor should be drawn right away.
+func (c *Client) deferCursorDraw(pos image.Point) bool {
+	st := &uiScaleState
+	if st.world == nil || st.inWorld {
+		return false
+	}
+	st.cursorPos, st.hasCursor = pos, true
+	return true
+}
+
+// drawDeferredCursor draws the cursor remembered by deferCursorDraw. It must be called during the world draw.
+func (c *Client) drawDeferredCursor() {
+	st := &uiScaleState
+	if !st.hasCursor {
+		return
+	}
+	st.hasCursor = false
+	c.nox_video_cursorDrawImpl_477A30(uiToWorldScreen(st.cursorPos))
 }
 
 // presentScaled draws final full-screen effects on the world buffer and presents it.

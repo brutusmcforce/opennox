@@ -53,4 +53,4 @@ sudo ln -s ./libOpenAL32.dll.a /usr/i686-w64-mingw32/lib/libOpenAL.dll.a
 make build-client-win
 ```
 
-This should produce the `opennox-hd.exe` binary.
+This should produce the `opennox.exe` binary.

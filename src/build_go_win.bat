@@ -13,6 +13,6 @@ set CC_FOR_TARGET=gcc
 set CC=gcc
 set CGO_CFLAGS=-D_TDM -g -O2
 set PATH=%PATH%;C:\TDM-GCC-32\bin;C:\TDM-GCC-32\mingw32\bin
-go build -v -ldflags "-H windowsgui" -o opennox-hd.exe ./cmd/opennox
+go build -v -ldflags "-H windowsgui" -o opennox.exe ./cmd/opennox
 go build -v -tags server -o opennox-server.exe ./cmd/opennox
 pause

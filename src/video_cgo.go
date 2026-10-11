@@ -11,6 +11,7 @@ import (
 	"github.com/opennox/libs/noximage"
 	"github.com/opennox/libs/player"
 	"github.com/opennox/libs/spell"
+	"github.com/opennox/libs/strman"
 	"github.com/opennox/libs/types"
 
 	"github.com/opennox/opennox/v1/client"
@@ -535,6 +536,65 @@ func sub_48B680(a1 int) {
 	}
 }
 
+// cursorTooltipOffsetY returns the vertical offset of the tooltip from the mouse position.
+// It depends on the cursor type, since some cursors have a text label below them.
+func (c *Client) cursorTooltipOffsetY(fh int) int {
+	if legacy.Nox_xxx_guiSpell_460650() != 0 || legacy.Sub_4611A0() != 0 {
+		return fh + 4
+	}
+	switch c.Nox_client_getCursorType() {
+	case gui.CursorPickup, gui.CursorUse, gui.CursorPickupFar:
+		return -2 * fh
+	case gui.CursorRepair:
+		return 2*fh + 4
+	case gui.CursorCaution:
+		return -fh
+	}
+	return fh + 4
+}
+
+// cursorLabel returns a text label for the current cursor and its position relative to the mouse.
+func (c *Client) cursorLabel() (string, image.Point) {
+	if legacy.Nox_xxx_guiSpell_460650() != 0 || legacy.Sub_4611A0() != 0 {
+		return "", image.Point{}
+	}
+	fh := c.r.FontHeight(nil)
+	var (
+		id  string
+		off image.Point
+	)
+	switch c.Nox_client_getCursorType() {
+	default:
+		return "", image.Point{}
+	case gui.CursorGrab:
+		id, off = "GRAB", image.Point{X: -10, Y: -fh}
+	case gui.CursorPickup:
+		id, off = "PICKUP", image.Point{X: -15, Y: +fh}
+	case gui.CursorShop:
+		id, off = "SHOPKEEPER", image.Point{X: -25, Y: -fh}
+	case gui.CursorTalk:
+		id, off = "TALK", image.Point{X: -15, Y: -fh}
+	case gui.CursorIdentify, gui.CursorCantIdentify:
+		id, off = "IDENTIFY", image.Point{X: -15, Y: +24}
+	case gui.CursorRepair:
+		id, off = "REPAIR", image.Point{X: -15, Y: -fh}
+	case gui.CursorUse:
+		id, off = "USE", image.Point{X: -10, Y: +fh}
+	}
+	return c.Strings().GetStringInFile(strman.ID(id), "C:\\NoxPost\\src\\Client\\Gui\\guicurs.c"), off
+}
+
+// drawCursorLabel draws a text label for the current cursor at a given mouse position.
+func (c *Client) drawCursorLabel(mpos image.Point) {
+	str, off := c.cursorLabel()
+	if str == "" {
+		return
+	}
+	c.r.Data().SetTextColor(nox_color_yellow_2589772)
+	c.r.DrawString(nil, str, mpos.Add(off))
+}
+
+// nox_video_cursorDrawImpl_477A30 draws the cursor image. The text label is drawn separately, see drawCursorLabel.
 func (c *Client) nox_video_cursorDrawImpl_477A30(pos image.Point) {
 	v18 := memmap.Uint32(0x973F18, 68)
 	pos = pos.Sub(image.Point{X: 64, Y: 64})
@@ -544,11 +604,9 @@ func (c *Client) nox_video_cursorDrawImpl_477A30(pos image.Point) {
 		c.flag3798728 = false
 	}()
 	c.pos1097212 = pos
-	if c.srv.Frame()&1 != 0 {
+	if c.srv.Frame()&1 != 0 && drawIsTick {
 		*memmap.PtrUint32(0x5D4594, 1097288)++
 	}
-	c.r.Data().SetTextColor(nox_color_yellow_2589772)
-	fh := c.r.FontHeight(nil)
 	if legacy.Nox_xxx_guiSpell_460650() != 0 || legacy.Sub_4611A0() != 0 {
 		c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.Target, pos)
 		c.CursorPrev = gui.CursorTarget
@@ -561,35 +619,21 @@ func (c *Client) nox_video_cursorDrawImpl_477A30(pos image.Point) {
 	}
 	switch typ := c.Nox_client_getCursorType(); typ {
 	case gui.CursorGrab:
-		str := c.Strings().GetStringInFile("GRAB", "C:\\NoxPost\\src\\Client\\Gui\\guicurs.c")
-		c.r.DrawString(nil, str, pos.Add(image.Point{X: 54, Y: 64 - fh}))
 		c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.Grab, pos)
 	case gui.CursorPickup:
-		str := c.Strings().GetStringInFile("PICKUP", "C:\\NoxPost\\src\\Client\\Gui\\guicurs.c")
-		c.r.DrawString(nil, str, pos.Add(image.Point{X: 49, Y: 64 + fh}))
 		c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.Pickup, pos)
-		c.pos1097204.Y = -2 * fh
 	case gui.CursorShop:
-		str := c.Strings().GetStringInFile("SHOPKEEPER", "C:\\NoxPost\\src\\Client\\Gui\\guicurs.c")
-		c.r.DrawString(nil, str, pos.Add(image.Point{X: 39, Y: 64 - fh}))
 		c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.Trade, pos)
 	case gui.CursorTalk:
-		str := c.Strings().GetStringInFile("TALK", "C:\\NoxPost\\src\\Client\\Gui\\guicurs.c")
-		c.r.DrawString(nil, str, pos.Add(image.Point{X: 49, Y: 64 - fh}))
 		c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.Talk, pos)
 	case gui.CursorIdentify, gui.CursorCantIdentify:
-		str := c.Strings().GetStringInFile("IDENTIFY", "C:\\NoxPost\\src\\Client\\Gui\\guicurs.c")
-		c.r.DrawString(nil, str, pos.Add(image.Point{X: 49, Y: +88}))
 		if typ == gui.CursorIdentify {
 			c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.Identify, pos)
 		} else {
 			c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.IdentifyNo, pos)
 		}
 	case gui.CursorRepair:
-		str := c.Strings().GetStringInFile("REPAIR", "C:\\NoxPost\\src\\Client\\Gui\\guicurs.c")
-		c.r.DrawString(nil, str, pos.Add(image.Point{X: 49, Y: 64 - fh}))
 		c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.Repair, pos)
-		c.pos1097204.Y = 2*fh + 4
 	case gui.CursorCreateGame:
 		c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.CreateGame, pos)
 	case gui.CursorBusy:
@@ -599,12 +643,9 @@ func (c *Client) nox_video_cursorDrawImpl_477A30(pos image.Point) {
 	case gui.CursorSell:
 		c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.Sell, pos)
 	case gui.CursorUse:
-		str := c.Strings().GetStringInFile("USE", "C:\\NoxPost\\src\\Client\\Gui\\guicurs.c")
-		c.r.DrawString(nil, str, pos.Add(image.Point{X: 54, Y: 64 + fh}))
 		c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.Use, pos)
-		c.pos1097204.Y = -2 * fh
 	case gui.CursorMoveArrow:
-		mpos := c.Inp.GetMousePos()
+		mpos := pos.Add(image.Point{X: 64, Y: 64})
 		v19 := types.Pointf{
 			X: float32(mpos.X - nox_win_width/2),
 			Y: float32(mpos.Y - nox_win_height/2),
@@ -627,10 +668,8 @@ func (c *Client) nox_video_cursorDrawImpl_477A30(pos image.Point) {
 		c.r.Data().SetMultiply14(0)
 	case gui.CursorPickupFar:
 		c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.PickupFar, pos)
-		c.pos1097204.Y = -2 * fh
 	case gui.CursorCaution:
 		c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.Caution, pos)
-		c.pos1097204.Y = -fh
 	default:
 		c.Nox_video_drawAnimatedImageOrCursorAt(noxCursors.Select, pos)
 	}
@@ -683,7 +722,7 @@ func (c *Client) nox_client_drawCursorAndTooltips_477830() {
 	vp.World.Min = image.Pt(0, 0)
 	vp.Size = image.Pt(nox_win_width, nox_win_height)
 	c.pos1097204.X = 0
-	c.pos1097204.Y = c.r.FontHeight(nil) + 4
+	c.pos1097204.Y = c.cursorTooltipOffsetY(c.r.FontHeight(nil))
 	if c.dragndropItem != nil { // Dragging item
 		c.dragndropItem.SetPos(mpos)
 		legacy.CallDrawFunc(c.dragndropItem, vp)
@@ -702,7 +741,11 @@ func (c *Client) nox_client_drawCursorAndTooltips_477830() {
 			}
 		}
 	}
-	c.nox_video_cursorDrawImpl_477A30(mpos)
+	// the label is drawn first, the cursor image is drawn over it
+	c.drawCursorLabel(mpos)
+	if !c.deferCursorDraw(mpos) {
+		c.nox_video_cursorDrawImpl_477A30(mpos)
+	}
 	if str := alloc.GoString16((*uint16)(memmap.PtrOff(0x5D4594, 1096676))); str != "" && nox_client_showTooltips_80840 {
 		sz := c.r.GetStringSizeWrapped(nil, str, 0)
 		px := mpos.X - c.pos1097204.X

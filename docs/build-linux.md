@@ -35,4 +35,4 @@ cd src
 go run ./internal/noxbuild
 ```
 
-This should produce `opennox-hd` and `opennox-server` binaries.
+This should produce `opennox` and `opennox-server` binaries.

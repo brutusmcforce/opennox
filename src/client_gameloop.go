@@ -157,6 +157,7 @@ func (c *Client) drawUnitChat() {
 }
 
 func (c *Client) mainloopDrawAndPresent() {
+	uiScaleState.hasCursor = false
 	c.drawUnitChat()
 	if legacy.Get_nox_client_gui_flag_1556112() == 0 {
 		c.GUI.Draw() // Draw game windows
@@ -168,7 +169,8 @@ func (c *Client) mainloopDrawAndPresent() {
 	}
 	present := !noxflags.HasEngine(noxflags.EngineNoRendering) || noxflags.HasEngine(noxflags.EngineFlag9) || nox_client_gui_flag_815132 != 0
 	if present && c.presentScaled(func() {
-		// draw full-screen effects in full resolution
+		// draw the cursor and full-screen effects in full resolution
+		c.drawDeferredCursor()
 		c.r.DrawFade(true)
 		c.maybeScreenshot()
 	}) {

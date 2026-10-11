@@ -2,7 +2,6 @@ package opennox
 
 import (
 	"image"
-	"image/color"
 	"log/slog"
 	"unsafe"
 
@@ -75,9 +74,7 @@ type Client struct {
 	fps                    fpsOverlay
 	gpuFloor               noxrender.FloorParams
 	gpuFloorSpans          []image.Rectangle
-	selColor               color.Color
-	selColorDr             *client.Drawable
-	selColorFrame          uint32
+	sel                    selCircle
 	screenshots            screenshots
 	tiles                  clientTileData
 	info                   clientDrawInfo

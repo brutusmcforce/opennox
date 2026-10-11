@@ -67,7 +67,7 @@ Build may take a while, especially when building for the first time. Be patient.
 
 If you hit issues, see troubleshooting section below.
 
-Once finished, it should produce `opennox-hd.exe` and `opennox-server.exe` binaries in `C:\Dev\opennox\src`.
+Once finished, it should produce `opennox.exe` and `opennox-server.exe` binaries in `C:\Dev\opennox\src`.
 
 ### Troubleshooting
 
@@ -107,7 +107,7 @@ You also need a few DLLs for these binaries to work.
 
 1. Create new folder for OpenNox, let's say `C:\Games\OpenNox`.
 2. Copy following binaries from `C:\Dev\opennox\src`:
-   - `opennox-hd.exe`
+   - `opennox.exe`
    - `opennox-server.exe`
 3. Copy following DLLs from `C:\msys64\mingw32\bin`:
    - `libgcc_s_dw2-1.dll`
@@ -115,7 +115,7 @@ You also need a few DLLs for these binaries to work.
    - `libstdc++-6.dll`
    - `libwinpthread-1.dll`
    - `SDL2.dll`
-4. Run `opennox-hd.exe`.
+4. Run `opennox.exe`.
    - If it complains about more DDLs - copy them from MSYS.
    - If it says that Nox directory not found - it works!
      Check [this guide](https://mod.io/g/nox/r/how-to-install-opennox-windows) to set Nox game path.

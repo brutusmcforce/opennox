@@ -2,5 +2,5 @@
 Type=Application
 Name=OpenNox
 Icon=io.github.noxworld_dev.OpenNox
-Exec=opennox-hd
+Exec=opennox
 Categories=Game;ActionGame;RolePlaying;

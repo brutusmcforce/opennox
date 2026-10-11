@@ -57,11 +57,11 @@ type interpSaved struct {
 type renderInterp struct {
 	maxFPS int
 
-	tickAt      time.Duration // time of the last tick when the world was drawn
-	tickFrame   uint32        // game frame of the last tick when the world was drawn
-	lastPresent time.Duration // time of the last presented frame
-	hasTick     bool          // world was drawn on the last tick
-	frameCost   time.Duration // estimated time needed to draw an additional frame
+	tickAt    time.Duration // time of the last tick when the world was drawn
+	tickFrame uint32        // game frame of the last tick when the world was drawn
+	nextFrame time.Duration // scheduled time of the next presented frame
+	hasTick   bool          // world was drawn on the last tick
+	frameCost time.Duration // estimated time needed to draw an additional frame
 
 	camPrev, camCur image.Point
 	camOK           bool
@@ -227,14 +227,43 @@ func (c *Client) interpRestore(vp *noxrender.Viewport) {
 	}
 }
 
-// canRenderBetweenTicks checks if it's safe to draw additional frames now.
-func (c *Client) canRenderBetweenTicks() bool {
+// presented must be called each time a frame is presented. It schedules the next frame.
+func (r *renderInterp) presented(now time.Duration) {
+	if !r.enabled() {
+		return
+	}
+	period := time.Second / time.Duration(r.maxFPS)
+	// Frames follow a fixed schedule, so that a frame delayed by a game tick is caught up later.
+	// Don't catch up if we are too far behind, it would only cause a burst of frames.
+	if r.nextFrame == 0 || now-r.nextFrame > 2*period {
+		r.nextFrame = now
+	}
+	r.nextFrame += period
+}
+
+type betweenTicksMode int
+
+const (
+	betweenTicksNone  = betweenTicksMode(iota)
+	betweenTicksWorld // in game: draw the world with interpolated positions and the GUI
+	betweenTicksMenu  // in menus: only draw the GUI
+)
+
+// betweenTicksMode checks if it's safe to draw additional frames now, and what they should include.
+func (c *Client) betweenTicksMode() betweenTicksMode {
 	r := &c.interp
-	return r.enabled() && r.hasTick &&
-		!isDedicatedServer && c.DrawFunc != nil &&
-		nox_client_gui_flag_815132 == 0 &&
-		!noxflags.HasEngine(noxflags.EngineNoRendering) && !noxflags.HasEngine(noxflags.EnginePause) &&
-		c.ClientPlayerUnit() != nil && nox_client_isConnected()
+	if !r.enabled() || isDedicatedServer || noxflags.HasEngine(noxflags.EngineNoRendering) {
+		return betweenTicksNone
+	}
+	if nox_client_gui_flag_815132 != 0 {
+		return betweenTicksMenu
+	}
+	if r.hasTick && c.DrawFunc != nil &&
+		!noxflags.HasEngine(noxflags.EnginePause) &&
+		c.ClientPlayerUnit() != nil && nox_client_isConnected() {
+		return betweenTicksWorld
+	}
+	return betweenTicksNone
 }
 
 // waitAndRender waits for the next game tick. If enabled, it draws additional interpolated frames while waiting.
@@ -244,11 +273,10 @@ func (c *Client) waitAndRender(dt time.Duration) {
 	}
 	r := &c.interp
 	deadline := platform.Ticks() + dt
-	if c.canRenderBetweenTicks() {
-		period := time.Second / time.Duration(r.maxFPS)
+	if c.betweenTicksMode() != betweenTicksNone {
 		for {
-			// limit the frame rate by the time between frame starts (frame is presented at the end)
-			start := max(r.lastPresent+period-r.frameCost, platform.Ticks())
+			// start drawing so that the frame is presented at the scheduled time
+			start := max(r.nextFrame-r.frameCost, platform.Ticks())
 			// don't draw if the frame won't be ready before the next tick
 			if start+r.frameCost >= deadline {
 				break
@@ -256,11 +284,12 @@ func (c *Client) waitAndRender(dt time.Duration) {
 			if now := platform.Ticks(); start > now {
 				c.srv.LoopSleep(start - now)
 			}
-			if !c.canRenderBetweenTicks() {
+			mode := c.betweenTicksMode()
+			if mode == betweenTicksNone {
 				break
 			}
 			t0 := platform.Ticks()
-			c.drawBetweenTicks()
+			c.drawBetweenTicks(mode)
 			// keep a moving average of the frame cost
 			cost := platform.Ticks() - t0
 			if r.frameCost == 0 {
@@ -276,7 +305,7 @@ func (c *Client) waitAndRender(dt time.Duration) {
 }
 
 // drawBetweenTicks draws and presents an additional frame without advancing the game state.
-func (c *Client) drawBetweenTicks() {
+func (c *Client) drawBetweenTicks(mode betweenTicksMode) {
 	r := &c.interp
 	r.renderOnly = true
 	setDrawIsTick(false)
@@ -287,7 +316,12 @@ func (c *Client) drawBetweenTicks() {
 		setDrawIsTick(true)
 		r.renderOnly = false
 	}()
-	c.drawWorldFrame()
+	if mode == betweenTicksWorld {
+		c.drawWorldFrame()
+	} else {
+		// nothing to interpolate in menus
+		c.interpReset()
+	}
 	c.mainloopDrawAndPresent()
 }
 

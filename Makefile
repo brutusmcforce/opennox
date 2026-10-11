@@ -29,5 +29,5 @@ build-client-docker:
 	docker build -t ghcr.io/opennox/opennox-client:dev -f ./docker/Dockerfile_client --build-arg GIT_SHA=$$GIT_SHA  --build-arg GIT_TAG=$$GIT_TAG ./src
 	mkdir -p ./build
 	ID=$$(docker create ghcr.io/opennox/opennox-client:dev) && \
-	docker cp $$ID:/home/runner/opennox/opennox-hd ./build/ && \
+	docker cp $$ID:/home/runner/opennox/opennox ./build/ && \
 	docker rm -f $$ID

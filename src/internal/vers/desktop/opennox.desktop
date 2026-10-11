@@ -3,5 +3,5 @@ Version={{ .Version }}
 Type=Application
 Name=OpenNox
 Icon={{ .IconPref }}opennox
-Exec={{ .ExecPref }}opennox-hd
+Exec={{ .ExecPref }}opennox
 Categories=Game;ActionGame;RolePlaying;
