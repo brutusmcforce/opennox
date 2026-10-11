@@ -15,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/opennox/libs/datapath"
 	"github.com/opennox/libs/ifs"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/exp/maps"
@@ -742,7 +741,7 @@ type e2eSave struct {
 func e2eOnSave(name string) {
 	if e2e.recording {
 		t := platform.Ticks()
-		path := datapath.Save(name)
+		path := savePath(name)
 		hash := e2eHashDir(path)
 		e2e.recorded = append(e2e.recorded, e2eRecordedEvent{
 			Time: t - 1, Save: &e2eSave{Name: name, Hash: hash},
@@ -751,7 +750,7 @@ func e2eOnSave(name string) {
 		defer func() {
 			e2e.checkSave = nil
 		}()
-		path := datapath.Save(name)
+		path := savePath(name)
 		got := e2eHashDir(path)
 		if !maps.Equal(got, s.Hashes) {
 			err := fmt.Errorf("unexpected save data:\ngot: %+v\nvs\nexp: %+v", got, s.Hashes)

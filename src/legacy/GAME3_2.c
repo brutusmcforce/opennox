@@ -5471,18 +5471,18 @@ int nox_client_countSaveFiles_4DC550() {
 	char PathName[1024]; // [esp+Ch] [ebp-400h]
 
 	v0 = 0;
-	v1 = nox_fs_root();
+	v1 = nox_fs_save_root();
 	strcpy(PathName, v1);
 	strcat(PathName, "\\Save\\");
 	nox_fs_mkdir(PathName);
-	v5 = nox_fs_root();
+	v5 = nox_fs_save_root();
 	nox_sprintf(PathName, "%s\\Save\\AUTOSAVE\\Player.plr", v5);
 	if (nox_fs_access(PathName, 0) != -1) {
 		v0 = 1;
 	}
 	v6 = 13;
 	do {
-		v7 = nox_fs_root();
+		v7 = nox_fs_save_root();
 		nox_sprintf(PathName, "%s\\Save\\SAVE%04d\\Player.plr", v7, v0);
 		if (nox_fs_access(PathName, 0) != -1) {
 			++v0;
@@ -5505,7 +5505,7 @@ int nox_client_countPlayerFiles02_4DC630() {
 	char v11[1024];                        // [esp+A50h] [ebp-400h]
 
 	v0 = 0;
-	v1 = nox_fs_root();
+	v1 = nox_fs_save_root();
 	strcpy(PathName, v1);
 	strcat(PathName, "\\Save\\");
 	strcpy(v11, PathName);
@@ -5531,6 +5531,7 @@ int nox_client_countPlayerFiles02_4DC630() {
 		}
 		FindClose(v5);
 	}
+	// restore the working directory to the game directory
 	v6 = nox_fs_root();
 	nox_fs_set_workdir(v6);
 	return v0;

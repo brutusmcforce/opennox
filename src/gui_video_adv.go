@@ -22,6 +22,8 @@ type videoOpt struct {
 	Text   string
 	Get    func() bool
 	Toggle func()
+	// Label returns a dynamic text of the option, e.g. with its current value.
+	Label  func() string
 	Def    bool
 	Hidden bool
 }
@@ -47,7 +49,6 @@ func (c *guiAdvOptions) Init(cli *Client) {
 		{ID: 2017, Bool: &nox_client_showTooltips_80840, TextID: "AdVidOpt.wnd:ShowTooltips"},
 		{ID: 2020, Bool: &nox_client_drawFrontWalls_80812, TextID: "AdVidOpt.wnd:DrawFrontWalls"},
 		{ID: 2021, CFlag: legacy.Get_nox_client_translucentFrontWalls_805844_ptr(), TextID: "AdVidOpt.wnd:TranslucentFrontWalls"},
-		{ID: 2022, CFlag: legacy.Get_nox_client_highResFrontWalls_80820_ptr(), TextID: "AdVidOpt.wnd:InterlacedFrontWalls"},
 		{ID: 2031, CFlag: legacy.Get_nox_client_highResFloors_154952_ptr(), TextID: "AdVidOpt.wnd:InterlacedFloors"},
 		{ID: 2032, Bool: &nox_client_lockHighResFloors_1193152, TextID: "AdVidOpt.wnd:LockHiResFloors"},
 		{ID: 2033, Bool: &nox_client_texturedFloors2_154960, TextID: "AdVidOpt.wnd:FlatShadedFloors"},
@@ -55,6 +56,7 @@ func (c *guiAdvOptions) Init(cli *Client) {
 		//{ID: 2041, CFlag: &C.nox_client_renderBubbles_80844, TextID: "AdVidOpt.wnd:RenderBubbles"},
 		{ID: 2040, Bool: &nox_client_renderGUI_80828, TextID: "AdVidOpt.wnd:RenderGUI"},
 	}
+	c.noxVideoAdvList = append(c.noxVideoAdvList, openNoxVideoOpts(c.cli)...)
 	for _, opt := range c.noxVideoAdvList {
 		if opt.ID == 0 {
 			panic("ID must be set")
@@ -91,6 +93,9 @@ func (c *guiAdvOptions) nox_client_advVideoOptsLoad() {
 				v = *opt.CFlag != 0
 			}
 			w.DrawData().Field0Set(0x4, v)
+			if opt.Label != nil {
+				w.DrawData().SetText(opt.Label())
+			}
 		}
 	}
 }
@@ -143,6 +148,12 @@ func (c *guiAdvOptions) nox_client_advVideoOptsProc_4CB5D0(win *gui.Window, ev g
 		case 2040:
 			nox_xxx_xxxRenderGUI_587000_80832 = nox_client_renderGUI_80828
 		}
+		if opt, ok := c.noxVideoAdvOpts[id]; ok && opt.Label != nil {
+			// multi-value options update the label and keep the check box state in sync with the value
+			c.nox_client_advVideoOptsLoad()
+			// the check box flips its state after this event is handled, so set the opposite state here
+			ev.Win.DrawData().Field0Set(0x4, !opt.Get())
+		}
 		return nil
 	}
 	return nil
@@ -172,8 +183,18 @@ func (c *guiAdvOptions) newAdvVideoOpts() *gui.Window {
 	const (
 		pad     = 3
 		cheight = 15
-		crow    = 20
 	)
+	visible := 0
+	for _, opt := range c.noxVideoAdvList {
+		if !opt.Hidden {
+			visible++
+		}
+	}
+	// fit all options into the panel
+	crow := 20
+	if visible > 0 {
+		crow = min(crow, (height-2*pad)/visible)
+	}
 
 	n := 0
 	for _, opt := range c.noxVideoAdvList {
@@ -182,7 +203,9 @@ func (c *guiAdvOptions) newAdvVideoOpts() *gui.Window {
 		}
 		y := pad + crow*n
 		str := opt.Text
-		if opt.TextID != "" {
+		if opt.Label != nil {
+			str = opt.Label()
+		} else if opt.TextID != "" {
 			if e, ok := c.cli.Strings().GetInFile(opt.TextID, "psscript.c"); ok {
 				str = e.Value().Str
 			}

@@ -280,7 +280,7 @@ int sub_4A75C0() {
 	v25[1221] = *(uint32_t*)(dword_5d4594_1308124 + 32) >> 16;
 	v25[1222] = *(uint32_t*)(dword_5d4594_1308128 + 32) >> 16;
 	v25[1223] = *(uint32_t*)(dword_5d4594_1308132 + 32) >> 16;
-	v13 = nox_fs_root();
+	v13 = nox_fs_save_root();
 	v14 = *getMemU16Ptr(0x587000, 171768);
 	strcpy(&v25[4], v13);
 	v15 = getMemByte(0x587000, 171770);

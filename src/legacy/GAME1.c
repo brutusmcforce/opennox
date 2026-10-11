@@ -2337,7 +2337,7 @@ int* sub_416910(int* a1) { return nox_common_list_getNextSafe_4258A0(a1); }
 int sub_416920() {
 	nox_common_list_clear_425760(getMemAt(0x5D4594, 371364));
 	nox_common_list_clear_425760(getMemAt(0x5D4594, 371500));
-	return sub_4E41B0((char*)getMemAt(0x587000, 54280));
+	return sub_4E41B0(nox_fs_user_path((char*)getMemAt(0x587000, 54280)));
 }
 
 //----- (00416950) --------------------------------------------------------
@@ -2348,7 +2348,7 @@ int* sub_416950() {
 	int* v3;     // esi
 	int* v4;     // edi
 
-	sub_4E43F0("ban.txt");
+	sub_4E43F0(nox_fs_user_path("ban.txt"));
 	v0 = sub_4168E0();
 	if (v0) {
 		do {

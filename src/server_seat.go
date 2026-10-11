@@ -88,6 +88,8 @@ func (c *Client) Sub_4992B0(a1 int, a2 int) int {
 
 func playMovieFile(name string) {}
 
+func openNoxVideoOpts(c *Client) []*videoOpt { return nil }
+
 func sub_4960B0() int {
 	return 1
 }

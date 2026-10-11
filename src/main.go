@@ -227,6 +227,7 @@ func runArgs(args []string, loopFunc func() error) (gerr error) {
 	if err := os.Chdir(datapath.Data()); err != nil {
 		return err
 	}
+	migrateUserData()
 	legacy.InitBlobData()
 	isServer = *fAutoServer
 	isServerQuest = *fAutoQuest

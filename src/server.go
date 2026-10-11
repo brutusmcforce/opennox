@@ -745,7 +745,7 @@ func (s *Server) nox_xxx_servEndSession_4D3200() {
 	}
 	legacy.Sub_56F3B0()
 	s.NetList.ResetAll()
-	_ = ifs.Remove(datapath.Save("_temp_.dat"))
+	_ = ifs.Remove(savePath("_temp_.dat"))
 }
 
 func sub_4D3C30() {
@@ -768,9 +768,10 @@ func (s *Server) nox_server_loadMapFile_4CF5F0(mname string, noCrypt bool) error
 	} else if strings.HasPrefix(mname, "#") {
 		v3 := datapath.Data()
 		legacy.Sub_4D39F0(v3)
+		// generated map name, without the '#' prefix and the extension
 		v13 := mname[1:]
-		if i := strings.IndexByte(mname, '.'); i > 0 {
-			v13 = v3[:i]
+		if i := strings.IndexByte(v13, '.'); i > 0 {
+			v13 = v13[:i]
 		}
 		legacy.Sub_4D42E0(v13)
 		v12 := fmt.Sprintf("$%s.map", v13)
@@ -862,7 +863,7 @@ func (s *Server) maybeInitPlayerUnits() {
 				legacy.Sub_4D7440(1)
 				legacy.Sub_4D60B0()
 			} else {
-				fname := datapath.Save("_temp_.dat")
+				fname := savePath("_temp_.dat")
 				for _, u := range s.Players.ListUnits() {
 					ud := u.UpdateDataPlayer()
 					plx := ud.Player

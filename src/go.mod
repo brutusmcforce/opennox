@@ -65,7 +65,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/traefik/yaegi v0.16.2-0.20240730175404-e686f55767b9 // indirect
-	github.com/veandco/go-sdl2 v0.5.0-alpha.4 // indirect
+	github.com/veandco/go-sdl2 v0.5.0-alpha.4
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/youpy/go-riff v0.1.0 // indirect
 	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64 // indirect

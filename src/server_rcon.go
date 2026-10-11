@@ -19,7 +19,6 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/opennox/libs/datapath"
 	"github.com/opennox/libs/log"
 
 	"github.com/opennox/libs/console"
@@ -43,7 +42,7 @@ type RconOptions struct {
 
 func NewRemoteConsole(host string, exec console.ExecFunc, opts RconOptions) (*RemoteConsole, error) {
 	if opts.KeyPath == "" {
-		opts.KeyPath = datapath.Data("server.pem")
+		opts.KeyPath = userFilePath("server.pem")
 	}
 	l, err := net.Listen("tcp", host)
 	if err != nil {

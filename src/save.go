@@ -11,7 +11,6 @@ import (
 
 	"github.com/opennox/libs/common"
 	"github.com/opennox/libs/console"
-	"github.com/opennox/libs/datapath"
 	"github.com/opennox/libs/env"
 	"github.com/opennox/libs/ifs"
 	"github.com/opennox/libs/noxnet/netxfer"
@@ -57,7 +56,7 @@ func clientLoadCoopGame(name string) bool {
 }
 
 func makeSaveDir(name string) (string, error) {
-	dir := datapath.Save(name)
+	dir := savePath(name)
 	err := ifs.Mkdir(dir)
 	return dir, err
 }
@@ -66,7 +65,7 @@ func deleteSaveDir(name string, rmdir bool) error {
 	if name == "" {
 		return nil
 	}
-	saveDir := datapath.Save(name)
+	saveDir := savePath(name)
 	if err := ifs.RemoveAll(saveDir); err != nil {
 		return err
 	}
@@ -81,7 +80,7 @@ func deleteSaveDir(name string, rmdir bool) error {
 }
 
 func copySaveDir(from, to string) error {
-	fromDir := datapath.Save(from)
+	fromDir := savePath(from)
 	if err := deleteSaveDir(to, true); err != nil {
 		return err
 	}
@@ -100,7 +99,7 @@ func nox_client_checkSaveMapExistsTmp(name string) (string, error) {
 		name = name[:i]
 	}
 	dir := strings.TrimSuffix(name, ".map")
-	fname := datapath.Save(common.SaveTmp, dir, name)
+	fname := savePath(common.SaveTmp, dir, name)
 	if _, err := ifs.Stat(fname); err != nil {
 		return "", err
 	}
@@ -117,7 +116,7 @@ func nox_client_countPlayerFiles04_4DC7D0() int {
 }
 
 func nox_client_countPlayerFiles(flag byte) (int, error) {
-	dir := datapath.Save()
+	dir := savePath()
 	list, err := ifs.ReadDir(dir)
 	if os.IsNotExist(err) {
 		return 0, nil
@@ -158,7 +157,7 @@ func clientSavePlayerChar(path string, data []byte) int {
 		return 0
 	}
 
-	ifs.MkdirAll(datapath.Save())
+	ifs.MkdirAll(savePath())
 
 	f, err := binfile.BinfileOpen(path, binfile.WriteOnly)
 	if err != nil {
@@ -394,7 +393,7 @@ func xferDataCallback40AF90(ind ntype.PlayerInd, data netxfer.Data) {
 			sub_446060()
 		}
 	case server.NetXferSaveServer:
-		path := datapath.Save("_temp_.dat")
+		path := savePath("_temp_.dat")
 		if nox_xxx_SavePlayerDataFromClient_41CD70(path, data.Data) {
 			if s.nox_xxx_isQuest_4D6F50() && ind == server.HostPlayerIndex {
 				sub4DCEE0(path)
@@ -471,7 +470,7 @@ func loadCoopGame(name string) bool {
 	if name != common.SaveTmp && copySaveDir(name, common.SaveTmp) != nil {
 		return false
 	}
-	path := datapath.Save(common.SaveTmp, common.PlayerFile)
+	path := savePath(common.SaveTmp, common.PlayerFile)
 	if _, err := ifs.Stat(path); os.IsNotExist(err) {
 		str := strMan.GetStringInFile("AutoSaveNotFound", "SaveGame.c")
 		legacy.PrintToPlayers(str)
@@ -491,7 +490,7 @@ func loadCoopGame(name string) bool {
 	pl.Name()
 	mname := pl.SaveName()
 	s.nox_xxx_gameSetMapPath_409D70(mname + ".map")
-	dword_5d4594_1559960 = datapath.Save(common.SaveTmp, mname, mname+".map")
+	dword_5d4594_1559960 = savePath(common.SaveTmp, mname, mname+".map")
 	s.SwitchMap(mname + ".map")
 	nox_xxx_cliPlayMapIntro_44E0B0(0)
 	if legacy.Nox_xxx_plrLoad_41A480(path) == 0 {
@@ -513,7 +512,7 @@ func sub_4DCD40() {
 	dword_5d4594_1563048 = gameIsClosed()
 	serverSetClosed()
 	dword_5d4594_1563044 = true
-	path := datapath.Save("_temp_.dat")
+	path := savePath("_temp_.dat")
 	for _, u := range noxServer.Players.ListUnits() {
 		ud := u.UpdateDataPlayer()
 		pl := ud.Player
@@ -542,7 +541,7 @@ func sub_4DCFB0(a1p *server.Object) {
 			nox_xxx_player_4D7960(pl.Index())
 			return
 		}
-		FileName := datapath.Save("_temp_.dat")
+		FileName := savePath("_temp_.dat")
 		v2 := true
 		if savePlayerServerData(FileName, pl.PlayerIndex()) {
 			v2 = sub41CFA0(FileName, pl.PlayerIndex())
@@ -812,7 +811,7 @@ func saveCoopGame(name string) bool {
 	if u.Flags().Has(object.FlagDead) {
 		return false
 	}
-	if err := ifs.Mkdir(datapath.Save()); err != nil {
+	if err := ifs.Mkdir(savePath()); err != nil {
 		saveLog.Printf("cannot create common saves dir: %v", err)
 		return false
 	}
@@ -821,7 +820,7 @@ func saveCoopGame(name string) bool {
 		return false
 	}
 	mname := s.getServerMap()
-	if err := ifs.Mkdir(datapath.Save(common.SaveTmp, mname)); err != nil {
+	if err := ifs.Mkdir(savePath(common.SaveTmp, mname)); err != nil {
 		saveLog.Printf("cannot create save dir: %v", err)
 		return false
 	}
@@ -829,12 +828,12 @@ func saveCoopGame(name string) bool {
 		return false
 	}
 	mname = s.getServerMap()
-	path := datapath.Save(common.SaveTmp, mname, mname+".map")
+	path := savePath(common.SaveTmp, mname, mname+".map")
 	if !legacy.Nox_xxx_mapSaveMap_51E010(path, 0) {
 		return false
 	}
 	legacy.Nox_xxx_monstersAllBelongToHost_4DB6A0()
-	ppath := datapath.Save(common.SaveTmp, common.PlayerFile)
+	ppath := savePath(common.SaveTmp, common.PlayerFile)
 	save := clientCurSave()
 	save.Flags &^= 0x8
 	if memmap.Uint32(0x5D4594, 1563076) != 0 {

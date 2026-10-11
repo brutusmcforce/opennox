@@ -335,7 +335,7 @@ func nox_xxx_findAutosaves_4A5150() {
 	wstyle := winCharListStyle
 	v1 := winSelSave.ChildByID(501)
 	legacy.Nox_xxx_wnd_46ABB0(v1, 1)
-	PathName := datapath.Save()
+	PathName := savePath()
 	ifs.Mkdir(PathName)
 	if noxflags.HasGame(noxflags.GameModeCoop) {
 		saveLog.Printf("scanning path for coop saves: %q", PathName)
@@ -464,7 +464,7 @@ var saveClasses = []string{
 
 func nox_savegame_sub_46CE40(wlist, wnames, wstyles *gui.Window, sarr []server.SaveGameInfo) int {
 	const stringsFile = "C:\\NoxPost\\src\\client\\Gui\\GUISave.c"
-	PathName := datapath.Save()
+	PathName := savePath()
 	ifs.Mkdir(PathName)
 	wlist.Func94(gui.AsWindowEvent(0x400F, 0, 0))
 	wnames.Func94(gui.AsWindowEvent(0x400F, 0, 0))

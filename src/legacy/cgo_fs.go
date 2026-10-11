@@ -31,6 +31,29 @@ func nox_fs_root() *C.char {
 	return internCStr(datapath.Data())
 }
 
+// SaveRoot returns the directory that contains the save directory. It may differ from the game directory.
+var SaveRoot func() string
+
+//export nox_fs_save_root
+func nox_fs_save_root() *C.char {
+	if SaveRoot != nil {
+		return internCStr(SaveRoot())
+	}
+	return internCStr(datapath.Data())
+}
+
+// UserFilePath returns the path of a file written by the game (e.g. the ban list), which is not stored
+// in the game directory.
+var UserFilePath func(name string) string
+
+//export nox_fs_user_path
+func nox_fs_user_path(name *C.char) *C.char {
+	if UserFilePath != nil {
+		return internCStr(UserFilePath(GoString(name)))
+	}
+	return name
+}
+
 //export nox_fs_normalize
 func nox_fs_normalize(path *C.char) *C.char {
 	out := ifs.Normalize(GoString(path))

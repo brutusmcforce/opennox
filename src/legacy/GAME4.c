@@ -5583,7 +5583,7 @@ int nox_server_mapRWMapIntro_505080() {
 	v17 = 0;
 	v1 = nox_common_gameFlags_check_40A5C0(0x200000);
 	sub_505060();
-	v2 = nox_fs_root();
+	v2 = nox_fs_save_root();
 	v3 = *getMemU16Ptr(0x587000, 229832);
 	strcpy(v19, v2);
 	v4 = getMemByte(0x587000, 229834);

@@ -11,6 +11,10 @@ char* nox_fs_normalize(char* path);
 #endif
 
 char* nox_fs_root();
+// nox_fs_save_root returns the directory that contains the save directory.
+char* nox_fs_save_root();
+// nox_fs_user_path returns the path of a file written by the game, in the user data directory.
+char* nox_fs_user_path(char* name);
 
 // nox_fs_set_workdir sets current work directory.
 bool nox_fs_set_workdir(char* path);

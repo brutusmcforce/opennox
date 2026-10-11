@@ -99,6 +99,7 @@ func (c *Client) initSeat(sz image.Point) error {
 	if err := c.initGPU(); err != nil {
 		return err
 	}
+	applyVSync()
 	sst.SetGamma(getGamma())
 	return nil
 }
