@@ -45,6 +45,9 @@ func BinfileOpen(path string, mode Mode) (*Binfile, error) {
 		return nil, err
 	}
 	file := &File{File: f}
+	if mode == WriteOnly {
+		file.enableWriteBuffer()
+	}
 	bin := &Binfile{File: file, mode: mode}
 	file.Bin = bin
 	return bin, nil

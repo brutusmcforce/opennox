@@ -20,7 +20,7 @@ env:
 
 jobs:
   hybrid_docker_mingw:
-    # Cross compile Windows binaries with mingw on ArchLinux-based Linux environment
+    # Cross compile Windows binaries with MinGW in Debian, see scripts/ci/build-windows.sh
     name: Cross compile for Windows
     runs-on: ubuntu-latest
     steps:
@@ -33,12 +33,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: gocache
-          key: mingw-gocache-v3-${{ hashFiles('**/go.sum') }}
+          key: mingw-gocache-v4-${{ hashFiles('**/go.sum', 'src/go.mod', 'scripts/ci/*') }}
           restore-keys: |
-            mingw-gocache-v3-
+            mingw-gocache-v4-
 
-      - uses: docker://ghcr.io/opennox/docker-build:latest-win
-        name: Docker build
+      - name: Build
+        run: docker run --rm --platform linux/amd64 -v "$PWD:/w" -w /w debian:bookworm scripts/ci/build-windows.sh
 
       - uses: actions/upload-artifact@v4
         name: Upload artifacts
@@ -54,7 +54,7 @@ jobs:
           retention-days: 1
 
   linux_docker:
-    # Compile Linux binaries with a golang docker container
+    # Compile Linux binaries in 32-bit Debian, see scripts/ci/build-linux.sh
     name: Compile for Linux
     runs-on: ubuntu-latest
     steps:
@@ -67,12 +67,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: gocache
-          key: linux-gocache-v3-${{ hashFiles('**/go.sum') }}
+          key: linux-gocache-v4-${{ hashFiles('**/go.sum', 'src/go.mod', 'scripts/ci/*') }}
           restore-keys: |
-            linux-gocache-v3-
+            linux-gocache-v4-
 
-      - uses: docker://ghcr.io/opennox/docker-build:latest-linux
-        name: Docker build
+      # 32-bit Debian 12, so the binaries run on any distribution with glibc 2.36 or newer
+      - name: Build
+        run: docker run --rm --platform linux/386 -v "$PWD:/w" -w /w debian:bookworm scripts/ci/build-linux.sh
 
       - uses: actions/upload-artifact@v4
         name: Upload artifacts
@@ -84,43 +85,6 @@ jobs:
             build/opennox-server
           if-no-files-found: error
           retention-days: 1
-
-  snapcraft_linux:
-    name: Go build for Snapcraft
-    runs-on: ubuntu-24.04
-    if: startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/dev')
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: true
-      - name: 'Build Snap package'
-        uses: snapcore/action-build@v1
-        id: snapcraft
-        with:
-          # core24 needs snapcraft 8 or later
-          snapcraft-channel: '8.x/stable'
-#      - name: 'Upload the package'
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: opennox-snap
-#          path: ${{ steps.snapcraft.outputs.snap }}
-      - name: 'Publish to edge channel'
-        uses: snapcore/action-publish@v1
-        if: github.ref == 'refs/heads/dev'
-        env:
-          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
-        with:
-          snap: ${{ steps.snapcraft.outputs.snap }}
-          release: edge
-      - name: 'Publish to stable channel'
-        uses: snapcore/action-publish@v1
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
-        with:
-          snap: ${{ steps.snapcraft.outputs.snap }}
-          release: stable
 
   docker_server:
     name: Docker server build
@@ -262,14 +226,17 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/dev') || (github.ref == 'refs/heads/appimage-workflow-test') || (github.ref == 'refs/heads/ci_tests')
     needs: [linux_docker]
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         name: Retrieving compiled OpenNox
         with:
           name: opennox-linux
           path: build
 
-      - uses: docker://ghcr.io/opennox/docker-build:latest-linux-packaging-appimage
-        name: Using docker build - latest-linux-packaging-appimage
+      # bundles SDL2 and OpenAL from 32-bit Debian 12, the same system the binaries are built on
+      - name: Build the AppImage
+        run: docker run --rm --platform linux/386 -v "$PWD:/w" -w /w debian:bookworm scripts/appimage/build.sh
 
       - uses: actions/upload-artifact@v4
         name: Upload the AppImage

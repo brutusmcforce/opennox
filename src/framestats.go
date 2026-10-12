@@ -43,6 +43,9 @@ func (k frameKind) String() string {
 	}
 }
 
+// slowFrame is the frame time above which game frames are logged.
+const slowFrame = 12 * time.Millisecond
+
 type frameStatsRecorder struct {
 	on           bool
 	csv          *os.File
@@ -85,6 +88,10 @@ func (s *frameStatsRecorder) presented(kind frameKind) {
 	if !s.last.IsZero() {
 		dt := now.Sub(s.last)
 		s.times[kind] = append(s.times[kind], dt)
+		if kind == frameGame && dt > slowFrame {
+			// logged in order with the rest of the log, which shows what the game was doing
+			frameStatsLog.Printf("slow frame %d: %.1f ms", len(s.times[kind]), float64(dt)/float64(time.Millisecond))
+		}
 		if s.w != nil {
 			fmt.Fprintf(s.w, "%.3f,%s\n", float64(dt)/float64(time.Millisecond), kind)
 		}
