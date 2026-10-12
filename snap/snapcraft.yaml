@@ -1,6 +1,6 @@
 name: opennox
-base: core18
-version: git
+base: core24
+adopt-info: opennox
 title: OpenNox
 summary: Modern implementation of Nox game engine
 #website: https://www.patreon.com/opennox # see https://bugs.launchpad.net/review-tools/+bug/1940880
@@ -16,21 +16,24 @@ description: |
 grade: stable
 confinement: strict
 
-version-script: |
-  set -x
-  cd ./src
-  go run ./internal/vers full
+# OpenNox is built for i386 (the legacy code is 32-bit), but there is no i386 base after core18.
+# So the snap is amd64 and bundles the i386 loader and libraries, see snap/local/launch.
+platforms:
+  amd64:
 
-architectures:
-  - build-on: i386
-    run-on: [amd64]
-    
-environment:
-  LIBGL_DRIVERS_PATH: $SNAP/usr/lib/i386-linux-gnu/dri
+package-repositories:
+  # enables i386 packages from the Ubuntu archive
+  - type: apt
+    architectures: [i386]
+    formats: [deb]
+    components: [main, universe]
+    suites: [noble, noble-updates, noble-security]
+    key-id: F6ECB3762474EDA9D21B7022871920D1991BC93C
+    url: http://archive.ubuntu.com/ubuntu
 
 apps:
   opennox:
-    command: bin/opennox
+    command: bin/launch opennox
     desktop: usr/share/applications/opennox.desktop
     plugs:
       - home
@@ -43,48 +46,47 @@ apps:
       - network
       - network-bind
   server:
-    command: bin/opennox-server
+    command: bin/launch opennox-server
     plugs:
       - home
       - network
       - network-bind
 
 parts:
-  i386:
-    plugin: nil
-    override-build: |
-      sudo dpkg --add-architecture i386
-      sudo apt-get update
-  opennox:
-    after: [i386]
+  launcher:
     plugin: dump
-    source: .
-#    override-pull: |
-#      snapcraftctl pull
-#      cd /root/project/src
-#      snapcraftctl set-version "$(go run ./internal/vers full)"
-    build-snaps:
-      - go
-    build-environment:
-      - PKG_CONFIG_PATH: $PKG_CONFIG_PATH:/usr/lib/i386-linux-gnu/pkgconfig/
-    override-build: |
-      dpkg --add-architecture i386
-      apt update
-      apt install -y build-essential gcc gcc-multilib libsdl2-dev:i386 libopenal-dev:i386
-      cd /root/parts/opennox/build/src
-      go run ./internal/noxbuild
-      snapcraftctl build
-    stage-packages:
-      - libsdl2-2.0-0:i386
-      - libgl1:i386
-      - libopenal1:i386
+    source: snap/local
     organize:
-      src/opennox: bin/
-      src/opennox-server: bin/
-      snap/*.desktop: usr/share/applications/
-      res/opennox_256.png: usr/share/icons/hicolor/256x256/apps/opennox.png
+      launch: bin/launch
     stage:
-      - bin/
-      - etc/
-      - lib/
-      - usr/
+      - bin/launch
+
+  opennox:
+    plugin: nil
+    source: .
+    build-environment:
+      - PKG_CONFIG_PATH: /usr/lib/i386-linux-gnu/pkgconfig
+      - GOTOOLCHAIN: auto
+      - GOFLAGS: -buildvcs=false
+    override-build: |
+      # installed here and not as build-packages: the i386 packages must match the versions of the amd64 ones,
+      # which needs an upgrade that snapcraft doesn't do.
+      # Go from the archive is older than go.mod requires; it downloads the right toolchain itself.
+      apt-get install -y --no-install-recommends ca-certificates golang-go git gcc-multilib pkg-config libsdl2-dev:i386 libopenal-dev:i386
+      cd src
+      craftctl set version="$(go run ./internal/vers full || echo dev)"
+      go run ./internal/noxbuild -o "$CRAFT_PART_INSTALL/bin"
+    stage-packages:
+      - libc6:i386
+      - libsdl2-2.0-0:i386
+      - libopenal1:i386
+      - libpulse0:i386
+      - libgl1:i386
+      - libegl1:i386
+      - libglx-mesa0:i386
+      - libegl-mesa0:i386
+      - libgl1-mesa-dri:i386
+    override-prime: |
+      craftctl default
+      install -D -m 644 "$CRAFT_PROJECT_DIR/snap/opennox.desktop" usr/share/applications/opennox.desktop
+      install -D -m 644 "$CRAFT_PROJECT_DIR/res/opennox_256.png" usr/share/icons/hicolor/256x256/apps/opennox.png
