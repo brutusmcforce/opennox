@@ -12,12 +12,12 @@ import (
 
 func interactionDollImage(handle uint32, pos image.Point) {
 	r := GetClient().R2()
-	r.DrawImageAt(r.GetBag().AsImage(noxrender.ImageHandle(unsafe.Pointer(uintptr(handle)))), pos)
+	r.DrawImageAt(r.GetBag().AsImage(noxrender.ImageHandle(memmap.WordPtr(handle))), pos)
 }
 func interactionDollLoad() int {
 	load := func(nameOffset uintptr) uint32 {
-		name := alloc.GoString(*(**byte)(memmap.PtrOff(0x587000, nameOffset)))
-		return uint32(uintptr(Nox_xxx_gLoadImg(name).C()))
+		name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, nameOffset)))
+		return memmap.PtrWord(unsafe.Pointer(Nox_xxx_gLoadImg(name).C()))
 	}
 	for gender := uintptr(0); gender < 2; gender++ {
 		*memmap.PtrUint32(0x973A20, 16+4*gender) = load(180960 + 4*gender)
@@ -31,7 +31,7 @@ func interactionDollLoad() int {
 			*memmap.PtrUint32(0x973A20, 256+off) = load(181184 + off)
 		}
 	}
-	*memmap.PtrUint32(0x5D4594, 1319052) = uint32(uintptr(Nox_xxx_gLoadImg("MaleMedievalCloakTop").C()))
+	*memmap.PtrUint32(0x5D4594, 1319052) = memmap.PtrWord(unsafe.Pointer(Nox_xxx_gLoadImg("MaleMedievalCloakTop").C()))
 	return 1
 }
 func interactionDollLayer(typ uint32, pos image.Point, table *uint32, index uint32, overlay bool) int16 {
@@ -65,7 +65,7 @@ func interactionDollLayer(typ uint32, pos image.Point, table *uint32, index uint
 		handle = *(*uint32)(unsafe.Add(unsafe.Pointer(table), uintptr(index)*4))
 	}
 	interactionDollImage(handle, pos)
-	return int16(uintptr(dr.C()))
+	return int16(memmap.PtrWord(dr.C()))
 }
 func interactionDollDraw(origin image.Point) int16 {
 	pos := origin.Add(image.Pt(11, 15))
@@ -84,7 +84,7 @@ func interactionDollDraw(origin image.Point) int16 {
 	for i, c := range []uint32{p.Colors.Hair, p.Colors.Goatee, p.Colors.UnkColor, p.Colors.Beard, p.Colors.Mustache, p.Colors.Skin} {
 		data.SetMaterial(i+1, noxcolor.RGBA5551(c))
 	}
-	gender := uintptr(*(*byte)(unsafe.Add(unsafe.Pointer(p), 2252)))
+	gender := uintptr(*(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(2252)) /* info */)))
 	base := uintptr(16)
 	if p.Colors.Skin == p.Colors.Hair {
 		base = 24
@@ -122,10 +122,6 @@ func interactionDollDraw(origin image.Point) int16 {
 func sub_4BF7E0(point *uint32) int16 {
 	p := (*[2]int32)(unsafe.Pointer(point))
 	return int16(interactionDollDraw(image.Pt(int(p[0]), int(p[1]))))
-}
-
-func sub_4BF9F0(mask, typ, x, y, table, index, overlay int32) int16 {
-	return int16(interactionDollLayer(uint32(typ), image.Pt(int(x), int(y)), (*uint32)(unsafe.Pointer(uintptr(uint32(table)))), uint32(index), overlay != 0))
 }
 
 func sub_4BFAD0() int32 { return int32(interactionDollLoad()) }

@@ -59,7 +59,7 @@ func quickbarAbilityReward(id, rank int, notify uintptr) {
 	for n := 1; n <= 5; n++ {
 		off := uintptr(1047764 + 24*n)
 		if *quickbarWord(off) == uint32(id) && *quickbarWord(off + 16) != uint32(rank) {
-			if p := quickbarPlayer(); p != 0 && noxflags.HasGame(noxflags.GameFlag(2)) {
+			if p := quickbarPlayer(); p != nil && noxflags.HasGame(noxflags.GameFlag(2)) {
 				*bookPlayerWord(p, 3696, id) = uint32(rank)
 			}
 			*quickbarWord(off + 16) = uint32(rank)

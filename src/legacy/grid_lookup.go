@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/types"
@@ -22,20 +23,20 @@ func tileAtPoint(p types.Pointf) int32 {
 	if u <= v {
 		if 46-u <= v {
 			cell := &rows[i][j]
-			fallback, head = int32(cell[6]), unsafe.Pointer(uintptr(cell[10]))
+			fallback, head = int32(cell[6]), memmap.WordPtr(cell[10])
 			local = [2]int32{u, v - 23}
 		} else {
 			cell := &rows[i-1][j]
-			fallback, head = int32(cell[1]), unsafe.Pointer(uintptr(cell[5]))
+			fallback, head = int32(cell[1]), memmap.WordPtr(cell[5])
 			local = [2]int32{u + 23, v}
 		}
 	} else if 46-u <= v {
 		cell := &rows[i][j]
-		fallback, head = int32(cell[1]), unsafe.Pointer(uintptr(cell[5]))
+		fallback, head = int32(cell[1]), memmap.WordPtr(cell[5])
 		local = [2]int32{u - 23, v}
 	} else {
 		cell := &rows[i][j-1]
-		fallback, head = int32(cell[6]), unsafe.Pointer(uintptr(cell[10]))
+		fallback, head = int32(cell[6]), memmap.WordPtr(cell[10])
 		local = [2]int32{u, v + 23}
 	}
 	if head == nil {

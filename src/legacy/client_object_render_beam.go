@@ -43,7 +43,7 @@ func objectRenderBeamDraw(vp *noxrender.Viewport) int {
 		if from.X <= 0 || from.X >= vp.Size.X-1 || from.Y <= 0 || from.Y >= vp.Size.Y-1 {
 			visible = 0
 		}
-		n := sight.Sub_498C20(&from, &to, int32(uintptr(vp.C())))
+		n := sight.Sub_498C20(&from, &to, int32(memmap.PtrWord(vp.C())))
 		if n != 0 {
 			previous := from
 			for j := 0; j < int(n); j++ {

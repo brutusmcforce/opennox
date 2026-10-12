@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
@@ -30,9 +31,9 @@ func roamHistory(ud *server.MonsterUpdateData) *[16]uint32 {
 	return (*[16]uint32)(unsafe.Pointer(&ud.Field75))
 }
 func roamWaypoint(raw uint32) *server.Waypoint {
-	return (*server.Waypoint)(unsafe.Pointer(uintptr(raw)))
+	return (*server.Waypoint)(memmap.WordPtr(raw))
 }
-func roamWaypointWord(wp *server.Waypoint) uint32 { return uint32(uintptr(unsafe.Pointer(wp))) }
+func roamWaypointWord(wp *server.Waypoint) uint32 { return memmap.PtrWord(unsafe.Pointer(wp)) }
 func roamEligible(wp *server.Waypoint, mask byte) bool {
 	return wp != nil && wp.IsEnabled() && wp.HasFlag2Mask(mask)
 }

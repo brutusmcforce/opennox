@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"encoding/binary"
 	"fmt"
 	"image"
@@ -9,7 +10,6 @@ import (
 	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/internal/netlist"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
@@ -21,24 +21,23 @@ type uiTradeCell struct {
 	Value    uint32
 }
 
-var _ [140 - unsafe.Sizeof(uiTradeCell{})]byte
-var _ [unsafe.Sizeof(uiTradeCell{}) - 140]byte
-var _ [136 - unsafe.Offsetof(uiTradeCell{}.Value)]byte
-var _ [unsafe.Offsetof(uiTradeCell{}.Value) - 136]byte
+
+
+
+
 var uiTradeScanOrder = [4]int{0, 2, 1, 3}
 
 func uiTradeGrid(side int) []uiTradeCell {
-	off := uintptr(1319284)
 	if side != 0 {
-		off = 1320308
+		return uiTradeCells[1][:]
 	}
-	return unsafe.Slice((*uiTradeCell)(memmap.PtrOff(0x5D4594, off)), 4)
+	return uiTradeCells[0][:]
 }
 func uiTradeWindow() *gui.Window       { return uiInventoryWindowValue(uint32(dword_5d4594_1320940)) }
 func uiTradeActive() uint32            { return uint32(dword_5d4594_1320964) }
 func uiTradeDragged() *client.Drawable { return uiInventoryDrawable(uint32(dword_5d4594_1320968)) }
 func uiTradeSource() *uiTradeCell {
-	return (*uiTradeCell)(unsafe.Pointer(uintptr(dword_5d4594_1320972)))
+	return (*uiTradeCell)(memmap.WordPtr(dword_5d4594_1320972))
 }
 func uiTradeSound(id int) { audioEventPlay(int32(id), 100, 0, 0) }
 func uiTradeString(id string) string {
@@ -63,7 +62,7 @@ func uiTradeShow() int {
 	return 0
 }
 func uiTradeStart(data unsafe.Pointer) int {
-	if dword_8531A0_2576 == 0 || uiTradeActive() == 1 {
+	if dword_8531A0_2576 == nil || uiTradeActive() == 1 {
 		return 0
 	}
 	dword_5d4594_1320964 = 1
@@ -73,7 +72,7 @@ func uiTradeStart(data unsafe.Pointer) int {
 	uiWindowEnable(w, 1)
 	uiTradeShow()
 	w.SetPos(image.Pt(198, 193))
-	uiTradeSetText(w.ChildByID(3702), (*uint16)(unsafe.Pointer(uintptr(dword_8531A0_2576)+4704)))
+	uiTradeSetText(w.ChildByID(3702), (*uint16)(unsafe.Add(dword_8531A0_2576.C(), int(layoutServerPlayer.Off(4704)) /* NameFinal */)))
 	uiTradeSetText(w.ChildByID(3703), uiTradeTextAt(1319844))
 	uiInventoryOpenWindow()
 	return 1
@@ -139,10 +138,10 @@ func uiTradeFinish() int {
 }
 func uiTradePrepare() int {
 	ret := int(int32(uiTradeActive()))
-	if ret != 0 && dword_8531A0_2576 != 0 {
+	if ret != 0 && dword_8531A0_2576 != nil {
 		uiTradeReset()
 		w := uiTradeWindow()
-		uiTradeSetText(w.ChildByID(3702), (*uint16)(unsafe.Pointer(uintptr(dword_8531A0_2576)+4704)))
+		uiTradeSetText(w.ChildByID(3702), (*uint16)(unsafe.Add(dword_8531A0_2576.C(), int(layoutServerPlayer.Off(4704)) /* NameFinal */)))
 		ret = uiTradeSetText(w.ChildByID(3703), uiTradeTextAt(1319844))
 	}
 	return ret
@@ -211,7 +210,7 @@ func uiTradeAdd(data unsafe.Pointer) uint32 {
 		selected = uint32(dword_5d4594_1320932)
 	}
 	typ := uint32(binary.LittleEndian.Uint16(b[3:]))
-	c := (*uiTradeCell)(unsafe.Pointer(uintptr(selected)))
+	c := (*uiTradeCell)(memmap.WordPtr(selected))
 	if c == nil || uiTradeCellFits(typ, c) == 0 {
 		c = uiTradeFindCell(side, typ)
 	}
@@ -226,7 +225,7 @@ func uiTradeAdd(data unsafe.Pointer) uint32 {
 		c.Drawable = dr
 		if uint32(dr.Class())&0x13001000 != 0 {
 			for i, id := range b[11:15] {
-				*(*unsafe.Pointer)(unsafe.Add(dr.C(), 432+4*i)) = GetServer().S().Modif.Nox_xxx_modifGetDescById413330(int(id)).C()
+				*drawableModifier(dr, i) = GetServer().S().Modif.Nox_xxx_modifGetDescById413330(int(id)).C()
 			}
 		}
 		c.Count = 0

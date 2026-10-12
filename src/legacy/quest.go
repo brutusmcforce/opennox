@@ -62,10 +62,10 @@ func Sub_4D9D20(a1 int, a2 *server.Object) {
 func Nox_xxx_unitInitPlayer_4EFE80(a1 *server.Object) {
 	controlInitPlayer(a1)
 }
-func Nox_xxx_playerRespawnItem_4EF750(a1 *server.Object, a2 string, a3 unsafe.Pointer, a4 int, a5 int) *server.Object {
+func Nox_xxx_playerRespawnItem_4EF750(a1 *server.Object, a2 string, a3 *server.ModifierInitData, a4 int, a5 int) *server.Object {
 	return controlRespawnItem(a1, GoStringP(unsafe.Pointer(internCStr(a2))), a3, int32(a4), int32(a5))
 }
-func Nox_xxx_modifSetItemAttrs_4E4990(a1 *server.Object, a2 unsafe.Pointer) {
+func Nox_xxx_modifSetItemAttrs_4E4990(a1 *server.Object, a2 *server.ModifierInitData) {
 	stateAttributes(a1, a2)
 }
 func Sub_4184D0(a1 unsafe.Pointer) {

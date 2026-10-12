@@ -11,7 +11,7 @@ func browserHidden(w *gui.Window) bool { return w == nil || w.GetFlags().IsHidde
 func browserTick() int {
 	switch uint32(browserUI.connectionState) {
 	case 0:
-		if (!browserHidden(browserWindow(uint32(uintptr(browserUI.mapWindow)))) || !browserHidden(browserWindow(uint32(browserUI.overview))) || !browserHidden(browserWindow(uint32(browserUI.gameList)))) && browserUI.creating == 0 && browserUI.transition == 0 && browserUI.hosting == 0 && browserHidden(browserWindow(uint32(uintptr(browserUI.detailPanel)))) {
+		if (!browserHidden(browserUI.mapWindow) || !browserHidden(browserUI.overview) || !browserHidden(browserUI.gameList)) && browserUI.creating == 0 && browserUI.transition == 0 && browserUI.hosting == 0 && browserHidden(browserUI.detailPanel) {
 			if uint64(uint32(PlatformTicks())) > uint64(browserUI.refreshDeadline) {
 				Nox_client_refreshServerList_4378B0()
 			} else {
@@ -67,7 +67,7 @@ func browserConnectionError() int {
 		Sub_449E00(browserString("ConnError"))
 		code = uint32(browserUI.connectionError)
 	}
-	key := alloc.GoString(*(**byte)(memmap.PtrOff(0x587000, 87416+uintptr(code)*4)))
+	key := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 87416+uintptr(code)*4)))
 	Sub_449E30(browserString(key))
 	browserUI.transition = 0
 	Sub_449EA0(1)
@@ -75,7 +75,7 @@ func browserConnectionError() int {
 	return Sub_4A24C0(1)
 }
 func browserAttemptConnect() {
-	browserWindow(uint32(uintptr(browserUI.detailPanel))).StackPop()
+	browserUI.detailPanel.StackPop()
 	Nox_xxx_dialogMsgBoxCreate_449A10(browserUI.world, "", browserString("AttemptingConn"), 34, nil, nil)
 }
 func browserNotice(timeout bool) {

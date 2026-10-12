@@ -37,8 +37,6 @@ func (sp *serverSpells) Free() {
 	sp.duration.Free()
 }
 
-var _ = [1]struct{}{}[40-unsafe.Sizeof(server.PhonemeLeaf{})]
-
 func nox_xxx_spellAwardAll1_4EFD80(p *server.Player) {
 	serverSetAllBeastScrolls(p, noxflags.HasEngine(noxflags.EngineAdmin))
 }

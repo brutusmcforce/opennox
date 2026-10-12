@@ -30,7 +30,7 @@ func monsterControlLook(u *server.Object, index int32) uint32 {
 	x := float32(float64(memmap.Float32(0x587000, uintptr(194136+8*angle)))*10 + float64(u.PosVec.X))
 	y := float32(float64(memmap.Float32(0x587000, uintptr(194140+8*angle)))*10 + float64(u.PosVec.Y))
 	p := u.MonsterPushAction(ai.ACTION_FACE_LOCATION, x, y)
-	return uint32(uintptr(p.C()))
+	return memmap.PtrWord(p.C())
 }
 func monsterControlWalk(u *server.Object, p types.Pointf) {
 	if !monsterControlAlive(u) {
@@ -98,7 +98,7 @@ func monsterControlByte(u *server.Object, b *byte) uint32 {
 	}
 	ud := u.UpdateDataMonster()
 	ud.Field333 = ud.Field333&^255 | uint32(*b)
-	return uint32(uintptr(u.UpdateData))
+	return memmap.PtrWord(u.UpdateData)
 }
 func monsterControlFight(u, t *server.Object) {
 	if !monsterControlAlive(u) || t == nil || u == t {

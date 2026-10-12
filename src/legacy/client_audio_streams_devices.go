@@ -10,7 +10,7 @@ var audioStreamsRoot *audioStreamSystem
 
 func audioStreamRoot() *audioStreamSystem {
 	if audioStreamsRoot == nil {
-		audioStreamsRoot = (*audioStreamSystem)(memmap.PtrOff(0x5D4594, 1193204))
+		audioStreamsRoot = &audioStreamSystemData
 	}
 	return audioStreamsRoot
 }

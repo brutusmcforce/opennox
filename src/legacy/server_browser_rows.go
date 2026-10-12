@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"unsafe"
 )
 
-func browserWindow(v uint32) *gui.Window { return (*gui.Window)(unsafe.Pointer(uintptr(v))) }
+// windowArg returns the window passed in an event argument.
+func windowArg(a uintptr) *gui.Window { return (*gui.Window)(unsafe.Pointer(a)) }
 func browserNarrowText(s string) string {
 	// nox_swprintf's %S widens each unsigned byte, rather than decoding UTF-8.
 	out := make([]rune, len(s))
@@ -45,19 +45,19 @@ func browserMarkerImages(rec *Nox_gui_server_ent_t) {
 	if band > 2 {
 		band = 2
 	}
-	off := uintptr(814556 + 16*band)
+	i := 4 * band // large icons, then small ones in the world view
 	if browserUI.region == -1 {
-		off += 8
+		i += 2
 	}
-	draw := browserWindow(uint32(rec.Field_7)).DrawData()
-	draw.BgImageHnd = noxrender.ImageHandle(unsafe.Pointer(uintptr(memmap.Uint32(0x5D4594, off))))
-	draw.HlImageHnd = noxrender.ImageHandle(unsafe.Pointer(uintptr(memmap.Uint32(0x5D4594, off+4))))
+	draw := rec.Field_7.DrawData()
+	draw.BgImageHnd = browserGameIcons[i]
+	draw.HlImageHnd = browserGameIcons[i+1]
 	draw.DisImageHnd = draw.BgImageHnd
 }
 func browserRow(rec *Nox_gui_server_ent_t) {
 	name := rec.ServerName()
 	if browserUI.listMode != 0 {
-		optionsSend(browserWindow(uint32(browserUI.gameList)), 16397, uintptr(memmap.PtrOff(0x587000, 91164)), 4)
+		optionsSend(browserUI.gameList, 16397, uintptr(memmap.PtrOff(0x587000, 91164)), 4)
 		first := byte(0)
 		if len(name) > 0 {
 			first = name[0]
@@ -67,23 +67,23 @@ func browserRow(rec *Nox_gui_server_ent_t) {
 		}
 		text, free := alloc.CString16(browserNarrowText(name))
 		browserTrimName(text, 100)
-		optionsSend(browserWindow(uint32(browserUI.playersColumn)), 16397, uintptr(unsafe.Pointer(text)), 4)
+		optionsSend(browserUI.playersColumn, 16397, uintptr(unsafe.Pointer(text)), 4)
 		free()
-		browserText(browserWindow(uint32(browserUI.modeColumn)), fmt.Sprintf("%d/%d", rec.PlayersVal, rec.MaxPlayersVal), 4)
+		browserText(browserUI.modeColumn, fmt.Sprintf("%d/%d", rec.PlayersVal, rec.MaxPlayersVal), 4)
 		mode := browserModeName(uint16(rec.Flags()))
 		if uint16(rec.Flags())&0x1000 != 0 {
 			mode = fmt.Sprintf("%s %d", mode, rec.QuestLevel())
 			// The original shared quest label buffer remains observable to its owner.
 			alloc.StrCopy16(unsafe.Slice(memmap.PtrUint16(0x5D4594, 814772), 128), mode)
-			optionsSend(browserWindow(uint32(browserUI.mapColumn)), 16397, uintptr(memmap.PtrOff(0x5D4594, 814772)), 4)
+			optionsSend(browserUI.mapColumn, 16397, uintptr(memmap.PtrOff(0x5D4594, 814772)), 4)
 		} else {
-			browserText(browserWindow(uint32(browserUI.mapColumn)), mode, 4)
+			browserText(browserUI.mapColumn, mode, 4)
 		}
 		ping := fmt.Sprint(rec.PingVal)
 		if rec.PingVal == 9999 {
 			ping = "--"
 		}
-		browserText(browserWindow(uint32(browserUI.pingColumn)), ping, 4)
+		browserText(browserUI.pingColumn, ping, 4)
 		status := ""
 		if rec.StatusVal&0x20 != 0 {
 			status = serverPanelsText("noxworld.c", "Noxworld.wnd:private")
@@ -101,15 +101,15 @@ func browserRow(rec *Nox_gui_server_ent_t) {
 			}
 			status = serverPanelsText("noxworld.c", key)
 		}
-		browserText(browserWindow(uint32(browserUI.statusColumn)), status, 4)
+		browserText(browserUI.statusColumn, status, 4)
 		return
 	}
 	region := int32(browserUI.region)
-	parent := AsWindowP(browserUI.mapWindow)
+	parent := browserUI.mapWindow
 	size, offset, flags := 20, 10, gui.StatusFlags(1192)
 	if region == -1 {
 		region = int32(browserRegion(int32(rec.Field_11_0), int32(rec.Field_11_2)))
-		parent = browserWindow(uint32(browserUI.overview)).ChildByID(uint(10054 + region))
+		parent = browserUI.overview.ChildByID(uint(10054 + region))
 		size, offset, flags = 10, 5, 1185
 	}
 	x := uint16(rec.Field_11_0) - memmap.Uint16(0x587000, 87528+8*uintptr(uint32(region)))
@@ -121,7 +121,7 @@ func browserRow(rec *Nox_gui_server_ent_t) {
 	rec.Field_11_0, rec.Field_11_2 = int16(x), int16(y)
 	draw := gui.WindowData{Style: 257, Window: browserUI.world}
 	w := NewButtonOrCheckbox(parent, flags, int(int16(x))-offset, int(int16(y))-offset, size, size, &draw)
-	rec.Field_7 = int32(uintptr(w.C()))
+	rec.Field_7 = w
 	browserMarkerImages(rec)
 	if name == "" {
 		name = fmt.Sprintf("%s:%d", rec.Addr(), rec.Port())

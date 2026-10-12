@@ -103,7 +103,7 @@ func projectileChakramCandidate(t *server.Object, pos *types.Pointf) {
 	best := memmap.PtrFloat32(0x5d4594, 1567836)
 	if d <= 160000 && d < float64(*best) {
 		*best = float32(d)
-		dword_5d4594_1567928 = uint32(uintptr(t.CObj()))
+		dword_5d4594_1567928 = memmap.PtrWord(t.CObj())
 	}
 }
 func projectileChakramSelect(u *server.Object) *server.Object {

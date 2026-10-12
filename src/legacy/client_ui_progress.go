@@ -33,12 +33,12 @@ func uiProgressEvent(win *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 		a, _ := ev.EventArgsC()
 		v := int32(a)
 		if v >= 0 && v <= 100 {
-			*(*uint32)(unsafe.Add(win.C(), 32)) = uint32(v)
+			*(*uint32)(unsafe.Add(win.C(), int(layoutGuiWindow.Off(32)) /* WidgetData */)) = uint32(v)
 		}
 	}
 	return nil
 }
-func uiProgressValue(win *gui.Window) int { return int(*(*int32)(unsafe.Add(win.C(), 32))) }
+func uiProgressValue(win *gui.Window) int { return int(*(*int32)(unsafe.Add(win.C(), int(layoutGuiWindow.Off(32)) /* WidgetData */))) }
 func uiProgressDraw(win *gui.Window, draw *gui.WindowData) int {
 	r := GetClient().R2()
 	p := win.GlobalPos()

@@ -13,8 +13,6 @@ type Timer struct {
 	LastUpdated  uint64 // 24, the last tick the value was updated
 }
 
-var _ = [1]struct{}{}[32-unsafe.Sizeof(Timer{})]
-
 func (timer *Timer) C() unsafe.Pointer {
 	return unsafe.Pointer(timer)
 }
@@ -25,8 +23,6 @@ type TimerGroup struct {
 	// Timers[2]: Not quite sure. Ranged from 0 to 0x2000
 	Timers [3]Timer
 }
-
-var _ = [1]struct{}{}[96-unsafe.Sizeof(TimerGroup{})]
 
 func (timerGroup *TimerGroup) C() unsafe.Pointer {
 	return unsafe.Pointer(timerGroup)

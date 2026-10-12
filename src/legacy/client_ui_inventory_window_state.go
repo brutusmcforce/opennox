@@ -98,7 +98,7 @@ func uiInventoryResetClosedScroll() int {
 		return 1
 	}
 	dword_5d4594_1062516 = 0
-	w := (*gui.Window)(unsafe.Pointer(uintptr(dword_5d4594_1062508)))
+	w := (*gui.Window)(memmap.WordPtr(dword_5d4594_1062508))
 	if w == nil {
 		return 0
 	}
@@ -114,7 +114,7 @@ func uiInventoryCancelDrag() int {
 	ret := 0
 	if dr := uiInventoryDragged(); dr != nil {
 		if dword_5d4594_1049856 == 0 && uiInventoryPlace(dr, int(int32(dword_5d4594_1049796_inventory_click_column_index)), int(int32(dword_5d4594_1049800_inventory_click_row_index))) == 0 {
-			nox_xxx_spritePickup_461660(int32(dr.NetCode32), int32(dr.TypeIDVal), unsafe.Add(dr.C(), 432))
+			nox_xxx_spritePickup_461660(int32(dr.NetCode32), int32(dr.TypeIDVal), drawableModifiers(dr))
 			if found := uiInventoryFindCode(dr.NetCode32); found != nil {
 				restored := found.Cell
 				restored.Equipped = 0

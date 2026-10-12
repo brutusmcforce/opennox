@@ -3,7 +3,6 @@ package legacy
 import (
 	"fmt"
 	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
 )
@@ -35,7 +34,7 @@ func uiTradeInit() int {
 		}
 	}
 	uiTradeStoreText(1319972, 64, uiTradeString("TotalValueLabel"))
-	uiTradeViewportInit(1320188)
+	uiTradeViewportInit(&uiTradeViewport)
 	for i, name := range []string{"TradeBase", "TradeLeftAcceptPushed", "TradeLeftAcceptLit", "TradeRightAcceptLit", "TradeCancelLit", "TradeGold"} {
 		*memmap.PtrUint32(0x5D4594, 1320164+uintptr(4*i)) = uiMeterLoadImage(name)
 	}
@@ -74,7 +73,7 @@ func uiTradeDraw() int {
 			}
 			p := origin.Add(image.Pt((i/2)*50, (i%2)*50))
 			c.Drawable.PosVec = p.Add(image.Pt(25, 25))
-			c.Drawable.CallDraw((*noxrender.Viewport)(memmap.PtrOff(0x5D4594, 1320188)))
+			c.Drawable.CallDraw(&uiTradeViewport)
 			nox_xxx_drawSetTextColor_434390(int(nox_color_white_2523948))
 			GetClient().R2().DrawString(GetClient().R2().GetFonts().AsFont(nil), fmt.Sprint(int32(c.Count)), p.Add(image.Pt(5, 5)))
 			nox_xxx_drawSetTextColor_434390(int(nox_color_yellow_2589772))

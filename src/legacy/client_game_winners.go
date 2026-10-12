@@ -128,7 +128,7 @@ func clientGameWinner(kind byte, data []byte) int {
 				if id != localCode {
 					message += text("DM_Loss", p.Name())
 					mode = 1
-				} else if *(*byte)(unsafe.Add(p.C(), 2252)) == 0 {
+				} else if *(*byte)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(2252)) /* info */)) == 0 {
 					message += text("DM_MaleVictory")
 				} else {
 					message += text("DM_FemaleVictory")

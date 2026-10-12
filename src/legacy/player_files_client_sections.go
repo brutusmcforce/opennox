@@ -32,7 +32,7 @@ func playerFileGUI() int {
 		if r.read() {
 			quickbarSelectRow(int(row))
 		}
-		trap := r.byte(*quickbarByte(1048140))
+		trap := r.byte(quickbarRecords[0].Selected)
 		if r.read() {
 			quickbarTrapSelect(int(trap))
 		}
@@ -41,7 +41,7 @@ func playerFileGUI() int {
 		p := GetServer().S().Players.ByID(int(nox_player_netCode_85319C))
 		order := byte(4)
 		if p != nil {
-			order = *(*byte)(unsafe.Add(unsafe.Pointer(p), 3648))
+			order = *(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(3648)) /* SummonOrderAll */))
 		}
 		order = r.byte(order)
 		if r.read() && noxflags.HasGame(2048) {
@@ -68,7 +68,7 @@ func playerFileGame(u *server.Object) int {
 			GetServer().S().Objs.SetLastObjectScriptID(server.ObjectScriptID(id))
 		}
 	}
-	name := unsafe.Add(unsafe.Pointer(p), 4760)
+	name := unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(4760)) /* SaveNameBuf */)
 	if !r.read() {
 		playerFileCopyString(name, alloc.GoString(sessionMapName()))
 	}

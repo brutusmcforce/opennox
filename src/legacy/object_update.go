@@ -17,9 +17,6 @@ var (
 	Nox_xxx___mkgmtime_538280           func(a1 *server.Object)
 )
 
-var _ = [1]struct{}{}[2200-unsafe.Sizeof(server.MonsterUpdateData{})]
-var _ = [1]struct{}{}[556-unsafe.Sizeof(server.PlayerUpdateData{})]
-
 func init() {
 	server.RegisterObjectUpdateGo("PlayerUpdate", updateIdentityKey(updateIDPlayer), func(u *server.Object) { Nox_xxx_updatePlayer_4F8100(u) }, unsafe.Sizeof(server.PlayerUpdateData{}))
 	server.RegisterObjectUpdateGo("ProjectileUpdate", updateIdentityKey(updateIDProjectile), func(u *server.Object) { Nox_xxx_updateProjectile_53AC10(u) }, 0)

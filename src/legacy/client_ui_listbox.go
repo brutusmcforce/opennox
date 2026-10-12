@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/client/gui"
@@ -17,7 +18,7 @@ func uiListRows(d *gui.ScrollListBoxData) []gui.ScrollListBoxItem {
 	return unsafe.Slice(d.Items, int(d.Count))
 }
 func uiListSelection(d *gui.ScrollListBoxData) []int32 {
-	return unsafe.Slice((*int32)(unsafe.Pointer(uintptr(d.Field_12))), int(d.Count)+1)
+	return unsafe.Slice((*int32)(memmap.WordPtr(d.Field_12)), int(d.Count)+1)
 }
 func uiListRemoveSelection(d *gui.ScrollListBoxData, index int) {
 	s := uiListSelection(d)
@@ -304,7 +305,7 @@ func uiListEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 		if d != nil {
 			alloc.FreePtr(unsafe.Pointer(d.Items))
 			if d.Field_4 != 0 {
-				alloc.FreePtr(unsafe.Pointer(uintptr(d.Field_12)))
+				alloc.FreePtr(memmap.WordPtr(d.Field_12))
 			}
 			alloc.FreePtr(unsafe.Pointer(d))
 		}
@@ -318,7 +319,7 @@ func uiListEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 		uiRadioNotify(w, 16387, a, uintptr(w.ID()))
 		return ret(1)
 	case 16385:
-		uiListCopy(unsafe.Slice((*uint16)(unsafe.Add(w.C(), 108)), 64), a, 63)
+		uiListCopy(unsafe.Slice((*uint16)(unsafe.Add(w.C(), int(layoutGuiWindow.Off(108)) /* drawData.text */)), 64), a, 63)
 	case 16388:
 		up, down, slider := (*gui.Window)(d.Field_7), (*gui.Window)(d.Field_8), (*gui.Window)(d.Field_9)
 		if up != nil {
@@ -700,7 +701,7 @@ func uiListNew(parent *gui.Window, flags gui.StatusFlags, x, y, width, height in
 		for i := range selection {
 			selection[i] = -1
 		}
-		opts.Field_12 = uint32(uintptr(unsafe.Pointer(unsafe.SliceData(selection))))
+		opts.Field_12 = memmap.PtrWord(unsafe.Pointer(unsafe.SliceData(selection)))
 	}
 	if opts.Field_3 != 0 {
 		childFlags := flags&0xffffefef | 9

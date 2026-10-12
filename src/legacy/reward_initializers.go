@@ -45,7 +45,7 @@ func rewardInitDirection(u *server.Object, name bool) int32 {
 }
 func rewardInitGold(u *server.Object) int32 {
 	if *equipmentWord(u.InitData, 0) != 0 {
-		return int32(uintptr(u.CObj()))
+		return int32(memmap.PtrWord(u.CObj()))
 	}
 	players := &GetServer().S().Players
 	var sum float32

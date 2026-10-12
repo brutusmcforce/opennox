@@ -173,7 +173,7 @@ func (sp *spellWall) changeOrAddRemoteWalls(pl *server.Player) {
 	}
 	bit := uint32(1) << pl.PlayerInd
 	for mw := sp.list; mw != nil; mw = mw.Next24 {
-		if int32(*(*uint8)(unsafe.Add(unsafe.Pointer(pl), 3680)))&0x10 != 0 {
+		if int32(*(*uint8)(unsafe.Add(unsafe.Pointer(pl), int(layoutServerPlayer.Off(3680)) /* Field3680 */)))&0x10 != 0 {
 			if mw.PlayerBits16&bit == 0 {
 				wl := mw.Wall8
 				var buf [6]byte
@@ -251,8 +251,6 @@ func (sp *spellWall) LoadOrSave(cf *cryptfile.CryptFile, u *server.Object) int {
 		return 1
 	}
 }
-
-var _ = [1]struct{}{}[16-unsafe.Sizeof(server.MagicWallSave{})]
 
 func (sp *spellWall) associateSavedWalls(obj *server.Object) int32 {
 	if len(sp.saved) == 0 {

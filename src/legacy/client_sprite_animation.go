@@ -23,9 +23,6 @@ type spriteConditionalData struct {
 	Kind     [5]client.AnimKind
 }
 
-var _ = [1]struct{}{}[16-unsafe.Sizeof(spriteAnimationData{})]
-var _ = [1]struct{}{}[56-unsafe.Sizeof(spriteConditionalData{})]
-
 func spriteFrameImage(frames *noxrender.ImageHandle, index int) noxrender.ImageHandle {
 	return *(*noxrender.ImageHandle)(unsafe.Add(unsafe.Pointer(frames), index*4))
 }
@@ -60,10 +57,10 @@ func spriteAnimateDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 			}
 		}
 	case client.AnimLoop:
-		flags := *effectWord(dr, 120)
-		class := *effectWord(dr, 112)
+		flags := *effectWord(dr, int(layoutClientDrawable.Off(120)) /* ObjFlags */)
+		class := *effectWord(dr, int(layoutClientDrawable.Off(112)) /* ObjClass */)
 		if flags&0x1000000 != 0 || class&0x10000000 != 0 && noxflags.HasGame(noxflags.GameFlag(32)) {
-			index = int(int32((gameFrame() + *effectWord(dr, 128)) / period))
+			index = int(int32((gameFrame() + *effectWord(dr, int(layoutClientDrawable.Off(128)) /* NetCode32 */)) / period))
 			if index >= count {
 				index %= count
 			}
@@ -86,14 +83,14 @@ func spriteAnimateDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 func spriteConditionalDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	data := (*spriteConditionalData)(dr.DrawData)
 	state := 1
-	if *effectWord(dr, 120)&0x1000000 != 0 {
+	if *effectWord(dr, int(layoutClientDrawable.Off(120)) /* ObjFlags */)&0x1000000 != 0 {
 		state = 0
 	}
 	count := int(data.Count[state])
 	var index int
 	switch data.Kind[state] {
 	case client.AnimLoop:
-		index = int(int32((gameFrame() + *effectWord(dr, 128)) / (uint32(data.Delay[state]) + 1)))
+		index = int(int32((gameFrame() + *effectWord(dr, int(layoutClientDrawable.Off(128)) /* NetCode32 */)) / (uint32(data.Delay[state]) + 1)))
 		if index >= count {
 			index %= count
 		}
@@ -108,7 +105,7 @@ func spriteConditionalDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	return 1
 }
 func spriteStaticDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
-	if *effectWord(dr, 112)&0x40000 == 0 || *effectWord(dr, 120)&0x1000000 != 0 {
+	if *effectWord(dr, int(layoutClientDrawable.Off(112)) /* ObjClass */)&0x40000 == 0 || *effectWord(dr, int(layoutClientDrawable.Off(120)) /* ObjFlags */)&0x1000000 != 0 {
 		img := *(*noxrender.ImageHandle)(unsafe.Add(dr.DrawData, 4))
 		Nox_xxx_drawObject_4C4770_draw(vp, dr, img)
 	}
@@ -120,8 +117,8 @@ func spriteSlaveDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	return 1
 }
 func spriteBoulderDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
-	oldX, oldY := effectWord(dr, 432), effectWord(dr, 436)
-	index, bank := effectWord(dr, 440), effectWord(dr, 444)
+	oldX, oldY := effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */), effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */)
+	index, bank := effectWord(dr, int(layoutClientDrawable.Off(440)) /* Union._ */), effectWord(dr, int(layoutClientDrawable.Off(444)) /* Union._ */)
 	x, y := uint32(dr.PosVec.X), uint32(dr.PosVec.Y)
 	if *oldX == 0 && *oldY == 0 {
 		*oldX, *oldY = x, y

@@ -9,11 +9,11 @@ import (
 
 func quickbarCorpse() bool {
 	p := LocalPlayerDrawable
-	return p != nil && *(*byte)(unsafe.Add(p.C(), 120))&2 != 0
+	return p != nil && *(*byte)(unsafe.Add(p.C(), int(layoutClientDrawable.Off(120)) /* ObjFlags */))&2 != 0
 }
 
 func quickbarSlotEvent(w *gui.Window, event, arg uint32) int {
-	b := (*quickbarRecord)(unsafe.Pointer(uintptr(*quickbarUserData(w))))
+	b := (*quickbarRecord)(memmap.WordPtr(*quickbarUserData(w)))
 	if quickbarCorpse() {
 		return 1
 	}
@@ -86,7 +86,7 @@ func quickbarSlotEvent(w *gui.Window, event, arg uint32) int {
 			if *quickbarWord(1049692) == quickbarPointer(unsafe.Pointer(b)) && b == quickbarMain() {
 				previous := *quickbarWord(1049696)
 				if previous != 0 && previous != quickbarPointer(unsafe.Pointer(b.Current)) {
-					quickbarSwapRows((*[5]quickbarSlot)(unsafe.Pointer(uintptr(previous))), b.Current, i, j)
+					quickbarSwapRows((*[5]quickbarSlot)(memmap.WordPtr(previous)), b.Current, i, j)
 					bookSound(794)
 					quickbarDirections(b)
 					return 1
@@ -94,7 +94,7 @@ func quickbarSlotEvent(w *gui.Window, event, arg uint32) int {
 			}
 			if j == i {
 				*quickbarWord(1049532) = quickbarPointer(w.C())
-				if quickbarPlayer() == 0 || b == quickbarAt(1047940) {
+				if quickbarPlayer() == nil || b == quickbarAt(1047940) {
 					w.Capture(false)
 					*quickbarWord(1049532) = 0
 					return 1
@@ -216,7 +216,7 @@ func quickbarTrapButtonEvent(w *gui.Window, event, arg uint32) int {
 		return 1
 	}
 	quickbarLit(quickbarWindow(1049504), true)
-	if p := quickbarPlayer(); p != 0 {
+	if p := quickbarPlayer(); p != nil {
 		if bookClass(p) == 1 && quickbarTrapTargets() != 0 {
 			w.Capture(true)
 			*quickbarWord(1049532) = quickbarPointer(w.C())

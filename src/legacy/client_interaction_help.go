@@ -12,7 +12,7 @@ import (
 )
 
 func interactionHelpRoot() *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(interactionHelpRootWord)))
+	return (*gui.Window)(memmap.WordPtr(interactionHelpRootWord))
 }
 func interactionHelpText(id string) string {
 	return GetClient().Cli().Strings().GetStringInFile(strman.ID(id), "chathelp.c")
@@ -52,9 +52,9 @@ func interactionHelpOpen() uintptr {
 	if nox_xxx_guiFontHeightMB_43F320(nil) > 10 {
 		lang = 2
 	}
-	name := alloc.GoString(*(**byte)(memmap.PtrOff(0x587000, 164512+4*uintptr(uint32(lang)))))
+	name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 164512+4*uintptr(uint32(lang)))))
 	w := Nox_new_window_from_file(name, interactionHelpEvent)
-	interactionHelpRootWord = uint32(uintptr(w.C()))
+	interactionHelpRootWord = memmap.PtrWord(w.C())
 	if w == nil {
 		return 0
 	}
@@ -88,10 +88,6 @@ func interactionHelpOpen() uintptr {
 
 func nox_xxx_cliShowHelpGui_49C560() *uint32 {
 	return (*uint32)(unsafe.Pointer(interactionHelpOpen()))
-}
-
-func nox_xxx_wnd_49C760(w, code int32, a *int32, b int32) int32 {
-	return int32(gui.EventRespInt(interactionHelpEvent((*gui.Window)(unsafe.Pointer(uintptr(uint32(w)))), &gui.RawEvent{Event: int(code), Arg1: uintptr(unsafe.Pointer(a)), Arg2: uintptr(uint32(b))})))
 }
 
 func sub_49C7A0() int32 { return int32(interactionHelpClose()) }

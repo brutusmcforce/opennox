@@ -11,7 +11,7 @@ import (
 )
 
 func interactionGameOverRoot() *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(interactionGameOverRootWord)))
+	return (*gui.Window)(memmap.WordPtr(interactionGameOverRootWord))
 }
 func interactionGameOverText(id string) string {
 	return GetClient().Cli().Strings().GetStringInFile(strman.ID(id), "GUIGGOvr.c")
@@ -29,7 +29,7 @@ func interactionWindowText(w *gui.Window, text *uint16) int {
 }
 func interactionGameOverOpen() int {
 	w := Nox_new_window_from_file("GGOver.wnd", interactionGameOverEvent)
-	interactionGameOverRootWord = uint32(uintptr(w.C()))
+	interactionGameOverRootWord = memmap.PtrWord(w.C())
 	if w == nil {
 		return 0
 	}
@@ -114,10 +114,6 @@ func interactionGameOverTick() int {
 }
 
 func sub_49B3E0() int32 { return int32(interactionGameOverOpen()) }
-
-func sub_49B420(w, code int32, a *int32, b int32) int32 {
-	return int32(gui.EventRespInt(interactionGameOverEvent((*gui.Window)(unsafe.Pointer(uintptr(uint32(w)))), &gui.RawEvent{Event: int(code), Arg1: uintptr(unsafe.Pointer(a)), Arg2: uintptr(uint32(b))})))
-}
 
 func sub_49B490() int32 { return int32(interactionGameOverDestroy()) }
 

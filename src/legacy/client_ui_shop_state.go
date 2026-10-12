@@ -51,7 +51,7 @@ func uiShopSetMode(mode uint32) {
 	*uiShopWord(1098628) = mode
 }
 func uiShopGrid() []uiShopCell {
-	return unsafe.Slice((*uiShopCell)(memmap.PtrOff(0x5D4594, 1098636)), 60)
+	return uiShopCells[:]
 }
 func uiShopFind(code uint32) *uiShopCell {
 	grid := uiShopGrid()
@@ -112,16 +112,16 @@ func uiShopAdd(typ, code, value uint32, health uint16, mods unsafe.Pointer) uint
 		if dr == nil {
 			return 0
 		}
-		*(*uint32)(unsafe.Add(dr.C(), 120)) |= 0x40000000
-		*(*uint16)(unsafe.Add(dr.C(), 292)) = health
-		*(*uint16)(unsafe.Add(dr.C(), 294)) = health
+		*(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(120)) /* ObjFlags */)) |= 0x40000000
+		*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */)) = health
+		*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(294)) /* Field_73_2 */)) = health
 		if uint32(dr.Class())&0x13001000 != 0 {
 			for i, id := range unsafe.Slice((*byte)(mods), 4) {
 				var p unsafe.Pointer
 				if id != 255 {
 					p = GetServer().S().Modif.Nox_xxx_modifGetDescById413330(int(id)).C()
 				}
-				*(*unsafe.Pointer)(unsafe.Add(dr.C(), 432+4*i)) = p
+				*drawableModifier(dr, i) = p
 			}
 		}
 		c.Count = 0
@@ -161,7 +161,7 @@ func uiShopClear() uint32 {
 		}
 	}
 	*uiShopWord(1107036) = 0
-	return uiInventoryPointer(memmap.PtrOff(0x5D4594, 1100036))
+	return uiInventoryPointer(unsafe.Pointer(&uiShopCells[10])) // was 0x5D4594+1100036
 }
 func uiShopCancelQuantity() {
 	cb := uiAmountAccept

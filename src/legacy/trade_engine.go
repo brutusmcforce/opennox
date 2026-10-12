@@ -108,7 +108,7 @@ func tradePeerIntro(u *server.Object, s *shopSession) uint32 {
 	return shopSend(u, b[:], 1)
 }
 func tradeSendStock(u *server.Object, s *shopSession) uint32 {
-	result := uint32(uintptr(unsafe.Pointer(s)))
+	result := memmap.PtrWord(unsafe.Pointer(s))
 	for n := s.Stock; n != nil; n = n.Next {
 		result = shopSendItem(u, n)
 	}
@@ -416,7 +416,7 @@ func tradeBuyMany(u *server.Object, s *shopSession, typ int32, count uint32) uin
 		}
 		item := n.Object
 		if item == nil {
-			return uint32(uintptr(unsafe.Pointer(n)))
+			return memmap.PtrWord(unsafe.Pointer(n))
 		}
 		cost := uint32(shopPrice(1, s, item))
 		if cost > available {
@@ -434,13 +434,13 @@ func tradeBuyMany(u *server.Object, s *shopSession, typ int32, count uint32) uin
 		if uint32(item.TypeInd) == uint32(dword_5d4594_2386552) && u.UpdateDataPlayer().Field80 >= tradeLimit("MaxExtraLives") {
 			tradePriority(u, "pickup.c:MaxTradableAnkhsReached")
 			GetServer().S().Audio.EventObj(925, u, 0, 0)
-			return uint32(uintptr(unsafe.Pointer(n)))
+			return memmap.PtrWord(unsafe.Pointer(n))
 		}
 		quest := noxflags.HasGame(noxflags.GameModeQuest)
 		if quest && item.ObjClass&0x1000 != 0 && item.ObjSubClass&0x200000 != 0 && tradeInventoryCount(u, item) >= int32(tradeLimit("ForceOfNatureStaffLimit")) {
 			tradePriority(u, "pickup.c:MaxSameItem")
 			GetServer().S().Audio.EventObj(925, u, 0, 0)
-			return uint32(uintptr(unsafe.Pointer(n)))
+			return memmap.PtrWord(unsafe.Pointer(n))
 		}
 		delivered := item
 		if quest && (tradeIsGem(item) || uint32(item.TypeInd) == uint32(dword_5d4594_2386552)) {

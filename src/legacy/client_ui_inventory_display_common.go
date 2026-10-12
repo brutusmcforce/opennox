@@ -34,22 +34,46 @@ func uiInventoryFormatLiteral(text string) string {
 	return alloc.GoString16(&dst[0])
 }
 func uiInventorySmallFont() font.Face {
-	return GetClient().R2().GetFonts().AsFont(unsafe.Pointer(uintptr(dword_5d4594_1063636)))
+	return GetClient().R2().GetFonts().AsFont(memmap.WordPtr(dword_5d4594_1063636))
 }
 func uiInventoryMainWindow() *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(dword_5d4594_1062456)))
+	return (*gui.Window)(memmap.WordPtr(dword_5d4594_1062456))
 }
 func uiInventoryIdentifyWindow() *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(dword_5d4594_1062476)))
+	return (*gui.Window)(memmap.WordPtr(dword_5d4594_1062476))
 }
 func uiInventoryAlternate() *uiInventoryCell {
-	return (*uiInventoryCell)(unsafe.Pointer(uintptr(dword_5d4594_1062480)))
+	return (*uiInventoryCell)(memmap.WordPtr(dword_5d4594_1062480))
 }
 func uiInventorySelectedItem() *client.Drawable {
 	return uiInventoryDrawable(uint32(dword_5d4594_1063116))
 }
+// drawableModifier returns modifier slot i (0-3) of an item drawable: four pointer-sized words at offset 432,
+// a union shared with effect data of other drawables.
+func drawableModifier(dr *client.Drawable, i int) *unsafe.Pointer {
+	return (*unsafe.Pointer)(unsafe.Add(dr.C(), 432+4*uintptr(i)))
+}
+
+// drawableSetModifiers sets the modifiers of an item drawable; Field16 goes to offset 448.
+func drawableSetModifiers(dr *client.Drawable, m *server.ModifierInitData) {
+	for i, p := range m.Modifiers {
+		*drawableModifier(dr, i) = unsafe.Pointer(p)
+	}
+	*(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(448)) /* Union._ */)) = m.Field16
+}
+
+// drawableModifiers returns the modifiers of an item drawable (see drawableSetModifiers).
+func drawableModifiers(dr *client.Drawable) *server.ModifierInitData {
+	m := new(server.ModifierInitData)
+	for i := range m.Modifiers {
+		m.Modifiers[i] = (*server.ModifierEff)(*drawableModifier(dr, i))
+	}
+	m.Field16 = *(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(448)) /* Union._ */))
+	return m
+}
+
 func uiInventoryItemModifier(dr *client.Drawable, index int) *server.ModifierEff {
-	return *(**server.ModifierEff)(unsafe.Add(dr.C(), 432+uintptr(index*4)))
+	return (*server.ModifierEff)(*drawableModifier(dr, index))
 }
 func uiInventoryElementValue(dr *client.Drawable, fire bool) float64 {
 	if dr == nil || uint32(dr.Class())&0x13001000 == 0 {
@@ -67,8 +91,8 @@ func uiInventoryElementValue(dr *client.Drawable, fire bool) float64 {
 	return 0
 }
 func uiInventoryScaledDurability(dr *client.Drawable, current, maximum *float32) uint32 {
-	*current = float32(*(*uint16)(unsafe.Add(dr.C(), 292)))
-	*maximum = float32(*(*uint16)(unsafe.Add(dr.C(), 294)))
+	*current = float32(*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */)))
+	*maximum = float32(*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(294)) /* Field_73_2 */)))
 	ret := uiInventoryPointer(dr.C())
 	if uint32(dr.Class())&0x13001000 != 0 {
 		if m := uiInventoryItemModifier(dr, 1); m != nil && m.Defend76.Fnc == modifierKey(modifierIDDurabilityMultiplierEffect) {
@@ -158,7 +182,7 @@ func nox_xxx_inventoryNameSignInit_4671E0() int {
 		return level
 	}
 	class := *(*byte)(unsafe.Add(p, 2251))
-	className := alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, 29456+uintptr(class)*4)))
+	className := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 29456+uintptr(class)*4)))
 	title := uiInventoryText(fmt.Sprintf("experience:%s%d", className, level))
 	return textFormatBuffer(unsafe.Slice(dst, 256), (*uint16)(unsafe.Pointer(internWStr(uiInventoryText("ElaborateNameFormat")))), textFormatPointer(unsafe.Add(p, 4704)), textFormatPointer(unsafe.Pointer(internWStr(title))))
 }

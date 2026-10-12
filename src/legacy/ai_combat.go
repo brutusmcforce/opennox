@@ -57,7 +57,6 @@ func init() {
 		server.RegisterAIAction(combatAIAction{a})
 	}
 }
-func combatPtr(u *server.Object) int32 { return int32(uintptr(u.CObj())) }
 func combatSound(u *server.Object, index int) {
 	if p := Nox_xxx_monsterGetSoundSet_424300(u); p != nil {
 		id := *(*uint32)(unsafe.Add(p, 4*index))
@@ -214,8 +213,8 @@ func combatMeleeStart(u *server.Object) {
 	*memmap.PtrFloat32(0x5D4594, 2487952) = float32(float64(radius) + 1)
 	p := u.PosVec
 	s.Map.EachObjInRect(types.Rectf{Min: types.Pointf{X: p.X - radius, Y: p.Y - radius}, Max: types.Pointf{X: p.X + radius, Y: p.Y + radius}}, func(t *server.Object) bool { combatScan(t, u); return true })
-	t := (*server.Object)(unsafe.Pointer(uintptr(dword_5d4594_2487948)))
-	if t != nil && !s.IsEnemyTo(u, t) && u.SubClass()&0x10 != 0 && ud.Field516 != 0 && (*server.Object)(unsafe.Pointer(uintptr(ud.Field516))).SubClass()&0x4000 != 0 {
+	t := (*server.Object)(memmap.WordPtr(dword_5d4594_2487948))
+	if t != nil && !s.IsEnemyTo(u, t) && u.SubClass()&0x10 != 0 && ud.Field516 != 0 && (*server.Object)(memmap.WordPtr(ud.Field516)).SubClass()&0x4000 != 0 {
 		combatDebug(u, "Tried to MELEE_ATTACK but friend in the way")
 		u.MonsterPopAction()
 		u.MonsterPushAction(ai.ACTION_FACE_ANGLE, int32(int16(u.Direction1)))
@@ -242,7 +241,7 @@ func combatScan(t, u *server.Object) {
 	if float64(length) < float64(*min) {
 		dir := unsafe.Slice(memmap.PtrFloat32(0x587000, uintptr(194136+8*int(int16(u.Direction1)))), 2)
 		if float64(dy32)/float64(length)*float64(dir[1])+dx/float64(length)*float64(dir[0]) > .5 {
-			dword_5d4594_2487948 = uint32(uintptr(t.CObj()))
+			dword_5d4594_2487948 = memmap.PtrWord(t.CObj())
 			*min = length
 		}
 	}
@@ -314,7 +313,7 @@ func combatMissile(u *server.Object) {
 		if proj := GetServer().S().NewObjectByTypeID(string(name)); proj != nil {
 			p := types.Pointf{X: math.Float32frombits(uint32(h.Args[0])), Y: math.Float32frombits(uint32(h.Args[1]))}
 			if h.Args[2] != 0 {
-				spatialPredict(u, motionObject(uint32(h.Args[2])), proj.SpeedCur, &p)
+				spatialPredict(u, objectArg(h.Args[2]), proj.SpeedCur, &p)
 			}
 			dx, dy := float64(p.X)-float64(u.PosVec.X), float64(p.Y)-float64(u.PosVec.Y)
 			// The compiled C retains both deltas in x87 through length and velocity.

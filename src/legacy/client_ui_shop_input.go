@@ -23,7 +23,7 @@ func uiShopPanel(w *gui.Window, event int, a, b uintptr) int {
 	if event != 16391 || *bookWord(1047520) != 0 {
 		return 0
 	}
-	id := uiInventoryWindowValue(uint32(a)).ID()
+	id := windowArg(a).ID()
 	uiTradeSound(766)
 	switch id {
 	case 3801:
@@ -118,7 +118,7 @@ func uiShopHover(p image.Point) int {
 }
 func uiShopMods(dr *client.Drawable) unsafe.Pointer {
 	if uint32(dr.Class())&0x13001000 != 0 {
-		return unsafe.Add(dr.C(), 432)
+		return unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)
 	}
 	return nil
 }

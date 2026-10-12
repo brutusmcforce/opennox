@@ -140,7 +140,7 @@ func equipmentNPCSync(u, it *server.Object, value int) unsafe.Pointer {
 		v := equipmentWord(u.CObj(), 560+i*4)
 		*v = (*v & 0xfffff000) | 0x4000000
 	}
-	return unsafe.Add(u.CObj(), 688)
+	return unsafe.Add(u.CObj(), int(layoutServerObject.Off(688)) /* Init */)
 }
 func equipmentCount(u *server.Object, typ int) int {
 	n := 0
@@ -182,7 +182,7 @@ func equipmentSaveShield(u *server.Object) {
 	}
 	for it := u.InvFirstItem; it != nil; it = it.InvNextItem {
 		if it.ObjClass&0x2000000 != 0 && it.ObjFlags&0x100 != 0 && equipmentArmorBits(it)&0x3000000 != 0 {
-			*equipmentWord(equipmentPlayer(u), 2500) = uint32(uintptr(it.CObj()))
+			*(*unsafe.Pointer)(unsafe.Pointer(equipmentWord(equipmentPlayer(u), 2500))) = it.CObj()
 		}
 	}
 }
@@ -257,11 +257,11 @@ func equipmentSecondary(u, it *server.Object) {
 	if it != nil && (!Nox_xxx_playerClassCanUseItem_57B3D0(it, u.UpdateDataPlayer().Player.PlayerClass()) || !equipmentCheckStrength(u, it)) {
 		gameplayReportSecondary(int(int32(uint8(u.UpdateDataPlayer().Player.PlayerInd))), nil, byte(1))
 	}
-	*equipmentWord(u.UpdateData, 108) = uint32(uintptr(it.CObj()))
+	*(*unsafe.Pointer)(unsafe.Pointer(equipmentWord(u.UpdateData, 108))) = it.CObj()
 }
 func equipmentInitDropTable() {
 	for off := uintptr(279432); ; off += 12 {
-		name := *(*unsafe.Pointer)(memmap.PtrOff(0x587000, off))
+		name := memmap.LoadPtr(0x587000, off)
 		if name == nil {
 			break
 		}

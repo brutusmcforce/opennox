@@ -2,6 +2,7 @@ package legacy
 
 import (
 	"encoding/binary"
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
@@ -30,14 +31,14 @@ func teamRuntimeDescribe(t *server.Team, to int) {
 	b := make([]byte, 18+2*len(text))
 	b[0] = 196
 	binary.LittleEndian.PutUint32(b[2:], uint32(t.ID()))
-	binary.LittleEndian.PutUint32(b[6:], *teamRuntimeWord(t, 60))
+	binary.LittleEndian.PutUint32(b[6:], *teamRuntimeWord(t, layoutServerTeam.Off(60) /* field_60 */))
 	binary.LittleEndian.PutUint32(b[10:], uint32(t.Lessons))
 	if noxflags.HasGame(512) {
 		b[14] = 1
 	}
 	b[15] = byte(len(text))
 	b[16] = byte(t.ColorInd)
-	b[17] = byte(*teamRuntimeWord(t, 68))
+	b[17] = byte(*teamRuntimeWord(t, layoutServerTeam.Off(68) /* field_68 */))
 	for i, c := range text {
 		binary.LittleEndian.PutUint16(b[18+2*i:], c)
 	}
@@ -54,7 +55,7 @@ func teamRuntimeRename(t *server.Team, name *uint16) {
 		return
 	}
 	teamUITeamRename(t, alloc.GoString16(name))
-	*teamRuntimeWord(t, 68) = 0
+	*teamRuntimeWord(t, layoutServerTeam.Off(68) /* field_68 */) = 0
 	if noxflags.HasGame(1) {
 		var b [46]byte
 		b[0], b[1] = 196, 4
@@ -79,7 +80,7 @@ func teamRuntimeMemberReport(m *server.ObjectTeam, to, code int) {
 	gameplayReportSend(to, b, true, 1)
 }
 func teamRuntimeRequest(t *server.Team, m *server.ObjectTeam, code int16, op byte) int8 {
-	result := int8(uintptr(t.C()))
+	result := int8(memmap.PtrWord(t.C()))
 	if t == nil || m == nil {
 		return result
 	}

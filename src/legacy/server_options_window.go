@@ -34,7 +34,7 @@ func serverOptionsConstruct() int {
 	if r.FontHeight(nil) > 10 {
 		lang = 2
 	}
-	name := alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, 129760+4*uintptr(lang))))
+	name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 129760+4*uintptr(lang))))
 	w := Nox_new_window_from_file(name, serverOptionsDispatch)
 	serverOptionsRoot = uint32(serverOptionsPtr(w))
 	if w == nil {
@@ -66,8 +66,8 @@ func serverOptionsConstruct() int {
 	serverOptionsTabs3 = uiMeterLoadImage("UITabs3")
 	list := serverOptionsWindow(1046496)
 	data := (*gui.ScrollListBoxData)(list.WidgetData)
-	en := noxrender.ImageHandle(unsafe.Pointer(uintptr(uiMeterLoadImage("UISlider"))))
-	lit := noxrender.ImageHandle(unsafe.Pointer(uintptr(uiMeterLoadImage("UISliderLit"))))
+	en := noxrender.ImageHandle(memmap.WordPtr(uiMeterLoadImage("UISlider")))
+	lit := noxrender.ImageHandle(memmap.WordPtr(uiMeterLoadImage("UISliderLit")))
 	slider, up, down := w.ChildByID(10182), w.ChildByID(10180), w.ChildByID(10181)
 	slider.Field100Ptr.SizeVal = image.Pt(16, 10)
 	gui.ButtonSetImage(slider, nil, nil, en, lit, lit)

@@ -102,7 +102,7 @@ func sessionSaveMetadata(path string, info *server.SaveGameInfo) int32 {
 		saved := [1278]byte{}
 		copy(saved[:], current)
 		if memmap.Uint32(0x587000, 55936) != 0 && memmap.Uint32(0x587000, 55948) != 0 {
-			if callPlayerFileMetadata(*memmap.PtrPtr(0x587000, 55956)) == 0 {
+			if callPlayerFileMetadata(memmap.LoadPtr(0x587000, 55956)) == 0 {
 				cryptfile.Close()
 				return 0
 			}

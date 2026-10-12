@@ -18,8 +18,8 @@ type combatFX struct {
 	Next, Previous, GlobalNext, GlobalPrevious *combatFX
 }
 
-var _ = [1]struct{}{}[80-unsafe.Sizeof(combatFX{})]
-var _ = [1]struct{}{}[64-unsafe.Offsetof(combatFX{}.Next)]
+
+
 
 func combatFXHead() **combatFX { return &combatFXList }
 

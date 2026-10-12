@@ -31,10 +31,10 @@ func playerDeath(u *server.Object) {
 	}
 	var assist *server.Object
 	var info *server.Player
-	if pl.Field3600 != 0 && s.Frame()-*playerDeathWord(pl.C(), 3608) < 10*s.TickRate() {
+	if pl.Field3600 != 0 && s.Frame()-*playerDeathWord(pl.C(), layoutServerPlayer.Off(3608) /* field3608 */) < 10*s.TickRate() {
 		info = s.Players.ByInd(ntype.PlayerInd(pl.Field3604))
 		if info != nil {
-			if *playerDeathWord(info.C(), 2092) != 0 && info.PlayerUnit != nil {
+			if *playerDeathWord(info.C(), layoutServerPlayer.Off(2092) /* Active */) != 0 && info.PlayerUnit != nil {
 				assist = objectLookupByNetCode(info.NetCodeVal)
 			} else {
 				info = nil
@@ -75,7 +75,7 @@ func playerDeath(u *server.Object) {
 	audio := sound.ID(321)
 	if u.Field131 == 16 {
 		audio = 299
-	} else if *(*byte)(unsafe.Add(pl.C(), 2252)) != 0 {
+	} else if *(*byte)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(2252)) /* info */)) != 0 {
 		audio = 331
 	}
 	s.Audio.EventObj(audio, u, 0, 0)

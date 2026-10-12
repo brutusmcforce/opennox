@@ -168,10 +168,7 @@ func sub_43ED00(a1p unsafe.Pointer) int {
 	s := *(**legacy.AudioSample)(unsafe.Pointer(&a1[68]))
 	smp := s.Smp
 	smp.Init()
-	s.Field4 = *(*unsafe.Pointer)(unsafe.Add(unsafe.Pointer(uintptr(a1[72])), 20))
-	if s.Field4 == nil {
-		s.Field4 = unsafe.Pointer(uintptr(a1[33]) + 60)
-	}
+	s.Field4 = legacy.AudioVoiceFormat(a1p)
 	v3 := int32(legacy.Sub_43F0E0(s.Field4))
 	smp.SetType(v3, 0)
 	if *(*uint32)(unsafe.Add(s.Field4, 4)) == 2 {
@@ -247,7 +244,7 @@ func nox_audio_initall(a3 int) int {
 }
 
 func sub_4311F0() int {
-	legacy.Sub_486FA0(int(memmap.Int32(0x587000, 94032)))
+	legacy.RegisterMilesAudioDevice()
 	v2, free := alloc.Make([]int32{}, 7)
 	defer free()
 	v2[2] = 22050
@@ -284,8 +281,6 @@ func sub_486EF0() {
 	}
 }
 
-var _ = [1]struct{}{}[288-unsafe.Sizeof(audioStructXxx{})]
-
 type audioStructXxx struct {
 	arr0       *audioStructYyy
 	size4      uint
@@ -319,8 +314,6 @@ func (p *audioStructXxx) Free() {
 	}
 	alloc.Free(p)
 }
-
-var _ = [1]struct{}{}[36-unsafe.Sizeof(audioStructYyy{})]
 
 type audioStructYyy struct {
 	field0  [32]byte

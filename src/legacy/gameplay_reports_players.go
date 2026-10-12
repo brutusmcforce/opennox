@@ -109,7 +109,7 @@ func gameplayReportEliminationDeath(unit *server.Object) int {
 	elapsed := core.Frame()-*memmap.PtrUint32(0x5D4594, 3520) > 20*uint32(core.TickRate())
 	if elapsed && *memmap.PtrUint32(0x5D4594, 3536) == 0 {
 		for pl := core.Players.First(); pl != nil; pl = core.Players.Next(pl) {
-			if *controlByte(pl.C(), 3680)&1 != 0 {
+			if *controlByte(pl.C(), int(layoutServerPlayer.Off(3680)) /* Field3680 */)&1 != 0 {
 				Nox_xxx_netNeedTimestampStatus_4174F0(pl, 256)
 			}
 		}
@@ -184,9 +184,9 @@ func gameplayReportAnything(unit *server.Object) int {
 		gameplayReportPlayerStat(to, unit)
 		*gameplayReportWord(pl, 2168) = *gameplayReportWord(pl, 2164)
 	}
-	if *controlByte(pl, 2172) != *controlByte(unit.CObj(), 440) {
+	if *controlByte(pl, 2172) != *controlByte(unit.CObj(), int(layoutServerObject.Off(440)) /* Field110 */) {
 		gameplayReportObjectByte(to, unit)
-		*controlByte(pl, 2172) = *controlByte(unit.CObj(), 440)
+		*controlByte(pl, 2172) = *controlByte(unit.CObj(), int(layoutServerObject.Off(440)) /* Field110 */)
 	}
 	if controlFlags(4096) {
 		for i := 0; i < 32; i++ {

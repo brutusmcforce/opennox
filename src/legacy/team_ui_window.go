@@ -19,24 +19,24 @@ func teamUIPlayersConstruct(parent *gui.Window) int {
 	if teamUIWindow(1045684) != nil {
 		return 0
 	}
-	name := alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, 129048+4*uintptr(lang))))
+	name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 129048+4*uintptr(lang))))
 	w := Nox_new_window_from_file(name, func(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 		a, b := ev.EventArgsC()
 		return gui.RawEventResp(teamUIPlayersEvent(w, ev.EventCode(), (*gui.Window)(unsafe.Pointer(a)), int(b)))
 	})
-	*teamUIWord(1045684) = uint32(uintptr(w.C()))
+	*teamUIWord(1045684) = memmap.PtrWord(w.C())
 	if w == nil {
 		return 0
 	}
-	*teamUIWord(1045688) = uint32(uintptr(w.ChildByID(10507).C()))
-	*teamUIWord(1045692) = uint32(uintptr(w.ChildByID(10509).C()))
+	*teamUIWord(1045688) = memmap.PtrWord(w.ChildByID(10507).C())
+	*teamUIWord(1045692) = memmap.PtrWord(w.ChildByID(10509).C())
 	w.SetParent(parent)
 	w.SetDraw(teamUIPlayersDraw)
 	// The old wndRetNULL entry point is a no-op; it does not clear focus.
 	listClear(teamUIHead(false))
 	listClear(teamUIHead(true))
-	en := noxrender.ImageHandle(unsafe.Pointer(uintptr(uiMeterLoadImage("UISlider"))))
-	lit := noxrender.ImageHandle(unsafe.Pointer(uintptr(uiMeterLoadImage("UISliderLit"))))
+	en := noxrender.ImageHandle(memmap.WordPtr(uiMeterLoadImage("UISlider")))
+	lit := noxrender.ImageHandle(memmap.WordPtr(uiMeterLoadImage("UISliderLit")))
 	for i := 0; i < 2; i++ {
 		list := w.ChildByID(uint(10501 + i))
 		data := (*gui.ScrollListBoxData)(list.WidgetData)
@@ -70,7 +70,7 @@ func teamUIPlayersDraw(w *gui.Window, d *gui.WindowData) int {
 			r.DrawRectFilledAlpha(pos.X, pos.Y, w.SizeVal.X, w.SizeVal.Y)
 		}
 	} else {
-		bookDrawImage(uint32(uintptr(d.BgImageHnd)), pos)
+		bookDrawImage(memmap.PtrWord(unsafe.Pointer(d.BgImageHnd)), pos)
 	}
 	root := teamUIWindow(1045684)
 	teams := root.ChildByID(10502)

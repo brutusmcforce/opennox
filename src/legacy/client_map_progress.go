@@ -15,10 +15,10 @@ import (
 func clientMapCompassInit() int {
 	*effectMapped(1309664) = 0
 	for i := 0; i < 4; i++ {
-		*effectMapped(1309644 + 4*uintptr(i)) = uint32(uintptr(Nox_xxx_gLoadImg(fmt.Sprintf("Compass%d", i+1)).C()))
+		*effectMapped(1309644 + 4*uintptr(i)) = memmap.PtrWord(unsafe.Pointer(Nox_xxx_gLoadImg(fmt.Sprintf("Compass%d", i+1)).C()))
 	}
 	for i := 0; i < 32; i++ {
-		*effectMapped(1309516 + 4*uintptr(i)) = uint32(uintptr(Nox_xxx_gLoadImg(fmt.Sprintf("CompassMainArrow%d", i+1)).C()))
+		*effectMapped(1309516 + 4*uintptr(i)) = memmap.PtrWord(unsafe.Pointer(Nox_xxx_gLoadImg(fmt.Sprintf("CompassMainArrow%d", i+1)).C()))
 	}
 	return 1
 }
@@ -37,7 +37,7 @@ func clientMapProgress(data []byte) int16 {
 	frame := *effectMapped(1309672)
 	pos := image.Pt(width/2-160, height/2-120)
 	for _, offset := range []uintptr{1309644 + 4*uintptr(frame%4), 1309516 + 4*uintptr(frame)} {
-		img := r.GetBag().AsImage(noxrender.ImageHandle(unsafe.Pointer(uintptr(*effectMapped(offset)))))
+		img := r.GetBag().AsImage(noxrender.ImageHandle(memmap.WordPtr(*effectMapped(offset))))
 		r.DrawImageAt(img, pos)
 	}
 	var key string
@@ -51,9 +51,9 @@ func clientMapProgress(data []byte) int16 {
 	}
 	if key != "" {
 		text := GetServer().S().Strings().GetStringInFile(strman.ID(key), "guigen.c")
-		*effectMapped(1309660) = uint32(uintptr(unsafe.Pointer(alloc.InternCString16(text))))
+		*effectMapped(1309660) = memmap.PtrWord(unsafe.Pointer(alloc.InternCString16(text)))
 	}
-	text := alloc.GoString16((*uint16)(unsafe.Pointer(uintptr(*effectMapped(1309660)))))
+	text := alloc.GoString16((*uint16)(memmap.WordPtr(*effectMapped(1309660))))
 	face := r.GetFonts().AsFont(nil)
 	size := r.GetStringSizeWrapped(face, text, 0)
 	x, y := (width-size.X)/2, height/2-(2*r.FontHeight(face)+70)

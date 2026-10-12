@@ -107,7 +107,7 @@ func journalUnitUpdate(u *server.Object, name string, flags uint16) uint32 {
 	if p.PlayerInd != 31 {
 		return uint32(gameplayReportJournal(int(p.PlayerInd), unsafe.Pointer(n), 3))
 	}
-	return uint32(uintptr(unsafe.Pointer(n)))
+	return memmap.PtrWord(unsafe.Pointer(n))
 }
 func journalUpdateAll(name string, flags uint16) int {
 	for u := GetServer().S().Players.FirstUnit(); u != nil; u = GetServer().S().Players.NextUnit(u) {
@@ -144,7 +144,7 @@ func journalText(n *server.PlayerJournal) string {
 	return prefix + " " + sm.GetStringInFile(strman.ID("Journal:"+alloc.GoString(&n.EntryBuf[0])), "GUIJourn.c")
 }
 func journalLocalPlayer() *server.Player {
-	return (*server.Player)(unsafe.Pointer(uintptr(dword_8531A0_2576)))
+	return dword_8531A0_2576
 }
 func journalMeasure() {
 	p := journalLocalPlayer()

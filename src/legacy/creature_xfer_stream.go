@@ -82,7 +82,7 @@ func creatureXferBuffs(u *server.Object) int {
 			if id == 26 && version >= 2 {
 				extra := r.word(0)
 				if duration := spellLifeFindDuration(51, u); duration != nil {
-					*(*uint32)(unsafe.Add(unsafe.Pointer(duration), 72)) = extra
+					*(*uint32)(unsafe.Add(unsafe.Pointer(duration), int(layoutServerDurSpell.Off(72)) /* Field72 */)) = extra
 				}
 			}
 		}
@@ -101,7 +101,7 @@ func creatureXferBuffs(u *server.Object) int {
 		if id == 26 {
 			extra := uint32(100)
 			if duration := spellLifeFindDuration(51, u); duration != nil {
-				extra = *(*uint32)(unsafe.Add(unsafe.Pointer(duration), 72))
+				extra = *(*uint32)(unsafe.Add(unsafe.Pointer(duration), int(layoutServerDurSpell.Off(72)) /* Field72 */))
 			}
 			r.word(extra)
 		}

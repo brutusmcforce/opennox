@@ -36,7 +36,7 @@ func interactionTrade(dr *client.Drawable) {
 	}
 	var msg [4]byte
 	binary.LittleEndian.PutUint16(msg[:], 5577)
-	binary.LittleEndian.PutUint16(msg[2:], uint16(nox_xxx_netGetUnitCodeCli_578B00(int32(uintptr(dr.C())))))
+	binary.LittleEndian.PutUint16(msg[2:], uint16(nox_xxx_netGetUnitCodeCli_578B00(int32(memmap.PtrWord(dr.C())))))
 	GetServer().S().NetList.AddToMsgListCli(31, netlist.Kind0, msg[:])
 }
 func interactionMouseMode(v int32) int32 {

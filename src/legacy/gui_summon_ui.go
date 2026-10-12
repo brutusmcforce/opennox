@@ -45,8 +45,8 @@ func summonCreate() int {
 	*summonWord(1321040) = quickbarPointer(big.C())
 	big.DrawData().Style |= 256
 	big.SetAllFuncs(bookEvent(summonBigEvent), nil, bookTooltipKey(3))
-	big.DrawData().BgImageHnd = noxrender.ImageHandle(unsafe.Pointer(uintptr(*summonWord(1321028))))
-	big.DrawData().SelImageHnd = noxrender.ImageHandle(unsafe.Pointer(uintptr(*summonWord(1321024))))
+	big.DrawData().BgImageHnd = noxrender.ImageHandle(memmap.WordPtr(*summonWord(1321028)))
+	big.DrawData().SelImageHnd = noxrender.ImageHandle(memmap.WordPtr(*summonWord(1321024)))
 	big.DrawData().HlImageHnd = big.DrawData().SelImageHnd
 	big.DrawData().ImgPtVal = image.Pt(-27, -12)
 	*summonState() = 0
@@ -79,8 +79,8 @@ func summonSetCommand(command uint32) int {
 		return -2
 	}
 	d := w.DrawData()
-	d.BgImageHnd = noxrender.ImageHandle(unsafe.Pointer(uintptr(*summonWord(normal))))
-	d.SelImageHnd = noxrender.ImageHandle(unsafe.Pointer(uintptr(*summonWord(lit))))
+	d.BgImageHnd = noxrender.ImageHandle(memmap.WordPtr(*summonWord(normal)))
+	d.SelImageHnd = noxrender.ImageHandle(memmap.WordPtr(*summonWord(lit)))
 	d.HlImageHnd = d.SelImageHnd
 	return 0
 }
@@ -150,7 +150,7 @@ func summonCommandEvent(w *gui.Window, event, _ uint32) int {
 	case 7:
 		command := *summonCommandWord(w)
 		if command != 2 && (*summonWord(1321204) != 0 || command != 1) {
-			summonOrder((*summonRecord)(unsafe.Pointer(uintptr(*summonWord(1321204)))), command)
+			summonOrder((*summonRecord)(memmap.WordPtr(*summonWord(1321204))), command)
 		}
 		return 1
 	}
@@ -164,7 +164,7 @@ func summonMenu(p image.Point) {
 		if i == 2 {
 			continue
 		}
-		text := summonText(GoStringP(*memmap.PtrPtr(0x587000, 184344+i*4)))
+		text := summonText(GoStringP(memmap.LoadPtr(0x587000, 184344+i*4)))
 		sz := r.GetStringSizeWrapped(font, text, int(nox_win_width))
 		if *summonMenuWidth() < uint32(sz.X) {
 			*summonMenuWidth() = uint32(sz.X)
@@ -224,7 +224,7 @@ func summonSlotTooltip(w *gui.Window, p image.Point) unsafe.Pointer {
 	if value == 0 {
 		return nil
 	}
-	r := (*summonRecord)(unsafe.Pointer(uintptr(value)))
+	r := (*summonRecord)(memmap.WordPtr(value))
 	return unsafe.Pointer(nox_get_thing_pretty_name(int(r.Type)))
 }
 func summonAdd(code, typ uint32, quiet bool) byte {
@@ -277,4 +277,4 @@ func summonRemove(code uint32, quiet bool) {
 	}
 }
 
-func summonCommandWord(w *gui.Window) *uint32 { return (*uint32)(unsafe.Add(w.C(), 32)) }
+func summonCommandWord(w *gui.Window) *uint32 { return (*uint32)(unsafe.Add(w.C(), int(layoutGuiWindow.Off(32)) /* WidgetData */)) }

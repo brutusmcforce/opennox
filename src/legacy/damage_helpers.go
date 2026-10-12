@@ -10,7 +10,7 @@ import (
 
 func damageTypeByName(name string) int32 {
 	for i := 0; i < 18; i++ {
-		if name == alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, 200728+uintptr(i*4)))) {
+		if name == alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 200728+uintptr(i*4)))) {
 			return int32(i)
 		}
 	}
@@ -32,10 +32,10 @@ func damageReflect(u, t *server.Object) int32 {
 		u.Direction1 = server.Dir16(uint16(dir - 256))
 	}
 	u.NewPos = u.PrevPos
-	return int32(uintptr(u.CObj()))
+	return int32(memmap.PtrWord(u.CObj()))
 }
 func damageDefend(u, source, weapon *server.Object, damage *int32, kind int32) int32 {
-	result := int32(uintptr(u.CObj()))
+	result := int32(memmap.PtrWord(u.CObj()))
 	for it := u.InvFirstItem; it != nil; it = it.InvNextItem {
 		result = int32(it.ObjFlags)
 		if it.ObjFlags&0x100 == 0 {
@@ -98,7 +98,7 @@ func damageFraction(u *server.Object, out *int32, value float32) {
 	}
 }
 func damageItemReport(ind int32, it *server.Object, old, now uint16) int32 {
-	result := int32(uintptr(unsafe.Pointer(it.HealthData)))
+	result := int32(memmap.PtrWord(unsafe.Pointer(it.HealthData)))
 	if it.HealthData == nil {
 		return result
 	}
@@ -158,7 +158,7 @@ func damageInventory(u, source, weapon *server.Object, amount int32, kindBits fl
 func damageConductivity(u *server.Object) float64 {
 	value := float32(1)
 	for it := u.InvFirstItem; it != nil; it = it.InvNextItem {
-		if it.ObjClass&0x2000000 == 0 || *(*byte)(unsafe.Add(it.CObj(), 24))&0x10 == 0 || it.ObjFlags&0x100 == 0 || runtimeMaterial(it) {
+		if it.ObjClass&0x2000000 == 0 || *(*byte)(unsafe.Add(it.CObj(), int(layoutServerObject.Off(24)) /* Material */))&0x10 == 0 || it.ObjFlags&0x100 == 0 || runtimeMaterial(it) {
 			continue
 		}
 		var add float64

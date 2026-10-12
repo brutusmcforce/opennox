@@ -11,8 +11,8 @@ func mapOrchestrationStep() uint32 {
 	Sub_57C490_2("theme")
 	mapPaintAfterWalls(0)
 	*memmap.PtrUint32(0x973F18, 35976) = 0
-	cfg := uint32(uintptr(mapGrowthConfig()))
-	if mapThemeFile(cfg, uint32(uintptr(memmap.PtrOff(0x587000, 197860)))) == 0 {
+	cfg := memmap.PtrWord(mapGrowthConfig())
+	if mapThemeFile(cfg, memmap.PtrWord(memmap.PtrOff(0x587000, 197860))) == 0 {
 		return 0
 	}
 	*populationWord(cfg, 68) = uint32(int64(float64(*populationFloat(cfg, 64)) * 0.030743772))
@@ -45,7 +45,7 @@ func mapOrchestrationStep() uint32 {
 					}
 					mapRoomAssignDecoration(mapGrowthConfig(), r)
 					mapPaintRoomWalls(mapGrowthConfig(), r)
-					mapPopulationRoom(cfg, uint32(uintptr(unsafe.Pointer(r))))
+					mapPopulationRoom(cfg, memmap.PtrWord(unsafe.Pointer(r)))
 					mapRoomFree(r)
 				}
 				if mapRoomAssignRequiredDecorations(mapGrowthConfig()) != 0 {

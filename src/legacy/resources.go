@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/strman"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/server"
@@ -33,7 +34,7 @@ func resourceSetHP(u *server.Object, amount uint16) uint32 {
 		if h.ObjClass&4 != 0 {
 			return toggleProtectionObject(int32(h.UpdateDataPlayer().Player.Prot4632), u)
 		}
-		return uint32(uintptr(h.CObj()))
+		return memmap.PtrWord(h.CObj())
 	}
 	return 0
 }
@@ -130,7 +131,7 @@ func resourceSetMaxHP(u *server.Object, v uint16) uint32 {
 	if u.HealthData != nil {
 		u.HealthData.Max = v
 	}
-	return uint32(uintptr(unsafe.Pointer(u.HealthData)))
+	return memmap.PtrWord(unsafe.Pointer(u.HealthData))
 }
 
 func resourcePoison(u *server.Object, amount, max int32) bool {
@@ -237,7 +238,7 @@ func resourceSetPoison(u *server.Object, v int32) {
 }
 func resourceAddMana(u *server.Object, v int16) uint16 {
 	if u == nil || u.ObjClass&4 == 0 {
-		return uint16(uintptr(unsafe.Pointer(u)))
+		return uint16(memmap.PtrWord(unsafe.Pointer(u)))
 	}
 	p := u.UpdateDataPlayer()
 	p.ManaPrev = p.ManaCur
@@ -254,11 +255,11 @@ func resourceAddMana(u *server.Object, v int16) uint16 {
 }
 func resourceSubMana(u *server.Object, v int32) uint32 {
 	if u == nil || u.ObjClass&4 == 0 {
-		return uint32(uintptr(unsafe.Pointer(u)))
+		return memmap.PtrWord(unsafe.Pointer(u))
 	}
 	p := u.UpdateDataPlayer()
 	if noxflags.HasEngine(noxflags.EngineGodMode) {
-		return uint32(uintptr(u.UpdateData))
+		return memmap.PtrWord(u.UpdateData)
 	}
 	p.ManaPrev = p.ManaCur
 	if int32(p.ManaCur) > v {
@@ -293,14 +294,14 @@ func resourceGetMaxMana(u *server.Object) int16 {
 }
 func resourceSetMaxMana(u *server.Object, v uint16) uint32 {
 	if u == nil || u.ObjClass&4 == 0 {
-		return uint32(uintptr(unsafe.Pointer(u)))
+		return memmap.PtrWord(unsafe.Pointer(u))
 	}
 	u.UpdateDataPlayer().ManaMax = v
-	return uint32(uintptr(u.UpdateData))
+	return memmap.PtrWord(u.UpdateData)
 }
 func resourceRefreshMana(u *server.Object) uint32 {
 	if u == nil || u.ObjClass&4 == 0 {
-		return uint32(uintptr(unsafe.Pointer(u)))
+		return memmap.PtrWord(unsafe.Pointer(u))
 	}
 	p := u.UpdateDataPlayer()
 	p.ManaPrev = p.ManaCur

@@ -74,7 +74,7 @@ func spellEffectSummonStart(record unsafe.Pointer) int32 {
 	*controlByte(record, 82) = byte(u.Direction1)
 	*controlHalf(record, 83) = n
 	*controlByte(record, 85) = 0
-	duration := int32(uintptr(record))
+	duration := int32(memmap.PtrWord(record))
 	switch bookGuideSize(int32(guide)) {
 	case 1:
 		duration = floatToInt32(float32(spellEffectTable("SummonDuration", 0)))
@@ -153,7 +153,7 @@ func spellEffectCharmStart(record unsafe.Pointer) int32 {
 				return 1
 			}
 		}
-		duration := int32(uintptr(record))
+		duration := int32(memmap.PtrWord(record))
 		size := int32(bookGuideSize(int32(guide)))
 		switch {
 		case size <= 1:
@@ -251,7 +251,7 @@ func spellEffectCharmCancel(record unsafe.Pointer) int32 {
 		spellLifeBuffOff(u, 5)
 		return int32(spellLifeBuffOff(u, 28))
 	}
-	return int32(uintptr(u.CObj()))
+	return int32(memmap.PtrWord(u.CObj()))
 }
 func spellEffectBanish(u *server.Object) {
 	typ := stateType(1570280, "Glyph")

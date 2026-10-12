@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/server"
 	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/common/memmap"
@@ -8,25 +9,25 @@ import (
 )
 
 func uiInventoryCellRef(v uint32) *uiInventoryCell {
-	return (*uiInventoryCell)(unsafe.Pointer(uintptr(v)))
+	return (*uiInventoryCell)(memmap.WordPtr(v))
 }
-func uiInventoryPointer(p unsafe.Pointer) uint32 { return uint32(uintptr(p)) }
+func uiInventoryPointer(p unsafe.Pointer) uint32 { return memmap.PtrWord(p) }
 func uiInventorySetNext(dr, next *client.Drawable) {
-	*(**client.Drawable)(unsafe.Add(dr.C(), 368)) = next
+	*(**client.Drawable)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(368)) /* NextPtr */)) = next
 }
 func uiInventoryPrev(dr *client.Drawable) *client.Drawable {
-	return *(**client.Drawable)(unsafe.Add(dr.C(), 372))
+	return *(**client.Drawable)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(372)) /* Field_93 */))
 }
 func uiInventorySetPrev(dr, prev *client.Drawable) {
-	*(**client.Drawable)(unsafe.Add(dr.C(), 372)) = prev
+	*(**client.Drawable)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(372)) /* Field_93 */)) = prev
 }
 func uiInventoryError(id string) {
 	s := GetServer().S().Strings().GetStringInFile(strman.ID(id), `C:\NoxPost\src\Client\Gui\guiinv.c`)
 	Nox_xxx_printCentered_445490(s)
 }
 func uiInventoryCopyItem(dst, src *client.Drawable) {
-	copy(unsafe.Slice((*byte)(unsafe.Add(dst.C(), 432)), 24), unsafe.Slice((*byte)(unsafe.Add(src.C(), 432)), 24))
-	*(*uint32)(unsafe.Add(dst.C(), 292)) = *(*uint32)(unsafe.Add(src.C(), 292))
+	copy(unsafe.Slice((*byte)(unsafe.Add(dst.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)), 24), unsafe.Slice((*byte)(unsafe.Add(src.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)), 24))
+	*(*uint32)(unsafe.Add(dst.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */)) = *(*uint32)(unsafe.Add(src.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */))
 }
 func uiInventoryClearAlternateFlags() uintptr {
 	grid := uiInventoryGrid()
@@ -71,7 +72,7 @@ func uiInventoryAppend(code, typ uint32) *uiInventoryCell {
 	}
 	return nil
 }
-func uiInventoryNewStack(code, typ uint32, mods unsafe.Pointer, coords *[2]int32) int {
+func uiInventoryNewStack(code, typ uint32, mods *server.ModifierInitData, coords *[2]int32) int {
 	grid := uiInventoryGrid()
 	for row := 0; row < 20; row++ {
 		for col := 0; col < 4; col++ {
@@ -89,7 +90,7 @@ func uiInventoryNewStack(code, typ uint32, mods unsafe.Pointer, coords *[2]int32
 			cell.Codes[0] = code
 			cell.Count = 1
 			if uint32(dr.ObjClass)&0x13001000 != 0 {
-				copy(unsafe.Slice((*byte)(unsafe.Add(dr.C(), 432)), 20), unsafe.Slice((*byte)(mods), 20))
+				drawableSetModifiers(dr, mods)
 			}
 			if coords != nil {
 				*coords = [2]int32{int32(col), int32(row)}
@@ -99,7 +100,7 @@ func uiInventoryNewStack(code, typ uint32, mods unsafe.Pointer, coords *[2]int32
 				if class&0x1000000 != 0 && sub&2 == 0 || class&0x1000 != 0 {
 					def := GetServer().S().Modif.Nox_xxx_getProjectileClassById413250(int(dr.TypeIDVal))
 					// Match the 386 shift-count masking before the original byte truncation.
-					if def == nil || byte(uint32(1)<<(*(*byte)(unsafe.Add(uiMeterPlayer(), 2251))&31))&*(*byte)(unsafe.Add(unsafe.Pointer(def), 62)) != 0 {
+					if def == nil || byte(uint32(1)<<(*(*byte)(unsafe.Add(uiMeterPlayer(), 2251))&31))&*(*byte)(unsafe.Add(unsafe.Pointer(def), int(layoutServerModifier.Off(62)) /* Classes62 */)) != 0 {
 						uiInventorySetAlternate(cell)
 						cell.Alternate = 1
 					}
@@ -111,7 +112,7 @@ func uiInventoryNewStack(code, typ uint32, mods unsafe.Pointer, coords *[2]int32
 	return 0
 }
 
-func nox_xxx_spritePickup_461660(code, typ int32, mods unsafe.Pointer) int32 {
+func nox_xxx_spritePickup_461660(code, typ int32, mods *server.ModifierInitData) int32 {
 	t := uint32(typ)
 	if t == uint32(dword_5d4594_1062560) || t == memmap.Uint32(0x5D4594, 1049728) || t == memmap.Uint32(0x5D4594, 1049724) || t == uint32(dword_5d4594_1062556) || t == uint32(dword_5d4594_1062564) {
 		return 1

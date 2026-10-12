@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"unsafe"
 )
@@ -28,12 +29,12 @@ func monsterPendingAdd(owner, unit uint32) uint32 {
 		return 0
 	}
 	*p = monsterPendingNode{owner, unit, monsterPendingHead}
-	monsterPendingHead = uint32(uintptr(unsafe.Pointer(p)))
+	monsterPendingHead = memmap.PtrWord(unsafe.Pointer(p))
 	return monsterPendingHead
 }
 func monsterPendingResolve() {
 	for raw := monsterPendingHead; raw != 0; {
-		p := (*monsterPendingNode)(unsafe.Pointer(uintptr(raw)))
+		p := (*monsterPendingNode)(memmap.WordPtr(raw))
 		owner := objectLookupByScriptID(p.Owner)
 		unit := objectLookupByScriptID(p.Unit)
 		if owner != nil && unit != nil {

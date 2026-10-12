@@ -193,7 +193,7 @@ func Nox_cmd_offonly2(i int, t []string) bool {
 		return false
 	}
 	for off := uintptr(0); ; off += 8 {
-		p := *(*unsafe.Pointer)(memmap.PtrOff(0x587000, 94400+off))
+		p := memmap.LoadPtr(0x587000, 94400+off)
 		if p == nil {
 			return true
 		}

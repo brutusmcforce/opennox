@@ -2,6 +2,7 @@ package legacy
 
 import (
 	"encoding/binary"
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/server"
@@ -118,7 +119,7 @@ func shopBalance(s *shopSession) uint32 {
 	}
 	s.Totals[side] = s.Totals[1-side]
 	*gold += amount
-	return uint32(uintptr(unsafe.Pointer(gold)))
+	return memmap.PtrWord(unsafe.Pointer(gold))
 }
 func shopTransfer(s *shopSession, u *server.Object, n *shopItem) {
 	for ; n != nil; n = n.Next {
@@ -137,7 +138,7 @@ func shopTransferGold(u, gold *server.Object) uint32 {
 	if u.ObjClass&4 != 0 {
 		return shopAddGold(u, *shopGold(gold))
 	}
-	return uint32(uintptr(u.CObj()))
+	return memmap.PtrWord(u.CObj())
 }
 func shopCancelTrade(s *shopSession) {
 	for i := 0; i < 2; i++ {

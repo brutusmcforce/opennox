@@ -39,7 +39,7 @@ func equipmentDequipArmor(u, it *server.Object, report, broadcast int) int {
 	equipmentRecalculate(u)
 	equipmentEffects(it, u, false)
 	// This is the original byte at object+48 (team linkage), not subclass+12.
-	if *(*byte)(unsafe.Add(it.CObj(), 48))&2 != 0 {
+	if *(*byte)(unsafe.Add(it.CObj(), int(layoutServerObject.Off(48)) /* TeamVal.Field0 */))&2 != 0 {
 		state := *(*byte)(unsafe.Add(ud, 88))
 		if state >= 15 && state <= 17 {
 			Nox_xxx_playerSetState_4FA020(u, 13)

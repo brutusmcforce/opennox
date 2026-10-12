@@ -125,7 +125,7 @@ func summonDrawMenu(w *gui.Window) int {
 	if selected == 0 && command == 1 {
 		return 1
 	}
-	text := summonText(GoStringP(*memmap.PtrPtr(0x587000, 184344+uintptr(command)*4)))
+	text := summonText(GoStringP(memmap.LoadPtr(0x587000, 184344+uintptr(command)*4)))
 	pos := w.GlobalPos()
 	r := GetClient().R2()
 	font := r.GetFonts().AsFont(nil)
@@ -145,7 +145,7 @@ func summonDrawMenu(w *gui.Window) int {
 	}
 	var fg uint32
 	if selected != 0 {
-		if summonMobile((*summonRecord)(unsafe.Pointer(uintptr(selected)))) != 0 || command != 4 && command != 5 {
+		if summonMobile((*summonRecord)(memmap.WordPtr(selected))) != 0 || command != 4 && command != 5 {
 			fg = uint32(nox_color_white_2523948)
 		} else {
 			fg = memmap.Uint32(0x85B3FC, 956)

@@ -10,9 +10,9 @@ func Sub_56F1C0() { initializeProtection() }
 
 func initializeProtection() uint32 {
 	protectionRandom.Seed(uint32(time.Now().Unix()))
-	dword_5d4594_2516352 = 0
+	dword_5d4594_2516352 = nil
 	dword_5d4594_2516348 = uint32(GetServer().S().Frame())
-	dword_5d4594_2516344 = 0
+	dword_5d4594_2516344 = nil
 	*memmap.PtrUint16(0x587000, 311204) = 0
 	dword_5d4594_2516356 = 657757279
 	dword_5d4594_2516348 ^= uint32(protectionRandom.Draw())

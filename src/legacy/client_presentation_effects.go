@@ -23,9 +23,9 @@ func presentationPhonemeMark(index int) {
 }
 func presentationPhonemeInit() *gui.Window {
 	for i := 0; i < 8; i++ {
-		name := alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, 151272+4*uintptr(i))))
+		name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 151272+4*uintptr(i))))
 		img := Nox_xxx_gLoadImg(name)
-		*memmap.PtrPtr(0x5D4594, 1096564+4*uintptr(i)) = unsafe.Pointer(img.C())
+		presentationPhonemeImages[i] = img.C()
 		if img == nil {
 			return nil
 		}
@@ -40,7 +40,7 @@ func presentationPhonemeDraw() int {
 		if *stamp == 0 {
 			continue
 		}
-		img := GetClient().R2().GetBag().AsImage(noxrender.ImageHandle(*memmap.PtrPtr(0x5D4594, 1096564+4*uintptr(i))))
+		img := GetClient().R2().GetBag().AsImage(presentationPhonemeImages[i])
 		pos := image.Pt(int(nox_win_width)/2+int(memmap.Int32(0x587000, 151208+8*uintptr(i)))-16, int(nox_win_height)/2+int(memmap.Int32(0x587000, 151212+8*uintptr(i)))-41)
 		GetClient().R2().DrawImageAt(img, pos)
 		if GetServer().S().Frame()-*stamp > 3 {
@@ -124,7 +124,7 @@ func presentationTurnUndead(pos *[2]int16) {
 		if dr == nil {
 			continue
 		}
-		*(*uint16)(unsafe.Add(dr.C(), 508)) = uint16(angle)
+		*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(508)) /* Field_127 */)) = uint16(angle)
 		dr.Field_117 = math.Float32bits(*memmap.PtrFloat32(0x587000, 194136+8*uintptr(angle)) * 4)
 		dr.Field_118 = math.Float32bits(*memmap.PtrFloat32(0x587000, 194140+8*uintptr(angle)) * 4)
 		dr.Field_119 = 0
@@ -146,7 +146,7 @@ func presentationBubble(typ int, pos image.Point, z int16, a, b, c, d, e byte, l
 		return
 	}
 	dr.ZVal = uint16(z)
-	*effectWord(dr, 432) = uint32(noxcolor.RGB5551Color(byte(dr.LightColor.R), byte(dr.LightColor.G), byte(dr.LightColor.B)).Color32())
+	*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(noxcolor.RGB5551Color(byte(dr.LightColor.R), byte(dr.LightColor.G), byte(dr.LightColor.B)).Color32())
 	rgb := [3]byte{200, 200, 255}
 	for i, value := range [][3]byte{{255, 128, 128}, {255, 255, 255}, {200, 200, 255}, {255, 100, 50}, {64, 255, 64}, {255, 100, 255}, {255, 200, 255}, {255, 255, 200}} {
 		if i != 2 && uint32(typ) == *effectMapped(1217512 + 4*uintptr(i)) {
@@ -154,8 +154,8 @@ func presentationBubble(typ int, pos image.Point, z int16, a, b, c, d, e byte, l
 			break
 		}
 	}
-	*effectWord(dr, 436) = uint32(noxcolor.RGB5551Color(rgb[0], rgb[1], rgb[2]).Color32())
-	copy(unsafe.Slice(effectByte(dr, 440), 7), []byte{a, 1, b, b, d, e, c})
+	*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(noxcolor.RGB5551Color(rgb[0], rgb[1], rgb[2]).Color32())
+	copy(unsafe.Slice(effectByte(dr, int(layoutClientDrawable.Off(440)) /* Union._ */), 7), []byte{a, 1, b, b, d, e, c})
 	cl := GetClient().Cli()
 	cl.Objs.List6Add(dr)
 	cl.Objs.TransparentDecay(dr, lifetime)

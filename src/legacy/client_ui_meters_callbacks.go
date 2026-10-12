@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/client/gui"
@@ -62,17 +63,17 @@ func uiMeterEventCode(e gui.WindowEvent) int {
 
 func uiMeterWeaponInputCallback(w *gui.Window, e gui.WindowEvent) gui.WindowEventResp {
 	code := uiMeterEventCode(e)
-	wptr := int(int32(uint32(uintptr(w.C()))))
+	wptr := int(int32(memmap.PtrWord(w.C())))
 	return uiMeterEventResult(sub_470E90(wptr, code))
 }
 func uiMeterPotionInputCallback(w *gui.Window, e gui.WindowEvent) gui.WindowEventResp {
 	code := uiMeterEventCode(e)
-	wptr := int(int32(uint32(uintptr(w.C()))))
+	wptr := int(int32(memmap.PtrWord(w.C())))
 	return uiMeterEventResult(nox_xxx_guiBottleSlotProc_471B90(wptr, code))
 }
 func uiMeterTubeInputCallback(w *gui.Window, e gui.WindowEvent) gui.WindowEventResp {
 	code := uiMeterEventCode(e)
-	wptr := int(int32(uint32(uintptr(w.C()))))
+	wptr := int(int32(memmap.PtrWord(w.C())))
 	return uiMeterEventResult(nox_xxx_guiHealthManaTubeProc_472100(wptr, code))
 }
 

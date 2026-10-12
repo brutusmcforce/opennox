@@ -20,14 +20,6 @@ type chatBubble struct {
 
 var chatBubblePool unsafe.Pointer
 var chatBubbleTail *chatBubble
-var _ [692 - unsafe.Sizeof(chatBubble{})]byte
-var _ [unsafe.Sizeof(chatBubble{}) - 692]byte
-var _ [636 - unsafe.Offsetof(chatBubble{}.Length)]byte
-var _ [unsafe.Offsetof(chatBubble{}.Length) - 636]byte
-var _ [668 - unsafe.Offsetof(chatBubble{}.Drawable)]byte
-var _ [unsafe.Offsetof(chatBubble{}.Drawable) - 668]byte
-var _ [684 - unsafe.Offsetof(chatBubble{}.Next)]byte
-var _ [unsafe.Offsetof(chatBubble{}.Next) - 684]byte
 
 func chatBubbleHead() **chatBubble { return &chatBubbleList }
 func chatBubbleLookup(code uint32) *chatBubble {

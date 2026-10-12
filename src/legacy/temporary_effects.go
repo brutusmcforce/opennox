@@ -60,7 +60,7 @@ func temporaryWaterCandidate(t *server.Object, pos types.Pointf) {
 		return
 	}
 	x, y := float64(pos.X)-float64(t.PosVec.X), float64(pos.Y)-float64(t.PosVec.Y)
-	if math.Sqrt(y*y+x*x)-float64(*temporaryFloat(t.CObj(), 176)) <= 40 {
+	if math.Sqrt(y*y+x*x)-float64(*temporaryFloat(t.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) <= 40 {
 		GetServer().DelayedDelete(t)
 		*memmap.PtrUint32(0x5d4594, 2488664) = 1
 	}
@@ -151,14 +151,14 @@ func temporaryFist(u *server.Object) {
 	if u.ZVal <= 0 && int32(u.ObjFlags) >= 0 {
 		inventorySound(48, u, 0, 0)
 		temporaryScorch(u)
-		radius := float64(*temporaryFloat(u.CObj(), 176))
+		radius := float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */))
 		x := float32(radius + float64(u.PosVec.X))
 		u.ObjFlags |= 0x80000000
 		pos := types.Ptf(x, u.PosVec.Y)
 		visibilityFXPoint(138, pos)
-		pos = types.Ptf(float32(float64(u.PosVec.X)-float64(*temporaryFloat(u.CObj(), 176))), u.PosVec.Y)
+		pos = types.Ptf(float32(float64(u.PosVec.X)-float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */))), u.PosVec.Y)
 		visibilityFXPoint(138, pos)
-		pos = types.Ptf(u.PosVec.X, float32(float64(*temporaryFloat(u.CObj(), 176))+float64(u.PosVec.Y)))
+		pos = types.Ptf(u.PosVec.X, float32(float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */))+float64(u.PosVec.Y)))
 		visibilityFXPoint(138, pos)
 		gameplayReportEarthquake(&u.PosVec, 30)
 	}
@@ -171,7 +171,7 @@ func temporaryFist(u *server.Object) {
 }
 func temporaryFlameCleanse(u *server.Object) {
 	core := GetServer().S()
-	if core.Frame() >= u.Field34 || !core.MapTraceRayAt(*(*types.Pointf)(unsafe.Add(u.CObj(), 156)), u.PosVec, nil, nil, 65) || core.Frame()-u.Field32 > 3 && u.PrevPos == u.PosVec {
+	if core.Frame() >= u.Field34 || !core.MapTraceRayAt(*(*types.Pointf)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(156)) /* Pos39.X */)), u.PosVec, nil, nil, 65) || core.Frame()-u.Field32 > 3 && u.PrevPos == u.PosVec {
 		GetServer().DelayedDelete(u)
 	}
 }

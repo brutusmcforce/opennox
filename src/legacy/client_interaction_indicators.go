@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/client/gui"
@@ -14,7 +15,7 @@ func interactionIconDraw(w *gui.Window, _ *gui.WindowData) int {
 func interactionChatIconOpen() int {
 	img := Nox_xxx_gLoadImg("ChatIcon")
 	w := GetClient().Cli().GUI.NewWindowRaw(nil, 136, int(nox_win_width)-50, int(nox_win_height)/2-50, 50, 50, nil)
-	interactionChatIcon = uint32(uintptr(w.C()))
+	interactionChatIcon = memmap.PtrWord(w.C())
 	w.DrawData().BgImageHnd = img.C()
 	w.SetAllFuncs(nil, interactionIconDraw, nil)
 	sm := GetClient().Cli().Strings()
@@ -22,16 +23,16 @@ func interactionChatIconOpen() int {
 	return 1
 }
 func interactionChatIconHidden(hidden int) int {
-	return nox_window_set_hidden((*nox_window)(unsafe.Pointer(uintptr(interactionChatIcon))), hidden)
+	return nox_window_set_hidden((*nox_window)(memmap.WordPtr(interactionChatIcon)), hidden)
 }
 func interactionChatIconDestroy() int {
-	result := nox_xxx_windowDestroyMB_46C4E0((*nox_window)(unsafe.Pointer(uintptr(interactionChatIcon))))
+	result := nox_xxx_windowDestroyMB_46C4E0((*nox_window)(memmap.WordPtr(interactionChatIcon)))
 	interactionChatIcon = 0
 	return result
 }
 func interactionObserverIconDraw(w *gui.Window, d *gui.WindowData) int {
 	if Get_dword_8531A0_2576() != nil {
-		root := (*gui.Window)(unsafe.Pointer(uintptr(interactionObserverIcon)))
+		root := (*gui.Window)(memmap.WordPtr(interactionObserverIcon))
 		sm := GetClient().Cli().Strings()
 		root.DrawData().SetTooltip(sm, sm.GetStringInFile("observermode", "guiobs.c"))
 		interactionIconDraw(w, d)
@@ -41,13 +42,13 @@ func interactionObserverIconDraw(w *gui.Window, d *gui.WindowData) int {
 func interactionObserverIconOpen() int {
 	img := Nox_xxx_gLoadImg("ObserverIcon")
 	w := GetClient().Cli().GUI.NewWindowRaw(nil, 136, int(nox_win_width)-50, int(nox_win_height)/2-100, 50, 50, nil)
-	interactionObserverIcon = uint32(uintptr(w.C()))
+	interactionObserverIcon = memmap.PtrWord(w.C())
 	w.DrawData().BgImageHnd = img.C()
 	w.SetAllFuncs(nil, interactionObserverIconDraw, nil)
 	return 1
 }
 func interactionObserverIconHidden(hidden int) int {
-	return nox_window_set_hidden((*nox_window)(unsafe.Pointer(uintptr(interactionObserverIcon))), hidden)
+	return nox_window_set_hidden((*nox_window)(memmap.WordPtr(interactionObserverIcon)), hidden)
 }
 
 func nox_xxx_guiChatMode_4456E0(w *int32) int32 {

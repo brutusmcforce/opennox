@@ -10,8 +10,8 @@ import (
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
-var _ [16 - unsafe.Sizeof(gui.SliderData{})]byte
-var _ [unsafe.Sizeof(gui.SliderData{}) - 16]byte
+
+
 
 func uiSliderNew(parent *gui.Window, flags gui.StatusFlags, x, y, w, h int, draw *gui.WindowData, input *gui.SliderData) *gui.Window {
 	horizontal := draw.Style&16 != 0
@@ -74,7 +74,7 @@ func uiSliderPos(win *gui.Window, horizontal bool, v int) {
 	win.Field100Ptr.SetPos(p)
 }
 func uiSliderNotify(win *gui.Window, code int, a, b uintptr) {
-	win.DrawData().Window.Func94(&gui.RawEvent{Event: code, Arg1: a, Arg2: b})
+	win.DrawData().Window.Func94(gui.AsWindowEvent(code, a, b))
 }
 func uiSliderValueNotify(win *gui.Window, code int, d *gui.SliderData) {
 	uiSliderNotify(win, code, uintptr(win.C()), uintptr(d.Field3))

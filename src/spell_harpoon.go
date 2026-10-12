@@ -30,8 +30,6 @@ type harpoonData struct {
 	getAim func() types.Pointf
 }
 
-var _ = [1]struct{}{}[24-unsafe.Sizeof(harpoonPtr{})]
-
 type harpoonPtr struct {
 	target  *server.Object // 33, 132
 	bolt    *server.Object // 34, 136

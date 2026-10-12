@@ -16,7 +16,7 @@ func objectiveColor(header unsafe.Pointer) int32 {
 	}
 	name := alloc.GoString(*(**byte)(header))
 	for off := uintptr(205224); ; off += 8 {
-		p := *memmap.PtrPtr(0x587000, off)
+		p := memmap.LoadPtr(0x587000, off)
 		if p == nil {
 			return 0
 		}
@@ -84,7 +84,7 @@ func objectiveFlagUpdate(u *server.Object) int32 {
 	return out
 }
 func objectiveFollow(u, owner *server.Object) {
-	radius := float64(*temporaryFloat(owner.CObj(), 176)) + float64(*temporaryFloat(u.CObj(), 176)) + 10
+	radius := float64(*temporaryFloat(owner.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) + float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) + 10
 	dx, dy := movementDirectionVector(int32(int16(owner.Direction1)))
 	end := types.Pointf{X: float32(radius*float64(dx) + float64(owner.PosVec.X)), Y: float32(radius*float64(dy) + float64(owner.PosVec.Y))}
 	if GetServer().S().MapTraceRayAt(owner.PosVec, end, nil, nil, 5) {
@@ -113,7 +113,7 @@ func objectiveCrownCollide(u, t *server.Object) uint32 {
 	if t != nil && t.ObjFlags&0x8020 == 0 && t.ObjClass&4 != 0 {
 		return uint32(inventoryCrownPickup(t, u, 1))
 	}
-	return uint32(uintptr(t.CObj()))
+	return memmap.PtrWord(t.CObj())
 }
 func objectiveClearBallTeam(u *server.Object) {
 	objectiveRememberOwner(u, nil)
@@ -123,7 +123,7 @@ func objectiveClearBallTeam(u *server.Object) {
 func objectiveBallUpdate(u *server.Object) {
 	core := GetServer().S()
 	ud := u.UpdateData
-	*equipmentWord(u.CObj(), 112) = 1008981770
+	*equipmentWord(u.CObj(), int(layoutServerObject.Off(112)) /* Float28 */) = 1008981770
 	if prior := *temporaryRefWord(ud, 0); prior != nil && prior.ObjFlags&0x20 != 0 {
 		objectiveClearBallTeam(u)
 	}
@@ -154,7 +154,7 @@ func objectiveBallUpdate(u *server.Object) {
 		return
 	}
 	u.ObjFlags &^= 0x40
-	*equipmentWord(u.CObj(), 520) = 0
+	*equipmentWord(u.CObj(), int(layoutServerObject.Off(520)) /* Obj130 */) = 0
 	dir := (int32(int16(owner.Direction1)) + int32(nox_common_randomInt_415FA0(-32, 32))) & 255
 	dx, dy := movementDirectionVector(dir)
 	origin := types.Pointf{X: float32(float64(u.PosVec.X) - float64(dx)*20), Y: float32(float64(u.PosVec.Y) - float64(dy)*20)}
@@ -210,7 +210,7 @@ func objectiveBallReset(old *server.Object) int {
 	}
 	if old != nil {
 		for pl := core.Players.FirstUnit(); pl != nil; pl = core.Players.NextUnit(pl) {
-			if *temporaryRefWord(unsafe.Pointer(pl.UpdateDataPlayer().Player), 3628) == old {
+			if *temporaryRefWord(unsafe.Pointer(pl.UpdateDataPlayer().Player), int(layoutServerPlayer.Off(3628)) /* CameraFollowObj */) == old {
 				nox_xxx_playerCameraUnlock_4E6040(asObjectC(pl))
 				nox_xxx_playerCameraFollow_4E6060(asObjectC(pl), asObjectC(ball))
 			}
@@ -263,7 +263,7 @@ func objectiveObelisk(u *server.Object) int32 {
 			amount := int16(1)
 			if noxflags.HasGame(4096) {
 				var value float32
-				switch *(*byte)(unsafe.Add(unsafe.Pointer(ud.Player), 2251)) {
+				switch *(*byte)(unsafe.Add(unsafe.Pointer(ud.Player), int(layoutServerPlayer.Off(2251)) /* info */)) {
 				case 0:
 					value = core.Players.Mult.Warrior.Mana
 				case 1:

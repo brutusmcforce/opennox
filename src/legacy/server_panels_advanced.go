@@ -53,7 +53,7 @@ func serverPanelsAdvancedTab() int {
 	parent := serverPanelsWindow(1316708)
 	switch *serverPanelsWord(1316704) {
 	case 0:
-		*serverPanelsWord(1316712) = uint32(serverConfigRuleOpen((*gui.Window)(unsafe.Pointer(uintptr(uint32(serverOptionsPtr(parent))))), (*byte)(unsafe.Pointer(unsafe.Pointer(&serverOptionsCurrent()[0])))))
+		*serverPanelsWord(1316712) = uint32(serverConfigRuleOpen(parent, (*byte)(unsafe.Pointer(unsafe.Pointer(&serverOptionsCurrent()[0])))))
 	case 1:
 		*serverPanelsWord(1316712) = uint32(serverPanelsSpellOpen(parent))
 	case 2:

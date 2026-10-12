@@ -55,23 +55,22 @@ func stateType(offset uintptr, name string) uint32 {
 	}
 	return *p
 }
-func stateAttributes(u *server.Object, attrs unsafe.Pointer) unsafe.Pointer {
+
+// stateAttributes sets the modifiers of an item. The original returned leftover register values, which
+// no caller used.
+func stateAttributes(u *server.Object, attrs *server.ModifierInitData) {
 	if u.ObjClass&0x1000 == 0 || u.ObjSubClass&0x47f0000 == 0 {
-		any := false
-		for _, v := range unsafe.Slice((*uint32)(attrs), 4) {
-			any = any || v != 0
-		}
-		if !any {
-			return unsafe.Add(attrs, 16)
+		if !attrs.HasModifiers() {
+			return
 		}
 	}
 	typ := stateType(1564960, "TeamBase")
 	if u.ObjClass&0x13001000 == 0 && uint32(u.TypeInd) != typ {
-		return unsafe.Pointer(uintptr(typ))
+		return
 	}
 	u.NeedSync()
-	copy(unsafe.Slice((*byte)(u.InitData), 20), unsafe.Slice((*byte)(attrs), 20))
-	return stateSync(u, 0x2000000, 512)
+	*(*server.ModifierInitData)(u.InitData) = *attrs
+	stateSync(u, 0x2000000, 512)
 }
 func stateOn(u *server.Object) int8 {
 	if u.ObjFlags&0x1000000 == 0 && u.ObjClass&0x4000 != 0 {
@@ -102,7 +101,7 @@ func stateChecksum(u *server.Object) uint32 {
 	for _, off := range [...]int{340, 248, 120, 128, 132, 136, 148, 152, 108, 104, 100, 96, 92, 88, 84, 80, 76, 72, 68, 64, 60, 16, 20, 36, 40, 44, 56} {
 		sum ^= *equipmentWord(u.CObj(), off)
 	}
-	sum ^= uint32(int32(int16(u.Direction1))) ^ uint32(int32(int16(u.Direction2))) ^ uint32(u.TypeInd) ^ uint32(*(*byte)(unsafe.Add(u.CObj(), 52)))
+	sum ^= uint32(int32(int16(u.Direction1))) ^ uint32(int32(int16(u.Direction2))) ^ uint32(u.TypeInd) ^ uint32(*(*byte)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(52)) /* TeamVal.ID */)))
 	if h := u.HealthData; h != nil {
 		for _, v := range unsafe.Slice((*uint16)(unsafe.Pointer(h)), 3) {
 			sum ^= uint32(v)

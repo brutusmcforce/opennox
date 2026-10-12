@@ -18,7 +18,7 @@ var scriptBindingMoverType uint32
 func scriptBindingIntern(text unsafe.Pointer) int {
 	i := scriptBindingStringCount
 	if int32(i) < 1024 {
-		*memmap.PtrPtr(0x973F18, uintptr(uint32(26664)+4*i)) = text
+		scriptBindingStrings[i] = text
 		i++
 		scriptBindingStringCount = i
 	}

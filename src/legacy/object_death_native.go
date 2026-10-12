@@ -72,7 +72,7 @@ func objectDeathBoulder(u *server.Object) {
 	n := core.Rand.Logic.IntClamp(20, 30)
 	index := uint32(dword_5d4594_2491704)
 	for i := 0; i < n; i++ {
-		name := *memmap.PtrPtr(0x587000, 291512+4*uintptr(index))
+		name := memmap.LoadPtr(0x587000, 291512+4*uintptr(index))
 		t := core.NewObjectByTypeID(alloc.GoString((*byte)(name)))
 		if t == nil {
 			return
@@ -104,7 +104,7 @@ func objectDeathArmor(u *server.Object) {
 		pos = &holder.PosVec
 	}
 	key := "ArmorDieGeneric"
-	id := sound.ID(uint32(uintptr(unsafe.Pointer(pos))))
+	id := sound.ID(memmap.PtrWord(unsafe.Pointer(pos)))
 	switch {
 	case u.Material&16 != 0:
 		key = "ArmorDieMetal"

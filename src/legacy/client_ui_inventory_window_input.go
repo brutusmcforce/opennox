@@ -207,7 +207,7 @@ func uiInventoryMainEvents(w *gui.Window, event int, a, b uintptr) int {
 					uiInventoryMainWindow().Capture(false)
 					var mods unsafe.Pointer
 					if uint32(dr.Class())&0x13001000 != 0 {
-						mods = unsafe.Add(dr.C(), 432)
+						mods = unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)
 					}
 					uiAmountPrice(0, 0)
 					uiAmountShow((*uint16)(unsafe.Pointer(internWStr(uiInventoryText("DropLabel")))), screen.X, screen.Y, dr.NetCode32, dr.TypeIDVal, mods, uint32(count+1), 0, uiAmountNativeKey(uiAmountDrop), nil)

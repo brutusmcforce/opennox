@@ -149,7 +149,7 @@ func (pfx *partFXes) registerParticleFx(fnc func(t *particlefxType) bool, p *par
 
 // drawParticle draws a particle that has a drawable (see loadParticle and nox_thing_particle_draw).
 func (pfx *partFXes) drawParticle(dr *client.Drawable) {
-	p := pfx.byHandle[unsafe.Pointer(uintptr(dr.UnionEffect().Field_108))]
+	p := pfx.byHandle[memmap.WordPtr(dr.UnionEffect().Field_108)]
 	if p == nil {
 		return
 	}
@@ -405,7 +405,7 @@ func (p *particleFx) loadParticle(typ string) {
 	dr := c.Nox_xxx_spriteLoadAdd_45A360_drawable(id, image.Pt(p.x16>>16, p.y16>>16))
 	if dr != nil {
 		p.drawable12 = dr
-		dr.UnionEffect().Field_108 = uint32(uintptr(p.C())) // see drawParticle
+		dr.UnionEffect().Field_108 = memmap.PtrWord(p.C()) // see drawParticle
 		c.Objs.TransparentDecay(dr, p.ticksTotal)
 		c.Objs.List34Add(dr)
 	}

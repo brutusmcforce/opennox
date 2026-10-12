@@ -47,23 +47,23 @@ func playerFileAttributes(u *server.Object, info unsafe.Pointer) int {
 	*(*uint16)(unsafe.Add(info, 2*int(size))) = 0
 	if data != nil {
 		bytes := 2 * (playerFileWideLen(info) + 1)
-		copy(unsafe.Slice((*byte)(unsafe.Add(unsafe.Pointer(p), 4704)), bytes), unsafe.Slice((*byte)(info), bytes))
+		copy(unsafe.Slice((*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(4704)) /* NameFinal */)), bytes), unsafe.Slice((*byte)(info), bytes))
 	}
 	if r.read() && data != nil {
 		crc := protectionStringChecksum(info, uint32(2*playerFileWideLen(info)))
-		setProtectionRecord(int32(*equipmentWord(unsafe.Pointer(p), 4628)), uint32(crc))
+		setProtectionRecord(int32(*equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4628)) /* ProtPlayerOrigName */)), uint32(crc))
 	}
 	r.raw(unsafe.Add(info, 50), 4)
 	r.raw(unsafe.Add(info, 54), 4)
 	if r.read() && data != nil {
-		setProtectionRecord(int32(*equipmentWord(unsafe.Pointer(p), 4624)), *(*uint32)(unsafe.Add(info, 54)))
-		setProtectionRecord(int32(*equipmentWord(unsafe.Pointer(p), 4620)), *(*uint32)(unsafe.Add(info, 50)))
+		setProtectionRecord(int32(*equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4624)) /* ProtPlayerField2239 */)), *(*uint32)(unsafe.Add(info, 54)))
+		setProtectionRecord(int32(*equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4620)) /* ProtPlayerField2235 */)), *(*uint32)(unsafe.Add(info, 50)))
 	}
 	r.raw(unsafe.Add(info, 58), 4)
 	r.raw(unsafe.Add(info, 62), 4)
 	r.raw(unsafe.Add(info, 66), 1)
 	if r.read() && data != nil {
-		setProtectionRecord(int32(*equipmentWord(unsafe.Pointer(p), 4616)), uint32(*(*byte)(unsafe.Add(info, 66))))
+		setProtectionRecord(int32(*equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4616)) /* ProtPlayerClass */)), uint32(*(*byte)(unsafe.Add(info, 66))))
 	}
 	r.raw(unsafe.Add(info, 67), 1)
 	for off := 68; off <= 80; off += 3 {
@@ -105,15 +105,15 @@ func playerFileAttributes(u *server.Object, info unsafe.Pointer) int {
 	if version >= 4 {
 		stage := uint32(0)
 		if p != nil {
-			stage = *equipmentWord(unsafe.Pointer(p), 4696)
+			stage = *equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4696)) /* field4696 */)
 		}
 		stage = r.word(stage)
 		if r.read() {
 			if p != nil {
-				*equipmentWord(unsafe.Pointer(p), 4696) = stage
+				*equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4696)) /* field4696 */) = stage
 			}
 			if data != nil {
-				questRuntimeHighestMessage(int(p.PlayerInd), uint16(*equipmentWord(unsafe.Pointer(p), 4696)))
+				questRuntimeHighestMessage(int(p.PlayerInd), uint16(*equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4696)) /* field4696 */)))
 			}
 		}
 	}
@@ -151,22 +151,22 @@ func playerFileStatus(u *server.Object) int {
 	mana := memmap.PtrUint32(0x5D4594, 527700)
 	*mana = uint32(*(*uint16)(unsafe.Add(data, 4)))
 	r.raw(unsafe.Pointer(mana), 2)
-	poison := r.byte(*(*byte)(unsafe.Add(u.CObj(), 540)))
+	poison := r.byte(*(*byte)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(540)) /* Poison540 */)))
 	if r.read() {
 		resourceSetPoison(u, int32(poison))
 	}
-	r.raw(unsafe.Add(u.CObj(), 541), 1)
-	r.raw(unsafe.Add(u.CObj(), 542), 2)
+	r.raw(unsafe.Add(u.CObj(), int(layoutServerObject.Off(541)) /* Field541 */), 1)
+	r.raw(unsafe.Add(u.CObj(), int(layoutServerObject.Off(542)) /* Field542 */), 2)
 	r.raw(unsafe.Pointer(&u.Experience), 4)
 	if r.read() {
 		p := u.UpdateDataPlayer().Player
-		updateProtectionFloat(int32(*equipmentWord(unsafe.Pointer(p), 4604)), u.Experience, false)
+		updateProtectionFloat(int32(*equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4604)) /* ProtUnitExperience */)), u.Experience, false)
 		gameplayReportExperience(u)
 	}
 	if version >= 2 {
-		r.raw(unsafe.Add(u.CObj(), 124), 2)
+		r.raw(unsafe.Add(u.CObj(), int(layoutServerObject.Off(124)) /* Direction1 */), 2)
 		if r.read() {
-			*(*uint16)(unsafe.Add(u.CObj(), 126)) = *(*uint16)(unsafe.Add(u.CObj(), 124))
+			*(*uint16)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(126)) /* Direction2 */)) = *(*uint16)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(124)) /* Direction1 */))
 		}
 	}
 	return 1

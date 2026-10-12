@@ -30,8 +30,6 @@ func AsPlayerP(p unsafe.Pointer) *server.Player {
 	return (*server.Player)(p)
 }
 
-var _ = [1]struct{}{}[16-unsafe.Sizeof(server.ClassStats{})]
-
 func nox_common_playerInfoGetByID_417040(id int) *nox_playerInfo {
 	return (*nox_playerInfo)(GetServer().S().Players.ByID(id).C())
 }

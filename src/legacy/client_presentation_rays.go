@@ -63,16 +63,16 @@ func presentationRayAdd(event *[7]byte) {
 	if dr == nil {
 		return
 	}
-	*effectByte(dr, 432) = 1
-	*effectWord(dr, 433) = uint32(event[2])
-	*effectWord(dr, 437) = uint32(fromCode)
-	*effectWord(dr, 441) = uint32(toCode)
+	*effectByte(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = 1
+	*effectWord(dr, int(layoutClientDrawable.Off(433)) /* Union._ */) = uint32(event[2])
+	*effectWord(dr, int(layoutClientDrawable.Off(437)) /* Union._ */) = uint32(fromCode)
+	*effectWord(dr, int(layoutClientDrawable.Off(441)) /* Union._ */) = uint32(toCode)
 	presentationRays()[slot] = dr
 }
 func presentationRayRemove(event *[7]byte) {
 	from, to := uint32(binary.LittleEndian.Uint16(event[3:])), uint32(binary.LittleEndian.Uint16(event[5:]))
 	for i, dr := range presentationRays() {
-		if dr != nil && *effectWord(dr, 437) == from && *effectWord(dr, 441) == to {
+		if dr != nil && *effectWord(dr, int(layoutClientDrawable.Off(437)) /* Union._ */) == from && *effectWord(dr, int(layoutClientDrawable.Off(441)) /* Union._ */) == to {
 			GetClient().Nox_xxx_spriteDeleteStatic_45A4E0_drawable(dr)
 			presentationRays()[i] = nil
 			return

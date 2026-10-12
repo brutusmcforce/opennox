@@ -82,7 +82,7 @@ func generatorPick(u *server.Object, out *types.Pointf, descriptor *server.Objec
 			continue
 		}
 		info := p.UpdateDataPlayer().Player
-		if *(*byte)(unsafe.Add(unsafe.Pointer(info), 3680))&1 != 0 {
+		if *(*byte)(unsafe.Add(unsafe.Pointer(info), int(layoutServerPlayer.Off(3680)) /* Field3680 */))&1 != 0 {
 			continue
 		}
 		flags := *(*uint32)(unsafe.Add(u.UpdateData, 92))
@@ -133,7 +133,7 @@ func generatorUpdate(u *server.Object) int8 {
 	last := (*uint32)(unsafe.Add(u.UpdateData, 88))
 	elapsed := core.Frame() - *last
 	rate := *(*byte)(unsafe.Add(u.UpdateData, 80+uintptr(level)))
-	result = uint32(uintptr(u.CObj()))
+	result = memmap.PtrWord(u.CObj())
 	if rate <= 4 {
 		result = *cache(uintptr(rate) + 2)
 	}

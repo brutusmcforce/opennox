@@ -21,7 +21,7 @@ func floorAssetName(f *binfile.MemFile) string {
 }
 func floorAssetFacade(tile *server.TileDef) bool {
 	for i := uintptr(0); ; i++ {
-		p := *memmap.PtrPtr(0x587000, 26488+4*i)
+		p := memmap.LoadPtr(0x587000, 26488+4*i)
 		if p == nil {
 			return false
 		}
@@ -78,29 +78,28 @@ func edgeAssetDefinition(f *binfile.MemFile, scratch []byte) int {
 	if index >= 64 {
 		return 0
 	}
-	base := uintptr(28644 + 60*index)
+	e := &edgeAssets[index]
 	f.Skip(4)
 	name := floorAssetName(f)
-	dst := unsafe.Slice(memmap.PtrUint8(0x85B3FC, base), 32)
-	copy(dst, name)
-	dst[len(name)] = 0
-	*memmap.PtrInt32(0x85B3FC, base+36) = f.ReadI32()
-	*memmap.PtrInt32(0x85B3FC, base+40) = f.ReadI32()
-	*memmap.PtrUint8(0x85B3FC, base+57) = f.ReadU8()
+	copy(e.NameBuf[:], name)
+	e.NameBuf[len(name)] = 0
+	e.Field36 = f.ReadI32()
+	e.Field40 = f.ReadI32()
+	e.Field57 = f.ReadU8()
 	a := f.ReadU8()
-	*memmap.PtrUint8(0x85B3FC, base+54) = a
-	*memmap.PtrUint16(0x85B3FC, base+46) = 0
+	e.Field54 = a
+	e.Field46 = 0
 	v := f.ReadU8()
-	*memmap.PtrUint8(0x85B3FC, base+55) = v
-	*memmap.PtrUint8(0x85B3FC, base+56) = v
+	e.Field55 = v
+	e.Field56 = v
 	if f.ReadU8() == 1 {
 		return 0
 	}
 	b, c := f.ReadU8(), f.ReadU8()
-	*memmap.PtrUint8(0x85B3FC, base+53) = b
-	*memmap.PtrUint8(0x85B3FC, base+52) = c
-	*memmap.PtrUint16(0x85B3FC, base+44) = 2 * (uint16(b) + uint16(c))
-	*memmap.PtrPtr(0x85B3FC, base+32) = nil
+	e.Field53 = b
+	e.Field52 = c
+	e.Field44 = 2 * (uint16(b) + uint16(c))
+	e.Data32 = nil
 	count := 2 * int(a) * (int(b) + int(c))
 	for i := 0; i < count; i++ {
 		id := f.ReadI32()
@@ -200,7 +199,7 @@ func edgeAssetBind(f *binfile.MemFile, scratch []byte) int {
 	name := floorAssetName(f)
 	index := -1
 	for i := 0; i < int(int32(dword_5d4594_251572)); i++ {
-		if alloc.GoString(memmap.PtrUint8(0x85B3FC, 28644+60*uintptr(i))) == name {
+		if edgeAssets[i].Name() == name {
 			index = i
 			break
 		}
@@ -218,7 +217,7 @@ func edgeAssetBind(f *binfile.MemFile, scratch []byte) int {
 	count := 2 * int(a) * (int(b) + int(c))
 	// Keep the original allocation extent: handles use four bytes of each five.
 	ptr := legacyCalloc(uintptr(count), 5)
-	*memmap.PtrPtr(0x85B3FC, 28676+60*uintptr(index)) = ptr
+	edgeAssets[index].Data32 = ptr
 	if ptr == nil {
 		return 0
 	}
@@ -243,7 +242,7 @@ func floorAssetFree() {
 }
 func edgeAssetFree() {
 	for i := int32(0); i < int32(dword_5d4594_251572); i++ {
-		p := memmap.PtrPtr(0x85B3FC, 28676+60*uintptr(i))
+		p := &edgeAssets[i].Data32
 		if *p != nil {
 			legacyFree(*p)
 			*p = nil

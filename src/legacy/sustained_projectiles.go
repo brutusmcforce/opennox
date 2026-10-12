@@ -156,7 +156,7 @@ func sustainedFirewalk(p unsafe.Pointer) uint32 {
 			limit = 2
 		}
 	}
-	if math.Sqrt(dy*dy+dx*dx)-float64(*temporaryFloat(u.CObj(), 176)) > 15 {
+	if math.Sqrt(dy*dy+dx*dx)-float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) > 15 {
 		pos := last
 		for i := 0; i < 2; i++ {
 			id := *memmap.PtrUint32(0x5d4594, 2487888+uintptr(GetServer().S().Rand.Logic.IntClamp(0, limit))*4)
@@ -226,13 +226,13 @@ func sustainedForceTick(p unsafe.Pointer) uint32 {
 	if d.Flag20 == 0 {
 		pos = u.PosVec
 		dir = uint16(u.Direction1)
-		switch *spellLifeWord(u.CObj(), 172) {
+		switch *spellLifeWord(u.CObj(), int(layoutServerObject.Off(172)) /* Shape.Kind */) {
 		case 1:
 			distance = 4
 		case 2:
-			distance = float64(*temporaryFloat(u.CObj(), 176)) + 4
+			distance = float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) + 4
 		case 3:
-			distance = math.Max(float64(*temporaryFloat(u.CObj(), 184)), float64(*temporaryFloat(u.CObj(), 188))) + 4
+			distance = math.Max(float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(184)) /* Shape.Box.W */)), float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(188)) /* Shape.Box.H */))) + 4
 		default:
 			distance = 24
 		}
@@ -244,10 +244,10 @@ func sustainedForceTick(p unsafe.Pointer) uint32 {
 	}
 	spellEffectCreate(ball, u, dest)
 	if d.Flag20 == 1 {
-		*(*types.Pointf)(unsafe.Add(ball.CObj(), 80)) = types.Pointf{}
+		*(*types.Pointf)(unsafe.Add(ball.CObj(), int(layoutServerObject.Off(80)) /* VelVec.X */)) = types.Pointf{}
 	} else {
-		speed := *temporaryFloat(ball.CObj(), 544)
-		*(*types.Pointf)(unsafe.Add(ball.CObj(), 80)) = types.Ptf(vec.X*speed, vec.Y*speed)
+		speed := *temporaryFloat(ball.CObj(), int(layoutServerObject.Off(544)) /* SpeedCur */)
+		*(*types.Pointf)(unsafe.Add(ball.CObj(), int(layoutServerObject.Off(80)) /* VelVec.X */)) = types.Ptf(vec.X*speed, vec.Y*speed)
 	}
 	ball.Direction1 = server.Dir16(dir)
 	ball.Direction2 = server.Dir16(dir)
@@ -265,7 +265,7 @@ func sustainedForceCancel(p unsafe.Pointer) uint32 {
 		item := spellEffectObject(u.UpdateData, 104)
 		ret = controlRaw(item)
 		if item != nil && item.ObjSubClass&0x200000 != 0 {
-			ret = uint32(uintptr(item.UseData.Ptr))
+			ret = memmap.PtrWord(item.UseData.Ptr)
 			*spellLifeWord(item.UseData.Ptr, 96) &= ^uint32(4)
 		}
 	}
@@ -284,8 +284,8 @@ func sustainedManaBombStart(p unsafe.Pointer) uint32 {
 		for _, buff := range []int32{5, 14, 29} {
 			spellLifeApplyBuff(u, buff, int16(10*sustainedFPS()), 5)
 		}
-		d.Field80 = *spellLifeWord(u.CObj(), 120)
-		*spellLifeWord(u.CObj(), 120) = 1203982323
+		d.Field80 = *spellLifeWord(u.CObj(), int(layoutServerObject.Off(120)) /* Mass */)
+		*spellLifeWord(u.CObj(), int(layoutServerObject.Off(120)) /* Mass */) = 1203982323
 		for off := 80; off <= 100; off += 4 {
 			*spellLifeWord(u.CObj(), off) = 0
 		}
@@ -349,7 +349,7 @@ func sustainedManaBombCancel(p unsafe.Pointer) uint32 {
 		for _, buff := range []int32{5, 14, 29} {
 			spellLifeBuffOff(u, buff)
 		}
-		*spellLifeWord(u.CObj(), 120) = d.Field80
+		*spellLifeWord(u.CObj(), int(layoutServerObject.Off(120)) /* Mass */) = d.Field80
 	}
 	if d.Field84 == 0 {
 		return sustainedFX(163, d.Pos)
@@ -367,13 +367,13 @@ func sustainedTurnUndeadStart(p unsafe.Pointer) uint32 {
 	pos := u.PosVec
 	for dir := uint16(0); dir < 256; dir += 6 {
 		if killer := spellEffectNew(id); killer != nil {
-			*controlPtr(*controlPtr(killer.CObj(), 700), 0) = p
+			*controlPtr(*controlPtr(killer.CObj(), int(layoutServerObject.Off(700)) /* CollideData */), 0) = p
 			spellEffectCreate(killer, d.Caster16, pos)
 			killer.Direction1 = server.Dir16(dir)
 			killer.Direction2 = server.Dir16(dir)
 			vec := sustainedDirection(dir)
-			*(*types.Pointf)(unsafe.Add(killer.CObj(), 80)) = types.Ptf(vec.X*4, vec.Y*4)
-			*spellLifeWord(killer.CObj(), 112) = 0
+			*(*types.Pointf)(unsafe.Add(killer.CObj(), int(layoutServerObject.Off(80)) /* VelVec.X */)) = types.Ptf(vec.X*4, vec.Y*4)
+			*spellLifeWord(killer.CObj(), int(layoutServerObject.Off(112)) /* Float28 */) = 0
 		}
 	}
 	sustainedFX(160, pos)
@@ -383,7 +383,7 @@ func sustainedTurnUndeadTick() uint32 { return 0 }
 func sustainedTurnUndeadCancel(p unsafe.Pointer) uint32 {
 	id := stateType(2487928, "UndeadKiller")
 	for u := asObjectS(nox_server_getFirstObject_4DA790()); u != nil; u = asObjectS(nox_server_getNextObject_4DA7A0(asObjectC(u))) {
-		if uint32(u.TypeInd) == id && *controlPtr(*controlPtr(u.CObj(), 700), 0) == p {
+		if uint32(u.TypeInd) == id && *controlPtr(*controlPtr(u.CObj(), int(layoutServerObject.Off(700)) /* CollideData */), 0) == p {
 			sustainedDelete(u)
 		}
 	}

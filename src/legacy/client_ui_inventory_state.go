@@ -58,17 +58,17 @@ func uiInventoryMode() int { return int(dword_5d4594_1049864) }
 func uiInventoryItemHealth(code int, current, maximum int16) int16 {
 	if found := uiInventoryFindCode(uint32(code)); found != nil {
 		dr := found.Cell.Drawable
-		*(*uint16)(unsafe.Add(dr.C(), 292)) = uint16(current)
-		*(*uint16)(unsafe.Add(dr.C(), 294)) = uint16(maximum)
-		return int16(uintptr(dr.C()))
+		*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */)) = uint16(current)
+		*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(294)) /* Field_73_2 */)) = uint16(maximum)
+		return int16(memmap.PtrWord(dr.C()))
 	}
 	dr := uiInventoryDragged()
 	if dr != nil && dr.NetCode32 == uint32(code) {
-		*(*uint16)(unsafe.Add(dr.C(), 292)) = uint16(current)
-		*(*uint16)(unsafe.Add(dr.C(), 294)) = uint16(maximum)
+		*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */)) = uint16(current)
+		*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(294)) /* Field_73_2 */)) = uint16(maximum)
 		return maximum
 	}
-	return int16(uintptr(unsafe.Pointer(dr)))
+	return int16(memmap.PtrWord(unsafe.Pointer(dr)))
 }
 
 func sub_467680() {
@@ -91,10 +91,10 @@ func sub_467930(code, current, maximum int) unsafe.Pointer {
 	}
 	cell := found.Cell
 	dr := cell.Drawable
-	*(*uint16)(unsafe.Add(dr.C(), 448)) = uint16(current)
-	*(*uint16)(unsafe.Add(dr.C(), 450)) = uint16(maximum)
+	*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(448)) /* Union._ */)) = uint16(current)
+	*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(450)) /* Union._ */)) = uint16(maximum)
 	if cell.Equipped == 1 {
-		return unsafe.Pointer(uintptr(uint32(sub_470D90(current, maximum))))
+		return unsafe.Pointer(uintptr(sub_470D90(current, maximum))) // an integer result, not a pointer
 	}
 	return unsafe.Pointer(cell)
 }

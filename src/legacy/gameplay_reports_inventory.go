@@ -111,7 +111,7 @@ func gameplayReportTeamBase(to int, unit *server.Object) int {
 }
 func gameplayReportNPC(to int, unit *server.Object) int {
 	code := uint16(unit.NetCode)
-	if *controlByte(unit.CObj(), 540) != 0 {
+	if *controlByte(unit.CObj(), int(layoutServerObject.Off(540)) /* Poison540 */) != 0 {
 		code |= 0x8000
 	}
 	b := make([]byte, 21)

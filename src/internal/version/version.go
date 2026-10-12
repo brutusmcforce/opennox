@@ -1,6 +1,7 @@
 package version
 
 import (
+	"github.com/brutusmcforce/opennox/libs/env"
 	"github.com/brutusmcforce/opennox/libs/log"
 )
 
@@ -32,6 +33,10 @@ func Commit() string {
 }
 
 func ClientVersion() string {
+	if env.IsE2E() {
+		// The version is drawn on screen, and e2e screenshots must not depend on the commit.
+		return "e2e"
+	}
 	if IsDev() {
 		return version + " (" + commit + ")"
 	}

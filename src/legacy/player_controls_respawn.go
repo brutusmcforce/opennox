@@ -7,12 +7,12 @@ import (
 	"unsafe"
 )
 
-func controlRespawnItem(u *server.Object, name string, attrs unsafe.Pointer, a, b int32) *server.Object {
+func controlRespawnItem(u *server.Object, name string, attrs *server.ModifierInitData, a, b int32) *server.Object {
 	it := GetServer().S().NewObjectByTypeID(name)
 	if it == nil {
 		return nil
 	}
-	if fn := *controlPtr(it.CObj(), 688); fn != nil {
+	if fn := *controlPtr(it.CObj(), int(layoutServerObject.Off(688)) /* Init */); fn != nil {
 		it.CallInitWithArg(nil)
 	}
 	if attrs != nil {
@@ -41,10 +41,10 @@ func controlDefaultItems(u *server.Object, refresh, keep int32) int8 {
 	for _, off := range []int{312, 316, 84} {
 		*equipmentWord(d, off) = 0
 	}
-	*controlByte(u.CObj(), 541) = 0
+	*controlByte(u.CObj(), int(layoutServerObject.Off(541)) /* Field541 */) = 0
 	*controlHalf(d, 78) = 0
 	*controlHalf(d, 76) = 0
-	hp := *controlHalf(*controlPtr(u.CObj(), 556), 0)
+	hp := *controlHalf(*controlPtr(u.CObj(), int(layoutServerObject.Off(556)) /* HealthData */), 0)
 	for i := 0; i < 32; i++ {
 		*controlHalf(d, 12+2*i) = hp
 	}
@@ -57,11 +57,11 @@ func controlDefaultItems(u *server.Object, refresh, keep int32) int8 {
 	}
 	*controlByte(d, 212) = 0
 	controlClearWaypoints(u)
-	*controlPtr(u.CObj(), 520) = nil
+	*controlPtr(u.CObj(), int(layoutServerObject.Off(520)) /* Obj130 */) = nil
 	if controlFlags(8192) {
 		matchRosterResyncMask(*controlByte(pl, 2064))
 	}
-	result := int8(uintptr(pl))
+	result := int8(memmap.PtrWord(pl))
 	if pl == nil || *equipmentWord(pl, 4700) != 0 {
 		return result
 	}
@@ -78,42 +78,47 @@ func controlDefaultItems(u *server.Object, refresh, keep int32) int8 {
 			it = next
 		}
 		controlRespawnNotify(u, 1)
-		desc := func(id int32) uint32 { return uint32(uintptr(nox_xxx_modifGetDescById_413330(int32(id)))) }
-		byName := func(name string) uint32 {
+		desc := func(id int32) *server.ModifierEff { return (*server.ModifierEff)(nox_xxx_modifGetDescById_413330(int32(id))) }
+		byName := func(name string) *server.ModifierEff {
 			return desc(int32(nox_xxx_modifGetIdByName_413290((*int8)(internCStr(name)))))
 		}
 		base := byName("UserColor1")
-		baseID := *equipmentWord(unsafe.Pointer(uintptr(base)), 4)
-		color := func(off int) uint32 { return desc(int32(baseID + uint32(*controlByte(pl, 2185+off)))) }
+		baseID := *equipmentWord(unsafe.Pointer(base), int(layoutServerModifierEff.Off(4)) /* ind4 */)
+		color := func(off int) *server.ModifierEff { return desc(int32(baseID + uint32(*controlByte(pl, 2185+off)))) }
 		// The fifth modifier word is intentionally initialized along with descriptors.
-		attrs := [5]uint32{}
-		makeItem := func(name string) *server.Object { return controlRespawnItem(u, name, unsafe.Pointer(&attrs[0]), 1, 0) }
+		var attrs server.ModifierInitData
+		mods := func(m ...*server.ModifierEff) server.ModifierInitData {
+			var a server.ModifierInitData
+			copy(a.Modifiers[:], m)
+			return a
+		}
+		makeItem := func(name string) *server.Object { return controlRespawnItem(u, name, &attrs, 1, 0) }
 		if (controlFlags(2560) || *controlByte(pl, 2251) != 0) && *equipmentWord(pl, 0)&0x400 == 0 {
-			attrs = [5]uint32{0, color(84), color(85), 0, 0}
+			attrs = mods(nil, color(84), color(85), nil, nil)
 			makeItem("StreetShirt")
 		}
 		if *controlByte(pl, 0)&4 == 0 {
-			attrs = [5]uint32{0, color(83), 0, 0, 0}
+			attrs = mods(nil, color(83), nil, nil, nil)
 			makeItem("StreetPants")
 		}
 		if *controlByte(pl, 0)&1 == 0 {
-			attrs = [5]uint32{color(87), color(86), 0, 0, 0}
+			attrs = mods(color(87), color(86), nil, nil, nil)
 			makeItem("StreetSneakers")
 		}
 		class := *controlByte(pl, 2251)
 		if controlFlags(2048) {
-			attrs = [5]uint32{byName("ArmorQuality1"), 0, 0, 0, 0}
+			attrs = mods(byName("ArmorQuality1"), nil, nil, nil, nil)
 			if class == 0 {
-				attrs[1] = byName("Material1")
+				attrs.Modifiers[1] = byName("Material1")
 			}
-			name := GoStringP(unsafe.Pointer((*int8)(*controlPtr(memmap.PtrOff(0x587000, 206376), 4*int(class)))))
+			name := GoStringP(memmap.LoadPtr(0x587000, 206376+4*uintptr(class)))
 			result = int8(controlRaw(makeItem(name)))
 		} else if controlFlags(4096) && sessionMapState() >= 0 {
-			attrs = [5]uint32{}
+			attrs = server.ModifierInitData{}
 			if class == 1 {
-				attrs[2] = byName("Replenishment1")
+				attrs.Modifiers[2] = byName("Replenishment1")
 			}
-			name := GoStringP(unsafe.Pointer((*int8)(*controlPtr(memmap.PtrOff(0x587000, 206388), 4*int(class)))))
+			name := GoStringP(memmap.LoadPtr(0x587000, 206388+4*uintptr(class)))
 			result = int8(controlRaw(makeItem(name)))
 		} else {
 			result = int8(class)
@@ -164,7 +169,7 @@ func controlResetPlayer(u *server.Object) int32 {
 	}
 	*controlByte(d, 212) = 0
 	resourceRestoreHP(u)
-	*controlByte(u.CObj(), 541) = 0
+	*controlByte(u.CObj(), int(layoutServerObject.Off(541)) /* Field541 */) = 0
 	u.ObjFlags &= 0xffeb3fe7
 	nox_xxx_playerSetState_4FA020((*nox_object_t)(u.CObj()), 13)
 	spellLifeClearBuffs(u)
@@ -173,14 +178,14 @@ func controlResetPlayer(u *server.Object) int32 {
 	controlClearWaypoints(u)
 	gameplayReportTotalHealth(int(*controlByte(pl, 2064)), u)
 	gameplayReportTotalMana(int(*controlByte(pl, 2064)), u)
-	*controlPtr(u.CObj(), 520) = nil
+	*controlPtr(u.CObj(), int(layoutServerObject.Off(520)) /* Obj130 */) = nil
 	*equipmentWord(pl, 3664) = 0xdeadface
 	*equipmentWord(pl, 3660) = 0xdeadface
 	return -559023410
 }
 func controlTeamFlag(pl unsafe.Pointer) {
 	u := controlObject(pl, 2056)
-	team := unsafe.Pointer(nox_xxx_getTeamByID_418AB0(int(*controlByte(u.CObj(), 52))))
+	team := unsafe.Pointer(nox_xxx_getTeamByID_418AB0(int(*controlByte(u.CObj(), int(layoutServerObject.Off(52)) /* TeamVal.ID */))))
 	flag := controlObject(team, 76)
 	if flag != nil && flag.InvHolder == nil {
 		inventoryCrownPickup(u, flag, 1)
@@ -191,12 +196,12 @@ func controlLeaveObserver(pl unsafe.Pointer) {
 		return
 	}
 	u := controlObject(pl, 2056)
-	if u == nil || *controlPtr(u.CObj(), 744) == updateIdentityKey(updateIDPlayerMonsterBot) {
+	if u == nil || *controlPtr(u.CObj(), int(layoutServerObject.Off(744)) /* Update */) == updateIdentityKey(updateIDPlayerMonsterBot) {
 		return
 	}
 	playerStateRemoveStatus((*server.Player)(pl), 289)
 	spellLifeBuffOff(u, int32(0))
-	*controlPtr(u.CObj(), 744) = updateIdentityKey(updateIDPlayer)
+	*controlPtr(u.CObj(), int(layoutServerObject.Off(744)) /* Update */) = updateIdentityKey(updateIDPlayer)
 	u.ObjFlags &^= 0x40
 	nox_xxx_monsterMarkUpdate_4E8020((*nox_object_t)(controlObject(pl, 2056).CObj()))
 	if controlFlags(16) && bool(nox_xxx_CheckGameplayFlags_417DA0(4)) {
@@ -220,7 +225,7 @@ func controlMakeCorpse(u *server.Object, settings unsafe.Pointer) {
 }
 func controlRespawn(u *server.Object) int16 {
 	settings := unsafe.Pointer((unsafe.Pointer)(unsafe.Pointer(serverConfigSettings())))
-	result := int16(uintptr(settings))
+	result := int16(memmap.PtrWord(settings))
 	if u == nil {
 		return result
 	}
@@ -264,7 +269,7 @@ func controlRespawn(u *server.Object) int16 {
 func controlRespawnBot(u *server.Object) int32 {
 	b := *controlPtr(u.UpdateData, 292)
 	settings := unsafe.Pointer((unsafe.Pointer)(unsafe.Pointer(serverConfigSettings())))
-	if *controlHalf(*controlPtr(u.CObj(), 556), 0) == 0 {
+	if *controlHalf(*controlPtr(u.CObj(), int(layoutServerObject.Off(556)) /* HealthData */), 0) == 0 {
 		if GetServer().S().Frame()-*equipmentWord(b, 548) < 2*GetServer().S().TickRate() {
 			return 1
 		}

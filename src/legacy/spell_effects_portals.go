@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
 )
@@ -28,7 +29,7 @@ func spellEffectPortalSlot(id int32, source, origin *server.Object, slot int32) 
 		}
 		if slot == 4 {
 			oldest := GetServer().S().Frame()
-			slot = int32(uintptr(source.CObj()))
+			slot = int32(memmap.PtrWord(source.CObj()))
 			for i := int32(0); i < 4; i++ {
 				u := spellEffectObject(ud, 116+int(i)*4)
 				if u.Field34 < oldest {

@@ -55,8 +55,6 @@ func bookWord(off uintptr) *uint32 {
 		return (*uint32)(unsafe.Pointer(&dword_5d4594_1046956))
 	case 1047512:
 		return (*uint32)(unsafe.Pointer(&dword_5d4594_1047512))
-	case 1047516:
-		return (*uint32)(unsafe.Pointer(&dword_5d4594_1047516))
 	case 1047520:
 		return (*uint32)(unsafe.Pointer(&dword_5d4594_1047520))
 	case 1047524:
@@ -72,11 +70,11 @@ func bookWord(off uintptr) *uint32 {
 	}
 	return memmap.PtrUint32(0x5D4594, off)
 }
-func bookWindow(word uint32) *gui.Window { return AsWindowP(unsafe.Pointer(uintptr(word))) }
+func bookWindow(word uint32) *gui.Window { return AsWindowP(memmap.WordPtr(word)) }
 func bookRoot() *gui.Window              { return legacyGlobals.nox_win_unk1 }
-func bookClass(p uint32) int             { return int(*(*byte)(unsafe.Pointer(uintptr(p) + 2251))) }
-func bookPlayerWord(p uint32, off, id int) *uint32 {
-	return (*uint32)(unsafe.Pointer(uintptr(p) + uintptr(off+4*id)))
+func bookClass(p unsafe.Pointer) int     { return int(*(*byte)(unsafe.Add(p, 2251))) }
+func bookPlayerWord(p unsafe.Pointer, off, id int) *uint32 {
+	return (*uint32)(unsafe.Add(p, off+4*id))
 }
 func bookSound(id sound.ID) { Nox_xxx_clientPlaySoundSpecial_452D80(id, 100) }
 func bookHideWindow(w *gui.Window, hidden bool) int {
@@ -88,9 +86,9 @@ func bookHideWindow(w *gui.Window, hidden bool) int {
 }
 func bookName(id int) *wchar2_t {
 	if *bookWord(1046868) == 1 {
-		return (*wchar2_t)(unsafe.Pointer(uintptr(uint32(bookGuideCreatureName(int32(id))))))
+		return (*wchar2_t)(memmap.WordPtr(uint32(bookGuideCreatureName(int32(id)))))
 	}
-	if bookClass(*bookWord(1047516)) != 0 {
+	if bookClass(bookPlayer) != 0 {
 		return nox_xxx_spellTitle_424930(id)
 	}
 	return nox_xxx_abilityGetName_0_425260(id)
@@ -150,7 +148,7 @@ func bookShow(force int) {
 	if Nox_xxx_playerAnimCheck_4372B0() != 0 && noxflags.HasGame(noxflags.GameModeCoop) {
 		return
 	}
-	if dword_8531A0_2576 == 0 || bookSort(bookClass(uint32(dword_8531A0_2576))) != 0 {
+	if dword_8531A0_2576 == nil || bookSort(bookClass(dword_8531A0_2576.C())) != 0 {
 		bookOpen(force)
 		return
 	}
@@ -179,7 +177,7 @@ func bookSort(class int) int {
 	table := unsafe.Slice(bookWord(1046960), 137)
 	add := func(id int) { table[*bookWord(1047508)] = uint32(id); *bookWord(1047508)++ }
 	all := noxflags.HasGame(noxflags.GameFlag(0x2000)) && !noxflags.HasGame(noxflags.GameModeQuest)
-	p := *bookWord(1047516)
+	p := bookPlayer
 	if *bookWord(1046868) == 1 {
 		for id := bookGuideFirst(); id != 0; id = bookGuideNext(int32(id)) {
 			if (all || *bookPlayerWord(p, 4244, int(id)) != 0) && questRuntimeBookAllowed(int(id), 37) {

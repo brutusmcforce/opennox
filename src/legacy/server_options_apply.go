@@ -35,7 +35,7 @@ func serverOptionsApply() int8 {
 	if cycle {
 		p := sessionSelectedMap()
 		selected = alloc.GoString(p)
-		result = int8(uintptr(unsafe.Pointer(p)))
+		result = int8(memmap.PtrWord(unsafe.Pointer(p)))
 	}
 	if selected == "" {
 		return result

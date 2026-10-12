@@ -11,7 +11,7 @@ func rewardRoll(lo, hi int32) int32 {
 	return int32(GetServer().S().Rand.Logic.IntClamp(int(lo), int(hi)))
 }
 func rewardWord(off uintptr) uint32        { return memmap.Uint32(0x587000, off) }
-func rewardPtr(off uintptr) unsafe.Pointer { return *memmap.PtrPtr(0x587000, off) }
+func rewardPtr(off uintptr) unsafe.Pointer { return memmap.LoadPtr(0x587000, off) }
 func rewardByte(off uintptr) byte          { return memmap.Uint8(0x587000, off) }
 func rewardTier(stage uint32) uint32 {
 	if stage >= 10 {

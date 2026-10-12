@@ -13,14 +13,14 @@ import (
 )
 
 func uiMeterMainWindow() *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(dword_5d4594_1090276)))
+	return (*gui.Window)(memmap.WordPtr(dword_5d4594_1090276))
 }
 func uiMeterImage(handle uint32, pos image.Point) {
-	nox_client_drawImageAt_47D2C0(noxrender.ImageHandle(unsafe.Pointer(uintptr(handle))), pos.X, pos.Y)
+	nox_client_drawImageAt_47D2C0(noxrender.ImageHandle(memmap.WordPtr(handle)), pos.X, pos.Y)
 }
 func uiMeterSetIcon(w *gui.Window, handle uint32) {
 	if w != nil {
-		w.DrawData().BgImageHnd = noxrender.ImageHandle(unsafe.Pointer(uintptr(handle)))
+		w.DrawData().BgImageHnd = noxrender.ImageHandle(memmap.WordPtr(handle))
 	}
 }
 func uiMeterSetColor(v uint32) { GetClient().R2().Data().SetColor2(noxcolor.RGBA5551(v)) }
@@ -34,7 +34,7 @@ func uiMeterLabel(w *gui.Window) int {
 	r := GetClient().R2()
 	text := strconv.FormatInt(int64(int32(uiMeters()[uintptr(w.WidgetData)].Current)), 10)
 	r.Data().SetTextColor(noxcolor.RGBA5551(nox_color_white_2523948))
-	face := r.GetFonts().AsFont(unsafe.Pointer(uintptr(dword_5d4594_1096288)))
+	face := r.GetFonts().AsFont(memmap.WordPtr(dword_5d4594_1096288))
 	width := r.GetStringSizeWrapped(face, text, 0).X
 	pos := uiWindowPosition(w)
 	r.DrawString(face, text, image.Pt(pos.X-width/2+8, pos.Y+1))
@@ -170,6 +170,8 @@ func uiMeterTube(w *gui.Window) int {
 	return 1
 }
 
+var uiMeterChargeStamp uint32
+
 func uiMeterChargeRaster(w *gui.Window) int {
 	m := &uiMeters()[uintptr(w.WidgetData)]
 	pos := uiWindowPosition(w)
@@ -191,7 +193,14 @@ func uiMeterChargeRaster(w *gui.Window) int {
 	if count > 30 {
 		gap = 0
 	}
-	seq := uint32(GetClient().GetInputSeq())
+	// Rows are stamped so that overlapping segments draw each row once per call. The original stamped them
+	// with the input sequence, which only advances on game ticks: frames drawn between ticks then drew
+	// nothing and the bar flickered at high frame rates.
+	uiMeterChargeStamp++
+	if uiMeterChargeStamp == 0 {
+		uiMeterChargeStamp++
+	}
+	seq := uiMeterChargeStamp
 	span := (gap+61)/count - gap
 	next := 61 - span
 	remainder := float32(float64(gap-count*((gap+61)/count)+61) / float64(count))

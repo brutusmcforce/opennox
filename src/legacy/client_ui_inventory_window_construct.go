@@ -5,11 +5,10 @@ import (
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
-	"unsafe"
 )
 
 func uiInventoryImage(v uint32) noxrender.ImageHandle {
-	return noxrender.ImageHandle(unsafe.Pointer(uintptr(v)))
+	return noxrender.ImageHandle(memmap.WordPtr(v))
 }
 func uiInventoryNewScrollControls(parent *gui.Window) int {
 	for i, cfg := range [][4]int{{522, 2, 20, 25}, {522, 148, 20, 25}} {
@@ -83,8 +82,8 @@ func uiInventoryNewIdentifyWindow(parent *gui.Window) int {
 func uiInventoryCreateWindow() int {
 	uiInventoryLoadImages()
 	nox_xxx_inventoryNameSignInit_4671E0()
-	dword_5d4594_1063636 = uint32(uintptr(GetClient().R2().GetFonts().FontPtrByName("small")))
-	vp := (*noxrender.Viewport)(memmap.PtrOff(0x5D4594, 1049732))
+	dword_5d4594_1063636 = memmap.PtrWord(GetClient().R2().GetFonts().FontPtrByName("small"))
+	vp := &uiInventoryViewport
 	vp.Screen = image.Rect(0, 0, int(nox_win_width), int(nox_win_height))
 	vp.Size = image.Pt(int(nox_win_width), int(nox_win_height))
 	vp.World.Min = image.Point{}

@@ -46,7 +46,7 @@ func audioEventRank(p *audioEvent) int32 {
 	return int32(result)
 }
 func audioEventBucket(priority int32, volume uint32) *legacyListNode {
-	return (*legacyListNode)(memmap.PtrOff(0x5D4594, 839892+uintptr(uint32(priority)*120+volume*12)))
+	return &audioEventBuckets[priority][volume]
 }
 func audioEventBucketsClear() uint32 {
 	for i := int32(0); i < 6; i++ {

@@ -130,7 +130,7 @@ func clientSessionTeam(data []byte) int {
 		GetServer().TeamsResetYyy()
 	case 12:
 		if pl := s.Players.ByID(int(word(2))); pl != nil {
-			*(*byte)(unsafe.Add(pl.C(), 2282)) = data[4]
+			*(*byte)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(2282)) /* Field2282 */)) = data[4]
 		}
 	}
 	return size

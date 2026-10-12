@@ -60,7 +60,7 @@ func mapASCIIEqual(a, b string) bool {
 func mapCycleMask(group int) uint32 { return memmap.Uint32(0x587000, 191836+8*uintptr(group)) }
 func mapCycleGroup(name string) int {
 	for i := 0; i < 6; i++ {
-		if mapASCIIEqual(alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, 191832+8*uintptr(i)))), name) {
+		if mapASCIIEqual(alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 191832+8*uintptr(i)))), name) {
 			return i
 		}
 	}
@@ -198,7 +198,7 @@ type mapQuestRow struct {
 	Last  uint32
 }
 
-var _ = [1]struct{}{}[32-unsafe.Sizeof(mapQuestRow{})]
+
 
 func mapQuestRows() []mapQuestRow {
 	return unsafe.Slice((*mapQuestRow)(memmap.PtrOff(0x5D4594, 1525132)), 128)

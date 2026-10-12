@@ -23,8 +23,8 @@ func drawableSummonStart(owner int16, pos [2]uint16, typ uint16, dir byte, value
 	inner.PosVec = image.Pt(int(pos[0]), int(pos[1]))
 	inner.AnimDir = byte(geometryDirection4Index(int32(dir)))
 	inner.AnimInd = 8
-	*(**client.Drawable)(unsafe.Add(outer.C(), 432)) = inner
-	*(*uint32)(unsafe.Add(outer.C(), 436)) = uint32(uint16(owner))<<16 | uint32(uint16(value))
+	*(**client.Drawable)(unsafe.Add(outer.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)) = inner
+	*(*uint32)(unsafe.Add(outer.C(), int(layoutClientDrawable.Off(436)) /* Union._ */)) = uint32(uint16(owner))<<16 | uint32(uint16(value))
 	frame := GetServer().S().Frame()
 	outer.AnimStart = frame
 	return frame
@@ -38,11 +38,11 @@ func drawableSummonStop(owner int16) {
 		drawableSummonSpark = uint32(effectType("BlueSpark"))
 	}
 	for dr := GetClient().Cli().Objs.List1; dr != nil; dr = dr.NextPtr {
-		if dr.TypeIDVal != *typ || *(*uint16)(unsafe.Add(dr.C(), 438)) != uint16(owner) {
+		if dr.TypeIDVal != *typ || *(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(438)) /* Union._ */)) != uint16(owner) {
 			continue
 		}
 		effectCreatePointSparks(int(drawableSummonSpark), 50, 1000, 30, dr.PosVec.X, dr.PosVec.Y)
-		GetClient().Nox_xxx_spriteDelete_45A4B0(*(**client.Drawable)(unsafe.Add(dr.C(), 432)))
+		GetClient().Nox_xxx_spriteDelete_45A4B0(*(**client.Drawable)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)))
 		GetClient().Nox_xxx_spriteDeleteStatic_45A4E0_drawable(dr)
 		return
 	}
@@ -62,7 +62,7 @@ func drawableShieldLoad() int {
 }
 func drawableShieldScan(dr *client.Drawable, code uint32) {
 	for i := 0; i < 9; i++ {
-		if dr.TypeIDVal == *memmap.PtrUint32(0x5D4594, 1313748+4*uintptr(i)) && *(*uint32)(unsafe.Add(dr.C(), 432)) == code {
+		if dr.TypeIDVal == *memmap.PtrUint32(0x5D4594, 1313748+4*uintptr(i)) && *(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)) == code {
 			drawableShieldFound = 1
 		}
 	}
@@ -100,7 +100,7 @@ func drawableShield(code uint32, dir int) uintptr {
 	}
 	dr := effectSpawn(int(*memmap.PtrUint32(0x5D4594, 1313748+4*uintptr(dir))), pos.Add(image.Pt(0, 3)))
 	if dr != nil {
-		*(*uint32)(unsafe.Add(dr.C(), 432)) = code
+		*(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)) = code
 	}
 	return uintptr(dr.C())
 }
@@ -123,7 +123,7 @@ func drawableEffectTypes() int {
 		}
 	}
 	for i := 0; i < 5; i++ {
-		name := alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, 161216+4*uintptr(i))))
+		name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 161216+4*uintptr(i))))
 		v := effectType(name)
 		*memmap.PtrUint32(0x5D4594, 1200812+4*uintptr(i)) = uint32(v)
 		if v == 0 {
@@ -132,11 +132,6 @@ func drawableEffectTypes() int {
 	}
 	clientGameVioletSpark = effectType("VioletSpark")
 	return bool2int(clientGameVioletSpark != 0)
-}
-
-func nox_xxx_netHandleSummonPacket_4B7C40(owner int16, p *uint16, typ uint16, dir uint8, value int16) *uint32 {
-	n := drawableSummonStart(int16(owner), *(*[2]uint16)(unsafe.Pointer(p)), uint16(typ), byte(dir), int16(value))
-	return (*uint32)(unsafe.Pointer(uintptr(n)))
 }
 
 func sub_4B7EE0(owner int16) { drawableSummonStop(int16(owner)) }

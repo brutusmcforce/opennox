@@ -188,10 +188,10 @@ func guardUpdate(u *server.Object) {
 		if !aiIsMimic(u) && ud.Field282_1 > 0 {
 			target := ud.CurrentEnemy
 			if target == nil {
-				seen := unsafe.Slice((*uint32)(unsafe.Pointer(&ud.Field283)), int(ud.Field282_1))
-				target = (*server.Object)(unsafe.Pointer(uintptr(seen[0])))
-				for _, raw := range seen {
-					candidate := (*server.Object)(unsafe.Pointer(uintptr(raw)))
+				// The seen list holds object pointers (see visibilitySlots).
+				seen := unsafe.Slice((**server.Object)(unsafe.Pointer(&ud.Field283)), int(ud.Field282_1))
+				target = seen[0]
+				for _, candidate := range seen {
 					if candidate.ObjClass.Has(object.ClassPlayer) {
 						target = candidate
 						break

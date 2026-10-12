@@ -141,7 +141,7 @@ func mapThemeCondition(f uint32, out *uint32) uint32 {
 	if class >= 0 {
 		*out = 0
 		for p := GetServer().S().Players.First(); p != nil; p = GetServer().S().Players.Next(p) {
-			if int(*(*byte)(unsafe.Add(p.C(), 2251))) == class {
+			if int(*(*byte)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(2251)) /* info */))) == class {
 				*out = 1
 				break
 			}

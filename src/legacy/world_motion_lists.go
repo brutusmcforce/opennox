@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
 )
@@ -9,9 +10,9 @@ var motionDecayHead uint32
 var motionSentryHead uint32
 
 func motionObject(raw uint32) *server.Object {
-	return (*server.Object)(unsafe.Pointer(uintptr(raw)))
+	return (*server.Object)(memmap.WordPtr(raw))
 }
-func motionAddress(u *server.Object) uint32 { return uint32(uintptr(unsafe.Pointer(u))) }
+func motionAddress(u *server.Object) uint32 { return memmap.PtrWord(unsafe.Pointer(u)) }
 
 func motionDecaySet(u *server.Object, delay int32) uint32 {
 	if u.ObjFlags&0x10000 != 0 {

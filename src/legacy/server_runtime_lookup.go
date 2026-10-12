@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/common/memmap"
@@ -28,8 +29,8 @@ func runtimeEquipmentLoad(armor bool) {
 		return
 	}
 	for ; memmap.Uint32(0x587000, off+4) != 0; off += 12 {
-		id := alloc.GoString((*byte)(unsafe.Pointer(uintptr(memmap.Uint32(0x587000, off+4)))))
-		*memmap.PtrUint32(0x587000, off) = uint32(uintptr(unsafe.Pointer(runtimeLookupString(id, file))))
+		id := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, off+4)))
+		memmap.StorePtr(0x587000, off, unsafe.Pointer(runtimeLookupString(id, file)))
 	}
 	*flag = 1
 }
@@ -55,7 +56,7 @@ func runtimeEquipmentNameEqual(a, b *uint16) bool {
 }
 func runtimeEquipmentMask(armor bool, name *uint16) uint32 {
 	for off := runtimeEquipmentBase(armor); memmap.Uint32(0x587000, off) != 0; off += 12 {
-		p := (*uint16)(unsafe.Pointer(uintptr(memmap.Uint32(0x587000, off))))
+		p := (*uint16)(memmap.LoadPtr(0x587000, off))
 		if runtimeEquipmentNameEqual(name, p) {
 			return memmap.Uint32(0x587000, off+8)
 		}
@@ -65,7 +66,7 @@ func runtimeEquipmentMask(armor bool, name *uint16) uint32 {
 func runtimeEquipmentLabel(armor bool, mask uint32) *uint16 {
 	for off := runtimeEquipmentBase(armor); memmap.Uint32(0x587000, off) != 0; off += 12 {
 		if memmap.Uint32(0x587000, off+8) == mask {
-			return (*uint16)(unsafe.Pointer(uintptr(memmap.Uint32(0x587000, off))))
+			return (*uint16)(memmap.LoadPtr(0x587000, off))
 		}
 	}
 	return nil
@@ -78,35 +79,36 @@ func runtimeModifierRow(mask byte) uintptr {
 	}
 	return 0
 }
-func runtimeModifierIcon(mask byte) uint32 {
+func runtimeModifierIcon(mask byte) noxrender.ImageHandle {
 	ready := memmap.PtrUint32(0x5D4594, 251624)
 	if *ready == 0 {
 		for off := uintptr(27332); off < 27452; off += 20 {
-			id := alloc.GoString((*byte)(unsafe.Pointer(uintptr(memmap.Uint32(0x587000, off+4)))))
-			*memmap.PtrUint32(0x587000, off+8) = uint32(uintptr(Nox_xxx_gLoadImg(id).C()))
+			id := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, off+4)))
+			memmap.StorePtr(0x587000, off+8, unsafe.Pointer(Nox_xxx_gLoadImg(id).C()))
 		}
 		*ready = 1
 	}
 	if off := runtimeModifierRow(mask); off != 0 {
-		return memmap.Uint32(0x587000, off+8)
+		return noxrender.ImageHandle(memmap.LoadPtr(0x587000, off+8))
 	}
-	return 0
+	return nil
 }
 func runtimeModifierLabel(mask byte) *uint16 {
 	off := runtimeModifierRow(mask)
 	if off == 0 {
 		return nil
 	}
-	id := alloc.GoString((*byte)(unsafe.Pointer(uintptr(memmap.Uint32(0x587000, off+12)))))
+	id := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, off+12)))
 	return runtimeLookupString(id, `C:\NoxPost\src\common\Object\Modifier.c`)
 }
+var runtimeMaterial7 *server.ModifierEff
+
 func runtimeMaterial(u *server.Object) bool {
-	cache := memmap.PtrUint32(0x5D4594, 251620)
-	if *cache == 0 {
+	if runtimeMaterial7 == nil { // was cached in 0x5D4594+251620
 		m := &GetServer().S().Modif
-		*cache = uint32(uintptr(m.Nox_xxx_modifGetDescById413330(m.Nox_xxx_modifGetIdByName413290("Material7")).C()))
+		runtimeMaterial7 = m.Nox_xxx_modifGetDescById413330(m.Nox_xxx_modifGetIdByName413290("Material7"))
 	}
-	return uint32(u.ObjClass)&0x13001000 != 0 && *(*uint32)(unsafe.Add(u.InitData, 4)) == *cache
+	return uint32(u.ObjClass)&0x13001000 != 0 && u.InitDataModifier().Modifiers[1] == runtimeMaterial7
 }
 func runtimeArmorConductivity(u *server.Object) float64 {
 	if u.Class().Has(object.ClassArmor) {

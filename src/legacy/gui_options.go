@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/strman"
@@ -35,5 +36,5 @@ func Get_nox_wnd_xxx_1309740() *gui.Anim {
 }
 
 func Get_dword_5d4594_1309720() *gui.Window {
-	return AsWindowP(unsafe.Pointer(uintptr(legacyGlobals.dword_5d4594_1309720)))
+	return AsWindowP(memmap.WordPtr(legacyGlobals.dword_5d4594_1309720))
 }

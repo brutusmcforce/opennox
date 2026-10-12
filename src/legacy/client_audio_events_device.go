@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
 	"unsafe"
 )
@@ -61,17 +62,17 @@ func audioEventSampleRefill(p *AudioSample) int32 {
 					if n != 0 {
 						if first != 0 {
 							if firstLength != 0 {
-								copy(unsafe.Slice(scratch, int(firstLength)), unsafe.Slice((*byte)(unsafe.Pointer(uintptr(first))), int(firstLength)))
-								data = uint32(uintptr(unsafe.Pointer(scratch)))
+								copy(unsafe.Slice(scratch, int(firstLength)), unsafe.Slice((*byte)(memmap.WordPtr(first)), int(firstLength)))
+								data = memmap.PtrWord(unsafe.Pointer(scratch))
 								first = 0
 								copied = true
 							}
-							copy(unsafe.Slice((*byte)(unsafe.Add(unsafe.Pointer(scratch), uintptr(uint32(total)))), int(n)), unsafe.Slice((*byte)(unsafe.Pointer(uintptr(v.Data))), int(n)))
+							copy(unsafe.Slice((*byte)(unsafe.Add(unsafe.Pointer(scratch), uintptr(uint32(total)))), int(n)), unsafe.Slice((*byte)(memmap.WordPtr(v.Data)), int(n)))
 						} else if !copied {
 							first = v.Data
 							firstLength = n
 						} else {
-							copy(unsafe.Slice((*byte)(unsafe.Add(unsafe.Pointer(scratch), uintptr(uint32(total)))), int(n)), unsafe.Slice((*byte)(unsafe.Pointer(uintptr(v.Data))), int(n)))
+							copy(unsafe.Slice((*byte)(unsafe.Add(unsafe.Pointer(scratch), uintptr(uint32(total)))), int(n)), unsafe.Slice((*byte)(memmap.WordPtr(v.Data)), int(n)))
 						}
 					}
 				}
@@ -84,7 +85,7 @@ func audioEventSampleRefill(p *AudioSample) int32 {
 				}
 			}
 		}
-		audioEventDeviceLoad(p.Smp, uint32(index), unsafe.Slice((*byte)(unsafe.Pointer(uintptr(data))), int(total)))
+		audioEventDeviceLoad(p.Smp, uint32(index), unsafe.Slice((*byte)(memmap.WordPtr(data)), int(total)))
 	}
 	return -1
 }

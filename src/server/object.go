@@ -1269,7 +1269,7 @@ func (obj *Object) Strength() int {
 	case cl.Has(object.ClassPlayer):
 		ud := obj.UpdateDataPlayer()
 		pl := ud.Player
-		return int(*(*uint32)(unsafe.Add(pl.C(), 2239)))
+		return int(*(*uint32)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(2239)) /* info */)))
 	case cl.Has(object.ClassMonster):
 		ud := obj.UpdateDataMonster()
 		sub := obj.SubClass().AsMonster()
@@ -1291,7 +1291,7 @@ func (obj *Object) SetStrength(v int) {
 		ud := obj.UpdateDataPlayer()
 		pl := ud.Player
 		// TODO: do we need to update any cheksums?
-		*(*uint32)(unsafe.Add(pl.C(), 2239)) = uint32(v)
+		*(*uint32)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(2239)) /* info */)) = uint32(v)
 	case cl.Has(object.ClassMonster):
 		ud := obj.UpdateDataMonster()
 		sub := obj.SubClass().AsMonster()

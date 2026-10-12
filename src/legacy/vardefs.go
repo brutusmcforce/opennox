@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/client/gui"
@@ -30,7 +31,7 @@ func Get_dword_587000_87412() int {
 	return int(browserUI.region)
 }
 func Get_dword_5d4594_815000() *gui.Window {
-	return AsWindowP(browserUI.detailPanel)
+	return browserUI.detailPanel
 }
 func Get_dword_587000_87408() int {
 	return int(browserUI.listMode)
@@ -39,10 +40,10 @@ func Get_nox_game_createOrJoin_815048() int {
 	return int(browserUI.creating)
 }
 func Get_dword_5d4594_814996() *gui.Window {
-	return AsWindowP(browserUI.label)
+	return browserUI.label
 }
 func Get_dword_5d4594_814984() *gui.Window {
-	return AsWindowP(browserUI.mapWindow)
+	return browserUI.mapWindow
 }
 func Get_dword_5d4594_2488604() int {
 	return int(collisionActiveHead)
@@ -135,7 +136,7 @@ func Get_dword_5d4594_1090120() int {
 	return int(dword_5d4594_1090120)
 }
 func Get_dword_5d4594_1090100() *gui.Window {
-	return AsWindowP(unsafe.Pointer(uintptr(legacyGlobals.dword_5d4594_1090100)))
+	return AsWindowP(memmap.WordPtr(legacyGlobals.dword_5d4594_1090100))
 }
 func Get_dword_5d4594_814624() unsafe.Pointer {
 	return browserUI.selected
@@ -267,7 +268,7 @@ func Get_dword_5d4594_823776() int {
 	return int(dword_5d4594_823776)
 }
 func Get_dword_5d4594_831236() *gui.Window {
-	return AsWindowP(unsafe.Pointer(uintptr(legacyGlobals.dword_5d4594_831236)))
+	return AsWindowP(memmap.WordPtr(legacyGlobals.dword_5d4594_831236))
 }
 func Get_dword_5d4594_1049844() int {
 	return int(dword_5d4594_1049844)
@@ -636,10 +637,10 @@ func Get_dword_5d4594_826036() *byte {
 	return sessionMOTDFile
 }
 func Get_dword_8531A0_2576() *server.Player {
-	return AsPlayerP(unsafe.Pointer(uintptr(dword_8531A0_2576)))
+	return dword_8531A0_2576
 }
 func Set_dword_8531A0_2576(p *server.Player) {
-	dword_8531A0_2576 = uint32(uintptr(p.C()))
+	dword_8531A0_2576 = p
 }
 func Get_dword_8531A0_2572() uint32 {
 	return uint32(dword_8531A0_2572)

@@ -3,12 +3,11 @@ package legacy
 import (
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 var monsterScriptCacheCold uint32 = 1
 
-func monsterCacheNode(raw uint32) *[3]uint32 { return (*[3]uint32)(unsafe.Pointer(uintptr(raw))) }
+func monsterCacheNode(raw uint32) *[3]uint32 { return (*[3]uint32)(memmap.WordPtr(raw)) }
 func monsterCacheList(active bool) *[2]uint32 {
 	off := uintptr(2386620)
 	if active {
@@ -47,7 +46,7 @@ func monsterCacheReset() uint32 {
 	*monsterCacheList(true) = [2]uint32{}
 	var result uint32
 	for i := uintptr(0); i < 16; i++ {
-		result = monsterCachePrepend(monsterCacheList(false), uint32(uintptr(memmap.PtrOff(0x5D4594, 2386628+12*i))))
+		result = monsterCachePrepend(monsterCacheList(false), memmap.PtrWord(memmap.PtrOff(0x5D4594, 2386628+12*i)))
 	}
 	monsterScriptCacheCold = 0
 	return result

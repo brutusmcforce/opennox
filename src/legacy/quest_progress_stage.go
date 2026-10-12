@@ -13,9 +13,9 @@ func questProgressStage() uint32              { return memmap.Uint32(0x5D4594, 2
 func questProgressSetStage(v uint32) uint32   { *memmap.PtrUint32(0x5D4594, 2388660) = v; return v }
 func questProgressSetMinions(v uint32) uint32 { *memmap.PtrUint32(0x5D4594, 2388656) = v; return v }
 func questProgressInitMapping() {
-	for off := uintptr(249896); *memmap.PtrPtr(0x587000, off+8) != nil; off += 16 {
+	for off := uintptr(249896); memmap.LoadPtr(0x587000, off+8) != nil; off += 16 {
 		for _, delta := range []uintptr{8, 0} {
-			name := alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, off+delta)))
+			name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, off+delta)))
 			*memmap.PtrUint32(0x587000, off+delta+4) = uint32(GetServer().S().Types.IndByID(name))
 		}
 	}
@@ -28,7 +28,7 @@ func questProgressGeneratorType(u *server.Object) uint32 {
 	if u == nil {
 		return 0
 	}
-	for off := uintptr(249896); *memmap.PtrPtr(0x587000, off+8) != nil; off += 16 {
+	for off := uintptr(249896); memmap.LoadPtr(0x587000, off+8) != nil; off += 16 {
 		if memmap.Uint32(0x587000, off+4) == uint32(u.TypeInd) {
 			return memmap.Uint32(0x587000, off+12)
 		}

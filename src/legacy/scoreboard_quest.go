@@ -41,7 +41,7 @@ func scoreboardDrawQuest() byte {
 			healthColor = 15
 		}
 		scoreboardCell(0, 3, healthColor, fmt.Sprintf(scoreboardLiteral(147844), health))
-		scoreboardCellName(0, 4, color, *(**uint16)(memmap.PtrOff(0x5D4594, 1084056+4*uintptr(r.Class))))
+		scoreboardCellName(0, 4, color, scoreboardClassNames[r.Class])
 		var statusColor byte
 		status := scoreboardStatus(int(r.Objective), &statusColor)
 		scoreboardInsertSafe(scoreboardColumn(0, 1), statusColor, status)

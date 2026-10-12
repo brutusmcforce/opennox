@@ -15,8 +15,11 @@ type quickbarRecord struct {
 	Window     *gui.Window
 	Slots      [5]*gui.Window
 	Directions [5]*gui.Window
-	_          uint32
+	Field252   uint32
 }
+
+// quickbarRecords was 0x5D4594+1047940 (256 bytes each); record 5 is the main one.
+var quickbarRecords [6]quickbarRecord
 
 // Some legacy transitions only compute a row address, without accessing it.
 // Keep that arithmetic separate from indexing the five valid owned rows.
@@ -25,16 +28,19 @@ func quickbarRowPointer(b *quickbarRecord, row byte) *[5]quickbarSlot {
 }
 
 // The shared slot and record layouts remain visible to remaining C owners.
-var _ [256 - int(unsafe.Sizeof(quickbarRecord{}))]byte
-var _ [int(unsafe.Sizeof(quickbarRecord{})) - 256]byte
-var _ [204 - int(unsafe.Offsetof(quickbarRecord{}.Current))]byte
-var _ [int(unsafe.Offsetof(quickbarRecord{}.Current)) - 204]byte
 
 func quickbarMain() *quickbarRecord {
-	return (*quickbarRecord)(legacyGlobals.nox_xxx_aClosewoodengat_587000_133480)
+	return &quickbarRecords[5]
 }
-func quickbarAt(off uintptr) *quickbarRecord { return (*quickbarRecord)(memmap.PtrOff(0x5D4594, off)) }
-func quickbarPlayer() uint32                 { return uint32(dword_8531A0_2576) }
+
+// quickbarAt returns the record at an offset of the original blob (0x5D4594+1047940 + 256*index).
+func quickbarAt(off uintptr) *quickbarRecord {
+	if off < 1047940 || (off-1047940)%256 != 0 {
+		panic("quickbarAt: not a record offset")
+	}
+	return &quickbarRecords[(off-1047940)/256]
+}
+func quickbarPlayer() unsafe.Pointer { return dword_8531A0_2576.C() }
 func quickbarWord(off uintptr) *uint32 {
 	switch off {
 	case 1047548:
@@ -74,11 +80,13 @@ func quickbarWord(off uintptr) *uint32 {
 	}
 	return memmap.PtrUint32(0x5D4594, off)
 }
-func quickbarByte(off uintptr) *byte          { return memmap.PtrUint8(0x5D4594, off) }
-func quickbarWindow(off uintptr) *gui.Window  { return bookWindow(*quickbarWord(off)) }
-func quickbarUserData(w *gui.Window) *uint32  { return (*uint32)(unsafe.Add(w.C(), 368)) }
+func quickbarByte(off uintptr) *byte         { return memmap.PtrUint8(0x5D4594, off) }
+func quickbarWindow(off uintptr) *gui.Window { return bookWindow(*quickbarWord(off)) }
+func quickbarUserData(w *gui.Window) *uint32 {
+	return (*uint32)(unsafe.Add(w.C(), int(layoutGuiWindow.Off(368)) /* field92 */))
+}
 func quickbarFlagByte(s *quickbarSlot) *byte  { return (*byte)(unsafe.Pointer(&s.Flags)) }
-func quickbarPointer(p unsafe.Pointer) uint32 { return uint32(uintptr(p)) }
+func quickbarPointer(p unsafe.Pointer) uint32 { return memmap.PtrWord(p) }
 func quickbarLit(w *gui.Window, on bool) uint32 {
 	if w != nil {
 		if on {
@@ -107,7 +115,7 @@ func quickbarSelectRow(row int) uint32 {
 	b := quickbarMain()
 	b.Selected = byte(row)
 	b.Current = &b.Rows[row]
-	if quickbarPlayer() != 0 {
+	if quickbarPlayer() != nil {
 		bookSound(798)
 	}
 	return quickbarDirections(b)

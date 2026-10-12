@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"fmt"
 	"image"
 	"unsafe"
@@ -8,12 +9,11 @@ import (
 	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 func uiShopInit() int {
-	uiTradeViewportInit(1098492)
+	uiTradeViewportInit(&uiShopViewport)
 	w := Nox_new_window_from_file("Shop.wnd", uiInventoryWindowEvent(uiShopPanel))
 	*uiShopWord(1098576) = uiInventoryPointer(w.C())
 	if w == nil {
@@ -70,7 +70,7 @@ func uiShopInit() int {
 	thumb.SizeVal = image.Pt(16, 12)
 	thumb.DrawData().ImgPtVal = image.Pt(0, -15)
 	handle := func(off uintptr) noxrender.ImageHandle {
-		return noxrender.ImageHandle(unsafe.Pointer(uintptr(*uiShopWord(off))))
+		return noxrender.ImageHandle(memmap.WordPtr(*uiShopWord(off)))
 	}
 	gui.ButtonSetImage(slider, nil, nil, handle(1098432), handle(1098436), handle(1098436))
 	*uiShopWord(1098592) = uint32((*gui.SliderData)(slider.WidgetData).Max)
@@ -104,7 +104,7 @@ func uiShopPicture(typ uint32) uint32 {
 		}
 	}
 	h := uiMeterLoadImage(name)
-	uiShopWindow().ChildByID(3805).DrawData().BgImageHnd = noxrender.ImageHandle(unsafe.Pointer(uintptr(h)))
+	uiShopWindow().ChildByID(3805).DrawData().BgImageHnd = noxrender.ImageHandle(memmap.WordPtr(h))
 	return h
 }
 func uiShopStart(name *uint16, greeting string, typ uint32) int {
@@ -134,7 +134,7 @@ func uiShopStart(name *uint16, greeting string, typ uint32) int {
 	}
 	uiShopPicture(typ)
 	if *uiShopWord(1098608) != 0 {
-		Dialogs.PlayFile(alloc.GoString((*byte)(unsafe.Pointer(uintptr(*uiShopWord(1098608))))), 100)
+		Dialogs.PlayFile(alloc.GoString((*byte)(memmap.WordPtr(*uiShopWord(1098608)))), 100)
 	}
 	*uiShopWord(1107036) = 0
 	return gui.EventRespInt(uiInventoryWindowValue(*uiShopWord(1098580)).Func94(gui.AsWindowEvent(16394, uintptr(*uiShopWord(1098592)), 0)))
@@ -182,7 +182,7 @@ func uiShopDrawText(p image.Point, mode int) int {
 	if ptr == 0 {
 		return 0
 	}
-	return nox_xxx_drawStringWrap_43FAF0(nil, (*wchar2_t)(unsafe.Pointer(uintptr(ptr))), pos.X+8, pos.Y+8, size.X-16, size.Y-16)
+	return nox_xxx_drawStringWrap_43FAF0(nil, (*wchar2_t)(memmap.WordPtr(ptr)), pos.X+8, pos.Y+8, size.X-16, size.Y-16)
 }
 func uiShopDrawStock() int {
 	gold := uint32(sub_4674A0())
@@ -208,7 +208,7 @@ func uiShopDrawStock() int {
 				}
 				cx := x + col*50
 				c.Drawable.PosVec = image.Pt(cx+25, y+25)
-				c.Drawable.CallDraw((*noxrender.Viewport)(memmap.PtrOff(0x5D4594, 1098492)))
+				c.Drawable.CallDraw(&uiShopViewport)
 				if gold < c.Value {
 					nox_client_drawRectFilledAlpha_49CF10(cx, y, 50, 50)
 				}

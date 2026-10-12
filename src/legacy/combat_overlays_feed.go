@@ -102,7 +102,7 @@ func combatFeedRow(row *[6]uint32) {
 			if typ.ObjClass&0x1001000 != 0 {
 				objectBaseMaterials(int(row[3]))
 			}
-			handle = unsafe.Pointer(uintptr(typ.PrettyImage))
+			handle = memmap.WordPtr(typ.PrettyImage)
 		}
 	} else if row[4] == 2 {
 		id := 0

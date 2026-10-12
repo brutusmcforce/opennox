@@ -88,7 +88,7 @@ func spellEffectInversion(id int32, a, b, c *server.Object, record unsafe.Pointe
 }
 func spellEffectQuakeDamage(u, source *server.Object) int16 {
 	owner := source.FindOwnerChainPlayer()
-	ret := uint32(uintptr(owner.CObj()))
+	ret := memmap.PtrWord(owner.CObj())
 	if u != source {
 		ret = uint32(u.ObjFlags)
 		if ret&0x4000 == 0 {
@@ -132,7 +132,7 @@ func spellEffectDoorCandidate(u, source *server.Object) {
 	dir := *spellLifeWord(u.UpdateData, 12)
 	pos := types.Ptf(float32(float64(*memmap.PtrInt32(0x587000, 196184+uintptr(dir)*8))*0.5+float64(u.PosVec.X)), float32(float64(*memmap.PtrInt32(0x587000, 196188+uintptr(dir)*8))*0.5+float64(u.PosVec.Y)))
 	if spellEffectTrace(source.PosVec, pos, 0) {
-		dword_5d4594_2487708 = uint32(uintptr(u.CObj()))
+		dword_5d4594_2487708 = memmap.PtrWord(u.CObj())
 		*memmap.PtrFloat32(0x5d4594, 2487704) = float32(dy*dy + dx*dx)
 	}
 }
@@ -149,7 +149,7 @@ func spellEffectLock(id int32, a, b, c *server.Object, record unsafe.Pointer, le
 	dword_5d4594_2487708 = 0
 	*memmap.PtrUint32(0x5d4594, 2487704) = 1287568416
 	GetServer().S().Map.EachObjInRect(rect, func(u *server.Object) bool { spellEffectDoorCandidate(u, c); return true })
-	u := (*server.Object)(unsafe.Pointer(uintptr(dword_5d4594_2487708)))
+	u := (*server.Object)(memmap.WordPtr(dword_5d4594_2487708))
 	if u == nil {
 		return 0
 	}

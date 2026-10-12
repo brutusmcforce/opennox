@@ -73,7 +73,7 @@ func attackShoot(u, ammo, it *server.Object, kind uint32) int {
 		*temporaryRefWord(p.CollideData, 4) = u
 		GetServer().CreateObjectAt(p, u, pos)
 		if ammo != nil {
-			Nox_xxx_modifSetItemAttrs_4E4990(p, ammo.InitData)
+			Nox_xxx_modifSetItemAttrs_4E4990(p, ammo.InitDataModifier())
 		}
 		attackShotEffects(u, it, p)
 		attackProjectileVelocity(u, p)

@@ -13,7 +13,7 @@ func serverPanelsResource(off uintptr) string {
 	if GetClient().R2().FontHeight(nil) > 10 {
 		lang = 2
 	}
-	return alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, off+4*uintptr(lang))))
+	return alloc.GoString((*byte)(memmap.LoadPtr(0x587000, off+4*uintptr(lang))))
 }
 func serverPanelsGeneralOpen(parent *gui.Window) int {
 	if *serverPanelsWord(1309812) != 0 {

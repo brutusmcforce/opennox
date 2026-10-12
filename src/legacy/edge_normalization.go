@@ -1,11 +1,8 @@
 package legacy
 
-import "github.com/brutusmcforce/opennox/common/memmap"
-
 func normalizeBorderEdge(index, edge int32) int32 {
-	off := 60 * uintptr(index)
-	w := int32(memmap.Uint8(0x85B3FC, 28696+off))
-	h := int32(memmap.Uint8(0x85B3FC, 28697+off))
+	w := int32(edgeAssets[index].Field52)
+	h := int32(edgeAssets[index].Field53)
 	if w == 3 && h == 3 {
 		return edge
 	}

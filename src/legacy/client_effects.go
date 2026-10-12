@@ -63,8 +63,8 @@ func effectScreen(vp *noxrender.Viewport, dr *client.Drawable) image.Point {
 // sub_4B6770/sub_4B6880 differ in their intensity sampling but share lifetime
 // and strict clipping. Byte-width glow intensity follows the renderer C ABI.
 func effectSparkDraw(vp *noxrender.Viewport, dr *client.Drawable, core, glow uint32, random bool) int {
-	lifetime := int(int32(*effectWord(dr, 448) - *effectWord(dr, 444)))
-	left := int(int32(*effectWord(dr, 448) - gameFrame()))
+	lifetime := int(int32(*effectWord(dr, int(layoutClientDrawable.Off(448)) /* Union._ */) - *effectWord(dr, int(layoutClientDrawable.Off(444)) /* Union._ */)))
+	left := int(int32(*effectWord(dr, int(layoutClientDrawable.Off(448)) /* Union._ */) - gameFrame()))
 	if left == lifetime {
 		left--
 	}
@@ -119,13 +119,13 @@ func effectSparkBounce(dr *client.Drawable) int16 {
 }
 func effectMovingSpark(vp *noxrender.Viewport, dr *client.Drawable, core, glow uint32) int {
 	if nox_client_drawIsTick {
-		speed := int32(*effectWord(dr, 440))
+		speed := int32(*effectWord(dr, int(layoutClientDrawable.Off(440)) /* Union._ */))
 		angle := uintptr(dr.Field_74_4)
-		*effectWord(dr, 432) += uint32(speed * *memmap.PtrInt32(0x587000, 192088+8*angle))
-		y := speed**memmap.PtrInt32(0x587000, 192092+8*angle) + int32(*effectWord(dr, 436))
-		*effectWord(dr, 436) = uint32(y)
+		*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) += uint32(speed * *memmap.PtrInt32(0x587000, 192088+8*angle))
+		y := speed**memmap.PtrInt32(0x587000, 192092+8*angle) + int32(*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */))
+		*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(y)
 		// C shifts X unsigned and Y signed.
-		effectMove(dr, int(*effectWord(dr, 432)>>12), int(y>>12))
+		effectMove(dr, int(*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */)>>12), int(y>>12))
 	}
 	effectSparkBounce(dr)
 	return effectSparkDraw(vp, dr, core, glow, false)
@@ -187,17 +187,17 @@ func effectOrb(vp *noxrender.Viewport, dr *client.Drawable, moving bool) int {
 		core, glow = uint32(dword_5d4594_1313532), *effectMapped(1313528)
 	}
 	if moving && nox_client_drawIsTick {
-		dx, dy := int(*effectShort(dr, 432))-dr.PosVec.X, int(*effectShort(dr, 434))-dr.PosVec.Y
+		dx, dy := int(*effectShort(dr, int(layoutClientDrawable.Off(432)) /* Union._ */))-dr.PosVec.X, int(*effectShort(dr, int(layoutClientDrawable.Off(434)) /* Union._ */))-dr.PosVec.Y
 		distance := effectDistance(dx, dy) + 1
 		if distance <= 10 {
 			return effectDelete(dr)
 		}
-		speed := int(*effectByte(dr, 443))
+		speed := int(*effectByte(dr, int(layoutClientDrawable.Off(443)) /* Union._ */))
 		effectMove(dr, dr.PosVec.X+dx*speed/distance, dr.PosVec.Y+dy*speed/distance)
 	}
 	p := vp.ToScreenPos(dr.PosVec)
 	p.Y -= 22
-	radius := int(*effectByte(dr, 444))
+	radius := int(*effectByte(dr, int(layoutClientDrawable.Off(444)) /* Union._ */))
 	if !effectInside(vp, p, radius) {
 		return 1
 	}
@@ -210,17 +210,17 @@ func effectOrb(vp *noxrender.Viewport, dr *client.Drawable, moving bool) int {
 	r.AddPoint(p)
 	r.AddPointRel(delta)
 	r.DrawLineFromPoints(r.Data().Color2())
-	period := *effectByte(dr, 445)
+	period := *effectByte(dr, int(layoutClientDrawable.Off(445)) /* Union._ */)
 	if period == 0 || !nox_client_drawIsTick {
 		return 1
 	}
-	*effectByte(dr, 446)--
-	if *effectByte(dr, 446) != 0 {
+	*effectByte(dr, int(layoutClientDrawable.Off(446)) /* Union._ */)--
+	if *effectByte(dr, int(layoutClientDrawable.Off(446)) /* Union._ */) != 0 {
 		return 1
 	}
-	*effectByte(dr, 446) = period
-	*effectByte(dr, 444)--
-	if *effectByte(dr, 444) != 0 {
+	*effectByte(dr, int(layoutClientDrawable.Off(446)) /* Union._ */) = period
+	*effectByte(dr, int(layoutClientDrawable.Off(444)) /* Union._ */)--
+	if *effectByte(dr, int(layoutClientDrawable.Off(444)) /* Union._ */) != 0 {
 		return 1
 	}
 	return effectDelete(dr)
@@ -256,19 +256,19 @@ func effectRainOrb(vp *noxrender.Viewport, dr *client.Drawable) int {
 		if dr.TypeIDVal != uint32(dword_5d4594_1313692) {
 			color = uint32(dword_5d4594_1313536)
 		}
-		effectGlow(p, color, int(*effectByte(dr, 442)), 5)
-		delta := int(z) - int(int16(*effectShort(dr, 440)))
+		effectGlow(p, color, int(*effectByte(dr, int(layoutClientDrawable.Off(442)) /* Union._ */)), 5)
+		delta := int(z) - int(int16(*effectShort(dr, int(layoutClientDrawable.Off(440)) /* Union._ */)))
 		effectColor(color)
 		r := GetClient().R2()
 		r.AddPoint(p)
 		r.AddPointRel(image.Pt(0, delta))
 		r.DrawLineFromPoints(r.Data().Color2())
 		if nox_client_drawIsTick {
-			*effectShort(dr, 440) = dr.ZVal
+			*effectShort(dr, int(layoutClientDrawable.Off(440)) /* Union._ */) = dr.ZVal
 			dr.ZVal += uint16(int16(dr.VelZ))
 		}
 		effectColor(*effectMapped(1313592))
-		effectPoint(p, int(*effectByte(dr, 442))/3)
+		effectPoint(p, int(*effectByte(dr, int(layoutClientDrawable.Off(442)) /* Union._ */))/3)
 		return 1
 	}
 	if *effectMapped(1313700) == 0 {
@@ -277,9 +277,9 @@ func effectRainOrb(vp *noxrender.Viewport, dr *client.Drawable) int {
 	}
 	// X subtraction is unsigned in C, while Y is assigned to an int before the
 	// float conversion. Preserve that asymmetry and the float32 call boundary.
-	angle := uintptr(effectAngle(float32(uint32(dr.PosVec.X)-*effectWord(dr, 432)), float32(int32(uint32(dr.PosVec.Y)-*effectWord(dr, 436)))))
-	x := effectFloatInt(float32(float64(*memmap.PtrFloat32(0x587000, 194136+8*angle))*150 + float64(int32(*effectWord(dr, 432)))))
-	y := effectFloatInt(float32(float64(*memmap.PtrFloat32(0x587000, 194140+8*angle))*150 + float64(int32(*effectWord(dr, 436)))))
+	angle := uintptr(effectAngle(float32(uint32(dr.PosVec.X)-*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */)), float32(int32(uint32(dr.PosVec.Y)-*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */)))))
+	x := effectFloatInt(float32(float64(*memmap.PtrFloat32(0x587000, 194136+8*angle))*150 + float64(int32(*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */)))))
+	y := effectFloatInt(float32(float64(*memmap.PtrFloat32(0x587000, 194140+8*angle))*150 + float64(int32(*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */)))))
 	coords := [4]uint16{uint16(x), uint16(y), uint16(dr.PosVec.X), uint16(dr.PosVec.Y + 20)}
 	typ := *effectMapped(1313700)
 	if dr.TypeIDVal != uint32(dword_5d4594_1313692) {
@@ -315,7 +315,7 @@ func effectColoredSpark(vp *noxrender.Viewport, dr *client.Drawable, kind int) i
 
 func effectOrbitUpdate(dr *client.Drawable) int {
 	age := int(int32(gameFrame() - dr.AnimStart))
-	target := image.Pt(int(*effectShort(dr, 432)), int(*effectShort(dr, 434)))
+	target := image.Pt(int(*effectShort(dr, int(layoutClientDrawable.Off(432)) /* Union._ */)), int(*effectShort(dr, int(layoutClientDrawable.Off(434)) /* Union._ */)))
 	dx, dy := dr.PosVec.X-target.X, dr.PosVec.Y-target.Y
 	if dx < 0 {
 		dx = -dx
@@ -326,11 +326,11 @@ func effectOrbitUpdate(dr *client.Drawable) int {
 	if age >= 60 || dx < 10 && dy < 10 {
 		return effectDelete(dr)
 	}
-	radius := int(int16(*effectShort(dr, 440)))
+	radius := int(int16(*effectShort(dr, int(layoutClientDrawable.Off(440)) /* Union._ */)))
 	radius -= age * radius / 60
 	turn := (age << 8) / 120
-	angle := int(*effectByte(dr, 442))
-	if *effectByte(dr, 443) != 0 {
+	angle := int(*effectByte(dr, int(layoutClientDrawable.Off(442)) /* Union._ */))
+	if *effectByte(dr, int(layoutClientDrawable.Off(443)) /* Union._ */) != 0 {
 		angle += turn
 	} else {
 		angle -= turn

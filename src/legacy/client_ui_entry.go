@@ -20,12 +20,12 @@ func uiEntryAlnum(v uint16) bool {
 
 var uiEntryContext bool
 var uiEntryActive *gui.Window
-var _ [1056 - unsafe.Sizeof(gui.EntryFieldData{})]byte
-var _ [unsafe.Sizeof(gui.EntryFieldData{}) - 1056]byte
+
+
 
 func uiEntryData(w *gui.Window) *gui.EntryFieldData { return (*gui.EntryFieldData)(w.WidgetData) }
 func uiEntryList(d *gui.EntryFieldData) *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(d.Field_1048)))
+	return (*gui.Window)(memmap.WordPtr(d.Field_1048))
 }
 func uiEntryIME() bool { lang := GetServer().S().Strings().Lang(); return lang == 6 || lang == 8 }
 func uiEntryIMEAllowed(d *gui.EntryFieldData) bool {
@@ -225,7 +225,7 @@ func uiEntryNew(parent *gui.Window, flags gui.StatusFlags, x, y, width, height i
 	ld := gui.WindowData{Style: 288, EnColorVal: draw.TextColorVal, HlColorVal: 0x80000000, SelColorVal: 0x80000000, TextColorVal: draw.TextColorVal}
 	li := gui.ScrollListBoxData{Count: 128, Line_height: 10, Field_2: 1, Field_3: 1}
 	list := Nox_gui_newScrollListBox_4A4310(nil, 17584, 0, height, 110, 119, &ld, &li)
-	data.Field_1048 = uint32(uintptr(list.C()))
+	data.Field_1048 = memmap.PtrWord(list.C())
 	if list == nil {
 		return nil
 	}

@@ -67,7 +67,7 @@ func uiInventoryIdentify(pos image.Point) uint32 {
 	list := panel.ChildByID(9156)
 	list.Func94(&gui.RawEvent{Event: 16399})
 	add := func(text string) { uiInventoryListText(list, text) }
-	current, maximum := *(*uint16)(unsafe.Add(dr.C(), 292)), *(*uint16)(unsafe.Add(dr.C(), 294))
+	current, maximum := *(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */)), *(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(294)) /* Field_73_2 */))
 	var text string
 	if noxflags.HasGame(2048) {
 		if maximum != 0 {
@@ -83,7 +83,7 @@ func uiInventoryIdentify(pos image.Point) uint32 {
 	}
 	add(text)
 	add(uiInventoryWideAt(1063656))
-	add(uiInventoryFormatInts("IdentifyWeight", int(*(*byte)(unsafe.Add(dr.C(), 298))), 0))
+	add(uiInventoryFormatInts("IdentifyWeight", int(*(*byte)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(298)) /* Weight */))), 0))
 	add(uiInventoryWideAt(1063660))
 	class, sub := uint32(dr.Class()), uint32(dr.SubClass())
 	modifiers := &GetServer().S().Modif
@@ -173,7 +173,7 @@ func uiInventoryIdentify(pos image.Point) uint32 {
 			first := true
 			for i := 2; i < 4; i++ {
 				if m := uiInventoryItemModifier(dr, i); m != nil {
-					desc := *(**uint16)(unsafe.Add(m.C(), 16))
+					desc := *(**uint16)(unsafe.Add(m.C(), int(layoutServerModifierEff.Off(16)) /* identdesc16 */))
 					if desc != nil {
 						if first {
 							add(uiInventoryFormatLiteral(uiInventoryText("IdentifySpecialAttributes")))

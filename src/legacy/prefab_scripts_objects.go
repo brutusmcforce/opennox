@@ -95,7 +95,7 @@ func prefabScriptSetCallback(u *server.Object, event int, name string) {
 	} else {
 		index := GetServer().S().NoxScriptVM.ScriptIndexByName(name)
 		if event == 14 {
-			*(*int32)(unsafe.Add(u.CObj(), 768)) = int32(index)
+			*(*int32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(768)) /* ScriptPickup.Func */)) = int32(index)
 		} else {
 			*(*int32)(unsafe.Add(data, field)) = int32(index)
 		}

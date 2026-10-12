@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
@@ -22,8 +23,6 @@ var (
 	Sub_43EC30 func(a1 unsafe.Pointer) int
 	Sub_43ECB0 func(a1 unsafe.Pointer) int
 )
-
-var _ = [1]struct{}{}[32-unsafe.Sizeof(AudioSample{})]
 
 type AudioSample struct {
 	Dev    ail.Driver     // 0, 0
@@ -100,8 +99,31 @@ func Sub_451850(a1 unsafe.Pointer, a2 unsafe.Pointer) {
 	audioEventInit((*audioStreamContext)(a1), (*audioStreamCatalog)(a2))
 }
 
-func Sub_486FA0(a1 int) {
-	audioStreamDeviceRegister((*audioStreamDescriptor)(unsafe.Pointer(uintptr(a1))))
+// RegisterMilesAudioDevice registers the Miles Sound System stream device.
+func RegisterMilesAudioDevice() {
+	audioStreamDeviceRegister(audioMilesDescriptor())
+}
+
+var audioMilesDesc *audioStreamDescriptor
+
+// audioMilesDescriptor builds the Miles Sound System stream descriptor. In the original it is static data
+// at 0x587000+93992, with its voice API at +93952.
+func audioMilesDescriptor() *audioStreamDescriptor {
+	if audioMilesDesc == nil {
+		key := audioBridgeCallbackKey
+		api := &audioStreamVoiceAPI{
+			Init: key(0), Free: key(1), Start: key(2), Stop: key(3),
+			Fields20: [3]unsafe.Pointer{key(4), key(5), key(6)},
+			Update:   key(7), Restart: key(8),
+		}
+		audioMilesDesc = &audioStreamDescriptor{
+			Name:    (*byte)(memmap.PtrOff(0x587000, 94036)), // "Miles Sound System"
+			Field16: 0x6d445541,
+			Init:    key(9), Free: key(10), ContextInit: key(11), ContextFree: key(12),
+			VoiceAPI: api,
+		}
+	}
+	return audioMilesDesc
 }
 
 func Sub_487D00(a1 unsafe.Pointer) {
@@ -114,4 +136,13 @@ func Sub_487150(a1 int, a2 unsafe.Pointer) unsafe.Pointer {
 
 func Sub_487790(a1 unsafe.Pointer, a2 int) int {
 	return int(audioStreamVoiceCreateMany((*audioStreamContext)(a1), int32(a2)))
+}
+
+// AudioVoiceFormat returns the format of a voice's buffer, or the format its context requested.
+func AudioVoiceFormat(p unsafe.Pointer) unsafe.Pointer {
+	v := (*audioStreamVoice)(p)
+	if f := *(*unsafe.Pointer)(unsafe.Add(unsafe.Pointer(v.Buffer), int(layoutLegacyAudioStreamBuffer.Off(20)) /* Format */)); f != nil {
+		return f
+	}
+	return unsafe.Pointer(&v.Context.RequestedFormat)
 }

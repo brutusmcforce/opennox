@@ -1,15 +1,16 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
 )
 
 func motionWaypoint(raw uint32) *server.Waypoint {
-	return (*server.Waypoint)(unsafe.Pointer(uintptr(raw)))
+	return (*server.Waypoint)(memmap.WordPtr(raw))
 }
-func motionWaypointAddress(w *server.Waypoint) uint32 { return uint32(uintptr(unsafe.Pointer(w))) }
+func motionWaypointAddress(w *server.Waypoint) uint32 { return memmap.PtrWord(unsafe.Pointer(w)) }
 func motionMover(u *server.Object) {
 	s := GetServer().S()
 	d := (*[9]uint32)(u.UpdateData)

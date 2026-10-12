@@ -238,7 +238,7 @@ func (s *Server) nox_xxx_netSendBySock_40EE10(conn *netstr.Conn, ind ntype.Playe
 }
 
 func sub_4168E0() unsafe.Pointer {
-	return nox_common_list_getFirstSafe_425890(memmap.PtrOff(0x5D4594, 371364))
+	return nox_common_list_getFirstSafe_425890(legacy.ServerConfigAllowedHead())
 }
 
 func sub_4168F0(a1 unsafe.Pointer) unsafe.Pointer {
@@ -246,7 +246,7 @@ func sub_4168F0(a1 unsafe.Pointer) unsafe.Pointer {
 }
 
 func sub_416900() unsafe.Pointer {
-	return nox_common_list_getFirstSafe_425890(memmap.PtrOff(0x5D4594, 371500))
+	return nox_common_list_getFirstSafe_425890(legacy.ServerConfigBlockedHead())
 }
 
 func sub_416910(a1 unsafe.Pointer) unsafe.Pointer {

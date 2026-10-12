@@ -29,7 +29,7 @@ func clientGameRemoveDrawable(dr *client.Drawable, code uint16) {
 }
 func clientGameRestoreLight(dr *client.Drawable) {
 	typ := GetClient().Cli().Things.TypeByInd(int(dr.TypeIDVal))
-	particleLightIntensity(unsafe.Add(dr.C(), 136), typ.LightIntensity, true)
+	particleLightIntensity(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), typ.LightIntensity, true)
 }
 
 // clientGameState handles complete case groups; unselected messages retain the C fallback.
@@ -216,11 +216,11 @@ func clientGameState(op netmsg.Op, data []byte) (int, bool) {
 		}
 	case 92:
 		if dr := drawable(); dr != nil {
-			particleLightColor(unsafe.Add(dr.C(), 136), int(data[3]), int(data[4]), int(data[5]))
+			particleLightColor(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), int(data[3]), int(data[4]), int(data[5]))
 		}
 	case 93:
 		if dr := drawable(); dr != nil {
-			particleLightIntensity(unsafe.Add(dr.C(), 136), math.Float32frombits(dword(3)), true)
+			particleLightIntensity(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), math.Float32frombits(dword(3)), true)
 		}
 	case 94, 95:
 		if dr := drawable(); dr != nil {
@@ -233,7 +233,7 @@ func clientGameState(op netmsg.Op, data []byte) (int, bool) {
 		sub_467930(int(word(1)&0x7fff), int(data[3]), int(data[4]))
 	case 102:
 		if dr := clientGameLocalDrawable(); dr != nil {
-			*(*uint32)(unsafe.Add(dr.C(), 120)) = dword(1)
+			*(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(120)) /* ObjFlags */)) = dword(1)
 		}
 	case 104:
 		if local() {

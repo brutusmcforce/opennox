@@ -50,7 +50,7 @@ func teamUICTFConstruct() int {
 		return 1
 	}
 	w := Nox_new_window_from_file("GUI_CTF.wnd", nil)
-	*teamUIWord(1045604) = uint32(uintptr(w.C()))
+	*teamUIWord(1045604) = memmap.PtrWord(w.C())
 	if w == nil {
 		return 0
 	}
@@ -69,7 +69,7 @@ func teamUIBallConstruct() int {
 		return 1
 	}
 	w := Nox_new_window_from_file("gui_fb.wnd", nil)
-	*teamUIWord(1045636) = uint32(uintptr(w.C()))
+	*teamUIWord(1045636) = memmap.PtrWord(w.C())
 	w.SetAllFuncs(nil, teamUIBallDraw, nil)
 	if w == nil {
 		return 0
@@ -192,7 +192,7 @@ func teamUICTFDraw(w *gui.Window, d *gui.WindowData) int {
 		h = d.DisImageHnd
 	}
 	if h != nil {
-		bookDrawImage(uint32(uintptr(h)), pos)
+		bookDrawImage(memmap.PtrWord(unsafe.Pointer(h)), pos)
 	}
 	if border := *teamUIWord(1045632); w.Flags.Has(32) && border != 0 {
 		bookDrawImage(border, pos.Sub(image.Pt(4, 4)))
@@ -202,7 +202,7 @@ func teamUICTFDraw(w *gui.Window, d *gui.WindowData) int {
 func teamUIBallDraw(w *gui.Window, d *gui.WindowData) int {
 	pos := uiWindowPosition(w)
 	if h := d.BgImageHnd; h != nil {
-		bookDrawImage(uint32(uintptr(h)), pos)
+		bookDrawImage(memmap.PtrWord(unsafe.Pointer(h)), pos)
 	}
 	if border := *teamUIWord(1045648); w.Flags.Has(32) && border != 0 {
 		bookDrawImage(border, pos.Sub(image.Pt(4, 4)))

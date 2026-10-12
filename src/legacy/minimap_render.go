@@ -31,14 +31,14 @@ func minimapLevel(dr *client.Drawable) int {
 	if index == 0 {
 		return 1
 	}
-	return int(*(*byte)(unsafe.Add(unsafe.Pointer(mapPolygonGet(uint32(index))), 130)))
+	return int(*(*byte)(unsafe.Add(unsafe.Pointer(mapPolygonGet(uint32(index))), int(layoutLegacyMapPolygon.Off(130)) /* Level */)))
 }
 func minimapPolygonLevel(p image.Point) (int, bool) {
 	poly := mapPolygonFind((*[2]int32)(unsafe.Pointer(&p)), 0, false)
 	if poly == nil {
 		return 0, false
 	}
-	return int(*(*byte)(unsafe.Add(unsafe.Pointer(poly), 130))), true
+	return int(*(*byte)(unsafe.Add(unsafe.Pointer(poly), int(layoutLegacyMapPolygon.Off(130)) /* Level */))), true
 }
 func minimapDrawSprite(dr *client.Drawable) {
 	if local := minimapLocalDrawable(); local != nil && local.Buffs&(1<<2) != 0 {
@@ -135,7 +135,7 @@ func minimapDraw(_ *client.Drawable, level int) int {
 					}
 				}
 				if revealed {
-					door := (*client.Drawable)(unsafe.Pointer(uintptr(w.Field32)))
+					door := (*client.Drawable)(memmap.WordPtr(w.Field32))
 					p := project(door.PosVec)
 					off := uintptr(8 * int(door.Field_74_4))
 					dx, dy := 100*int(memmap.Int32(0x587000, 196184+off))/zoom, 100*int(memmap.Int32(0x587000, 196188+off))/zoom
@@ -170,7 +170,7 @@ func minimapDraw(_ *client.Drawable, level int) int {
 			}
 		}
 		for u := s.Objs.First(); u != nil; u = u.ObjNext {
-			minimapDebugIterator = uint32(uintptr(unsafe.Pointer(u)))
+			minimapDebugIterator = memmap.PtrWord(unsafe.Pointer(u))
 			if u.ObjClass&object.ClassMonster == 0 {
 				continue
 			}

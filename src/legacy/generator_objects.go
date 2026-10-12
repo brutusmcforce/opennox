@@ -47,7 +47,7 @@ func generatorCopy(src, dst *server.Object) {
 				continue
 			}
 			if clone.ObjClass&0x13001000 != 0 {
-				stateAttributes(clone, it.InitData)
+				stateAttributes(clone, it.InitDataModifier())
 			}
 			inventoryInsert(dst, clone, 0)
 			if it.ObjFlags&0x100 != 0 {
@@ -122,5 +122,5 @@ func generatorSpawn(gen *server.Object, point *types.Pointf, src *server.Object)
 	freeDir()
 	visibilityFXGeneratorSpawn([4]int32{int32(fx[0]), int32(fx[1]), int32(fx[2]), int32(fx[3])}, 10)
 	core.Audio.EventObj(1002, child, 0, 0)
-	return uint32(uintptr(child.CObj()))
+	return memmap.PtrWord(child.CObj())
 }

@@ -125,12 +125,12 @@ func rewardEquipment(stage uint32, armor bool) *server.Object {
 	if it == nil {
 		return nil
 	}
-	var attrs [5]uint32
+	var attrs server.ModifierInitData
 	if !armor && it.ObjClass&0x1000 != 0 && it.ObjSubClass&0x47f0000 != 0 {
 		if *(*byte)(rewardPtr(off + 4)) == '#' {
 			id := core.Modif.Nox_xxx_modifGetIdByName413290("Replenishment1")
-			attrs[2] = uint32(uintptr(unsafe.Pointer(core.Modif.Nox_xxx_modifGetDescById413330(id))))
-			stateAttributes(it, unsafe.Pointer(&attrs))
+			attrs.Modifiers[2] = core.Modif.Nox_xxx_modifGetDescById413330(id)
+			stateAttributes(it, &attrs)
 		}
 		return it
 	}
@@ -168,11 +168,11 @@ func rewardEquipment(stage uint32, armor bool) *server.Object {
 	}
 	if flags&1 != 0 {
 		ptr, _, _ := rewardModifierPick(base, tier, itemMask, armor, 0)
-		attrs[0] = uint32(uintptr(ptr))
+		attrs.Modifiers[0] = (*server.ModifierEff)(ptr)
 	}
 	if flags&2 != 0 {
 		ptr, _, _ := rewardModifierPick(210992, tier, itemMask, armor, 0)
-		attrs[1] = uint32(uintptr(ptr))
+		attrs.Modifiers[1] = (*server.ModifierEff)(ptr)
 	}
 	first := uintptr(209336)
 	if flags&4 != 0 {
@@ -182,7 +182,7 @@ func rewardEquipment(stage uint32, armor bool) *server.Object {
 		}
 		ptr, off, ok := rewardModifierPick(209336, modTier, itemMask, armor, 1)
 		if ok {
-			attrs[2] = uint32(uintptr(ptr))
+			attrs.Modifiers[2] = (*server.ModifierEff)(ptr)
 			first = off
 		}
 	}
@@ -191,9 +191,9 @@ func rewardEquipment(stage uint32, armor bool) *server.Object {
 		ptr, off, ok := rewardModifierPick(209336, modTier, itemMask, armor, 2)
 		// ID equality, not pointer equality, suppresses the second enchantment.
 		if ok && rewardByte(first) != rewardByte(off) {
-			attrs[3] = uint32(uintptr(ptr))
+			attrs.Modifiers[3] = (*server.ModifierEff)(ptr)
 		}
 	}
-	stateAttributes(it, unsafe.Pointer(&attrs))
+	stateAttributes(it, &attrs)
 	return it
 }

@@ -11,21 +11,21 @@ var browserUI = struct {
 	listMode           uint32
 	region             int32
 	polygonsReady      uint32
-	popup              uint32
+	popup              *gui.Window
 	popupCount         uint32
 	connectionState    uint32
 	selected           unsafe.Pointer
-	mapWindow          unsafe.Pointer
-	overview           uint32
-	filter             uint32
-	label              unsafe.Pointer
-	detailPanel        unsafe.Pointer
+	mapWindow          *gui.Window
+	overview           *gui.Window
+	filter             *gui.Window
+	label              *gui.Window
+	detailPanel        *gui.Window
 	detailList         *gui.Window
-	playersColumn      uint32
-	modeColumn         uint32
-	mapColumn          uint32
-	pingColumn         uint32
-	statusColumn       uint32
+	playersColumn      *gui.Window
+	modeColumn         *gui.Window
+	mapColumn          *gui.Window
+	pingColumn         *gui.Window
+	statusColumn       *gui.Window
 	transition         uint32
 	hosting            uint32
 	hasSelection       uint32
@@ -37,7 +37,7 @@ var browserUI = struct {
 	animation          *gui.Anim
 	resultCount        uint32
 	sort               uint32
-	gameList           uint32
+	gameList           *gui.Window
 	world              *gui.Window
 	connectionDeadline uint64
 	refreshDeadline    uint64

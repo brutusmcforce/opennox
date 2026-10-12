@@ -44,9 +44,9 @@ func optionsWord(off int) *uint32 {
 	panic(off)
 }
 func optionsWindow(off int) *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(*optionsWord(off))))
+	return (*gui.Window)(memmap.WordPtr(*optionsWord(off)))
 }
-func optionsStore(off int, w *gui.Window) { *optionsWord(off) = uint32(uintptr(w.C())) }
+func optionsStore(off int, w *gui.Window) { *optionsWord(off) = memmap.PtrWord(w.C()) }
 func (e optionsEditor) rootOffset() int {
 	if e {
 		return 1309720
@@ -112,7 +112,7 @@ func optionsPreview() {
 	}
 	cursor := memmap.PtrUint32(0x5D4594, 1309744)
 	off := uint32(172892) + 4*(*cursor)
-	name := alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, uintptr(off))))
+	name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, uintptr(off))))
 	(*cursor)++
 	v, _ := GetServer().S().Strings().GetVariantInFile(strman.ID(name), "C:\\NoxPost\\src\\client\\shell\\Options.c")
 	*cursor %= 3

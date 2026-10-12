@@ -43,8 +43,8 @@ var scoreboardData = struct {
 	(*uint32)(unsafe.Pointer(&nox_player_netCode_85319C)),
 	(**gui.Window)(unsafe.Pointer(&legacyGlobals.dword_5d4594_1090048)),
 	(**gui.Window)(unsafe.Pointer(&legacyGlobals.dword_5d4594_1090100)),
-	(**gui.Window)(unsafe.Pointer(&dword_5d4594_1090108)),
-	(**gui.Window)(unsafe.Pointer(&dword_5d4594_1090112)),
+	&dword_5d4594_1090108,
+	&dword_5d4594_1090112,
 }
 
 func scoreboardPlayers() []scoreboardPlayer {
@@ -197,9 +197,9 @@ func scoreboardText(id string) string {
 func scoreboardLoadClasses() *uint16 {
 	var result *uint16
 	for i := uintptr(0); i < 3; i++ {
-		id := alloc.GoString(*(**byte)(memmap.PtrOff(0x587000, 145676+4*i)))
+		id := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 145676+4*i)))
 		result = alloc.InternCString16(scoreboardText(id))
-		*memmap.PtrPtr(0x5D4594, 1084056+4*i) = unsafe.Pointer(result)
+		scoreboardClassNames[i] = result
 	}
 	return result
 }

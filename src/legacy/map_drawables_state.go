@@ -39,7 +39,7 @@ func (r mapDrawableReader) field(d *client.Drawable, off, n int) {
 	r.bytes(unsafe.Slice((*byte)(unsafe.Add(d.C(), off)), n))
 }
 func mapDrawableTeam(d *client.Drawable) {
-	teamRuntimeJoin(d.TeamVal.ID, d.TeamPtr(), 0, int(*effectWord(d, 128)), 0)
+	teamRuntimeJoin(d.TeamVal.ID, d.TeamPtr(), 0, int(*effectWord(d, int(layoutClientDrawable.Off(128)) /* NetCode32 */)), 0)
 }
 func mapDrawableOld(typ int, inner, outer int16, r mapDrawableReader) *client.Drawable {
 	id, flags := r.u32(), r.u32()
@@ -81,9 +81,9 @@ func mapDrawableOld(typ int, inner, outer int16, r mapDrawableReader) *client.Dr
 	if d == nil {
 		return nil
 	}
-	*effectWord(d, 120) = *effectWord(d, 120)&0xEEBF7E9D | flags
-	*effectWord(d, 280) = *effectWord(d, 280)&0xFFFFFFA1 | extra
-	*effectWord(d, 128) = id
+	*effectWord(d, int(layoutClientDrawable.Off(120)) /* ObjFlags */) = *effectWord(d, int(layoutClientDrawable.Off(120)) /* ObjFlags */)&0xEEBF7E9D | flags
+	*effectWord(d, int(layoutClientDrawable.Off(280)) /* Flags70Val */) = *effectWord(d, int(layoutClientDrawable.Off(280)) /* Flags70Val */)&0xFFFFFFA1 | extra
+	*effectWord(d, int(layoutClientDrawable.Off(128)) /* NetCode32 */) = id
 	d.TeamVal.ID = server.TeamID(team)
 	if !noxflags.HasGame(noxflags.GameHost) && team != 0 && (uint32(d.Class())&0x10000000 == 0 || !noxflags.HasGame(noxflags.GameFlag(128))) {
 		mapDrawableTeam(d)
@@ -106,16 +106,16 @@ func mapDrawableBase(typ int, outer int16, r mapDrawableReader) *client.Drawable
 	if d == nil {
 		return nil
 	}
-	*effectWord(d, 128) = id
+	*effectWord(d, int(layoutClientDrawable.Off(128)) /* NetCode32 */) = id
 	if r.u8() != 0 {
 		flags := r.u32()
-		*effectWord(d, 120) = *effectWord(d, 120)&0xEEBF7E9D | flags
+		*effectWord(d, int(layoutClientDrawable.Off(120)) /* ObjFlags */) = *effectWord(d, int(layoutClientDrawable.Off(120)) /* ObjFlags */)&0xEEBF7E9D | flags
 		r.skip(int32(r.u8()))
 		d.TeamVal.ID = server.TeamID(r.u8())
 		r.u8()
 		r.skip(4 * int32(r.u16()))
 		extra := r.u32()
-		*effectWord(d, 280) = *effectWord(d, 280)&0xFFFFFFA1 | extra
+		*effectWord(d, int(layoutClientDrawable.Off(280)) /* Flags70Val */) = *effectWord(d, int(layoutClientDrawable.Off(280)) /* Flags70Val */)&0xFFFFFFA1 | extra
 		if inner >= 63 {
 			r.skip(2)
 			n := r.u32()

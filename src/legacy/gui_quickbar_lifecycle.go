@@ -58,12 +58,12 @@ func quickbarVisible(show bool) int {
 	}
 	if show {
 		if *quickbarWord(1049484) != 0 {
-			bookHideWindow(quickbarWindow(1048148), false)
+			bookHideWindow(quickbarRecords[0].Window, false)
 		}
 		return bookHideWindow(b.Window, false)
 	}
 	bookHideWindow(b.Window, true)
-	return bookHideWindow(quickbarWindow(1048148), true)
+	return bookHideWindow(quickbarRecords[0].Window, true)
 }
 func quickbarPrepare() int {
 	if *quickbarWord(1049508) != 0 {

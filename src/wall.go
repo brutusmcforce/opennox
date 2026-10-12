@@ -80,8 +80,6 @@ func nox_xxx_wallSecretNext_410790(p unsafe.Pointer) unsafe.Pointer {
 	return *(*unsafe.Pointer)(p)
 }
 
-var _ = [1]struct{}{}[36-unsafe.Sizeof(Wall{})]
-
 type Wall server.Wall
 
 func (w *Wall) C() unsafe.Pointer {
@@ -322,7 +320,7 @@ func (s *Server) Nox_xxx_damageToMap_534BC0(gx, gy int, dmg int, dtyp object.Dam
 		return v7
 	}()) == nil || (func() bool {
 		v8 = 99999999
-		return (int32(*(*uint8)(unsafe.Add(unsafe.Pointer(v7), 8))) & 4) == 0
+		return (int32(*(*uint8)(unsafe.Add(unsafe.Pointer(v7), int(layoutServerObject.Off(8)) /* ObjClass */))) & 4) == 0
 	}()) {
 		v8 = dmg
 	}

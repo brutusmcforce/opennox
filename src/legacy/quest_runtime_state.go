@@ -63,6 +63,6 @@ func questRuntimeHighestMessage(to int, stage uint16) int {
 	return gameplayReportSend(to, []byte{240, 29, byte(stage), byte(stage >> 8)}, false, 1)
 }
 func questRuntimeCodeMessage(to int, u *server.Object) int {
-	code := *controlHalf(unsafe.Pointer(u), 40)
+	code := *controlHalf(unsafe.Pointer(u), int(layoutServerObject.Off(40)) /* Extent */)
 	return gameplayReportSend(to, []byte{240, 15, byte(code), byte(code >> 8)}, false, 1)
 }

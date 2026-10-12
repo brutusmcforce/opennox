@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"encoding/binary"
 	"github.com/brutusmcforce/opennox/libs/types"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
@@ -28,7 +29,7 @@ func sustainedGlobal(i int) *uint32 {
 	}
 	panic("sustained spell global")
 }
-func sustainedPointer(v uint32) *server.Object { return (*server.Object)(unsafe.Pointer(uintptr(v))) }
+func sustainedPointer(v uint32) *server.Object { return (*server.Object)(memmap.WordPtr(v)) }
 func sustainedFrame() uint32                   { return GetServer().S().Frame() }
 func sustainedFPS() uint32                     { return uint32(GetServer().S().TickRate()) }
 func sustainedGame(flag uint32) bool           { return noxflags.HasGame(noxflags.GameFlag(flag)) }

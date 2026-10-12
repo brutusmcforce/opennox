@@ -19,7 +19,7 @@ func controlFindStart(out *types.Pointf, u *server.Object) {
 	}
 	team := int32(0)
 	if u.TeamVal.Has() {
-		team = int32(*controlByte(u.CObj(), 52))
+		team = int32(*controlByte(u.CObj(), int(layoutServerObject.Off(52)) /* TeamVal.ID */))
 		nox_xxx_getTeamByID_418AB0(int(team))
 	}
 	var last, best *server.Object
@@ -75,7 +75,7 @@ func controlDropBall(u *server.Object) int32 {
 		}
 		it.ObjFlags &^= 0x40
 		GetServer().ApplyForce(it, u.PosVec, float64(float32(100)))
-		*controlPtr(it.CObj(), 520) = nil
+		*controlPtr(it.CObj(), int(layoutServerObject.Off(520)) /* Obj130 */) = nil
 		GetServer().S().ObjSetOwner(nil, it)
 		GetServer().S().Audio.EventObj(sound.ID(926), u, 0, 0)
 		sub_4E8290(int8(1), int16(0))
@@ -116,7 +116,7 @@ func controlWalkWaypoint(u *server.Object) int32 {
 	off := uintptr(int(int16(u.Direction2)) * 8)
 	for i := 0; i < 2; i++ {
 		f := (*float32)(unsafe.Add(u.CObj(), 88+4*i))
-		*f = float32(float64(*memmap.PtrFloat32(0x587000, 194136+off+uintptr(i*4)))*float64(*(*float32)(unsafe.Add(u.CObj(), 544))) + float64(*f))
+		*f = float32(float64(*memmap.PtrFloat32(0x587000, 194136+off+uintptr(i*4)))*float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(544)) /* SpeedCur */))) + float64(*f))
 	}
 	return 1
 }
@@ -126,7 +126,7 @@ func controlInputAttack(u *server.Object) {
 	}
 	d := u.UpdateData
 	weapon := *equipmentWord(controlPlayer(u), 4)
-	setAttack := func() { *equipmentWord(u.CObj(), 136) = GetServer().S().Frame(); *controlByte(d, 236) = 0 }
+	setAttack := func() { *equipmentWord(u.CObj(), int(layoutServerObject.Off(136)) /* Field34 */) = GetServer().S().Frame(); *controlByte(d, 236) = 0 }
 	if weapon == 0 {
 		if *controlByte(d, 88) != 1 {
 			Nox_xxx_playerSetState_4FA020(u, 1)

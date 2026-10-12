@@ -2,6 +2,7 @@ package legacy
 
 import (
 	"encoding/binary"
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
 	"unsafe"
 )
@@ -67,11 +68,11 @@ func effectDispatchRay(packet *[9]byte) uint32 {
 	if dr == nil {
 		return 0
 	}
-	*effectByte(dr, 432) = 0
-	*effectWord(dr, 437) = binary.LittleEndian.Uint32(packet[1:])
-	*effectWord(dr, 441) = binary.LittleEndian.Uint32(packet[5:])
+	*effectByte(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = 0
+	*effectWord(dr, int(layoutClientDrawable.Off(437)) /* Union._ */) = binary.LittleEndian.Uint32(packet[1:])
+	*effectWord(dr, int(layoutClientDrawable.Off(441)) /* Union._ */) = binary.LittleEndian.Uint32(packet[5:])
 	count = *effectMapped(1304308)
 	presentationTransientRayList[count] = dr
 	*effectMapped(1304308) = count + 1
-	return uint32(uintptr(unsafe.Pointer(dr)))
+	return memmap.PtrWord(unsafe.Pointer(dr))
 }

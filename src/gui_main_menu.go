@@ -89,17 +89,11 @@ func (c *Client) nox_xxx_wndLoadMainBG_4A2210() int {
 	v1 := gui.MainBg.ChildByID(98)
 	v1.SetFunc93(sub4A18E0)
 	v1.SetDraw(legacy.ClientMainMenuDraw)
-	if memmap.Uint32(0x587000, 168832) != 0 {
-		v3 := memmap.PtrOff(0x587000, 168832)
-		v2 := *(**byte)(v3)
-		for {
-			*(*unsafe.Pointer)(unsafe.Add(v3, 4)) = unsafe.Pointer(nox_xxx_gLoadImg(alloc.GoString(v2)).C())
-			v2 = *(**byte)(unsafe.Add(v3, 48))
-			v3 = unsafe.Add(v3, 48)
-			if v2 == nil {
-				break
-			}
-		}
+	// The images were stored in the table itself (at +4 of each 48-byte entry).
+	legacy.MainMenuImages = legacy.MainMenuImages[:0]
+	for off := uintptr(168832); memmap.Uint32(0x587000, off) != 0; off += 48 {
+		name := (*byte)(memmap.LoadPtr(0x587000, off))
+		legacy.MainMenuImages = append(legacy.MainMenuImages, nox_xxx_gLoadImg(alloc.GoString(name)).C())
 	}
 	gui.FocusMainBg()
 	return 1

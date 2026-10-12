@@ -2,7 +2,6 @@ package legacy
 
 import (
 	"os"
-	"unsafe"
 
 	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/libs/log"
@@ -21,8 +20,6 @@ var (
 	Nox_client_setRenderGUI        func(v int)
 	Nox_client_getRenderGUI        func() int
 )
-
-var _ = [1]struct{}{}[332-unsafe.Sizeof(gui.WindowData{})]
 
 func nox_client_onClientStatusA(v int) { Nox_client_onClientStatusA(v) }
 

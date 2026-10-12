@@ -13,7 +13,7 @@ import (
 )
 
 func quickbarImage(name string) noxrender.ImageHandle {
-	return noxrender.ImageHandle(unsafe.Pointer(uintptr(uiMeterLoadImage(name))))
+	return noxrender.ImageHandle(memmap.WordPtr(uiMeterLoadImage(name)))
 }
 
 func quickbarInitWindow(b *quickbarRecord, x, y, count, padding int, proc gui.WindowFunc, draw gui.WindowDrawFunc) int {
@@ -57,7 +57,7 @@ func quickbarSetTrapImages(class int) {
 
 func quickbarRevealTrap() int {
 	p := quickbarPlayer()
-	if p == 0 {
+	if p == nil {
 		return 0
 	}
 	class := bookClass(p)
@@ -129,7 +129,7 @@ func quickbarCreate() int {
 		*memmap.PtrUint32(0x587000, 133656+uintptr(i*4)) = uint32(value)
 	}
 	p := quickbarPlayer()
-	if p == 0 {
+	if p == nil {
 		return 0
 	}
 	class := bookClass(p)
@@ -192,7 +192,7 @@ func quickbarCreate() int {
 		quickbarInitWindow(trap, x+122, y-17, 3, 21, bookEvent(quickbarSlotEvent), quickbarDrawSpell)
 		trap.Window.DrawData().BgImageHnd = quickbarImage("QuickBarTrapTray")
 		trap.Window.DrawData().ImgPtVal = image.Pt(-40, -20)
-		*quickbarWord(1048192) |= 1
+		quickbarRecords[0].Field252 |= 1
 		bookHideWindow(trap.Window, true)
 		*quickbarWord(1049484) = 0
 		label := g.NewWindowRaw(trap.Window, 1032, 20, -7, 110, height, nil)

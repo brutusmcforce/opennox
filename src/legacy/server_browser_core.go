@@ -92,13 +92,6 @@ func nox_gui_wol_gameModeString_43BCB0(v int16) *wchar2_t {
 	return (*wchar2_t)(unsafe.Pointer(alloc.InternCString16(browserModeName(uint16(v)))))
 }
 
-func sub_4A2560(point *uint32, record int32) int32 {
-	if browserHit((*[2]uint32)(unsafe.Pointer(point)), unsafe.Pointer(uintptr(uint32(record)))) {
-		return 1
-	}
-	return 0
-}
-
 func sub_4A25C0(point *uint32, head *int32) int32 {
 	return int32(browserCount((*[2]uint32)(unsafe.Pointer(point)), (*legacyListNode)(unsafe.Pointer(head))))
 }

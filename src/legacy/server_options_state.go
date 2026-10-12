@@ -53,7 +53,7 @@ func serverOptionsWord(off uintptr) *uint32 {
 	}
 }
 func serverOptionsWindow(off uintptr) *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(*serverOptionsWord(off))))
+	return (*gui.Window)(memmap.WordPtr(*serverOptionsWord(off)))
 }
 func serverOptionsChild(id uint) *gui.Window { return serverOptionsWindow(1046492).ChildByID(id) }
 func serverOptionsText(key string) string {

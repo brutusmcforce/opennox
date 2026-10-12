@@ -24,12 +24,12 @@ func stateMonsterCollision(u, t *server.Object) unsafe.Pointer {
 func stateMimicCollision(u, t *server.Object) unsafe.Pointer {
 	if t != nil && t.ObjFlags&0x8000 == 0 && t.ObjClass&6 != 0 && nox_xxx_unitIsEnemyTo_5330C0(asObjectC(u), asObjectC(t)) != 0 && !u.MonsterActionIsScheduled(15) {
 		if st := u.MonsterPushAction(43); st != nil {
-			*equipmentWord(unsafe.Pointer(st), 4) = GetServer().S().Frame()
+			*equipmentWord(unsafe.Pointer(st), int(layoutServerAIStackItem.Off(4)) /* Args[0] */) = GetServer().S().Frame()
 		}
 		if st := u.MonsterPushAction(15); st != nil {
-			*equipmentWord(unsafe.Pointer(st), 4) = *equipmentWord(t.CObj(), 56)
-			*equipmentWord(unsafe.Pointer(st), 8) = *equipmentWord(t.CObj(), 60)
-			*equipmentWord(unsafe.Pointer(st), 12) = GetServer().S().Frame()
+			*equipmentWord(unsafe.Pointer(st), int(layoutServerAIStackItem.Off(4)) /* Args[0] */) = *equipmentWord(t.CObj(), int(layoutServerObject.Off(56)) /* PosVec.X */)
+			*equipmentWord(unsafe.Pointer(st), int(layoutServerAIStackItem.Off(8)) /* Args[1] */) = *equipmentWord(t.CObj(), int(layoutServerObject.Off(60)) /* PosVec.Y */)
+			*equipmentWord(unsafe.Pointer(st), int(layoutServerAIStackItem.Off(12)) /* Args[2] */) = GetServer().S().Frame()
 		}
 	}
 	return stateMonsterCollision(u, t)

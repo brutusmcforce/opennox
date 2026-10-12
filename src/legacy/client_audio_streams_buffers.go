@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"unsafe"
 )
@@ -201,9 +202,9 @@ func audioStreamCacheLoad(p *audioStreamCache, index int32) *audioStreamCacheEnt
 			audioStreamCacheDrop(e)
 			return nil
 		}
-		audioStreamChunkInit(c, uint32(uintptr(unsafe.Add(unsafe.Pointer(c), 24))), uint32(n))
+		audioStreamChunkInit(c, memmap.PtrWord(unsafe.Add(unsafe.Pointer(c), 24)), uint32(n))
 		audioStreamBufferAppend(&e.Buffer, c)
-		got := audioStreamRead(p.Catalog, unsafe.Pointer(uintptr(c.Data)), n)
+		got := audioStreamRead(p.Catalog, memmap.WordPtr(c.Data), n)
 		if got != n {
 			audioStreamCacheDrop(e)
 			return nil

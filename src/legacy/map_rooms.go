@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/platform"
 	"github.com/brutusmcforce/opennox/libs/types"
 	"unsafe"
@@ -53,8 +54,8 @@ func mapRoomGlobalWord(i int) *uint32 {
 	}
 	panic("map room global")
 }
-func mapRoomPointer(v uint32) unsafe.Pointer              { return unsafe.Pointer(uintptr(v)) }
-func mapRoomRaw(p unsafe.Pointer) uint32                  { return uint32(uintptr(p)) }
+func mapRoomPointer(v uint32) unsafe.Pointer              { return memmap.WordPtr(v) }
+func mapRoomRaw(p unsafe.Pointer) uint32                  { return memmap.PtrWord(p) }
 func mapRoomWord(p unsafe.Pointer, off int) *int32        { return (*int32)(unsafe.Add(p, off)) }
 func mapRoomFloatWord(p unsafe.Pointer, off int) *float32 { return (*float32)(unsafe.Add(p, off)) }
 func mapRoomRef(p unsafe.Pointer, off int) *unsafe.Pointer {

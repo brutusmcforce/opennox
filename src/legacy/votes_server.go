@@ -26,7 +26,6 @@ type voteRecord struct {
 	next, prev *voteRecord
 }
 
-var _ = [1]struct{}{}[52-unsafe.Sizeof(voteRecord{})]
 var votePool alloc.ClassT[voteRecord]
 var voteHead *voteRecord
 var voteQuestResetSetting uint32 = 6
@@ -252,7 +251,7 @@ func voteThreshold(p *voteRecord) int {
 	return 0
 }
 func voteBlockPlayer(pl *server.Player) {
-	serverConfigBlockedAdd(15, &pl.NameFinal[0], (*byte)(unsafe.Add(pl.C(), 2112)))
+	serverConfigBlockedAdd(15, &pl.NameFinal[0], (*byte)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(2112)) /* SerialBuf */)))
 }
 func voteUpdateNormal(p *voteRecord) {
 	u := p.target

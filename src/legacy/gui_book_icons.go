@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
@@ -11,14 +12,14 @@ import (
 
 func bookDrawImage(handle uint32, pos image.Point) {
 	r := GetClient().R2()
-	r.DrawImageAt(r.GetBag().AsImage(noxrender.ImageHandle(unsafe.Pointer(uintptr(handle)))), pos)
+	r.DrawImageAt(r.GetBag().AsImage(noxrender.ImageHandle(memmap.WordPtr(handle))), pos)
 }
-func bookSpellImage(id int) uint32 { return uint32(uintptr(nox_xxx_spellIcon_424A90(id))) }
+func bookSpellImage(id int) uint32 { return memmap.PtrWord(nox_xxx_spellIcon_424A90(id)) }
 func bookAbilityImage(id int) uint32 {
-	return uint32(uintptr(unsafe.Pointer(nox_xxx_spellGetAbilityIcon_425310(id, 0))))
+	return memmap.PtrWord(unsafe.Pointer(nox_xxx_spellGetAbilityIcon_425310(id, 0)))
 }
 func bookDrawIcon(w *gui.Window) int {
-	mode, p := *bookWord(1046868), *bookWord(1047516)
+	mode, p := *bookWord(1046868), bookPlayer
 	var img uint32
 	if mode != 0 {
 		if mode != 1 || bookClass(p) != 2 || (*bookPlayerWord(p, 4232, 0) == 0 && (!noxflags.HasGame(noxflags.GameFlag(0x2000)) || noxflags.HasGame(noxflags.GameModeQuest))) {
@@ -39,7 +40,7 @@ func bookIconTooltip(w *gui.Window) int {
 	var key string
 	switch w.ID() {
 	case 1310:
-		if bookClass(*bookWord(1047516)) == 0 {
+		if bookClass(bookPlayer) == 0 {
 			key = "ToolTipAbilityTab"
 		} else {
 			key = "ToolTipSpellTab"
@@ -54,10 +55,10 @@ func bookIconTooltip(w *gui.Window) int {
 }
 func bookIconEvents(w *gui.Window, event int, pos image.Point) int {
 	dr := LocalPlayerDrawable
-	if dr != nil && *(*byte)(unsafe.Add(dr.C(), 120))&2 != 0 {
+	if dr != nil && *(*byte)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(120)) /* ObjFlags */))&2 != 0 {
 		return 1
 	}
-	p, mode := *bookWord(1047516), *bookWord(1046868)
+	p, mode := bookPlayer, *bookWord(1046868)
 	class := bookClass(p)
 	// This quest guard intentionally differs from icon drawing (frozen C behavior).
 	if mode == 1 && (class == 1 || class == 0 || (!noxflags.HasGame(noxflags.GameFlag(0x2000)) && !noxflags.HasGame(noxflags.GameModeQuest) && *bookPlayerWord(p, 4232, 0) == 0)) {

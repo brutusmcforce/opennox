@@ -22,7 +22,7 @@ func browserMapPolygons() {
 			mapPolygonSelect(memmap.Float32(0x587000, p), memmap.Float32(0x587000, p+4))
 		}
 		var polygon mapPolygon
-		name := alloc.GoString(*(**byte)(memmap.PtrOff(0x587000, off+12)))
+		name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, off+12)))
 		copy(polygon.Name[:], name)
 		mapPolygonDefaultsWrite(&polygon)
 		mapPolygonConstruct()

@@ -12,10 +12,6 @@ var (
 	Nox_xxx_blueFREffect_4E05F0   func(a1 unsafe.Pointer, a2p, a3p, a4p *server.Object)
 )
 
-var _ = [1]struct{}{}[88-unsafe.Sizeof(server.Modifier{})]
-
-var _ = [1]struct{}{}[144-unsafe.Sizeof(server.ModifierEff{})]
-
 func init() {
 	registerNativeModifierCallbacks()
 }

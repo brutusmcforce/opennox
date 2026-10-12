@@ -2,12 +2,12 @@ package legacy
 
 import (
 	"fmt"
+	"github.com/brutusmcforce/opennox/client/noxrender"
 	"image"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
@@ -28,10 +28,10 @@ func uiTradeSetText(w *gui.Window, text *uint16) int {
 	}
 	return 0
 }
-func uiTradeViewportInit(off uintptr) {
-	for _, v := range [][2]uint32{{0, 0}, {4, 0}, {8, uint32(nox_win_width)}, {12, uint32(nox_win_height)}, {32, uint32(nox_win_width)}, {36, uint32(nox_win_height)}, {16, 0}, {20, 0}} {
-		*memmap.PtrUint32(0x5D4594, off+uintptr(v[0])) = v[1]
-	}
+func uiTradeViewportInit(vp *noxrender.Viewport) {
+	vp.Screen = image.Rect(0, 0, int(nox_win_width), int(nox_win_height))
+	vp.Size = image.Pt(int(nox_win_width), int(nox_win_height))
+	vp.World.Min = image.Point{}
 }
 func uiAmountToggle() {
 	w := uiAmountWindow()
@@ -68,12 +68,12 @@ func uiAmountCount() uint32 {
 	w := uiInventoryWindowValue(uint32(dword_5d4594_1319232))
 	return uint32(textDecimal((*uint16)(unsafe.Pointer(uiWindowText(w)))))
 }
-func uiAmountCallback(off uintptr) {
+func uiAmountCallback(fn unsafe.Pointer) {
 	count := uiAmountCount()
 	if count > uint32(dword_5d4594_1319248) {
 		count = uint32(dword_5d4594_1319248)
 	}
-	if fn := *memmap.PtrPtr(0x5D4594, off); fn != nil {
+	if fn != nil {
 		// Keep the temporary point in the shared allocator through callback completion.
 		p, free := alloc.New([2]int32{})
 		defer free()
@@ -87,7 +87,7 @@ func uiAmountCancel() int {
 	if dword_5d4594_1319268 != 1 {
 		return 0
 	}
-	uiAmountCallback(1319100)
+	uiAmountCallback(uiAmountCancelFunc)
 	return 1
 }
 func uiAmountInit() int {
@@ -102,7 +102,7 @@ func uiAmountInit() int {
 	dword_5d4594_1319236 = uint32(uiInventoryPointer(w.ChildByID(3607).C()))
 	w.Hide()
 	uiWindowEnable(w, 0)
-	uiTradeViewportInit(1319108)
+	uiTradeViewportInit(&uiAmountViewport)
 	for i, name := range []string{"MultiMoveBase", "MultiMoveUpLit", "MultiMoveDownLit", "MultiMoveYesPressed", "MultiMoveNoPressed", "MultiMoveBaseNoTag", "MultiMoveYesPressedNoTag", "MultiMoveNoPressedNoTag"} {
 		*memmap.PtrUint32(0x5D4594, 1319196+uintptr(4*i)) = uiMeterLoadImage(name)
 	}
@@ -119,7 +119,7 @@ func uiAmountDraw(w *gui.Window) int {
 	uiMeterImage(memmap.Uint32(0x5D4594, off), pos)
 	dr := uiAmountItem()
 	dr.PosVec = pos.Add(image.Pt(int(int32(dword_587000_183456)), int(int32(dword_587000_183460))))
-	dr.CallDraw((*noxrender.Viewport)(memmap.PtrOff(0x5D4594, 1319108)))
+	dr.CallDraw(&uiAmountViewport)
 	for _, v := range [][3]uintptr{{3603, 1319204, 1319204}, {3602, 1319200, 1319200}, {3604, 1319208, 1319220}, {3605, 1319212, 1319224}} {
 		if uiAmountWindow().ChildByID(uint(v[0])).DrawData().Field0&4 != 0 {
 			off := v[1]
@@ -135,7 +135,7 @@ func uiAmountPanel(w *gui.Window, event int, a, b uintptr) int {
 	if event != 16391 || dword_5d4594_1319268 != 1 {
 		return 0
 	}
-	id := uiInventoryWindowValue(uint32(a)).ID()
+	id := windowArg(a).ID()
 	uiTradeSound(766)
 	switch id {
 	case 3602:
@@ -150,7 +150,7 @@ func uiAmountPanel(w *gui.Window, event int, a, b uintptr) int {
 			uiAmountUpdateText(uint32(count - 1))
 		}
 	case 3604, 3606:
-		uiAmountCallback(1319160)
+		uiAmountCallback(uiAmountAccept)
 	case 3605:
 		uiAmountCancel()
 	}
@@ -188,7 +188,7 @@ func uiAmountShow(title *uint16, x, y int, code, typ uint32, mods unsafe.Pointer
 	uiTradeSetText(uiAmountWindow().ChildByID(3606), title)
 	dr.ObjFlags |= 0x40000000
 	if mods != nil {
-		copy(unsafe.Slice((*byte)(unsafe.Add(dr.C(), 432)), 20), unsafe.Slice((*byte)(mods), 20))
+		copy(unsafe.Slice((*byte)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)), 20), unsafe.Slice((*byte)(mods), 20))
 	}
 	uiAmountAccept = accept
 	uiAmountCancelFunc = cancel

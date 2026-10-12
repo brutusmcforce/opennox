@@ -2,6 +2,7 @@ package legacy
 
 import (
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
 )
@@ -117,7 +118,7 @@ func playerDeathKotr(victim, killer *server.Object) {
 			gameplayReportLesson(killer)
 			playerDeathStats(killer, victim)
 			if !noxflags.HasGamePlay(4) && vc {
-				itemDropCrowns(victim, uint32(uintptr(killer.CObj())))
+				itemDropCrowns(victim, memmap.PtrWord(killer.CObj()))
 			}
 		}
 	} else if kc || vc {

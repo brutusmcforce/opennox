@@ -8,8 +8,8 @@ import (
 	"github.com/brutusmcforce/opennox/client/gui"
 )
 
-var _ [4 - unsafe.Sizeof(gui.RadioButtonData{})]byte
-var _ [unsafe.Sizeof(gui.RadioButtonData{}) - 4]byte
+
+
 
 func uiRadioInit(win *gui.Window) {
 	draw := uiRadioDraw
@@ -19,7 +19,8 @@ func uiRadioInit(win *gui.Window) {
 	win.SetAllFuncs(uiRadioInput, draw, nil)
 }
 func uiRadioNotify(win *gui.Window, code int, a, b uintptr) {
-	win.DrawData().Window.Func94(&gui.RawEvent{Event: code, Arg1: a, Arg2: b})
+	// A typed event: parent handlers in Go match on the event type (e.g. list selection changes).
+	win.DrawData().Window.Func94(gui.AsWindowEvent(code, a, b))
 }
 func uiRadioDeselectSiblings(win, parent *gui.Window) {
 	if parent == nil {
@@ -93,7 +94,7 @@ func uiRadioEvent(win *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 		return gui.RawEventResp(1)
 	case 16385:
 		// Preserve the exact 63 UTF-16 code-unit copy, including unpaired surrogates.
-		dst := unsafe.Slice((*uint16)(unsafe.Add(win.C(), 108)), 64)
+		dst := unsafe.Slice((*uint16)(unsafe.Add(win.C(), int(layoutGuiWindow.Off(108)) /* drawData.text */)), 64)
 		done := false
 		for i := 0; i < 63; i++ {
 			v := uint16(0)

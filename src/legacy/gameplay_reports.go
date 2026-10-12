@@ -49,7 +49,7 @@ func gameplayReportPoison(player, unit *server.Object, value byte) int {
 func gameplayReportExperience(unit *server.Object) int {
 	if uint32(unit.ObjClass)&4 != 0 {
 		b := []byte{110, 0, 0, 0, 0}
-		value := *(*float32)(unsafe.Add(unit.CObj(), 28))
+		value := *(*float32)(unsafe.Add(unit.CObj(), int(layoutServerObject.Off(28)) /* Experience */))
 		binary.LittleEndian.PutUint32(b[1:], uint32(int64(value)))
 		gameplayReportSend(gameplayReportRecipient(unit), b, false, 1)
 	}
@@ -57,12 +57,12 @@ func gameplayReportExperience(unit *server.Object) int {
 }
 func gameplayReportAnimation(to int, unit *server.Object) int {
 	b := gameplayReportID(107, unit, 7)
-	binary.LittleEndian.PutUint32(b[3:], *gameplayReportWord(unit.CObj(), 132))
+	binary.LittleEndian.PutUint32(b[3:], *gameplayReportWord(unit.CObj(), int(layoutServerObject.Off(132)) /* Field33 */))
 	return gameplayReportSend(to, b, false, 1)
 }
 func gameplayReportXStatus(to int, unit *server.Object) int {
 	b := gameplayReportID(101, unit, 7)
-	binary.LittleEndian.PutUint32(b[3:], *gameplayReportWord(unit.CObj(), 20))
+	binary.LittleEndian.PutUint32(b[3:], *gameplayReportWord(unit.CObj(), int(layoutServerObject.Off(20)) /* Field5 */))
 	return gameplayReportSend(to, b, false, 1)
 }
 func gameplayReportPlayerStatus(unit *server.Object) int {
@@ -132,7 +132,7 @@ func gameplayReportStamina(to int, unit *server.Object) int {
 	return gameplayReportSend(to, []byte{71, *controlByte(unit.UpdateData, 91)}, true, 1)
 }
 func gameplayReportObjectByte(to int, unit *server.Object) int {
-	return gameplayReportSend(to, []byte{91, *controlByte(unit.CObj(), 440)}, false, 1)
+	return gameplayReportSend(to, []byte{91, *controlByte(unit.CObj(), int(layoutServerObject.Off(440)) /* Field110 */)}, false, 1)
 }
 func gameplayReportPlayerStat(to int, unit *server.Object) int {
 	if uint32(unit.ObjClass)&4 == 0 {
@@ -167,7 +167,7 @@ func gameplayReportStats(to int, unit *server.Object, value byte) int {
 	pl := controlPlayer(unit)
 	binary.LittleEndian.PutUint16(b[3:], unit.HealthData.Max)
 	binary.LittleEndian.PutUint16(b[5:], *controlHalf(unit.UpdateData, 8))
-	binary.LittleEndian.PutUint16(b[7:], *controlHalf(unit.CObj(), 490))
+	binary.LittleEndian.PutUint16(b[7:], *controlHalf(unit.CObj(), int(layoutServerObject.Off(490)) /* CarryCapacity */))
 	binary.LittleEndian.PutUint16(b[9:], *controlHalf(pl, 2235))
 	binary.LittleEndian.PutUint16(b[11:], *controlHalf(pl, 2239))
 	b[13] = value
@@ -193,7 +193,7 @@ func gameplayReportTimer(to int, value uint32) int {
 }
 func gameplayReportEnchant(to int, unit *server.Object) int {
 	b := gameplayReportID(90, unit, 7)
-	binary.LittleEndian.PutUint32(b[3:], *gameplayReportWord(unit.CObj(), 340))
+	binary.LittleEndian.PutUint32(b[3:], *gameplayReportWord(unit.CObj(), int(layoutServerObject.Off(340)) /* Buffs */))
 	return gameplayReportSend(to, b, true, 1)
 }
 func gameplayReportHidden(to int, unit *server.Object) int {
@@ -208,9 +208,9 @@ func gameplayReportHidden(to int, unit *server.Object) int {
 }
 func gameplayReportHeight(to int, unit *server.Object) int {
 	p := unit.CObj()
-	height := *(*float32)(unsafe.Add(p, 104))
-	if *gameplayReportWord(p, 20)&0x20 != 0 {
-		b := []byte{159, 0, 0, byte(int64(height)), byte(int64(*(*float32)(unsafe.Add(p, 108)))), byte(int64(*(*float32)(unsafe.Add(p, 116))))}
+	height := *(*float32)(unsafe.Add(p, int(layoutServerObject.Off(104)) /* ZVal */))
+	if *gameplayReportWord(p, int(layoutServerObject.Off(20)) /* Field5 */)&0x20 != 0 {
+		b := []byte{159, 0, 0, byte(int64(height)), byte(int64(*(*float32)(unsafe.Add(p, int(layoutServerObject.Off(108)) /* Field27 */)))), byte(int64(*(*float32)(unsafe.Add(p, int(layoutServerObject.Off(116)) /* Field29 */))))}
 		binary.LittleEndian.PutUint16(b[1:], uint16(unit.NetCode))
 		return gameplayReportDirect(to, b)
 	}

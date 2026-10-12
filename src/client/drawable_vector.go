@@ -35,8 +35,6 @@ func ParseAnimKind(str string) AnimKind {
 	return AnimOneShot
 }
 
-var _ = [1]struct{}{}[48-unsafe.Sizeof(AnimationVector{})]
-
 type AnimationVector struct {
 	Size   uint32                    // 0, 0
 	Frames [9]*noxrender.ImageHandle // 1, 4; [9][]noxrender.ImageHandle

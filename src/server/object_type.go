@@ -601,8 +601,6 @@ const (
 	ShapeKindBox    = ShapeKind(3)
 )
 
-var _ = ([1]struct{}{})[52-unsafe.Sizeof(Shape{})]
-
 type Shape struct {
 	Kind   ShapeKind // 0, 0x0, (43, 172)
 	Circle struct {

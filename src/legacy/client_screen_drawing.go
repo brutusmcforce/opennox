@@ -12,9 +12,9 @@ import (
 
 func screenHarpoonRope(vp *noxrender.Viewport, dr *client.Drawable) int {
 	var from, to image.Point
-	if *effectByte(dr, 432) == 0 {
-		from = vp.ToScreenPos(image.Pt(int(*effectShort(dr, 437)), int(*effectShort(dr, 439))))
-		to = vp.ToScreenPos(image.Pt(int(*effectShort(dr, 441)), int(*effectShort(dr, 443))))
+	if *effectByte(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) == 0 {
+		from = vp.ToScreenPos(image.Pt(int(*effectShort(dr, int(layoutClientDrawable.Off(437)) /* Union._ */)), int(*effectShort(dr, int(layoutClientDrawable.Off(439)) /* Union._ */))))
+		to = vp.ToScreenPos(image.Pt(int(*effectShort(dr, int(layoutClientDrawable.Off(441)) /* Union._ */)), int(*effectShort(dr, int(layoutClientDrawable.Off(443)) /* Union._ */))))
 		from.Y -= 20
 		to.Y -= 20
 	} else {
@@ -24,13 +24,13 @@ func screenHarpoonRope(vp *noxrender.Viewport, dr *client.Drawable) int {
 			}
 			return GetClient().Cli().Objs.ByNetCodeDynamic(int(code & 0x7fff))
 		}
-		a, b := lookup(*effectWord(dr, 437)), lookup(*effectWord(dr, 441))
+		a, b := lookup(*effectWord(dr, int(layoutClientDrawable.Off(437)) /* Union._ */)), lookup(*effectWord(dr, int(layoutClientDrawable.Off(441)) /* Union._ */))
 		if a == nil || b == nil {
 			return 1
 		}
 		from = vp.ToScreenPos(a.PosVec)
 		to = effectScreen(vp, b)
-		dir := uintptr(*effectByte(a, 297))
+		dir := uintptr(*effectByte(a, int(layoutClientDrawable.Off(297)) /* AnimDir */))
 		from.X += int(*memmap.PtrInt32(0x587000, 175864+8*dir))
 		from.Y += int(*memmap.PtrInt32(0x587000, 175868+8*dir))
 		to.Y -= 8
@@ -71,18 +71,18 @@ func screenUndead(vp *noxrender.Viewport, dr *client.Drawable) int {
 		*effectMapped(1313732) = uint32(noxcolor.RGB5551Color(100, 100, 255).Color32())
 		*effectMapped(1313728) = 1
 	}
-	if gameFrame()-*effectWord(dr, 316) > 70 {
+	if gameFrame()-*effectWord(dr, int(layoutClientDrawable.Off(316)) /* AnimStart */) > 70 {
 		return effectDelete(dr)
 	}
 	if nox_client_drawIsTick && effectRand(0, 100) > 85 {
-		coords := [4]uint16{*effectShort(dr, 324), *effectShort(dr, 328)}
+		coords := [4]uint16{*effectShort(dr, int(layoutClientDrawable.Off(324)) /* Field_81 */), *effectShort(dr, int(layoutClientDrawable.Off(328)) /* Field_82 */)}
 		coords[2] = uint16(dr.PosVec.X) + uint16(effectRand(-5, 5))
 		coords[3] = uint16(dr.PosVec.Y) + uint16(effectRand(-5, 5))
 		speed := byte(effectRand(6, 10))
 		dy := effectRand(-5, 5)
 		effectCreateOrb(int(*effectMapped(1313736)), &coords, 0, dy, speed, 0)
 	}
-	distance := int(screenDistanceBetween(int32(dr.PosVec.X), int32(dr.PosVec.Y), int32(*effectWord(dr, 324)), int32(*effectWord(dr, 328))))
+	distance := int(screenDistanceBetween(int32(dr.PosVec.X), int32(dr.PosVec.Y), int32(*effectWord(dr, int(layoutClientDrawable.Off(324)) /* Field_81 */)), int32(*effectWord(dr, int(layoutClientDrawable.Off(328)) /* Field_82 */))))
 	radius := 8 - distance/40
 	if radius < 0 {
 		radius = 1

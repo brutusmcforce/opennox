@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
 )
@@ -13,7 +14,7 @@ func controlBotCreate(u *server.Object) uint32 {
 	result := controlRaw(u)
 	if *ptr == nil {
 		*ptr = legacyCalloc(1, 2200)
-		result = uint32(uintptr(*ptr))
+		result = memmap.PtrWord(*ptr)
 	}
 	b := *ptr
 	if b == nil {
@@ -32,8 +33,8 @@ func controlBotCreate(u *server.Object) uint32 {
 		*equipmentWord(b, i) = 0xffffffff
 	}
 	*equipmentWord(b, 376) = uint32(int32(int16(u.Direction1)))
-	*equipmentWord(b, 380) = *equipmentWord(u.CObj(), 56)
-	*equipmentWord(b, 384) = *equipmentWord(u.CObj(), 60)
+	*equipmentWord(b, 380) = *equipmentWord(u.CObj(), int(layoutServerObject.Off(56)) /* PosVec.X */)
+	*equipmentWord(b, 384) = *equipmentWord(u.CObj(), int(layoutServerObject.Off(60)) /* PosVec.Y */)
 	class := *controlByte(controlPlayer(u), 2251)
 	if class == 0 {
 		return 0
@@ -106,7 +107,7 @@ func controlBotUpdate(u *server.Object) uint32 {
 	}
 	b := *controlPtr(d, 292)
 	if b == nil {
-		*controlPtr(u.CObj(), 744) = updateIdentityKey(updateIDPlayer)
+		*controlPtr(u.CObj(), int(layoutServerObject.Off(744)) /* Update */) = updateIdentityKey(updateIDPlayer)
 		return 0
 	}
 	result := controlRespawnBot(u)
@@ -120,8 +121,8 @@ func controlBotUpdate(u *server.Object) uint32 {
 	*controlByte(d, 88) = byte(controlBotState(u))
 	*controlByte(d, 236) = *controlByte(b, 481)
 	pl := *controlPtr(d, 276)
-	*equipmentWord(pl, 3632) = *equipmentWord(u.CObj(), 56)
-	result = int32(*equipmentWord(u.CObj(), 60))
+	*equipmentWord(pl, 3632) = *equipmentWord(u.CObj(), int(layoutServerObject.Off(56)) /* PosVec.X */)
+	result = int32(*equipmentWord(u.CObj(), int(layoutServerObject.Off(60)) /* PosVec.Y */))
 	*equipmentWord(pl, 3636) = uint32(result)
 	return uint32(result)
 }

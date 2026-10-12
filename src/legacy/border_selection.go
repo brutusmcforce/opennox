@@ -3,7 +3,6 @@ package legacy
 import (
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
@@ -16,7 +15,7 @@ func findBorderName(name *byte) int32 {
 	// The loader caps active count at the physical 64 rows. Unlike tile
 	// lookup, this scan is exact, case-sensitive and stops at the first match.
 	for i := int32(0); i < count; i++ {
-		p := (*byte)(memmap.PtrOff(0x85B3FC, 28644+60*uintptr(i)))
+		p := &edgeAssets[i].NameBuf[0]
 		if GoStringP(unsafe.Pointer(p)) == want {
 			return i
 		}
@@ -53,7 +52,7 @@ func selectBorderVariation(variation int32) bool {
 	// Approved fix: validate the selected border's limit, not the unrelated
 	// row indexed by variation. Reject invalid selected rows before access.
 	if count <= 0 || selected >= uint32(count) || selected >= 64 || variation < 0 ||
-		variation >= int32(memmap.Uint16(0x85B3FC, 28688+60*uintptr(selected))) {
+		variation >= int32(edgeAssets[selected].Field44) {
 		return false
 	}
 	dword_5d4594_3835360 = uint32(variation)

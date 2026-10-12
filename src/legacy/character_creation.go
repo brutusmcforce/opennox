@@ -25,7 +25,7 @@ var characterUI = struct {
 	modifiers                     [3]unsafe.Pointer // pants, shirt, shoes
 }{defaults: 1}
 
-func characterWord(w *gui.Window) *uint32 { return (*uint32)(unsafe.Add(w.C(), 32)) }
+func characterWord(w *gui.Window) *uint32 { return (*uint32)(unsafe.Add(w.C(), int(layoutGuiWindow.Off(32)) /* WidgetData */)) }
 func characterColor(w *gui.Window) []byte {
 	v := *characterWord(w)
 	return unsafe.Slice(memmap.PtrUint8(0x5D4594, 1307796+3*uintptr((v>>16)+32*uint32(uint16(v)))), 3)
@@ -183,7 +183,7 @@ func characterSetup() uint32 {
 }
 func characterQuickbar(mode int) uintptr {
 	class := *(*byte)(unsafe.Add(characterUI.classHost, 66))
-	table := *(*unsafe.Pointer)(memmap.PtrOff(0x587000, 170156+4*uintptr(class)))
+	table := memmap.LoadPtr(0x587000, 170156+4*uintptr(class))
 	var count byte
 	result := uintptr(class)
 	for *(*byte)(unsafe.Add(table, 5*uintptr(count))) != 0 {
@@ -230,7 +230,7 @@ func characterClassEvent(_ *gui.Window, ev gui.WindowEvent) gui.WindowEventResp 
 			uiWindowEnable(characterAcceptButton, 1)
 			cl := byte(id - 89)
 			*(*byte)(unsafe.Add(characterUI.classHost, 66)) = cl
-			key := alloc.GoString(*(**byte)(memmap.PtrOff(0x587000, 170208+4*uintptr(cl))))
+			key := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 170208+4*uintptr(cl))))
 			label := GetServer().S().Strings().GetStringInFile(strman.ID(key), "SelClass.c")
 			optionsSend(characterUI.classRoot.ChildByID(605), 16385, uintptr(unsafe.Pointer(alloc.InternCString16(label))), 0)
 			*memmap.PtrUint32(0x5D4594, 1307740) = uint32(id)

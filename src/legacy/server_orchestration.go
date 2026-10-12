@@ -47,11 +47,11 @@ func orchestrationTransitionPlayers() {
 		*controlPtr(u.UpdateData, 280) = nil
 		s.Players.Control.Player(int(pl.PlayerInd)).Reset()
 		if noxflags.HasGame(4096) {
-			*equipmentWord(pl.C(), 4680) = *equipmentWord(pl.C(), 4676)
-			*equipmentWord(pl.C(), 4676) = 0
+			*equipmentWord(pl.C(), int(layoutServerPlayer.Off(4680)) /* field4680 */) = *equipmentWord(pl.C(), int(layoutServerPlayer.Off(4676)) /* field4676 */)
+			*equipmentWord(pl.C(), int(layoutServerPlayer.Off(4676)) /* field4676 */) = 0
 		}
 		if !Nox_xxx_playerSetState_4FA020(u, 13) || !noxflags.HasGame(512) {
-			*equipmentWord(pl.C(), 4700) = 0
+			*equipmentWord(pl.C(), int(layoutServerPlayer.Off(4700)) /* Field4700 */) = 0
 			controlDefaultItems(u, int32(bool2int(!Nox_xxx_gameIsSwitchToSolo_4DB240())), int32(uint32(sessionMapState())>>1&1))
 		}
 		if pl.Field3680&0x20 != 0 {
@@ -88,7 +88,7 @@ func orchestrationRestore(arg int32) {
 					for i := 0; i < int(*controlByte(data, 1129)); i++ {
 						p := equipmentWord(data, 1132+4*i)
 						ref := objectLookupByScriptID(*p)
-						*p = uint32(uintptr(ref.CObj()))
+						*(*unsafe.Pointer)(unsafe.Pointer(p)) = ref.CObj() // the seen slots hold object pointers
 						if ref == nil {
 							*controlByte(data, 1129) = 0
 						}
@@ -216,7 +216,7 @@ func orchestrationResetPlayer(u *server.Object) uint32 {
 	}
 	*equipmentWord(data, 264) = 0
 	u.Obj130 = nil
-	return uint32(uintptr(mapPolygonActorInit(pl.C())))
+	return memmap.PtrWord(mapPolygonActorInit(pl.C()))
 }
 
 func orchestrationRewards() {

@@ -3,10 +3,9 @@ package legacy
 import (
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"unsafe"
 )
 
-func uiInventoryWindowValue(v uint32) *gui.Window { return (*gui.Window)(unsafe.Pointer(uintptr(v))) }
+func uiInventoryWindowValue(v uint32) *gui.Window { return (*gui.Window)(memmap.WordPtr(v)) }
 func uiInventoryWindowEvent(fn func(*gui.Window, int, uintptr, uintptr) int) gui.WindowFunc {
 	return func(w *gui.Window, e gui.WindowEvent) gui.WindowEventResp {
 		a, b := e.EventArgsC()
@@ -25,7 +24,7 @@ func uiInventoryPanelEvents(w *gui.Window, event int, a, b uintptr) int {
 	if event != 16391 {
 		return 0
 	}
-	control := uiInventoryWindowValue(uint32(a))
+	control := windowArg(a)
 	switch control.ID() {
 	case 9102:
 		v := int32(dword_5d4594_1062512) - 25

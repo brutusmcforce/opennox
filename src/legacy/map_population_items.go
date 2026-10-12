@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/server"
 	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"strings"
@@ -115,21 +116,21 @@ func mapPopulationItem(name, definitions, count uint32) uint32 {
 		return 0
 	}
 	if def != 0 {
-		var attrs [5]uint32
+		var attrs server.ModifierInitData
 		for i := 0; i < 4; i++ {
 			n := *populationWord(def, 136+4*i)
 			if n != 0 && mapRoomRandomInt(1, 100) <= int32(*memmap.PtrUint32(0x587000, 254688+uintptr(4*i))) {
 				mod := populationString(*populationWord(def, 120+4*i) + 60*uint32(mapRoomRandomInt(0, int32(n)-1)))
 				if !strings.EqualFold(mod, "none") {
 					ind := GetServer().S().Modif.Nox_xxx_modifGetIdByName413290(mod)
-					attrs[i] = mapRoomRaw(GetServer().S().Modif.Nox_xxx_modifGetDescById413330(ind).C())
+					attrs.Modifiers[i] = GetServer().S().Modif.Nox_xxx_modifGetDescById413330(ind)
 				}
 			}
 		}
-		if attrs[2] == 0 {
-			attrs[3] = 0
+		if attrs.Modifiers[2] == nil {
+			attrs.Modifiers[3] = nil
 		}
-		stateAttributes(u, unsafe.Pointer(&attrs[0]))
+		stateAttributes(u, &attrs)
 	}
 	return mapRoomRaw(unsafe.Pointer(u))
 }

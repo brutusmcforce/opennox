@@ -253,13 +253,13 @@ func Sub_46A730() unsafe.Pointer {
 	return unsafe.Pointer(sub_46A730())
 }
 func Sub_4C3500() int {
-	return int(bindingYesNo())
+	return bool2int(bindingYesNo() != nil)
 }
 func Nox_xxx_guiDrawRank_46E870() uint32 {
-	return uint32(uintptr(unsafe.Pointer(scoreboardConstruct())))
+	return memmap.PtrWord(unsafe.Pointer(scoreboardConstruct()))
 }
 func Nox_xxx_guiMotdLoad_4465C0() uint32 {
-	return uint32(uintptr(sessionMOTDOpen().C()))
+	return memmap.PtrWord(sessionMOTDOpen().C())
 }
 func Nox_xxx_guiSummonCreatureLoad_4C1D80() int {
 	return summonCreate()

@@ -62,7 +62,7 @@ func briefingLoadChapters() *uint16 {
 	table := &briefingChapters
 	for ch := 0; ch < 11; ch++ {
 		for class := 0; class < 3; class++ {
-			name := alloc.GoString(*(**byte)(memmap.PtrOff(0x587000, 122944+uintptr(4*class))))
+			name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 122944+uintptr(4*class))))
 			duration := uint32(ch + 3)
 			if ch == 0 {
 				duration = 1
@@ -109,17 +109,17 @@ func briefingSprites() []*uint32 {
 }
 func briefingInitSprites() *client.Drawable {
 	if dword_5d4594_832484 == 0 {
-		dword_5d4594_832484 = uint32(uintptr(GetClient().R2().GetFonts().FontPtrByName("default")))
+		dword_5d4594_832484 = memmap.PtrWord(GetClient().R2().GetFonts().FontPtrByName("default"))
 	}
 	names := []string{"GauntletExitB", "BeholderGenerator", "Ankh", "SoulGate", "SilverKey", "GoldKey", "QuestGoldChest", "QuestGoldPile", "DunMirChest4", "WarHammer", "HastePotion", "ConjurerSpellBook"}
 	var dr *client.Drawable
 	for i, p := range briefingSprites() {
-		dr = (*client.Drawable)(unsafe.Pointer(uintptr(*p)))
+		dr = (*client.Drawable)(memmap.WordPtr(*p))
 		if dr == nil {
 			dr = GetClient().Nox_new_drawable_for_thing(GetClient().Cli().Things.IndByID(names[i]))
-			*p = uint32(uintptr(dr.C()))
+			*p = memmap.PtrWord(dr.C())
 		}
-		*effectWord(dr, 120) |= 0x1000000
+		*effectWord(dr, int(layoutClientDrawable.Off(120)) /* ObjFlags */) |= 0x1000000
 	}
 	return dr
 }
@@ -162,7 +162,7 @@ func briefingWinReport(data unsafe.Pointer) int {
 	// preserves the captured bounded sparse-input behavior and stable equal scores.
 	sort.SliceStable(rows[:n], func(i, j int) bool { return briefingCompare(rows[i].Total, rows[j].Total) < 0 })
 	if dword_5d4594_832476 == 0 {
-		w := (*gui.Window)(unsafe.Pointer(uintptr(nox_wnd_briefing_831232))).ChildByID(1010)
+		w := (*gui.Window)(memmap.WordPtr(nox_wnd_briefing_831232)).ChildByID(1010)
 		r := GetClient().R2()
 		font := r.GetFonts().AsFont(w.DrawData().FontPtr)
 		width := 0

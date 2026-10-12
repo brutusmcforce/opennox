@@ -393,5 +393,5 @@ func sustainedPlasmaCancel(p unsafe.Pointer) uint32 {
 		return 0
 	}
 	*spellLifeWord(item.UseData.Ptr, 96) &= ^uint32(4)
-	return uint32(uintptr(item.UseData.Ptr))
+	return memmap.PtrWord(item.UseData.Ptr)
 }

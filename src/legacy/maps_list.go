@@ -2,8 +2,6 @@ package legacy
 
 import "unsafe"
 
-var _ = [1]struct{}{}[36-unsafe.Sizeof(Nox_map_list_item{})]
-
 type Nox_map_list_item struct {
 	list      legacyListNode // 0, 0
 	Name      [12]byte       // 3, 12

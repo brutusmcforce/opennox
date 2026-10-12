@@ -46,17 +46,17 @@ func runtimeMeterWave() {
 	}
 }
 func runtimePauseActor() *server.Object {
-	return (*server.Object)(unsafe.Pointer(uintptr(dword_5d4594_2523780)))
+	return (*server.Object)(memmap.WordPtr(dword_5d4594_2523780))
 }
 func runtimePauseEffect() *server.Object {
-	return (*server.Object)(unsafe.Pointer(uintptr(dword_5d4594_2523776)))
+	return (*server.Object)(memmap.WordPtr(dword_5d4594_2523776))
 }
 func runtimePauseStart(actor *server.Object, kind int32) {
 	if dword_5d4594_2523804 == 1 || noxflags.HasGame(noxflags.GamePause) {
 		return
 	}
 	if actor != nil {
-		dword_5d4594_2523780 = uint32(uintptr(actor.CObj()))
+		dword_5d4594_2523780 = memmap.PtrWord(actor.CObj())
 	} else {
 		actor = runtimePauseActor()
 	}
@@ -68,7 +68,7 @@ func runtimePauseStart(actor *server.Object, kind int32) {
 		}
 		effect = GetServer().S().NewObjectByTypeID(name)
 		actor = runtimePauseActor()
-		dword_5d4594_2523776 = uint32(uintptr(effect.CObj()))
+		dword_5d4594_2523776 = memmap.PtrWord(effect.CObj())
 	}
 	if effect != nil {
 		if actor != nil {
@@ -84,7 +84,7 @@ func runtimePauseStart(actor *server.Object, kind int32) {
 		actor = runtimePauseActor()
 	}
 	if kind == 0 && actor != nil {
-		inventorySound(902, actor, 2, int(*(*uint32)(unsafe.Add(actor.CObj(), 36))))
+		inventorySound(902, actor, 2, int(*(*uint32)(unsafe.Add(actor.CObj(), int(layoutServerObject.Off(36)) /* NetCode */))))
 		text := GetServer().S().Strings().GetStringInFile(strman.ID("expLevel.c:LevelUP"), `C:\NoxPost\src\common\GameMech\PauseFX.c`)
 		Nox_xxx_netSendLineMessage_4D9EB0(runtimePauseActor(), text)
 		actor = runtimePauseActor()
@@ -154,7 +154,7 @@ func runtimeHostOwnership() {
 			}
 			child = next
 		}
-		*(*uint32)(unsafe.Add(marker.CObj(), 44)) = 0
+		*(*uint32)(unsafe.Add(marker.CObj(), int(layoutServerObject.Off(44)) /* ScriptIDVal */)) = 0
 		GetServer().DelayedDelete(marker)
 		return
 	}

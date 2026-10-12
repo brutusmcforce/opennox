@@ -255,7 +255,7 @@ func objectiveFlagBallScore(flag, target *server.Object) int16 {
 	if team == nil {
 		team = core.Teams.First()
 	}
-	out = int16(uintptr(team.C()))
+	out = int16(memmap.PtrWord(team.C()))
 	owner := *temporaryRefWord(ud, 0)
 	if owner == nil {
 		return out

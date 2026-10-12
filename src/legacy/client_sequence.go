@@ -8,7 +8,7 @@ import (
 )
 
 func clientSequenceHead() *legacyListNode {
-	return (*legacyListNode)(memmap.PtrOff(0x5D4594, 1197340))
+	return &clientSequenceList
 }
 func clientSequenceOld(current, sequence uint16) bool {
 	if current < 10000 && sequence >= 65535-(10000-current) {
@@ -42,19 +42,19 @@ func clientSequenceEnqueue(data []byte) {
 	*(*uint64)(unsafe.Add(ptr, 16)) = uint64(uint32(PlatformTicks()))
 	copy(unsafe.Slice((*byte)(unsafe.Add(ptr, 32)), size), data[4:4+size])
 	if memmap.Uint16(0x5D4594, 1197360) == seq {
-		dword_5d4594_1197352 = uint32(uintptr(ptr))
+		dword_5d4594_1197352 = memmap.PtrWord(ptr)
 	}
 	listAscending(clientSequenceHead(), node)
 }
 func clientSequencePoll() {
-	ready := (*legacyListNode)(unsafe.Pointer(uintptr(dword_5d4594_1197352)))
+	ready := (*legacyListNode)(memmap.WordPtr(dword_5d4594_1197352))
 	if ready == nil {
-		pending := (*legacyListNode)(unsafe.Pointer(uintptr(dword_5d4594_1197356)))
+		pending := (*legacyListNode)(memmap.WordPtr(dword_5d4594_1197356))
 		if pending != nil && uint64(uint32(PlatformTicks()))-*(*uint64)(unsafe.Add(unsafe.Pointer(pending), 16)) > 30000 {
 			*memmap.PtrUint16(0x5D4594, 1197360) = uint16(pending.tag)
 			ready = pending
-			dword_5d4594_1197352 = uint32(uintptr(unsafe.Pointer(pending)))
-			dword_5d4594_1197356 = uint32(uintptr(unsafe.Pointer(listNext(pending))))
+			dword_5d4594_1197352 = memmap.PtrWord(unsafe.Pointer(pending))
+			dword_5d4594_1197356 = memmap.PtrWord(unsafe.Pointer(listNext(pending)))
 		}
 	}
 	p := ready
@@ -75,7 +75,7 @@ func clientSequencePoll() {
 	}
 	// Original polling drops the pending cursor when a gap is polled before its
 	// timeout. Preserve this observable behavior separately from queue membership.
-	dword_5d4594_1197356 = uint32(uintptr(unsafe.Pointer(p)))
+	dword_5d4594_1197356 = memmap.PtrWord(unsafe.Pointer(p))
 	dword_5d4594_1197352 = 0
 }
 func clientSequenceInit() {

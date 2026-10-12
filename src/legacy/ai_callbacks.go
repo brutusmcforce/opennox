@@ -19,12 +19,12 @@ func monsterLoadCallback(def unsafe.Pointer, name string, table, field uintptr) 
 		return true
 	}
 	for off := table; ; off += 8 {
-		p := *memmap.PtrPtr(0x587000, off)
+		p := memmap.LoadPtr(0x587000, off)
 		if p == nil {
 			return false
 		}
 		if alloc.GoString((*byte)(p)) == name {
-			*(*unsafe.Pointer)(unsafe.Add(def, field)) = *memmap.PtrPtr(0x587000, off+4)
+			*(*unsafe.Pointer)(unsafe.Add(def, field)) = memmap.LoadPtr(0x587000, off+4)
 			return true
 		}
 	}
@@ -258,7 +258,7 @@ func monsterDeathDebris(u *server.Object) {
 	core.Audio.EventObj(494, u, 0, 0)
 	monsterPointFX(u, 138)
 	for off := uintptr(287976); ; off += 4 {
-		name := *memmap.PtrPtr(0x587000, off)
+		name := memmap.LoadPtr(0x587000, off)
 		if name == nil {
 			break
 		}
@@ -281,7 +281,7 @@ func monsterDeathChunks(u *server.Object) {
 	}
 	index := uint32(dword_5d4594_2491580)
 	for i := 0; i < n; i++ {
-		name := *memmap.PtrPtr(0x587000, 288240+4*uintptr(index))
+		name := memmap.LoadPtr(0x587000, 288240+4*uintptr(index))
 		t := core.NewObjectByTypeID(alloc.GoString((*byte)(name)))
 		if t == nil {
 			break
@@ -331,7 +331,7 @@ func monsterDropLoot(u *server.Object, name string, mods [4]string, ammo int) {
 		for i, name := range mods {
 			data.Modifiers[i] = core.Modif.Nox_xxx_modifGetDescById413330(core.Modif.Nox_xxx_modifGetIdByName413290(name))
 		}
-		Nox_xxx_modifSetItemAttrs_4E4990(t, unsafe.Pointer(data))
+		Nox_xxx_modifSetItemAttrs_4E4990(t, data)
 	}
 	if ammo != 0 && t.Class()&0x1000000 != 0 && t.SubClass()&0x82 != 0 {
 		*(*byte)(unsafe.Add(t.UseData.Ptr, 1)) = byte(ammo)
@@ -366,7 +366,7 @@ func monsterDeathSkull(u *server.Object) {
 	}
 	index := uint32(dword_5d4594_2491588)
 	for i := 0; i < n; i++ {
-		name := *memmap.PtrPtr(0x587000, 288868+4*uintptr(index))
+		name := memmap.LoadPtr(0x587000, 288868+4*uintptr(index))
 		t := core.NewObjectByTypeID(alloc.GoString((*byte)(name)))
 		if t == nil {
 			break

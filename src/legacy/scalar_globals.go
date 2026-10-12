@@ -1,5 +1,13 @@
 package legacy
 
+import (
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/internal/protection"
+	"github.com/brutusmcforce/opennox/server"
+)
+
 var dword_587000_122856 uint32 = 0x1
 var dword_587000_122956 uint32 = 0x1
 var dword_587000_136184 uint32 = 0xffffff1f
@@ -31,7 +39,7 @@ var dword_5d4594_1046948 uint32 = 0
 var dword_5d4594_1046952 uint32 = 0
 var dword_5d4594_1046956 uint32 = 0
 var dword_5d4594_1047512 uint32 = 0
-var dword_5d4594_1047516 uint32 = 0
+var bookPlayer unsafe.Pointer // the local player while the book is open (was 0x5D4594+1047516)
 var dword_5d4594_1047520 uint32 = 0
 var dword_5d4594_1047524 uint32 = 0
 var dword_5d4594_1047528 uint32 = 0
@@ -89,8 +97,8 @@ var dword_5d4594_1063120 uint32 = 0
 var dword_5d4594_1063636 uint32 = 0
 var dword_5d4594_1090040 uint32 = 0
 var dword_5d4594_1090044 uint32 = 0
-var dword_5d4594_1090108 uint32 = 0
-var dword_5d4594_1090112 uint32 = 0
+var dword_5d4594_1090108 *gui.Window
+var dword_5d4594_1090112 *gui.Window
 var dword_5d4594_1090120 uint32 = 0
 var dword_5d4594_1090276 uint32 = 0
 var dword_5d4594_1090280 uint32 = 0
@@ -181,15 +189,15 @@ var dword_5d4594_1321044 uint32 = 0
 var dword_5d4594_1321196 uint32 = 0
 var dword_5d4594_1321204 uint32 = 0
 var dword_5d4594_1321208 uint32 = 0
-var dword_5d4594_1321224 uint32 = 0
-var dword_5d4594_1321228 uint32 = 0
-var dword_5d4594_1321232 uint32 = 0
-var dword_5d4594_1321252 uint32 = 0
+var dword_5d4594_1321224 *gui.Window
+var dword_5d4594_1321228 *gui.Window
+var dword_5d4594_1321232 *gui.Window
+var dword_5d4594_1321252 *gui.Window
 var dword_5d4594_1321520 uint32 = 0
 var dword_5d4594_1321800 uint32 = 0
-var dword_5d4594_1522604 uint32 = 0
-var dword_5d4594_1522612 uint32 = 0
-var dword_5d4594_1522632 uint32 = 0
+var dword_5d4594_1522604 *gui.Window
+var dword_5d4594_1522612 *gui.Window
+var dword_5d4594_1522632 *gui.Window
 var dword_5d4594_1522956 uint32 = 0
 var dword_5d4594_1522968 uint32 = 0
 var dword_5d4594_1548476 uint32 = 0
@@ -199,8 +207,8 @@ var dword_5d4594_1556128 uint32 = 0
 var dword_5d4594_1556136 uint32 = 0
 var dword_5d4594_1556144 uint32 = 0
 var dword_5d4594_1563320 uint32 = 0
-var dword_5d4594_1565512 uint32 = 0
-var dword_5d4594_1565516 uint32 = 0
+var dword_5d4594_1565512 *reliableMessage
+var dword_5d4594_1565516 *reliableMessage
 var dword_5d4594_1565520 uint32 = 0
 var dword_5d4594_1565616 uint32 = 0
 var dword_5d4594_1565628 uint32 = 0
@@ -240,9 +248,9 @@ var dword_5d4594_2491676 uint32 = 0
 var dword_5d4594_2491704 uint32 = 0
 var dword_5d4594_2491716 uint32 = 0
 var dword_5d4594_2516328 uint32 = 0
-var dword_5d4594_2516344 uint32 = 0
+var dword_5d4594_2516344 *protection.Record // protection list head
 var dword_5d4594_2516348 uint32 = 0
-var dword_5d4594_2516352 uint32 = 0
+var dword_5d4594_2516352 *protection.Record // protection list tail
 var dword_5d4594_2516356 uint32 = 0
 var dword_5d4594_251744 uint32 = 0
 var dword_5d4594_2523776 uint32 = 0
@@ -304,7 +312,7 @@ var dword_5d4594_832528 uint32 = 0
 var dword_5d4594_832532 uint32 = 0
 var dword_5d4594_832536 uint32 = 0
 var dword_8531A0_2572 uint32 = 0
-var dword_8531A0_2576 uint32 = 0
+var dword_8531A0_2576 *server.Player // the local player
 var gameex_flags uint32 = 0x1E
 var nox_cheat_allowall int32 = 0
 var nox_client_gui_flag_1556112 uint32 = 0

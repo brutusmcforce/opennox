@@ -22,7 +22,7 @@ type combatHealth struct {
 var combatHealthPool unsafe.Pointer
 var combatHealthHead *combatHealth
 var combatHealthFont unsafe.Pointer
-var _ = [1]struct{}{}[20-unsafe.Sizeof(combatHealth{})]
+
 
 func combatHealthClass() alloc.ClassT[combatHealth] {
 	return alloc.AsClassT[combatHealth](combatHealthPool)

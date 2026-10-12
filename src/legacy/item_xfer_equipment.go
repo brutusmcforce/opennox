@@ -10,15 +10,15 @@ import (
 
 func itemXferModifiers(r objectXferStream, u *server.Object) {
 	if r.read() {
-		attrs := [5]uint32{0, 0, 0, 0, 0xffffffff}
+		attrs := server.ModifierInitData{Field16: 0xffffffff}
 		for i := 0; i < 4; i++ {
 			n := int(r.byte(0))
 			var name [256]byte
 			r.raw(unsafe.Pointer(&name[0]), n)
 			mods := GetServer().S().Modif
-			attrs[i] = uint32(uintptr(unsafe.Pointer(mods.Nox_xxx_modifGetDescById413330(mods.Nox_xxx_modifGetIdByName413290(alloc.GoString(&name[0]))))))
+			attrs.Modifiers[i] = mods.Nox_xxx_modifGetDescById413330(mods.Nox_xxx_modifGetIdByName413290(alloc.GoString(&name[0])))
 		}
-		stateAttributes(u, unsafe.Pointer(&attrs[0]))
+		stateAttributes(u, &attrs)
 	} else {
 		for _, m := range (*[4]*server.ModifierEff)(u.InitData) {
 			if m == nil {
@@ -62,8 +62,8 @@ func itemXferWeapon(u *server.Object) int {
 		return 0
 	}
 	if v < 11 && r.read() {
-		attrs := [5]uint32{0, 0, 0, 0, 0xffffffff}
-		stateAttributes(u, unsafe.Pointer(&attrs[0]))
+		attrs := server.ModifierInitData{Field16: 0xffffffff}
+		stateAttributes(u, &attrs)
 		return 1
 	}
 	itemXferModifiers(r, u)
@@ -101,8 +101,8 @@ func itemXferArmor(u *server.Object) int {
 		return 0
 	}
 	if v < 11 && r.read() {
-		var attrs [5]uint32
-		stateAttributes(u, unsafe.Pointer(&attrs[0]))
+		var attrs server.ModifierInitData
+		stateAttributes(u, &attrs)
 		return 1
 	}
 	itemXferModifiers(r, u)
@@ -143,7 +143,7 @@ func itemXferTeam(u *server.Object) int {
 	}
 	itemXferModifiers(r, u)
 	if r.read() && uint32(u.Class())&0x10000000 != 0 {
-		*(*[2]uint32)(u.UpdateData) = *(*[2]uint32)(unsafe.Add(unsafe.Pointer(u), 56))
+		*(*[2]uint32)(u.UpdateData) = *(*[2]uint32)(unsafe.Add(unsafe.Pointer(u), int(layoutServerObject.Off(56)) /* PosVec.X */))
 	}
 	return objectXferFinish(r, u, v, saved)
 }

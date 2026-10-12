@@ -3,7 +3,6 @@ package legacy
 import (
 	"encoding/binary"
 	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
@@ -15,13 +14,15 @@ import (
 func browserLabel(key string) {
 	// Static labels retain their text pointer; the typed event interns this fixed
 	// localized string for the widget's lifetime.
-	browserWindow(uint32(uintptr(browserUI.label))).Func94(&gui.StaticTextSetText{Str: browserString(key)})
+	browserUI.label.Func94(&gui.StaticTextSetText{Str: browserString(key)})
 }
 func browserShowRegion() {
-	w := browserWindow(uint32(uintptr(browserUI.mapWindow)))
+	w := browserUI.mapWindow
 	w.SetHidden(false)
-	browserWindow(uint32(browserUI.overview)).SetHidden(true)
-	w.DrawData().BgImageHnd = noxrender.ImageHandle(unsafe.Pointer(uintptr(memmap.Uint32(0x5D4594, 814900+4*uintptr(browserUI.region)))))
+	browserUI.overview.SetHidden(true)
+	if r := browserUI.region; r >= 0 && r < int32(len(browserRegionMaps)) {
+		w.DrawData().BgImageHnd = browserRegionMaps[r]
+	}
 	key := "JoinServer"
 	if browserUI.creating == 1 {
 		key = "CreateMsg"
@@ -37,7 +38,7 @@ func browserEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 		browserColumnsSend(code, a, 0)
 		return nil
 	case 16400:
-		if browserWindow(uint32(a)).ID() == 10061 {
+		if windowArg(a).ID() == 10061 {
 			p := GetClient().GetMousePos()
 			browserUI.selected = browserPopupAt(int32(b))
 			point := [2]uint32{uint32(p.X), uint32(p.Y)}
@@ -47,7 +48,7 @@ func browserEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 	case 23:
 		return gui.RawEventResp(1)
 	case 16384:
-		id := browserWindow(uint32(a)).ID()
+		id := windowArg(a).ID()
 		if id >= 10043 && id <= 10044 {
 			browserColumnsSend(code, a, 0)
 		}
@@ -57,7 +58,7 @@ func browserEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 	if code != 16391 {
 		return nil
 	}
-	id := browserWindow(uint32(a)).ID()
+	id := windowArg(a).ID()
 	if id != 10043 && id != 10044 && id != 10035 && id != 10036 {
 		Nox_xxx_clientPlaySoundSpecial_452D80(766, 100)
 	}
@@ -105,10 +106,10 @@ func browserEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 		Nox_client_refreshServerList_4378B0()
 	case 10005:
 		browserUI.creating = 0
-		browserWindow(uint32(browserUI.gameList)).SetHidden(true)
-		browserWindow(uint32(uintptr(browserUI.mapWindow))).SetHidden(true)
-		browserWindow(uint32(browserUI.overview)).SetHidden(true)
-		browserWindow(uint32(browserUI.filter)).SetHidden(false)
+		browserUI.gameList.SetHidden(true)
+		browserUI.mapWindow.SetHidden(true)
+		browserUI.overview.SetHidden(true)
+		browserUI.filter.SetHidden(false)
 		serverPanelsEnable(root, 10006, 10007, 0)
 		serverPanelsHide(root, 10047, 10051, true)
 		browserLabel("FilterMsg")
@@ -117,7 +118,7 @@ func browserEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 		noxflags.UnsetGame(0x10000)
 		GetClient().ChangeMousePos(image.Pt(408, 239), true)
 		browserMarkersEnable(0)
-		if !browserHidden(browserWindow(uint32(browserUI.filter))) {
+		if !browserHidden(browserUI.filter) {
 			sessionFilterSave()
 		}
 		questRuntimeSetWord(1556160, 1)
@@ -133,7 +134,7 @@ func browserEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 		nox_xxx_cliShowHideTubes_470AA0(0)
 		GetClient().ChangeMousePos(image.Pt(408, 239), true)
 		browserMarkersEnable(0)
-		if !browserHidden(browserWindow(uint32(browserUI.filter))) {
+		if !browserHidden(browserUI.filter) {
 			sessionFilterSave()
 		}
 		if noxflags.HasGame(0x2000000) || Sub_4D6F30() != 0 {
@@ -200,8 +201,4 @@ func browserEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 		browserPopupClose()
 	}
 	return nil
-}
-
-func nox_xxx_windowMultiplayerSub_439E70(w int32, code uint32, a *int32, b int32) int32 {
-	return int32(gui.EventRespInt(browserEvent(browserWindow(uint32(w)), &gui.RawEvent{Event: int(code), Arg1: uintptr(unsafe.Pointer(a)), Arg2: uintptr(uint32(b))})))
 }

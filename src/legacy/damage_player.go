@@ -34,7 +34,7 @@ func damagePlayer(u, source, weapon *server.Object, amount, kind int32) int32 {
 		weapons = *equipmentWord(data, 4)
 		armor = *equipmentWord(data, 0)
 		coeff = *(*float32)(unsafe.Add(ud, 228))
-		if *(*byte)(unsafe.Add(data, 3680))&1 != 0 {
+		if *(*byte)(unsafe.Add(data, int(layoutServerPlayer.Off(3680)) /* Field3680 */))&1 != 0 {
 			return 0
 		}
 	} else if u.ObjClass&2 != 0 && u.ObjSubClass&0x10 != 0 {

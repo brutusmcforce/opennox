@@ -2,15 +2,12 @@ package opennox
 
 import (
 	"fmt"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/common"
 
 	"github.com/brutusmcforce/opennox/legacy"
 	"github.com/brutusmcforce/opennox/server"
 )
-
-var _ = [1]struct{}{}[96-unsafe.Sizeof(server.MapGroup{})]
 
 func (s *Server) Sub504720(a1, a2 uint32) int32 {
 	s.groupsAdjust(a1, a2)

@@ -45,7 +45,7 @@ func clientWinnerOverlay() {
 	}
 	cache := memmap.PtrUint32(0x5D4594, 811888+4*uintptr(mode))
 	if *cache == 0 {
-		name := alloc.GoString((*byte)(unsafe.Pointer(uintptr(memmap.Uint32(0x587000, 85712+4*uintptr(mode))))))
+		name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 85712+4*uintptr(mode))))
 		*cache = uiMeterLoadImage(name)
 	}
 	uiMeterImage(*cache, image.Pt(x, y))
@@ -80,7 +80,7 @@ func clientDebugOverlay() {
 	origin.Y += height
 	r.DrawString(nil, store(fmt.Sprintf("X:%d\tY:%d", dr.PosVec.X, dr.PosVec.Y)), origin)
 	class := p.Info().PlayerClass()
-	name := alloc.GoString((*byte)(unsafe.Pointer(uintptr(memmap.Uint32(0x587000, 29456+4*uintptr(class))))))
+	name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 29456+4*uintptr(class))))
 	label := clientOverlayString(strman.ID(name))
 	text := fmt.Sprintf(strings.ReplaceAll(clientOverlayString("PlayerInfo"), "%S", "%s"), int8(p.Level), label)
 	origin.Y += height

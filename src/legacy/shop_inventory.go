@@ -33,7 +33,7 @@ func shopRepairQuote(u *server.Object, s *shopSession, code uint32) uint32 {
 		return shopSend(u, b[:], 0)
 	}
 	GetServer().S().Audio.EventObj(925, u, 0, 0)
-	return uint32(uintptr(item.CObj()))
+	return memmap.PtrWord(item.CObj())
 }
 func shopRepair(u *server.Object, s *shopSession, code uint32) uint32 {
 	gold := shopGetGold(u)
@@ -105,7 +105,7 @@ func shopLoad(s *shopSession) {
 			}
 		}
 		for off := uintptr(234816); ; off += 4 {
-			name := *memmap.PtrPtr(0x587000, off)
+			name := memmap.LoadPtr(0x587000, off)
 			if name == nil {
 				break
 			}
@@ -148,11 +148,8 @@ func shopLoad(s *shopSession) {
 			if uint32(u.ObjClass)&0x13001000 != 0 {
 				// C copied an uninitialized fifth word. Define only that former
 				// indeterminate tail as zero; keep the four actual modifiers.
-				var mods [5]uint32
-				for k, p := range e.Modifiers {
-					mods[k] = uint32(uintptr(unsafe.Pointer(p)))
-				}
-				stateAttributes(u, unsafe.Pointer(&mods[0]))
+				mods := server.ModifierInitData{Modifiers: e.Modifiers}
+				stateAttributes(u, &mods)
 			}
 			if u.Xfer == xferIdentityKey(xferIDSpellReward) {
 				*(*byte)(u.UseData.Ptr) = byte(e.Reward)

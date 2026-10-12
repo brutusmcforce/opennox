@@ -20,7 +20,7 @@ func questRuntimeReset(u *server.Object) uint32 {
 	}
 	*equipmentWord(pl, 4688) = memmap.Uint32(0x587000, 202028)
 	*equipmentWord(pl, 4692) = 63
-	return uint32(uintptr(pl))
+	return memmap.PtrWord(pl)
 }
 func questRuntimeResetAll() uint32 {
 	players := &GetServer().S().Players
@@ -38,7 +38,7 @@ func questRuntimeStageComplete(u *server.Object) uint32 {
 		*equipmentWord(pl, 4652)++
 		*equipmentWord(pl, 4692) |= 1
 	}
-	return uint32(uintptr(pl))
+	return memmap.PtrWord(pl)
 }
 func questRuntimeIncrement(u *server.Object, off int, mask uint32) uint32 {
 	if u == nil || u.ObjFlags&0x20 != 0 {
@@ -50,7 +50,7 @@ func questRuntimeIncrement(u *server.Object, off int, mask uint32) uint32 {
 		*equipmentWord(pl, 4676)++
 	}
 	*equipmentWord(pl, 4692) |= mask
-	return uint32(uintptr(pl))
+	return memmap.PtrWord(pl)
 }
 func questRuntimeCount() int {
 	count := 0
@@ -80,12 +80,12 @@ func questRuntimeScore(a, b, c, stage uint32) uint32 {
 func questRuntimePlayerScore(to int) uint32 {
 	count := questRuntimeCount()
 	pl := GetServer().S().Players.ByInd(ntype.PlayerInd(to))
-	if pl == nil || *equipmentWord(pl.C(), 4792) == 0 {
+	if pl == nil || *equipmentWord(pl.C(), int(layoutServerPlayer.Off(4792)) /* Field4792 */) == 0 {
 		return 0
 	}
 	p := pl.C()
 	score := func() uint32 {
-		return questRuntimeScore(*equipmentWord(p, 4668), *equipmentWord(p, 4672), *equipmentWord(p, 4664), *equipmentWord(p, 4688))
+		return questRuntimeScore(*equipmentWord(p, int(layoutServerPlayer.Off(4668)) /* field4668 */), *equipmentWord(p, int(layoutServerPlayer.Off(4672)) /* field4672 */), *equipmentWord(p, int(layoutServerPlayer.Off(4664)) /* field4664 */), *equipmentWord(p, int(layoutServerPlayer.Off(4688)) /* field4688 */))
 	}
 	var result uint32
 	if count == 1 {
@@ -136,7 +136,7 @@ func questRuntimeScoreboard(to int) int {
 			}
 			binary.LittleEndian.PutUint32(data[at+10:], questRuntimePlayerScore(int(*controlByte(p, 2064))))
 			count++
-			binary.LittleEndian.PutUint16(data[4:], uint16(*equipmentWord(pl.C(), 4688)))
+			binary.LittleEndian.PutUint16(data[4:], uint16(*equipmentWord(pl.C(), int(layoutServerPlayer.Off(4688)) /* field4688 */)))
 		}
 	}
 	return gameplayReportSend(to, data, true, 1)
@@ -167,7 +167,7 @@ func questRuntimeDepartureTick() int {
 	for i := 0; i < 32; i++ {
 		p := memmap.PtrUint32(0x5D4594, 1556172+4*uintptr(i))
 		pl := core.Players.ByInd(ntype.PlayerInd(i))
-		if pl != nil && pl.PlayerUnit != nil && pl.Active != 0 && *equipmentWord(pl.C(), 4792) == 1 {
+		if pl != nil && pl.PlayerUnit != nil && pl.Active != 0 && *equipmentWord(pl.C(), int(layoutServerPlayer.Off(4792)) /* Field4792 */) == 1 {
 			*p = 0
 		} else if *p != 0 && core.Frame()-*p > 30*uint32(core.TickRate()) {
 			for u := core.Players.FirstUnit(); u != nil; u = core.Players.NextUnit(u) {

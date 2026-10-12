@@ -1,8 +1,6 @@
 package opennox
 
 import (
-	"unsafe"
-
 	"github.com/brutusmcforce/opennox/libs/types"
 
 	"github.com/brutusmcforce/opennox/server"
@@ -16,8 +14,6 @@ func (s *Server) FreeObjectTypes() {
 	s.Server.FreeObjectTypes()
 	nox_xxx_free_42BF80()
 }
-
-var _ = [1]struct{}{}[20-unsafe.Sizeof(server.HealthData{})]
 
 func (s *Server) createObject(t *server.ObjectType, p types.Pointf) *server.Object {
 	obj := s.Objs.NewObject(t)

@@ -170,7 +170,7 @@ func nox_thing_read_IMAG_one_42F660(f *binfile.MemFile) error {
 				ref.Field_25_0 = -1
 			}
 		}
-		ref.Field_24 = unsafe.Pointer(uintptr(ind))
+		ref.Field_24 = unsafe.Pointer(uintptr(ind)) // an image index, not a pointer
 		return nil
 	case 2:
 		sz := f.ReadU8()

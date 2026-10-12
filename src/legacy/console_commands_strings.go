@@ -142,5 +142,5 @@ func consoleCommandCentered(id string, args ...any) {
 	Nox_xxx_printCentered_445490(consoleCommandFormat(consoleCommandText(id), args...))
 }
 func consoleCommandToken(i uintptr) string {
-	return alloc.GoString16(*(**uint16)(memmap.PtrOff(0x587000, 94468+4*i)))
+	return alloc.GoString16((*uint16)(memmap.LoadPtr(0x587000, 94468+4*i)))
 }

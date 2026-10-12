@@ -161,7 +161,7 @@ func teamRuntimeCrown() int {
 		u = next
 	}
 	for t := s.Teams.First(); t != nil; t = s.Teams.Next(t) {
-		*teamRuntimeWord(t, 76) = 0
+		*teamRuntimeWord(t, layoutServerTeam.Off(76) /* field_76 */) = 0
 	}
 	n := 0
 	for u := s.Objs.List; u != nil; {
@@ -176,7 +176,7 @@ func teamRuntimeCrown() int {
 			} else if !bound {
 				playerStateMark(u, 1)
 			} else if t := s.Teams.ByID(u.TeamVal.ID); t != nil {
-				*teamRuntimeWord(t, 76) = uint32(uintptr(u.CObj()))
+				*(*unsafe.Pointer)(unsafe.Pointer(teamRuntimeWord(t, layoutServerTeam.Off(76) /* field_76 */))) = u.CObj()
 				playerStateMark(u, 1)
 			}
 		}

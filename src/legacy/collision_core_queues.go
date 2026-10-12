@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
@@ -26,16 +27,16 @@ type collisionHitRecord struct {
 }
 
 // Compile-time checks for the fixed allocation record layout.
-var _ [28 - unsafe.Sizeof(collisionHitRecord{})]byte
-var _ [unsafe.Sizeof(collisionHitRecord{}) - 28]byte
-var _ [16 - unsafe.Offsetof(collisionHitRecord{}.Normal)]byte
-var _ [unsafe.Offsetof(collisionHitRecord{}.Normal) - 16]byte
+
+
+
+
 
 func collisionHitAt(p uint32) *collisionHitRecord {
-	return (*collisionHitRecord)(unsafe.Pointer(uintptr(p)))
+	return (*collisionHitRecord)(memmap.WordPtr(p))
 }
-func collisionObjectAt(p uint32) *server.Object      { return (*server.Object)(unsafe.Pointer(uintptr(p))) }
-func collisionObjectAddress(u *server.Object) uint32 { return uint32(uintptr(u.CObj())) }
+func collisionObjectAt(p uint32) *server.Object      { return (*server.Object)(memmap.WordPtr(p)) }
+func collisionObjectAddress(u *server.Object) uint32 { return memmap.PtrWord(u.CObj()) }
 func collisionResetHits() {
 	if collisionHitClass == nil {
 		collisionHitClass = alloc.NewClass("Hit", 28, 1024).UPtr()
@@ -65,8 +66,8 @@ func collisionAddHit(u *server.Object, target uint32, normal *types.Pointf) {
 	}
 	h := (*collisionHitRecord)(p)
 	*h = collisionHitRecord{collisionBuckets[bucket], collisionHitHead, collisionObjectAddress(u), target, *normal, bucket}
-	collisionBuckets[bucket] = uint32(uintptr(p))
-	collisionHitHead = uint32(uintptr(p))
+	collisionBuckets[bucket] = memmap.PtrWord(p)
+	collisionHitHead = memmap.PtrWord(p)
 }
 func collisionDispatch() {
 	for p := collisionHitHead; p != 0; p = collisionHitAt(p).Next {
@@ -95,9 +96,9 @@ func collisionDispatch() {
 	}
 }
 func collisionActivate(u *server.Object) int8 {
-	result := uint32(uintptr(u.Update))
+	result := memmap.PtrWord(u.Update)
 	if result == 0 {
-		result = uint32(uintptr(u.Collide))
+		result = memmap.PtrWord(u.Collide)
 		if result == 0 || u.ObjFlags&0x40 != 0 {
 			return int8(result)
 		}

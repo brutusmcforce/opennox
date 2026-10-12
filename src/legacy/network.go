@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"net"
 	"net/netip"
 	"unsafe"
@@ -65,7 +66,7 @@ func Sub_43AF90(v int) {
 }
 
 func Nox_xxx_netSendPacket_4E5030(a1 int, buf []byte, a4, a5, a6 int) int {
-	return reliableEnqueue(a1, buf, (*server.Object)(unsafe.Pointer(uintptr(uint32(a4)))), a5, byte(a6))
+	return reliableEnqueue(a1, buf, (*server.Object)(memmap.WordPtr(uint32(a4))), a5, byte(a6))
 }
 
 func Nox_client_getServerAddr_43B300() netip.Addr {
@@ -128,7 +129,7 @@ func convSendToServerErr(n int, err error) int {
 	return n
 }
 func Nox_xxx_netClientSend2_4E53C0(a1 int, a2 unsafe.Pointer, a3 int, a4 int, a5 int) {
-	reliableClientSend(a1, unsafe.Slice((*byte)(a2), a3), (*server.Object)(unsafe.Pointer(uintptr(uint32(a4)))), a5)
+	reliableClientSend(a1, unsafe.Slice((*byte)(a2), a3), (*server.Object)(memmap.WordPtr(uint32(a4))), a5)
 }
 func Sub_57B920(a1 unsafe.Pointer) {
 	resetNetworkAliases((*[255]server.PlayerNetData)(a1))

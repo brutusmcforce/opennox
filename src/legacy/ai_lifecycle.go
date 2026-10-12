@@ -177,20 +177,21 @@ func lifecycleRaiseZombie(u *server.Object) uint32 {
 	return uint32(u.ObjFlags)
 }
 
-func lifecycleCandidate(off uintptr) *server.Object {
-	return (*server.Object)(unsafe.Pointer(uintptr(*memmap.PtrUint32(0x5D4594, off))))
-}
-func lifecycleSetCandidate(off uintptr, u *server.Object) {
-	*memmap.PtrUint32(0x5D4594, off) = uint32(uintptr(u.CObj()))
-}
+// lifecycleFood holds the best food candidates found by lifecycleFoodSearch (usable and other).
+// Was 0x5D4594+2489440 and +2489452.
+var lifecycleFood [2]*server.Object
+
+func lifecycleCandidate(slot int) *server.Object         { return lifecycleFood[slot] }
+func lifecycleSetCandidate(slot int, u *server.Object) { lifecycleFood[slot] = u }
 func lifecycleFoodSearch(u *server.Object, radius float32, usable bool) *server.Object {
-	var candidateOff, minOff uintptr
+	var candidateOff int
+	var minOff uintptr
 	if usable {
-		candidateOff, minOff = 2489440, 2489448
+		candidateOff, minOff = 0, 2489448
 	} else {
-		candidateOff, minOff = 2489452, 2489444
+		candidateOff, minOff = 1, 2489444
 	}
-	*memmap.PtrUint32(0x5D4594, candidateOff) = 0
+	lifecycleFood[candidateOff] = nil
 	*memmap.PtrFloat32(0x5D4594, minOff) = 10000000
 	GetServer().S().Map.EachObjInCircle(u.PosVec, radius, func(t *server.Object) bool {
 		if usable {

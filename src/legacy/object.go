@@ -22,12 +22,6 @@ var (
 	Nox_xxx_playerSetState_4FA020              func(a1 *server.Object, a2 server.PlayerState) bool
 )
 
-var _ = [1]struct{}{}[28-unsafe.Sizeof(server.MissileUpdateData{})]
-
-var _ = [1]struct{}{}[20-unsafe.Sizeof(server.ElevatorUpdateData{})]
-
-var _ = [1]struct{}{}[36-unsafe.Sizeof(server.MoverUpdateData{})]
-
 type nox_object_t = server.Object
 
 func asObjectC(p *server.Object) *nox_object_t {

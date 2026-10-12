@@ -94,7 +94,7 @@ func serverPanelsSpellSnapshot(p *uint32) uint32 {
 		}
 		word := &out[index/32]
 		*word &^= uint32(1) << uint(index%32)
-		result = uint32(uintptr(unsafe.Pointer(word)))
+		result = memmap.PtrWord(unsafe.Pointer(word))
 	}
 	return result
 }

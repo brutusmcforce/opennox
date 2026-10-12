@@ -18,7 +18,7 @@ import (
 var serverConfigRuleWords [7]uint32
 
 func serverConfigRuleWindow(index int) *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(serverConfigRuleWords[index])))
+	return (*gui.Window)(memmap.WordPtr(serverConfigRuleWords[index]))
 }
 func serverConfigRuleOpen(parent *gui.Window, settings *byte) int {
 	w := Nox_new_window_from_file("rulelist.wnd", serverConfigRuleProc)
@@ -32,8 +32,8 @@ func serverConfigRuleOpen(parent *gui.Window, settings *byte) int {
 	w.ChildByID(10176).SetDraw(serverConfigRuleDraw)
 	w.SetParent(parent)
 	list, slider, up, down := serverConfigRuleWindow(1), w.ChildByID(10179), w.ChildByID(10177), w.ChildByID(10178)
-	en := noxrender.ImageHandle(unsafe.Pointer(uintptr(uiMeterLoadImage("UISlider"))))
-	lit := noxrender.ImageHandle(unsafe.Pointer(uintptr(uiMeterLoadImage("UISliderLit"))))
+	en := noxrender.ImageHandle(memmap.WordPtr(uiMeterLoadImage("UISlider")))
+	lit := noxrender.ImageHandle(memmap.WordPtr(uiMeterLoadImage("UISliderLit")))
 	slider.Field100Ptr.SizeVal = image.Pt(16, 10)
 	gui.ButtonSetImage(slider, nil, nil, en, lit, lit)
 	slider.DrawData().Window = list
@@ -80,7 +80,7 @@ func serverConfigRulePopulate(settings *byte) int {
 func serverConfigRuleDraw(w *gui.Window, d *gui.WindowData) int {
 	pos := uiWindowPosition(w)
 	if w.Flags.Has(gui.StatusImage) {
-		bookDrawImage(uint32(uintptr(d.BgImageHnd)), pos)
+		bookDrawImage(memmap.PtrWord(unsafe.Pointer(d.BgImageHnd)), pos)
 	} else if d.BgColorVal != 0x80000000 {
 		r := GetClient().R2()
 		r.DrawRectFilledOpaque(pos.X, pos.Y, w.SizeVal.X, w.SizeVal.Y, r.Data().Color2())

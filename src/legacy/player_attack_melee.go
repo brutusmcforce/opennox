@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/types"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/server"
@@ -120,7 +121,7 @@ func attackNearest(t, u *server.Object) {
 	old := objectFromInt(int32(dword_5d4594_2488660))
 	if (distance < float64(limit) || old != nil && old.ObjClass&2 == 0 && t.ObjClass&2 != 0) && (old == nil || old.ObjClass&2 == 0) {
 		dword_5d4594_2488652 = uint32(math.Float32bits(float32(distance)))
-		dword_5d4594_2488660 = uint32(uintptr(t.CObj()))
+		dword_5d4594_2488660 = memmap.PtrWord(t.CObj())
 	}
 }
 func attackTrace(u *server.Object, r *attackRecord) int {
@@ -169,5 +170,5 @@ func attackWarcry(t, u *server.Object) int16 {
 	if t.ObjClass&2 != 0 && t.ObjSubClass&0x20000 != 0 && t.ObjFlags&0x8020 == 0 {
 		spellLifeApplyBuff(t, 5, 90, 3)
 	}
-	return int16(uintptr(t.CObj()))
+	return int16(memmap.PtrWord(t.CObj()))
 }

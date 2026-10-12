@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"unicode/utf16"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/gui"
@@ -67,7 +66,7 @@ func briefingDrawStats(data *gui.WindowData) int {
 			continue
 		}
 		count++
-		if uint32(uintptr(unsafe.Pointer(row.Player))) == uint32(dword_8531A0_2576) {
+		if row.Player == dword_8531A0_2576 {
 			local = int(row.Found)
 		} else {
 			others += int(row.Found)
@@ -143,7 +142,7 @@ func briefingDrawInstructions(data *gui.WindowData) int {
 	Sub_446780()
 	r := GetClient().R2()
 	titleFont := r.GetFonts().AsFont(data.FontPtr)
-	bodyFont := r.GetFonts().AsFont(unsafe.Pointer(uintptr(dword_5d4594_832484)))
+	bodyFont := r.GetFonts().AsFont(memmap.WordPtr(dword_5d4594_832484))
 	ox, oy := (int(nox_win_width)-640)/2, (int(nox_win_height)-480)/2
 	orange, white := int(nox_color_orange_2614256), int(nox_color_white_2523948)
 	text := briefingString("GeneralPrint:QuestSplash1")
@@ -156,7 +155,7 @@ func briefingDrawInstructions(data *gui.WindowData) int {
 	r.DrawString(titleFont, text, image.Pt(x, oy+20))
 	sprites := briefingSprites()
 	sprite := func(index, x, y int) {
-		dr := (*client.Drawable)(unsafe.Pointer(uintptr(*sprites[index])))
+		dr := (*client.Drawable)(memmap.WordPtr(*sprites[index]))
 		p := image.Pt(ox+x, oy+y)
 		dr.PosVec = vp.ToWorldPos(p)
 		dr.CallDraw(vp)

@@ -1,7 +1,7 @@
 package legacy
 
 import (
-	"unsafe"
+	"github.com/brutusmcforce/opennox/common/memmap"
 
 	"github.com/brutusmcforce/opennox/client"
 )
@@ -21,7 +21,7 @@ func drawableUnitCode(dr *client.Drawable) uint32 {
 }
 
 func nox_xxx_netGetUnitCodeCli_578B00(a1 int32) uint32 {
-	return uint32(drawableUnitCode((*client.Drawable)(unsafe.Pointer(uintptr(uint32(a1))))))
+	return uint32(drawableUnitCode((*client.Drawable)(memmap.WordPtr(uint32(a1)))))
 }
 
 func nox_xxx_netClearHighBit_578B30(a1 int16) int32 {

@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
@@ -47,7 +48,7 @@ func collisionShaft(e, u *server.Object) {
 	if collisionTypesReady == 0 {
 		collisionInitTypes()
 	}
-	linked := collisionObjectAt(*equipmentWord(ud, 4))
+	linked := *temporaryRefWord(ud, 4) // the elevator partner (see worldShaft)
 	if linked == nil || collisionHeightExcluded(u) {
 		return
 	}
@@ -100,7 +101,7 @@ func collisionCircleWalls(u *server.Object) {
 }
 func collisionDrainAngles() {
 	for p := collisionAngleHead; p != 0; {
-		ud := unsafe.Pointer(uintptr(p))
+		ud := memmap.WordPtr(p)
 		torque := *temporaryFloat(ud, 32)
 		velocity := floatToInt32(float32(float64(torque) + float64(torque) + 0.5))
 		if velocity < 0 {

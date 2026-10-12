@@ -74,7 +74,7 @@ func audioEventReclaim() uintptr {
 	return result
 }
 func audioEventVoiceOwner(v *audioStreamVoice) *audioEvent {
-	return (*audioEvent)(unsafe.Pointer(uintptr(v.Fields152[0])))
+	return (*audioEvent)(memmap.WordPtr(v.Fields152[0]))
 }
 func audioEventDetach(p *audioEvent) uintptr {
 	v := p.Voice
@@ -195,7 +195,7 @@ func audioEventReserve(p *audioEvent) int32 {
 	}
 	v.Timers.Timers[1].SetRaw(uint32(audioEventRandom(m.PitchMin, m.PitchMax) + 100))
 	audioStreamVoiceReserve(v)
-	v.Fields152[0] = uint32(uintptr(unsafe.Pointer(p)))
+	v.Fields152[0] = memmap.PtrWord(unsafe.Pointer(p))
 	audioEventCallbacks(v)
 	p.State = 1
 	v.ExtraTimers = &p.Timers
@@ -234,7 +234,7 @@ func audioEventPlay(id, volume, pan int32, mode int) {
 	if mode == 0 && audioEventPlayObserver != nil {
 		audioEventPlayObserver(int(id), int(volume))
 	}
-	m := (*audioEventMetadata)(audioAssetSlot(id))
+	m := audioAssetSlot(id)
 	if m == nil {
 		return
 	}

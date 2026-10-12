@@ -118,7 +118,7 @@ func spellLifePhoneme(code int32, phon int8) int32 {
 		if p == nil {
 			return 0
 		}
-		female = *controlByte(unsafe.Pointer(p), 2252) != 0
+		female = *controlByte(unsafe.Pointer(p), int(layoutServerPlayer.Off(2252)) /* info */) != 0
 	}
 	var sound int32
 	switch phon {
@@ -159,7 +159,7 @@ func spellLifeBroadcastPhoneme(u *server.Object, phon int8) int32 {
 }
 func spellLifeCreateFly(u, target *server.Object, id int32) *server.Object {
 	s := GetServer().S()
-	radius := float32(float64(*(*float32)(unsafe.Add(u.CObj(), 176))) + 4)
+	radius := float32(float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */))) + 4)
 	if target == nil {
 		var pos *types.Pointf
 		if u.ObjClass&4 != 0 {
@@ -193,8 +193,8 @@ func spellLifeCreateFly(u, target *server.Object, id int32) *server.Object {
 	// Preserve the direction helper's side effects before velocity stores.
 	var indexed [2]int32
 	geometryIndexedDirection(int32(u.Direction1), &indexed)
-	out.VelVec.X = float32(float64(dx) * float64(*(*float32)(unsafe.Add(out.CObj(), 544))))
-	out.VelVec.Y = float32(float64(dy) * float64(*(*float32)(unsafe.Add(out.CObj(), 544))))
+	out.VelVec.X = float32(float64(dx) * float64(*(*float32)(unsafe.Add(out.CObj(), int(layoutServerObject.Off(544)) /* SpeedCur */))))
+	out.VelVec.Y = float32(float64(dy) * float64(*(*float32)(unsafe.Add(out.CObj(), int(layoutServerObject.Off(544)) /* SpeedCur */))))
 	out.VelVec.X = float32(float64(out.VelVec.X) + float64(u.VelVec.X))
 	out.VelVec.Y = float32(float64(out.VelVec.Y) + float64(u.VelVec.Y))
 	if spellLifeHasBuff(u, 21) {

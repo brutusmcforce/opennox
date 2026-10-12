@@ -97,7 +97,7 @@ func quickbarTrapSelect(row int) int {
 	return 5 * int(b.Selected)
 }
 func quickbarTrapNext() {
-	row := *quickbarByte(1048140)
+	row := quickbarRecords[0].Selected
 	if row == 2 {
 		row = 0
 	} else {
@@ -109,7 +109,7 @@ func quickbarTrapNext() {
 	bookSound(798)
 }
 func quickbarTrapPrevious() {
-	row := *quickbarByte(1048140)
+	row := quickbarRecords[0].Selected
 	if row == 0 {
 		row = 2
 	} else {
@@ -165,7 +165,7 @@ func quickbarCloseTrap() {
 	if *quickbarWord(1049484) == 0 {
 		return
 	}
-	bookHideWindow(quickbarWindow(1048148), true)
+	bookHideWindow(quickbarRecords[0].Window, true)
 	bookHideWindow(quickbarWindow(1049512), false)
 	quickbarLit(quickbarWindow(1049500), false)
 	bookSound(797)
@@ -179,7 +179,7 @@ func quickbarToggleTrap() {
 	if *quickbarWord(1049476) == 1 {
 		quickbarCloseExpanded()
 	}
-	bookHideWindow(quickbarWindow(1048148), false)
+	bookHideWindow(quickbarRecords[0].Window, false)
 	bookHideWindow(quickbarWindow(1049512), true)
 	quickbarLit(quickbarWindow(1049500), true)
 	bookSound(796)

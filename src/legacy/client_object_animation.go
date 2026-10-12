@@ -12,7 +12,7 @@ import (
 
 func objectGeneratorCountdown(dr *client.Drawable) unsafe.Pointer {
 	data := (*spriteConditionalData)(dr.DrawData)
-	*effectWord(dr, 432) = uint32(data.Count[3]) * (uint32(data.Delay[3]) + 1)
+	*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(data.Count[3]) * (uint32(data.Delay[3]) + 1)
 	return dr.DrawData
 }
 func objectGeneratorDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
@@ -47,10 +47,10 @@ func objectGeneratorDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	}
 	if flags&0x800 != 0 {
 		index = count - 1
-		*effectWord(dr, 112) &= 0xfff7ffff
-		*effectWord(dr, 120) &= 0xdfffffff
+		*effectWord(dr, int(layoutClientDrawable.Off(112)) /* ObjClass */) &= 0xfff7ffff
+		*effectWord(dr, int(layoutClientDrawable.Off(120)) /* ObjFlags */) &= 0xdfffffff
 	}
-	if remaining := *effectWord(dr, 432); remaining != 0 {
+	if remaining := *effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */); remaining != 0 {
 		index = int(int32((period*uint32(count) - remaining) / period))
 		if index >= count {
 			index = count - 1
@@ -58,7 +58,7 @@ func objectGeneratorDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 		if index < 0 {
 			index = 0
 		}
-		*effectWord(dr, 432) = remaining - 1
+		*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = remaining - 1
 		if remaining == 1 {
 			dr.Flags70Val = dr.Flags70Val&^0x400 | 0x800
 		}
@@ -72,7 +72,7 @@ func objectGeneratorDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 		Nox_xxx_drawObject_4C4770_draw(vp, dr, spriteFrameImage(data.Frames[4], index))
 	}
 	if dr.Flags70Val&0x800 != 0 {
-		*effectWord(dr, 120) |= 1
+		*effectWord(dr, int(layoutClientDrawable.Off(120)) /* ObjFlags */) |= 1
 	}
 	return 1
 }
@@ -81,7 +81,7 @@ func objectGlyphDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	d := r.Data()
 	alpha := byte(255)
 	local := LocalPlayerDrawable
-	if noxflags.HasGame(noxflags.GameFlag(2)) && local != nil && *effectWord(dr, 120)&0x40000000 == 0 {
+	if noxflags.HasGame(noxflags.GameFlag(2)) && local != nil && *effectWord(dr, int(layoutClientDrawable.Off(120)) /* ObjFlags */)&0x40000000 == 0 {
 		player := local
 		if player.HasEnchant(21) {
 			d.SetColorize17(1)
@@ -104,7 +104,7 @@ func objectGlyphDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	return ret
 }
 func objectShieldDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
-	code := *effectWord(dr, 432)
+	code := *effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */)
 	var owner *client.Drawable
 	if code&0x8000 != 0 {
 		owner = GetClient().Cli().Objs.ByNetCodeStatic(int(code & 0x7fff))
@@ -125,8 +125,8 @@ func objectSummonDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 		drawableSummonSpark = uint32(effectType("BlueSpark"))
 	}
 	age := gameFrame() - dr.AnimStart
-	duration := uint32(uint16(*effectWord(dr, 436)))
-	child := (*client.Drawable)(unsafe.Pointer(uintptr(*effectWord(dr, 432))))
+	duration := uint32(uint16(*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */)))
+	child := *(**client.Drawable)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)) // see drawableSummonStart
 	if age >= duration {
 		GetClient().Nox_xxx_spriteDelete_45A4B0(child)
 		GetClient().Nox_xxx_spriteDeleteStatic_45A4E0_drawable(dr)

@@ -17,17 +17,12 @@ type serverConfigBlocked struct {
 	address [24]byte
 }
 
-var _ = [1]struct{}{}[64-unsafe.Sizeof(serverConfigAllowed{})]
-var _ = [1]struct{}{}[96-unsafe.Sizeof(serverConfigBlocked{})]
-var _ = [1]struct{}{}[64-unsafe.Offsetof(serverConfigBlocked{}.expires)]
-var _ = [1]struct{}{}[72-unsafe.Offsetof(serverConfigBlocked{}.address)]
+func serverConfigAllowedHead() *legacyListNode { return &serverConfigAllowedList }
+func serverConfigBlockedHead() *legacyListNode { return &serverConfigBlockedList }
 
-func serverConfigAllowedHead() *legacyListNode {
-	return (*legacyListNode)(memmap.PtrOff(0x5D4594, 371364))
-}
-func serverConfigBlockedHead() *legacyListNode {
-	return (*legacyListNode)(memmap.PtrOff(0x5D4594, 371500))
-}
+// ServerConfigAllowedHead and ServerConfigBlockedHead return the heads of the allowed and blocked player lists.
+func ServerConfigAllowedHead() unsafe.Pointer { return unsafe.Pointer(&serverConfigAllowedList) }
+func ServerConfigBlockedHead() unsafe.Pointer { return unsafe.Pointer(&serverConfigBlockedList) }
 func serverConfigAllowedFirst() *serverConfigAllowed {
 	return (*serverConfigAllowed)(unsafe.Pointer(listNext(serverConfigAllowedHead())))
 }

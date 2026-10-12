@@ -64,7 +64,7 @@ func effectsLesserFireball(u, it *server.Object) int {
 	if core.Frame()-*equipmentWord(ptr, 104) < *equipmentWord(ptr, 100)-uint32(effectsReadiness(it)) {
 		return 0
 	}
-	radius := float64(*(*float32)(unsafe.Add(u.CObj(), 176))) + 4
+	radius := float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */))) + 4
 	dir := int32(int16(u.Direction1))
 	dx, dy := movementDirectionVector(dir)
 	pos := u.PosVec
@@ -136,7 +136,7 @@ func effectsWandCast(u, it *server.Object) int {
 }
 func effectsFireWand(u, it *server.Object) int {
 	dx, dy := movementDirectionVector(int32(int16(u.Direction1)))
-	radius := float64(*(*float32)(unsafe.Add(u.CObj(), 176)))
+	radius := float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)))
 	x, y := float32(float64(dx)*radius*1.5), float32(float64(dy)*radius*1.5)
 	rng := GetServer().S().Rand.Logic
 	speed := float32(rng.FloatClamp(12, 25))
@@ -145,7 +145,7 @@ func effectsFireWand(u, it *server.Object) int {
 	pos := types.Pointf{X: float32(float64(x) + float64(u.PosVec.X)), Y: float32(float64(y) + float64(u.PosVec.Y))}
 	temporarySpark(pos, types.Ptf(vx, vy), 1, 20, 0, nil)
 	frame := GetServer().S().Frame()
-	timestamp := equipmentWord(it.CObj(), 136)
+	timestamp := equipmentWord(it.CObj(), int(layoutServerObject.Off(136)) /* Field34 */)
 	if frame-*timestamp > uint32(GetServer().S().TickRate()) {
 		inventorySound(9, u, 0, 0)
 		*timestamp = GetServer().S().Frame()

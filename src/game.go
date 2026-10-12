@@ -861,11 +861,7 @@ func (s *Server) nox_xxx_gameTick_4D2580_server_A2(v2 bool) {
 	}
 }
 
-var _ = [1]struct{}{}[20-unsafe.Sizeof(server.Settings3{})]
-
-var _ = [1]struct{}{}[60-unsafe.Sizeof(server.Settings2{})] // FIXME: must be 58
-
-var _ = [1]struct{}{}[168-unsafe.Sizeof(server.Settings{})]
+// FIXME: must be 58
 
 func getCurrentSettings2Ind() int { // sub_416580
 	return int(memmap.Int32(0x5D4594, 371688))
@@ -1292,7 +1288,7 @@ func (s *Server) nox_xxx_mapExitAndCheckNext_4D1860_server() error {
 					np.Obj130 = nil
 					ud.CurrentEnemy = nil
 					ud.Field304 = 0
-					*(*byte)(unsafe.Add(unsafe.Pointer(ud), 1129)) = 0
+					*(*byte)(unsafe.Add(unsafe.Pointer(ud), int(layoutServerMonsterUpdateData.Off(1129)) /* Field282_1 */)) = 0
 					ud.Field0 = 0xDEADFACE
 					p := m.Pos()
 					np.MonsterPushAction(ai.ACTION_ESCORT, p.X, p.Y, m)

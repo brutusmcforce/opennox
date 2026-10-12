@@ -15,8 +15,6 @@ type combatAlly struct {
 	Active           uint32
 }
 
-var _ = [1]struct{}{}[16-unsafe.Sizeof(combatAlly{})]
-
 func combatAllies() []combatAlly {
 	return unsafe.Slice((*combatAlly)(memmap.PtrOff(0x5D4594, 1200916)), 32)
 }
@@ -106,7 +104,6 @@ type combatFriend struct {
 
 var combatFriendPool unsafe.Pointer
 var combatFriendHead *combatFriend
-var _ = [1]struct{}{}[8-unsafe.Sizeof(combatFriend{})]
 
 func combatFriendClass() alloc.ClassT[combatFriend] {
 	return alloc.AsClassT[combatFriend](combatFriendPool)

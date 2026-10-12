@@ -132,7 +132,7 @@ func playerFileGuides(u *server.Object) int {
 	if !noxflags.HasGame(2048 | 4096) {
 		return 0
 	}
-	known := unsafe.Slice((*uint32)(unsafe.Add(unsafe.Pointer(p), 4244)), 41)
+	known := unsafe.Slice((*uint32)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(4244)) /* BeastScrollLvl */)), 41)
 	if r.read() {
 		count := r.byte(0)
 		if count > 41 {
@@ -178,8 +178,8 @@ func playerFileSpells(u *server.Object) int {
 	if !noxflags.HasGame(2048 | 4096) {
 		return 0
 	}
-	class := *(*byte)(unsafe.Add(unsafe.Pointer(p), 2251))
-	levels := unsafe.Slice((*uint32)(unsafe.Add(unsafe.Pointer(p), 3696)), 137)
+	class := *(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(2251)) /* info */))
+	levels := unsafe.Slice((*uint32)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(3696)) /* SpellLvl */)), 137)
 	if r.read() {
 		count := r.byte(0)
 		if count > 137 {

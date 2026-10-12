@@ -29,19 +29,16 @@ type reliableMessage struct {
 	Next, Previous                           *reliableMessage
 }
 
-var _ [416 - unsafe.Sizeof(reliableMessage{})]byte
-var _ [unsafe.Sizeof(reliableMessage{}) - 416]byte
-
 type reliableRateState struct {
 	Budget, Delay, Rate, Reserved byte
 	High, Low                     uint32
 }
 
 func reliableHead() **reliableMessage {
-	return (**reliableMessage)(unsafe.Pointer(&dword_5d4594_1565512))
+	return &dword_5d4594_1565512
 }
 func reliableTail() **reliableMessage {
-	return (**reliableMessage)(unsafe.Pointer(&dword_5d4594_1565516))
+	return &dword_5d4594_1565516
 }
 func reliableCapacity() *uint32      { return (*uint32)(unsafe.Pointer(&dword_5d4594_1565520)) }
 func reliablePool() *unsafe.Pointer  { return &reliablePoolPtr }

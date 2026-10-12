@@ -52,7 +52,7 @@ func quickbarSave() int {
 		*quickbarWord(1049688) = 0
 	}
 	var class [1]byte
-	if p := quickbarPlayer(); p != 0 {
+	if p := quickbarPlayer(); p != nil {
 		class[0] = byte(bookClass(p))
 	} else {
 		class[0] = *(*byte)(unsafe.Add(unsafe.Pointer(Nox_xxx_getHostInfoPtr_431770()), 66))

@@ -22,7 +22,7 @@ func effectsInventory(u *server.Object, mask byte) int {
 				continue
 			}
 			for off := uintptr(200160); off < 200280; off += 20 {
-				if m.Engage112 == *memmap.PtrPtr(0x587000, off) && mask == *memmap.PtrUint8(0x587000, off+4) {
+				if m.Engage112 == memmap.LoadPtr(0x587000, off) && mask == *memmap.PtrUint8(0x587000, off+4) {
 					return 1
 				}
 			}
@@ -31,12 +31,12 @@ func effectsInventory(u *server.Object, mask byte) int {
 	return 0
 }
 func effectsEngageFlag(u *server.Object, mask byte, sound int) {
-	*(*byte)(unsafe.Add(u.CObj(), 440)) |= mask
+	*(*byte)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(440)) /* Field110 */)) |= mask
 	inventorySound(sound, u, 0, 0)
 }
 func effectsDisengageFlag(u *server.Object, mask byte, sound int) {
 	if effectsInventory(u, mask) == 0 {
-		*(*byte)(unsafe.Add(u.CObj(), 440)) &^= mask
+		*(*byte)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(440)) /* Field110 */)) &^= mask
 	}
 	inventorySound(sound, u, 0, 0)
 }
@@ -46,12 +46,12 @@ func effectsSpeed(m *server.ModifierEff, u *server.Object, engage bool) {
 	}
 	sound := 60
 	if engage {
-		*(*byte)(unsafe.Add(u.CObj(), 440)) |= 16
+		*(*byte)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(440)) /* Field110 */)) |= 16
 		u.SpeedBonus = float32(float64(m.EngageFloat120) + float64(u.SpeedBonus))
 		sound = 59
 	} else {
 		if effectsInventory(u, 16) == 0 {
-			*(*byte)(unsafe.Add(u.CObj(), 440)) &^= 16
+			*(*byte)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(440)) /* Field110 */)) &^= 16
 		}
 		u.SpeedBonus = float32(float64(u.SpeedBonus) - float64(m.EngageFloat120))
 	}

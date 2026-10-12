@@ -115,7 +115,7 @@ func equipmentNPCEquipWeapon(u, it *server.Object) int {
 		equipmentNPCSync(u, it, 1)
 	}
 	if it.ObjSubClass&2 == 0 {
-		*equipmentWord(ud, 2064) = uint32(uintptr(it.CObj()))
+		*(*unsafe.Pointer)(unsafe.Pointer(equipmentWord(ud, 2064))) = it.CObj()
 	}
 	equipmentEffects(it, u, true)
 	if equipmentWeaponBits(it)&0x7ffe40c != 0 {
@@ -181,7 +181,7 @@ func equipmentEquipWeapon(u, it *server.Object, report, broadcast int) int {
 	*equipmentWord(equipmentPlayer(u), 4) |= bits
 	gameplayReportEquip(int(uint8(u.UpdateDataPlayer().Player.PlayerInd)), it, int(report))
 	if bits != 2 {
-		*equipmentWord(ud, 104) = uint32(uintptr(it.CObj()))
+		*(*unsafe.Pointer)(unsafe.Pointer(equipmentWord(ud, 104))) = it.CObj()
 	}
 	if it.ObjClass&0x1000 != 0 && it.ObjSubClass&0x47f0000 != 0 {
 		equipmentReportCharges(u, it, 108, 109)

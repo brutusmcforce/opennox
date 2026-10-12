@@ -20,24 +20,24 @@ func uiInventoryDrawWindow(w *gui.Window) int {
 	for i := 0; i < 30; i++ {
 		if mask&(uint32(1)<<i) != 0 {
 			spell := int32(nox_xxx_getEnchantSpell_424920(int(int32(i))))
-			uiMeterImage(uint32(uintptr(nox_xxx_spellIcon_424A90(int(spell)))), image.Pt(x, y))
+			uiMeterImage(memmap.PtrWord(nox_xxx_spellIcon_424A90(int(spell))), image.Pt(x, y))
 			x += 35
 		}
 	}
 	extra := memmap.Uint8(0x5D4594, 1062536)
 	for i := 0; i < 6; i++ {
 		if extra&(1<<i) != 0 {
-			uiMeterImage(runtimeModifierIcon(byte(1<<i)), image.Pt(x, y))
+			nox_client_drawImageAt_47D2C0(runtimeModifierIcon(byte(1<<i)), x, y)
 			x += 35
 		}
 	}
 	if noxflags.HasGame(4096) && dword_5d4594_1050008 != 0 {
 		x += 6
 		y += 5
-		ref := AsImageRefP(unsafe.Pointer(uintptr(dword_5d4594_1050008)))
+		ref := AsImageRefP(memmap.WordPtr(dword_5d4594_1050008))
 		anim := (*ImageRefAnim)(ref.Field_24)
 		frames := anim.Images()
-		uiMeterImage(uint32(uintptr(unsafe.Pointer(frames[GetServer().S().Frame()%uint32(len(frames))]))), image.Pt(x-58, y-53))
+		uiMeterImage(memmap.PtrWord(unsafe.Pointer(frames[GetServer().S().Frame()%uint32(len(frames))])), image.Pt(x-58, y-53))
 		r := GetClient().R2()
 		r.Data().SetTextColor(noxcolor.RGBA5551(memmap.Uint32(0x852978, 0)))
 		r.DrawString(uiInventorySmallFont(), "X "+strconv.FormatInt(int64(memmap.Int32(0x5D4594, 1050012)), 10), image.Pt(x+20, y+9))

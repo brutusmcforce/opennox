@@ -16,7 +16,7 @@ func controlObject(p unsafe.Pointer, n int) *server.Object {
 }
 func controlPlayer(u *server.Object) unsafe.Pointer { return *controlPtr(u.UpdateData, 276) }
 func controlFlags(mask uint32) bool                 { return noxflags.HasGame(noxflags.GameFlag(mask)) }
-func controlRaw(u *server.Object) uint32            { return uint32(uintptr(u.CObj())) }
+func controlRaw(u *server.Object) uint32            { return memmap.PtrWord(u.CObj()) }
 func controlRemoveGlyphs(u *server.Object) int32 {
 	typ := stateType(1565600, "Glyph")
 	for it := GetServer().S().Objs.List; it != nil; it = it.ObjNext {
@@ -72,7 +72,7 @@ func controlNextObserver(pl unsafe.Pointer) *server.Object {
 	}
 	eligible := func(u *server.Object) bool {
 		p := players.ByID(int(u.NetCode))
-		return u.ObjFlags&0x20 == 0 && *controlByte(unsafe.Pointer(p), 3680)&1 == 0
+		return u.ObjFlags&0x20 == 0 && *controlByte(unsafe.Pointer(p), int(layoutServerPlayer.Off(3680)) /* Field3680 */)&1 == 0
 	}
 	if u != nil && u.ObjClass&4 != 0 {
 		for u != nil && !eligible(u) {

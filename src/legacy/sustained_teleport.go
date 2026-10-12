@@ -27,10 +27,10 @@ func sustainedTeleportWake(u *server.Object, from, to *types.Pointf) uint32 {
 	if wake == nil {
 		return 0
 	}
-	*(*types.Pointf)(*controlPtr(wake.CObj(), 700)) = *to
+	*(*types.Pointf)(*controlPtr(wake.CObj(), int(layoutServerObject.Off(700)) /* CollideData */)) = *to
 	spellEffectCreate(wake, u, *from)
 	ret := sustainedFrame() + sustainedFPS()
-	*spellLifeWord(wake.CObj(), 136) = ret
+	*spellLifeWord(wake.CObj(), int(layoutServerObject.Off(136)) /* Field34 */) = ret
 	return ret
 }
 func sustainedTeleportSound(d *server.DurSpell, phase int32, u *server.Object, hidden bool) {
@@ -40,7 +40,7 @@ func sustainedTeleportSound(d *server.DurSpell, phase int32, u *server.Object, h
 			return
 		}
 		mode = 2
-		code = int32(*spellLifeWord(u.CObj(), 36))
+		code = int32(*spellLifeWord(u.CObj(), int(layoutServerObject.Off(36)) /* NetCode */))
 	}
 	id := int32(nox_xxx_spellGetAud44_424800(int(int32(d.Spell)), int(int32(phase))))
 	nox_xxx_aud_501960(int32(id), asObjectC(u), int(mode), int32(code))
@@ -95,7 +95,7 @@ func sustainedGlyphStart(p unsafe.Pointer) uint32 {
 func sustainedGlyphUse(ud unsafe.Pointer, index int, mark bool) {
 	glyph := spellEffectObject(ud, 116+index*4)
 	if mark {
-		*spellLifeWord(glyph.CObj(), 136) = sustainedFrame()
+		*spellLifeWord(glyph.CObj(), int(layoutServerObject.Off(136)) /* Field34 */) = sustainedFrame()
 	}
 	charge := controlByte(ud, 156+index)
 	*charge--

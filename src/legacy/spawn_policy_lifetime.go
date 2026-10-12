@@ -26,8 +26,8 @@ type spawnPolicyMonsterListNode struct {
 	Next, Prev *spawnPolicyMonsterListNode
 }
 
-var _ = [1]struct{}{}[12-unsafe.Sizeof(spawnPolicyNode{})]
-var _ = [1]struct{}{}[148-unsafe.Sizeof(spawnPolicyMonsterListNode{})]
+
+
 
 func spawnPolicySpawnClass() *alloc.Class {
 	return alloc.AsClass(unsafe.Pointer(legacyGlobals.nox_alloc_spawn_2386216))
@@ -36,10 +36,10 @@ func spawnPolicyMonsterListClass() *alloc.Class {
 	return alloc.AsClass(unsafe.Pointer(legacyGlobals.nox_alloc_monsterList_2386220))
 }
 func spawnPolicyHead() *spawnPolicyNode {
-	return (*spawnPolicyNode)(unsafe.Pointer(uintptr(dword_5d4594_2386212)))
+	return (*spawnPolicyNode)(memmap.WordPtr(dword_5d4594_2386212))
 }
 func spawnPolicySetHead(p *spawnPolicyNode) {
-	dword_5d4594_2386212 = uint32(uintptr(unsafe.Pointer(p)))
+	dword_5d4594_2386212 = memmap.PtrWord(unsafe.Pointer(p))
 }
 
 // spawnPolicyInit is 50D780. It intentionally leaves an already-created

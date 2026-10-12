@@ -25,7 +25,7 @@ func mapOrchestrationStart() uint32 {
 	Nox_xxx_mapSwitchLevel_4D12E0(true)
 	noxflags.SetGame(0x400000)
 	saved := memmap.PtrUint32(0x5D4594, 1550924)
-	*saved = uint32(uintptr(unsafe.Pointer(GetServer().S().Objs.GetAndZeroObjects())))
+	*saved = memmap.PtrWord(unsafe.Pointer(GetServer().S().Objs.GetAndZeroObjects()))
 	clear(unsafe.Slice(memmap.PtrUint8(0x973F18, 2408), 1464))
 	for tries := 100; ; {
 		result := mapOrchestrationStep()
@@ -55,7 +55,7 @@ func mapOrchestrationStart() uint32 {
 		return 0
 	}
 	Nox_xxx_mapSwitchLevel_4D12E0(true)
-	GetServer().S().Objs.SetObjects((*server.Object)(unsafe.Pointer(uintptr(*saved))))
+	GetServer().S().Objs.SetObjects((*server.Object)(memmap.WordPtr(*saved)))
 	*saved = 0
 	noxflags.UnsetGame(0x400000)
 	return 1

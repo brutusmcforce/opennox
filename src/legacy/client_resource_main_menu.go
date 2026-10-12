@@ -3,7 +3,7 @@ package legacy
 import (
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"image"
+	"unsafe"
 )
 
 // ClientMainMenuDraw draws the backdrop and advances the original 48-byte records.
@@ -20,9 +20,9 @@ func ClientMainMenuDraw(win *gui.Window, draw *gui.WindowData) int {
 		if draw.Field0&2 != 0 {
 			handle = draw.HlImageHnd
 		}
-		uiMeterImage(uint32(uintptr(handle)), pos)
+		uiMeterImage(memmap.PtrWord(unsafe.Pointer(handle)), pos)
 	}
-	if memmap.Uint32(0x587000, 168836) != 0 {
+	if len(MainMenuImages) != 0 && MainMenuImages[0] != nil { // the first entry's image (was 0x587000+168836)
 		random := GetServer().S().Rand.Other
 		for off := uintptr(168832); ; off += 48 {
 			active := memmap.PtrUint32(0x587000, off+16)
@@ -56,9 +56,9 @@ func ClientMainMenuDraw(win *gui.Window, draw *gui.WindowData) int {
 		}
 	}
 	if memmap.Uint32(0x587000, 168832) != 0 {
-		for off := uintptr(168832); ; off += 48 {
+		for i, off := 0, uintptr(168832); ; i, off = i+1, off+48 {
 			if memmap.Uint32(0x587000, off+16) == 0 && memmap.Uint32(0x587000, off+40) == 0 {
-				uiMeterImage(memmap.Uint32(0x587000, off+4), image.Pt(int(int32(memmap.Uint32(0x587000, off+8))), int(int32(memmap.Uint32(0x587000, off+12)))))
+				nox_client_drawImageAt_47D2C0(MainMenuImages[i], int(int32(memmap.Uint32(0x587000, off+8))), int(int32(memmap.Uint32(0x587000, off+12))))
 			}
 			if memmap.Uint32(0x587000, off+48) == 0 {
 				break

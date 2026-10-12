@@ -132,7 +132,7 @@ func objectXferOld(u *server.Object, inner, outer int, r objectXferStream) int {
 		return 0
 	}
 	if outer >= 20 {
-		r.raw(unsafe.Add(u.CObj(), 52), 1)
+		r.raw(unsafe.Add(u.CObj(), int(layoutServerObject.Off(52)) /* TeamVal.ID */), 1)
 	}
 	if outer >= 30 {
 		r.inventoryCount(u)
@@ -175,7 +175,7 @@ func objectXferCommon(u *server.Object, outer int) int {
 	if !r.name(u) {
 		return 0
 	}
-	r.raw(unsafe.Add(u.CObj(), 52), 1)
+	r.raw(unsafe.Add(u.CObj(), int(layoutServerObject.Off(52)) /* TeamVal.ID */), 1)
 	r.inventoryCount(u)
 	r.owned(u, false)
 	r.extra(u)

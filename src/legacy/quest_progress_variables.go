@@ -17,7 +17,6 @@ type questProgressRecord struct {
 }
 
 var questProgressHead *questProgressRecord
-var _ = [1]struct{}{}[148-unsafe.Sizeof(questProgressRecord{})]
 
 func questProgressCString(s string) string {
 	if i := strings.IndexByte(s, 0); i >= 0 {

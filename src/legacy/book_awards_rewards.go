@@ -23,12 +23,12 @@ func bookAwardClientMessage(id int32, success bool) {
 		off = 217092
 		file = "Ability.c"
 	}
-	key := alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, uintptr(off+4*id))))
+	key := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, uintptr(off+4*id))))
 	Nox_xxx_printCentered_445490(GetServer().S().Strings().GetStringInFile(strman.ID(key), file))
 }
 func bookReportSpell(u *server.Object, id, notify, auto int32) uint32 {
 	if uint32(u.ObjClass)&4 == 0 {
-		return uint32(uintptr(u.CObj()))
+		return memmap.PtrWord(u.CObj())
 	}
 	p := u.UpdateDataPlayer().Player
 	data := [4]byte{111, byte(id), byte(*equipmentWord(unsafe.Pointer(p), 3696+4*int(id))), byte(notify)}
@@ -39,7 +39,7 @@ func bookReportSpell(u *server.Object, id, notify, auto int32) uint32 {
 }
 func bookReportAbility(u *server.Object, id, auto int32) uint32 {
 	if uint32(u.ObjClass)&4 == 0 {
-		return uint32(uintptr(u.CObj()))
+		return memmap.PtrWord(u.CObj())
 	}
 	p := u.UpdateDataPlayer().Player
 	data := [3]byte{205, byte(id), byte(*equipmentWord(unsafe.Pointer(p), 3696+4*int(id)))}
@@ -50,7 +50,7 @@ func bookReportAbility(u *server.Object, id, auto int32) uint32 {
 }
 func bookReportGuide(u *server.Object, id, notify, auto int32) uint32 {
 	if uint32(u.ObjClass)&4 == 0 {
-		return uint32(uintptr(u.CObj()))
+		return memmap.PtrWord(u.CObj())
 	}
 	data := [3]byte{209, byte(id), byte(notify)}
 	if auto != 0 {
@@ -107,7 +107,7 @@ func bookAwardGuide(u *server.Object, id, notify int32) int {
 		controlRewardNotify(u, 1, u, byte(id))
 	}
 	for off := uintptr(216292); ; off += 4 {
-		family := *memmap.PtrPtr(0x587000, off)
+		family := memmap.LoadPtr(0x587000, off)
 		if family == nil {
 			break
 		}

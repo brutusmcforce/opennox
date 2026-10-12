@@ -97,13 +97,13 @@ func clientSessionQuest(data []byte) int {
 	case 1:
 		audioEventPlay(1008, 100, 0, 0)
 		if p := GetServer().S().Players.ByID(int(word(2))); p != nil && !noxflags.HasGame(1) {
-			*(*uint32)(unsafe.Add(p.C(), 4792)) = 1
+			*(*uint32)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(4792)) /* Field4792 */)) = 1
 		}
 	case 2:
 		interactionGameOverShow((*uint16)(unsafe.Pointer(&data[0])))
 	case 4:
 		if p := GetServer().S().Players.ByID(int(word(3))); p != nil {
-			*(*byte)(unsafe.Add(p.C(), 4816)) = data[2]
+			*(*byte)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(4816)) /* data4800 */)) = data[2]
 		}
 		if int(word(3)) == ClientPlayerNetCode() {
 			*memmap.PtrUint32(0x5D4594, 1050012) = uint32(data[2])
@@ -117,11 +117,11 @@ func clientSessionQuest(data []byte) int {
 		briefingSelection(unsafe.Pointer(&data[0]), 1, true)
 	case 15:
 		if dr := c.Cli().Objs.ByNetCodeStatic(int(word(2))); dr != nil {
-			*(*byte)(unsafe.Add(dr.C(), 432)) = 0
+			*(*byte)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)) = 0
 		}
 	case 16:
 		if dr := c.Nox_xxx_spriteLoadAdd_45A360_drawable(int(memmap.Uint32(0x5D4594, 1200904)), image.Pt(int(word(6)), int(word(8)))); dr != nil {
-			b := unsafe.Slice((*byte)(unsafe.Add(dr.C(), 432)), 13)
+			b := unsafe.Slice((*byte)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)), 13)
 			b[0] = 0
 			binary.LittleEndian.PutUint32(b[5:], dword(2))
 			binary.LittleEndian.PutUint32(b[9:], dword(6))
@@ -140,7 +140,7 @@ func clientSessionQuest(data []byte) int {
 		}
 	case 21:
 		if p := GetServer().S().Players.ByID(int(word(6))); p != nil {
-			*(*uint32)(unsafe.Add(p.C(), 4820)) = dword(2)
+			*(*uint32)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(4820)) /* data4800 */)) = dword(2)
 		}
 	case 22, 23:
 		if p := GetServer().S().Players.ByID(int(word(3))); p != nil {
@@ -175,7 +175,7 @@ func clientSessionQuest(data []byte) int {
 			if ptr == 0 {
 				title = "(null)"
 			} else {
-				title = alloc.GoString16((*uint16)(unsafe.Pointer(uintptr(ptr))))
+				title = alloc.GoString16((*uint16)(memmap.WordPtr(ptr)))
 			}
 			key = "PlyrGide.c:AwardGuide"
 		case 32:
@@ -185,7 +185,7 @@ func clientSessionQuest(data []byte) int {
 		if p == Get_dword_8531A0_2576() {
 			Nox_xxx_printCentered_445490(clientGameProgressText(key, title))
 		} else {
-			Nox_xxx_printCentered_445490(clientGameProgressText(key+"ToOther", alloc.GoString16((*uint16)(unsafe.Add(p.C(), 4704))), title))
+			Nox_xxx_printCentered_445490(clientGameProgressText(key+"ToOther", alloc.GoString16((*uint16)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(4704)) /* NameFinal */))), title))
 		}
 	case 33:
 		offsets := [5]uintptr{160948, 160988, 161028, 161068, 161112}

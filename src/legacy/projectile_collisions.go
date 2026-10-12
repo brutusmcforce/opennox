@@ -84,7 +84,7 @@ func projectileManaDrain(u, t *server.Object) {
 		return
 	}
 	resourceSubMana(t, int32(*(*byte)(u.CollideData)))
-	stamp := (*uint16)(unsafe.Add(u.CObj(), 542))
+	stamp := (*uint16)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(542)) /* Field542 */))
 	core := GetServer().S()
 	if core.Frame()-uint32(int32(int16(*stamp))) > uint32(int32(core.TickRate())>>1) {
 		inventorySound(228, u, 0, 0)
@@ -193,8 +193,8 @@ func projectileSpark(u, t *server.Object, n *types.Pointf) {
 		if t != nil {
 			inventorySound(351, u, 0, 0)
 			GetServer().DelayedDelete(u)
-			*(*byte)(unsafe.Add(t.CObj(), 541))++
-			*(*uint16)(unsafe.Add(t.CObj(), 542)) = 1000
+			*(*byte)(unsafe.Add(t.CObj(), int(layoutServerObject.Off(541)) /* Field541 */))++
+			*(*uint16)(unsafe.Add(t.CObj(), int(layoutServerObject.Off(542)) /* Field542 */)) = 1000
 			if t.ObjClass&4 != 0 {
 				gameplayTextPrivate(t, (*byte)(unsafe.Pointer(internCStr("objcoll.c:WebbingSlow"))), 0)
 			}

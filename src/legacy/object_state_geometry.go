@@ -18,8 +18,8 @@ func stateDistance(u, t *server.Object) float64 {
 		case 2:
 			d -= float64(o.Shape.Circle.R)
 		case 3:
-			w := float64(*(*float32)(unsafe.Add(o.CObj(), 184))) * .5
-			h := float32(float64(*(*float32)(unsafe.Add(o.CObj(), 188))) * .5)
+			w := float64(*(*float32)(unsafe.Add(o.CObj(), int(layoutServerObject.Off(184)) /* Shape.Box.W */))) * .5
+			h := float32(float64(*(*float32)(unsafe.Add(o.CObj(), int(layoutServerObject.Off(188)) /* Shape.Box.H */))) * .5)
 			if w <= float64(h) {
 				w = float64(h)
 			}
@@ -80,16 +80,16 @@ func stateLoot(u *server.Object, p *types.Pointf) {
 		off = 203240
 	}
 	roll := uint32(nox_common_randomInt_415FA0(0, 99))
-	for *memmap.PtrPtr(0x587000, off) != nil && memmap.Uint32(0x587000, off+8) <= roll {
+	for memmap.LoadPtr(0x587000, off) != nil && memmap.Uint32(0x587000, off+8) <= roll {
 		off += 12
 	}
-	if *memmap.PtrPtr(0x587000, off) == nil {
+	if memmap.LoadPtr(0x587000, off) == nil {
 		return
 	}
 	pos, free := alloc.New(types.Pointf{})
 	defer free()
 	for i := int32(0); i < int32(memmap.Uint32(0x587000, off+4)); i++ {
-		name := alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, off)))
+		name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, off)))
 		if it := GetServer().S().NewObjectByTypeID(name); it != nil {
 			inventoryRandomPlacement(35, p, pos)
 			GetServer().CreateObjectAt(it, nil, *pos)

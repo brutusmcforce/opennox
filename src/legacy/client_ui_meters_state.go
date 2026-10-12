@@ -21,7 +21,7 @@ func uiMeterHide(w *gui.Window, hidden bool) int {
 	w.SetHidden(hidden)
 	return 0
 }
-func uiMeterPlayer() unsafe.Pointer   { return unsafe.Pointer(uintptr(dword_8531A0_2576)) }
+func uiMeterPlayer() unsafe.Pointer   { return dword_8531A0_2576.C() }
 func uiMeterColor(r, g, b int) uint32 { return uint32(nox_color_rgb_4344A0(r, g, b)) }
 func uiMeterMode() uint32             { return uint32(dword_5d4594_1096252) }
 
@@ -145,5 +145,5 @@ func uiMeterAdvanceCharge() int {
 }
 
 func sub_4721A0(show int) int {
-	return uiMeterHide((*gui.Window)(unsafe.Pointer(uintptr(dword_5d4594_1090276))), show == 0)
+	return uiMeterHide((*gui.Window)(memmap.WordPtr(dword_5d4594_1090276)), show == 0)
 }

@@ -195,7 +195,7 @@ func monsterMainAI(u *server.Object) {
 					// The retained spell engine passes this buffer back through Go.
 					// Keep it C-owned across that callback boundary.
 					args, freeArgs := alloc.New([3]uint32{})
-					*args = [3]uint32{uint32(uintptr(u.CObj())), math.Float32bits(u.PosVec.X), math.Float32bits(u.PosVec.Y)}
+					*args = [3]uint32{memmap.PtrWord(u.CObj()), math.Float32bits(u.PosVec.X), math.Float32bits(u.PosVec.Y)}
 					monsterCastSpell(4, u, args)
 					freeArgs()
 					ud.Field371 = core.Frame() + uint32(nox_common_randomInt_415FA0(int(ud.Field370_0), int(ud.Field370_2)))
@@ -282,9 +282,9 @@ func monsterMainAI(u *server.Object) {
 		}
 	}
 	if ud.StatusFlags&0x20000 != 0 {
-		data := (*server.PlayerUpdateData)(unsafe.Pointer(uintptr(ud.Field545)))
+		data := (*server.PlayerUpdateData)(memmap.WordPtr(ud.Field545))
 		p := data.Player
-		if *(*byte)(unsafe.Add(unsafe.Pointer(p), 2251)) == 0 && *(*uint32)(unsafe.Add(unsafe.Pointer(p), 4)) == 0 && byte(core.Frame())&15 == 0 {
+		if *(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(2251)) /* info */)) == 0 && *(*uint32)(unsafe.Add(unsafe.Pointer(p), 4)) == 0 && byte(core.Frame())&15 == 0 {
 			if t := lifecycleFoodSearch(u, 75, true); t != nil {
 				controlMorphToPlayer(u)
 				Nox_xxx_inventoryServPlace_4F36F0(u, t, 1, 1)

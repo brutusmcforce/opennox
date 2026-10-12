@@ -237,7 +237,7 @@ func clientOnLobbyServer(log *slog.Logger, info *LobbyServerInfo) int {
 		if legacy.Nox_xxx_checkSomeFlagsOnJoin_4899C0(srv) != 0 {
 			srv.SetAddr(info.Address)
 			srv.Field_9 = uint32(legacy.Get_nox_wol_server_result_cnt_815088())
-			srv.Field_7 = 0
+			srv.Field_7 = nil
 			srv.SetPort(uint16(info.Port))
 			srv.SetServerName(info.Name)
 			srv.SetFlags(noxflags.GameFlag(info.Flags))

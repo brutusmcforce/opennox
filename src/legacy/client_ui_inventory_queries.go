@@ -26,10 +26,10 @@ func uiInventoryEquipment() []uint32 {
 	return unsafe.Slice((*uint32)(unsafe.Pointer(&legacyGlobals.array_5D4594_1049872[0])), 9)
 }
 func uiInventoryDrawable(v uint32) *client.Drawable {
-	return (*client.Drawable)(unsafe.Pointer(uintptr(v)))
+	return (*client.Drawable)(memmap.WordPtr(v))
 }
 func uiInventoryNext(dr *client.Drawable) *client.Drawable {
-	return *(**client.Drawable)(unsafe.Add(dr.C(), 368))
+	return *(**client.Drawable)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(368)) /* NextPtr */))
 }
 func uiInventoryFindType(typ uint32) *uiInventoryCell {
 	grid := uiInventoryGrid()
@@ -50,7 +50,7 @@ func uiInventoryFindCode(code uint32) *uiInventoryLookup {
 			cell := &grid[row+21*col]
 			for index := 0; index < min(int(cell.Count), len(cell.Codes)); index++ {
 				if cell.Codes[index] == code {
-					out := (*uiInventoryLookup)(memmap.PtrOff(0x5D4594, 1049788))
+					out := &uiInventoryLookupResult
 					out.Cell = cell
 					out.Index = uint32(index)
 					return out
@@ -149,7 +149,7 @@ func sub_467700(code int) int {
 }
 
 func sub_4678B0() int {
-	if cell := (*uiInventoryCell)(unsafe.Pointer(uintptr(dword_5d4594_1062480))); cell != nil {
+	if cell := (*uiInventoryCell)(memmap.WordPtr(dword_5d4594_1062480)); cell != nil {
 		return int(cell.Codes[0])
 	}
 	return 0

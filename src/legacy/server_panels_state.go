@@ -3,7 +3,6 @@ package legacy
 import (
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"unsafe"
 )
 
 // Private panel owners; addresses are only used to map the legacy layout.
@@ -68,5 +67,5 @@ func serverPanelsWord(off uintptr) *uint32 {
 	}
 }
 func serverPanelsWindow(off uintptr) *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(*serverPanelsWord(off))))
+	return (*gui.Window)(memmap.WordPtr(*serverPanelsWord(off)))
 }

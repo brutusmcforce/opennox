@@ -16,11 +16,11 @@ func objectDoorDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	if !noxflags.HasGame(noxflags.GameFlag(4096)) || b[432] != 1 {
 		return 1
 	}
-	if *effectWord(dr, 436) == 0 {
-		*effectWord(dr, 440) = uint32(uintptr(Nox_xxx_gLoadImg("DoorLockSilverSW").C()))
-		*effectWord(dr, 436) = uint32(uintptr(Nox_xxx_gLoadImg("DoorLockSilverSE").C()))
-		*effectWord(dr, 444) = uint32(uintptr(Nox_xxx_gLoadImg("DoorLockGoldSW").C()))
-		*effectWord(dr, 448) = uint32(uintptr(Nox_xxx_gLoadImg("DoorLockGoldSE").C()))
+	if *effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */) == 0 {
+		*(*unsafe.Pointer)(unsafe.Pointer(effectWord(dr, int(layoutClientDrawable.Off(440)) /* Union._ */))) = unsafe.Pointer(Nox_xxx_gLoadImg("DoorLockSilverSW").C())
+		*(*unsafe.Pointer)(unsafe.Pointer(effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */))) = unsafe.Pointer(Nox_xxx_gLoadImg("DoorLockSilverSE").C())
+		*(*unsafe.Pointer)(unsafe.Pointer(effectWord(dr, int(layoutClientDrawable.Off(444)) /* Union._ */))) = unsafe.Pointer(Nox_xxx_gLoadImg("DoorLockGoldSW").C())
+		*(*unsafe.Pointer)(unsafe.Pointer(effectWord(dr, int(layoutClientDrawable.Off(448)) /* Union._ */))) = unsafe.Pointer(Nox_xxx_gLoadImg("DoorLockGoldSE").C())
 	}
 	p := vp.ToScreenPos(dr.PosVec).Sub(image.Pt(64, 79))
 	light := GetClient().Sub469920(dr.PosVec)
@@ -53,7 +53,7 @@ func objectDoorDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 			slot = 448
 		}
 	}
-	r.DrawImageAt(r.GetBag().AsImage(noxrender.ImageHandle(unsafe.Pointer(uintptr(*effectWord(dr, slot))))), p)
+	r.DrawImageAt(r.GetBag().AsImage(noxrender.ImageHandle(*(*unsafe.Pointer)(unsafe.Pointer(effectWord(dr, slot))))), p)
 	return 1
 }
 func objectArrowDraw(vp *noxrender.Viewport, dr *client.Drawable, weak bool) int {
@@ -74,7 +74,7 @@ func objectArrowDraw(vp *noxrender.Viewport, dr *client.Drawable, weak bool) int
 		if tail == nil {
 			return spriteSlaveDraw(vp, dr)
 		}
-		*effectWord(tail, 432), *effectWord(tail, 436) = uint32(dr.PosVec.X), uint32(dr.PosVec.Y)
+		*effectWord(tail, int(layoutClientDrawable.Off(432)) /* Union._ */), *effectWord(tail, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(dr.PosVec.X), uint32(dr.PosVec.Y)
 		effectLink(tail)
 		dr.Field_81, dr.Field_82 = uint32(dr.PosVec.X), uint32(dr.PosVec.Y)
 		GetClient().Cli().Objs.TransparentDecay(tail, int(gameFPS()/3))
@@ -100,7 +100,7 @@ func objectArrowTailDraw(vp *noxrender.Viewport, dr *client.Drawable, weak bool)
 	d.SetAlphaEnabled(true)
 	d.SetAlpha(128)
 	from := effectScreen(vp, dr).Sub(image.Pt(0, 4))
-	to := image.Pt(int(*effectWord(dr, 432)), int(*effectWord(dr, 436)))
+	to := image.Pt(int(*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */)), int(*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */)))
 	to = vp.ToScreenPos(to)
 	to.Y -= int(int16(dr.ZVal)) + int(int16(dr.ZVal2)) + 4
 	effectLine(from, to)
@@ -125,7 +125,7 @@ func objectDrawEdges(p [4]image.Point, dx int) {
 	effectLine(p[1].Add(shift), p[2].Add(shift))
 }
 func objectPressureDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
-	colors := unsafe.Slice((*byte)(unsafe.Add(dr.C(), 432)), 6)
+	colors := unsafe.Slice((*byte)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)), 6)
 	if colors[0]|colors[1]|colors[2]|colors[3]|colors[4]|colors[5] == 0 {
 		return 1
 	}

@@ -176,8 +176,8 @@ func effectPlasmaDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	b = vp.ToScreenPos(b)
 	a.Y -= 20
 	b.Y -= 20
-	angle := int(*effectByte(dr, 433))
-	if *effectByte(dr, 432) != 0 {
+	angle := int(*effectByte(dr, int(layoutClientDrawable.Off(433)) /* Union._ */))
+	if *effectByte(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) != 0 {
 		angle = int(byte(effectAngle(float32(float64(mouse.X)-float64(a.X)), float32(float64(mouse.Y)-float64(a.Y)))))
 	}
 	effectPlasma(angle, a, b)

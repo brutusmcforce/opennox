@@ -21,7 +21,7 @@ func ruleHeader(flags uint16) *int8 {
 	mask := uint32(flags) & 0x17f0
 	for i := 0; i < 7; i++ {
 		if *memmap.PtrUint32(0x587000, uintptr(312212+8*i)) == mask {
-			return (*int8)(*memmap.PtrPtr(0x587000, uintptr(312208+8*i)))
+			return (*int8)(memmap.LoadPtr(0x587000, uintptr(312208+8*i)))
 		}
 	}
 	return nil
@@ -158,7 +158,7 @@ func ruleApply(tokens [][]uint16, st *server.Settings2, mode uint32) int {
 	}
 	first := ruleNarrow(tokens[0])
 	for i := 0; i < 7; i++ {
-		name := *memmap.PtrPtr(0x587000, uintptr(312208+8*i))
+		name := memmap.LoadPtr(0x587000, uintptr(312208+8*i))
 		if first == GoStringP(unsafe.Pointer((*int8)(name))) {
 			ruleLoaderContext = *memmap.PtrUint32(0x587000, uintptr(312212+8*i))
 			return bool2int(mode == ruleLoaderContext)

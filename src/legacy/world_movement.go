@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
 	"math"
@@ -35,7 +36,7 @@ func worldElevatorSound(u *server.Object, up bool) {
 	}
 }
 func worldPlatformContains(platform, target *server.Object) bool {
-	return collisionContains(&platform.PosVec, (*[11]float32)(unsafe.Add(platform.CObj(), 172)), &target.PosVec)
+	return collisionContains(&platform.PosVec, (*[11]float32)(unsafe.Add(platform.CObj(), int(layoutServerObject.Off(172)) /* Shape.Kind */)), &target.PosVec)
 }
 func worldShaftCandidate(t, u *server.Object) {
 	if !worldPlatformContains(u, t) {
@@ -65,10 +66,10 @@ func worldElevatorCandidate(t, u *server.Object) {
 	tooBig := false
 	switch t.Shape.Kind {
 	case server.ShapeKindBox:
-		tooBig = *temporaryFloat(partner.CObj(), 184) < *temporaryFloat(t.CObj(), 184) || *temporaryFloat(partner.CObj(), 188) < *temporaryFloat(t.CObj(), 188)
+		tooBig = *temporaryFloat(partner.CObj(), int(layoutServerObject.Off(184)) /* Shape.Box.W */) < *temporaryFloat(t.CObj(), int(layoutServerObject.Off(184)) /* Shape.Box.W */) || *temporaryFloat(partner.CObj(), int(layoutServerObject.Off(188)) /* Shape.Box.H */) < *temporaryFloat(t.CObj(), int(layoutServerObject.Off(188)) /* Shape.Box.H */)
 	case server.ShapeKindCircle:
-		diameter := float64(*temporaryFloat(t.CObj(), 176)) * 2
-		tooBig = diameter > float64(*temporaryFloat(partner.CObj(), 184)) || diameter > float64(*temporaryFloat(partner.CObj(), 188))
+		diameter := float64(*temporaryFloat(t.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) * 2
+		tooBig = diameter > float64(*temporaryFloat(partner.CObj(), int(layoutServerObject.Off(184)) /* Shape.Box.W */)) || diameter > float64(*temporaryFloat(partner.CObj(), int(layoutServerObject.Off(188)) /* Shape.Box.H */))
 	}
 	if tooBig {
 		t.ObjFlags &^= 0x100000
@@ -153,7 +154,7 @@ func worldElevator(u *server.Object) {
 }
 func worldTeleportCandidate(t *server.Object, pos *types.Pointf, visible bool) {
 	// This legacy filter converts the float interpretation of the class word.
-	if uint32(effectsTruncWord(float64(*temporaryFloat(t.CObj(), 8))))&0x420000 != 0 {
+	if uint32(effectsTruncWord(float64(*temporaryFloat(t.CObj(), int(layoutServerObject.Off(8)) /* ObjClass */))))&0x420000 != 0 {
 		return
 	}
 	if visible {
@@ -167,7 +168,7 @@ func worldTeleportCandidate(t *server.Object, pos *types.Pointf, visible bool) {
 	}
 }
 func worldTeleportArea(u, destination *server.Object, visible bool) {
-	r := float64(*temporaryFloat(u.CObj(), 176))
+	r := float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */))
 	x, y := float64(u.PosVec.X), float64(u.PosVec.Y)
 	rect := types.Rectf{Min: types.Ptf(float32(x-r), float32(y-r)), Max: types.Ptf(float32(x+r), float32(y+r))}
 	GetServer().S().Map.EachObjInRect(rect, func(t *server.Object) bool { worldTeleportCandidate(t, &destination.PosVec, visible); return true })
@@ -219,7 +220,7 @@ func worldTeleport(u *server.Object) uint32 {
 				}
 			} else if *anim == 8 {
 				destination := *temporaryRefWord(ud, 12)
-				result = uint32(uintptr(destination.CObj()))
+				result = memmap.PtrWord(destination.CObj())
 				if destination != nil {
 					worldTeleportArea(u, destination, true)
 					*active = 0
@@ -229,7 +230,7 @@ func worldTeleport(u *server.Object) uint32 {
 		}
 	} else if *active != 0 {
 		destination := *temporaryRefWord(ud, 12)
-		result = uint32(uintptr(destination.CObj()))
+		result = memmap.PtrWord(destination.CObj())
 		if destination != nil && u.ObjFlags&0x1000000 != 0 {
 			other := destination.UpdateData
 			*state = 1
@@ -255,7 +256,7 @@ func worldInvisibleTeleport(u *server.Object) uint32 {
 		}
 	}
 	*equipmentWord(ud, 4) = 0
-	return uint32(uintptr(u.CObj()))
+	return memmap.PtrWord(u.CObj())
 }
 func worldPush(u *server.Object) {
 	spellEffectPushAround(u.PosVec, *temporaryFloat(u.UpdateData, 0), 0, *temporaryFloat(u.UpdateData, 8), nil, nil, 0)
@@ -266,7 +267,7 @@ func worldIndexedDirection(u *server.Object) (int32, int32) {
 	return int32(out[0]), int32(out[1])
 }
 func worldBlowCandidate(t, u *server.Object) {
-	if byte(effectsTruncWord(float64(*temporaryFloat(t.CObj(), 16))))&0x20 != 0 || uint32(effectsTruncWord(float64(*temporaryFloat(t.CObj(), 8))))&0x400000 != 0 {
+	if byte(effectsTruncWord(float64(*temporaryFloat(t.CObj(), int(layoutServerObject.Off(16)) /* ObjFlags */))))&0x20 != 0 || uint32(effectsTruncWord(float64(*temporaryFloat(t.CObj(), int(layoutServerObject.Off(8)) /* ObjClass */))))&0x400000 != 0 {
 		return
 	}
 	x := float32(float64(t.PosVec.X) - float64(u.PosVec.X))

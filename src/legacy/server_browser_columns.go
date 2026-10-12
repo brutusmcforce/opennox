@@ -9,7 +9,7 @@ import (
 )
 
 func browserColumns() []*gui.Window {
-	return []*gui.Window{browserWindow(uint32(browserUI.playersColumn)), browserWindow(uint32(browserUI.modeColumn)), browserWindow(uint32(browserUI.mapColumn)), browserWindow(uint32(browserUI.pingColumn)), browserWindow(uint32(browserUI.statusColumn))}
+	return []*gui.Window{browserUI.playersColumn, browserUI.modeColumn, browserUI.mapColumn, browserUI.pingColumn, browserUI.statusColumn}
 }
 func browserColumnsSend(code int, a, b uintptr) int {
 	ret := 0
@@ -19,7 +19,7 @@ func browserColumnsSend(code int, a, b uintptr) int {
 	return ret
 }
 func browserColumnsInit() int {
-	main := browserWindow(uint32(browserUI.gameList))
+	main := browserUI.gameList
 	main.SetFunc94(browserListEvent)
 	main.SetFunc93(browserListInput)
 	for _, w := range browserColumns() {
@@ -42,7 +42,7 @@ func browserListInput(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 		if code == 20 {
 			p = uiListData(w).Field_8
 		}
-		optionsSend(browserWindow(uint32(browserUI.gameList)), 16391, uintptr(p), 0)
+		optionsSend(browserUI.gameList, 16391, uintptr(p), 0)
 		browserColumnsSend(16391, uintptr(p), 0)
 		return nil
 	}
@@ -55,7 +55,7 @@ func browserListEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 	case 23:
 		return gui.RawEventResp(1)
 	case 16400:
-		id := browserWindow(uint32(a)).ID()
+		id := windowArg(a).ID()
 		if id >= 10038 && id <= 10042 {
 			browserColumnsSend(16403, b, 0)
 			if uint32(b) < uint32(browserUI.resultCount) {
@@ -71,8 +71,8 @@ func browserListEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 	case 16398, 16399:
 		browserColumnsSend(code, a, b)
 	case 16384:
-		main := browserWindow(uint32(browserUI.gameList))
-		if browserWindow(uint32(a)) == main.ChildByID(10043) || browserWindow(uint32(a)) == main.ChildByID(10044) {
+		main := browserUI.gameList
+		if windowArg(a) == main.ChildByID(10043) || windowArg(a) == main.ChildByID(10044) {
 			browserColumnsSend(code, a, 0)
 		}
 	case 16393:
@@ -104,7 +104,7 @@ func browserInfoPosition(x, y int32, out *[2]uint32) {
 }
 func browserInfoPopup(point *[2]uint32, record unsafe.Pointer) {
 	browserInfoPosition(int32(point[0]), int32(point[1]), point)
-	w := browserWindow(uint32(uintptr(browserUI.detailPanel)))
+	w := browserUI.detailPanel
 	w.SetParent(nil)
 	w.ShowModal()
 	w.StackPush()
@@ -115,12 +115,4 @@ func browserInfoPopup(point *[2]uint32, record unsafe.Pointer) {
 	if noxflags.HasEngine(noxflags.EngineNoRendering) {
 		uiWindowEnable(browserUI.joinButton, 0)
 	}
-}
-
-func sub_438EF0(w *gui.Window, code int32, a uint32, b int32) int32 {
-	return int32(gui.EventRespInt(browserListInput(w, &gui.RawEvent{Event: int(code), Arg1: uintptr(a), Arg2: uintptr(uint32(b))})))
-}
-
-func sub_439050(w uint32, code uint32, a unsafe.Pointer, b uint32) int32 {
-	return int32(gui.EventRespInt(browserListEvent(browserWindow(w), &gui.RawEvent{Event: int(code), Arg1: uintptr(a), Arg2: uintptr(b)})))
 }

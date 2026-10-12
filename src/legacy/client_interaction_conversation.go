@@ -103,19 +103,7 @@ func sub_479950() int32 { return int32(interactionConversationCancel()) }
 
 func sub_4799A0() int32 { return int32(interactionConversationOpen()) }
 
-func nox_xxx_guiDialog_479B00(w, code int32, a *int32, b int32) int32 {
-	return int32(gui.EventRespInt(interactionConversationEvent((*gui.Window)(unsafe.Pointer(uintptr(uint32(w)))), &gui.RawEvent{Event: int(code), Arg1: uintptr(unsafe.Pointer(a)), Arg2: uintptr(uint32(b))})))
-}
-
 func sub_479BE0(w *uint32, code int32, a uint32, b int32) int32 { return 1 }
-
-func sub_479C40(w *uint32, d int32) int32 {
-	return int32(interactionConversationBlink((*gui.Window)(unsafe.Pointer(w)), (*gui.WindowData)(unsafe.Pointer(uintptr(uint32(d))))))
-}
-
-func sub_479CB0(w, d int32) int32 {
-	return int32(interactionConversationDraw((*gui.Window)(unsafe.Pointer(uintptr(uint32(w)))), (*gui.WindowData)(unsafe.Pointer(uintptr(uint32(d))))))
-}
 
 func sub_479D10() int32 { return int32(interactionConversationDestroy()) }
 

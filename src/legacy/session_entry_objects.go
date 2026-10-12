@@ -12,9 +12,9 @@ func sessionShadowAdd(u *server.Object) *server.Object {
 	if u.ObjFlags&0x410000 == 0 {
 		u.Field118 = 0
 		u.ObjFlags |= 0x10000
-		u.Field117 = uint32(uintptr(unsafe.Pointer(sessionShadowHead)))
+		u.Field117 = memmap.PtrWord(unsafe.Pointer(sessionShadowHead))
 		if sessionShadowHead != nil {
-			sessionShadowHead.Field118 = uint32(uintptr(u.CObj()))
+			sessionShadowHead.Field118 = memmap.PtrWord(u.CObj())
 		}
 		sessionShadowHead = u
 	}
@@ -23,7 +23,7 @@ func sessionShadowAdd(u *server.Object) *server.Object {
 func sessionShadowRemove(u *server.Object) *server.Object {
 	if u.ObjFlags&0x10000 != 0 {
 		u.ObjFlags &^= 0x10000
-		next, prev := (*server.Object)(unsafe.Pointer(uintptr(u.Field117))), (*server.Object)(unsafe.Pointer(uintptr(u.Field118)))
+		next, prev := (*server.Object)(memmap.WordPtr(u.Field117)), (*server.Object)(memmap.WordPtr(u.Field118))
 		if prev != nil {
 			prev.Field117 = u.Field117
 		} else {

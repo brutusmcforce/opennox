@@ -28,7 +28,7 @@ func unitActionName(id int32, restricted bool) *byte {
 	if id < 0 || id >= 72 {
 		return nil
 	}
-	return (*byte)(*memmap.PtrPtr(0x587000, 261768+4*uintptr(id)))
+	return (*byte)(memmap.LoadPtr(0x587000, 261768+4*uintptr(id)))
 }
 func unitActionIndex(name string, restricted bool) int32 {
 	name, _, _ = strings.Cut(name, "\x00")
@@ -45,7 +45,7 @@ func unitActionIndex(name string, restricted bool) int32 {
 }
 func unitLocalOrder(player int, order int32) int {
 	pl := GetServer().S().Players.ByInd(ntype.PlayerInd(player))
-	*equipmentWord(unsafe.Pointer(pl), 3648) = uint32(order)
+	*equipmentWord(unsafe.Pointer(pl), int(layoutServerPlayer.Off(3648)) /* SummonOrderAll */) = uint32(order)
 	return gameplayReportCreature(player, byte(order))
 }
 func unitHurtSound(u *server.Object) {

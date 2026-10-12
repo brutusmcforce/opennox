@@ -94,12 +94,12 @@ func playerFileEnchantment(u *server.Object) int {
 				}
 			}
 		}
-		if version >= 5 && *(*byte)(unsafe.Add(unsafe.Pointer(p), 2251)) == 0 {
+		if version >= 5 && *(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(2251)) /* info */)) == 0 {
 			playerFileAbilities(u, r)
 		}
 	}
 	// Version four's tail is outside the optional enchantment body.
-	if version == 4 && *(*byte)(unsafe.Add(unsafe.Pointer(p), 2251)) == 0 {
+	if version == 4 && *(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(2251)) /* info */)) == 0 {
 		playerFileAbilities(u, r)
 	}
 	return 1

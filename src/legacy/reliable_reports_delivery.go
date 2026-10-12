@@ -24,7 +24,7 @@ func reliableDeliver(to byte, kind int) {
 	s := GetServer().S()
 	pl := s.Players.ByInd(ntype.PlayerInd(to))
 	hosting := noxflags.HasGame(noxflags.GameFlag(1))
-	if pl != nil && hosting && *(*byte)(unsafe.Add(pl.C(), 3680))&16 == 0 {
+	if pl != nil && hosting && *(*byte)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(3680)) /* Field3680 */))&16 == 0 {
 		return
 	}
 	send := func(data []byte) bool {

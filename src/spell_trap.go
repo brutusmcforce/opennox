@@ -228,7 +228,7 @@ func triggerTrap(trap, a2 *server.Object) {
 	const dist = 100
 	rect := types.RectFromPointsf(pos.Sub(types.Ptf(dist, dist)), pos.Add(types.Ptf(dist, dist)))
 	s.Map.EachObjInRect(rect, func(it *server.Object) bool {
-		if it != trap && (int32(uint8(*(*float32)(unsafe.Add(unsafe.Pointer(it), unsafe.Sizeof(float32(0))*4))))&0x20) == 0 {
+		if it != trap && (int32(uint8(*(*float32)(unsafe.Add(unsafe.Pointer(it), layoutServerObject.Off(unsafe.Sizeof(float32(0))*4) /* ObjFlags */))))&0x20) == 0 {
 			if int(it.TypeInd) == s.Types.GlyphID() {
 				if s.MapTraceRayAt(trap.Pos(), it.Pos(), nil, nil, 5) {
 					_ = nox_xxx___mkgmtime_538280

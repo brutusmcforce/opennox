@@ -57,7 +57,7 @@ func objectXferPlace(u *server.Object, owner, offset unsafe.Pointer) int {
 			u.PosVec.Y = float32(float64(u.PosVec.Y) - float64(y) + float64(p[1]) - 11)
 		}
 		if noxflags.HasGame(0x400000) {
-			nox_xxx_unitAddToList_5048A0(int32(uintptr(u.CObj())))
+			nox_xxx_unitAddToList_5048A0(int32(memmap.PtrWord(u.CObj())))
 			return 1
 		}
 		if noxflags.HasGame(0x200000) || Sub_4E3AD0(int(u.TypeInd)) != 0 {
@@ -107,7 +107,7 @@ func objectXferLight(u *server.Object) int {
 			}
 		}
 		if d != nil {
-			copy(light[:], unsafe.Slice((*byte)(unsafe.Add(d.C(), 136)), len(light)))
+			copy(light[:], unsafe.Slice((*byte)(unsafe.Add(d.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */)), len(light)))
 		}
 	}
 	p := unsafe.Pointer(&light[0])

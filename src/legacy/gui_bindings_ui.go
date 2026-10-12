@@ -132,7 +132,7 @@ func bindingDestroy() int {
 	bindingWindow(1321228).Destroy()
 	bindingWindow(1321232).Destroy()
 	for _, off := range []int{1321228, 1321232, 1321236, 1321240, 1321244, 1321248} {
-		*bindingWord(off) = 0
+		*bindingSlot(off) = nil
 	}
 	return 0
 }
@@ -179,12 +179,12 @@ func bindingMenuDone() int {
 	gui.CallAnimationCallback(fn)
 	return 1
 }
-func bindingYesNo() uint32 {
+func bindingYesNo() *gui.Window {
 	w := Nox_new_window_from_file("yesno.wnd", nil)
 	bindingStore(1321224, w)
 	if w != nil {
 		w.SetPos(image.Pt((int(nox_win_width)-320)/2, (int(nox_win_height)-240)/2))
 	}
 	w.SetHidden(true)
-	return *bindingWord(1321224)
+	return *bindingSlot(1321224)
 }

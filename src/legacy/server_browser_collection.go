@@ -1,7 +1,6 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"unicode/utf16"
@@ -39,7 +38,7 @@ func browserListClear(windows bool) unsafe.Pointer {
 		browserKeepSelection(unsafe.Pointer(p))
 		listRemove(p)
 		if windows {
-			w := (*gui.Window)(unsafe.Pointer(uintptr((*Nox_gui_server_ent_t)(unsafe.Pointer(p)).Field_7)))
+			w := (*Nox_gui_server_ent_t)(unsafe.Pointer(p)).Field_7
 			w.Destroy()
 		}
 		alloc.Free(p)

@@ -222,7 +222,7 @@ func creatureXferNPC(u *server.Object) int {
 		r.raw(unsafe.Pointer(u.HealthData), 2)
 	}
 	if v >= 51 {
-		r.raw(unsafe.Add(u.CObj(), 28), 4)
+		r.raw(unsafe.Add(u.CObj(), int(layoutServerObject.Off(28)) /* Experience */), 4)
 	}
 	if v >= 52 {
 		creatureXferVoice(u)

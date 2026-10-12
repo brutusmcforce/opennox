@@ -27,11 +27,10 @@ func bookSpellFamily(id int) int {
 }
 func bookGuideFamily(id int, visit func(int)) {
 	for off := uintptr(132124); ; off += 4 {
-		p := memmap.Uint32(0x587000, off)
-		if p == 0 {
+		words := (*uint32)(memmap.LoadPtr(0x587000, off))
+		if words == nil {
 			return
 		}
-		words := (*uint32)(unsafe.Pointer(uintptr(p)))
 		if *words != uint32(id) {
 			continue
 		}
@@ -45,8 +44,8 @@ func bookGuideFamily(id int, visit func(int)) {
 	}
 }
 func bookSpellReward(id, rank, notify, auto int) {
-	p := uint32(dword_8531A0_2576)
-	if p == 0 {
+	p := dword_8531A0_2576.C()
+	if p == nil {
 		return
 	}
 	if playerSpellClassCheck(int32(bookClass(p)), int32(id)) == 9 {
@@ -78,8 +77,8 @@ func bookSpellReward(id, rank, notify, auto int) {
 	}
 }
 func bookGuideReward(id, notify int) {
-	p := uint32(dword_8531A0_2576)
-	if p == 0 {
+	p := dword_8531A0_2576.C()
+	if p == nil {
 		return
 	}
 	*bookPlayerWord(p, 4244, id) = 1
@@ -119,7 +118,7 @@ func bookAbilityReward(id int, notify uintptr, auto int) {
 		return
 	}
 	bookPageComplete(false)
-	bookSort(bookClass(uint32(uintptr(unsafe.Pointer(p)))))
+	bookSort(bookClass(p.C()))
 	if notify != 0 {
 		if index := bookFind(id, 6); index != 6 {
 			bookHide(0)
@@ -132,9 +131,9 @@ func bookAbilityReward(id int, notify uintptr, auto int) {
 	}
 }
 func bookRemoveSpell(id int) int {
-	p := uint32(dword_8531A0_2576)
+	p := dword_8531A0_2576.C()
 	result := bookHide(1)
-	if p == 0 {
+	if p == nil {
 		return result
 	}
 	*bookPlayerWord(p, 3696, id) = 0
@@ -150,9 +149,9 @@ func bookRemoveSpell(id int) int {
 	return bookSort(bookClass(p))
 }
 func bookRemoveGuide(id int) int {
-	p := uint32(dword_8531A0_2576)
+	p := dword_8531A0_2576.C()
 	result := bookHide(1)
-	if p == 0 {
+	if p == nil {
 		return result
 	}
 	*bookPlayerWord(p, 4244, id) = 0
@@ -163,7 +162,7 @@ func bookRemoveGuide(id int) int {
 func bookRemoveAbility(id int) uintptr {
 	bookHide(1)
 	quickbarAbilityReward(id, 0, 0)
-	if p := *bookWord(1047516); p != 0 {
+	if p := bookPlayer; p != nil {
 		*bookPlayerWord(p, 3696, id) = 0
 	}
 	quickbarRemove(uint32(id))
@@ -171,5 +170,5 @@ func bookRemoveAbility(id int) uintptr {
 	if p == nil {
 		return 0
 	}
-	return uintptr(bookSort(bookClass(uint32(uintptr(unsafe.Pointer(p))))))
+	return uintptr(bookSort(bookClass(p.C())))
 }

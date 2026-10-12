@@ -14,7 +14,7 @@ func browserMarkersEnable(enabled int) {
 }
 func browserListReset() {
 	if browserUI.listMode == 1 {
-		optionsSend(browserWindow(uint32(browserUI.gameList)), 16399, 0, 0)
+		optionsSend(browserUI.gameList, 16399, 0, 0)
 	}
 }
 func browserAnimationFinish() int {
@@ -49,10 +49,10 @@ func browserConnectionReset() int {
 	return 0
 }
 func browserClose() int {
-	browserWindow(uint32(uintptr(browserUI.mapWindow))).Capture(false)
+	browserUI.mapWindow.Capture(false)
 	sessionFilterClose()
 	browserPopupClose()
-	detail := browserWindow(uint32(uintptr(browserUI.detailPanel)))
+	detail := browserUI.detailPanel
 	if detail != nil && detail.Parent() == nil {
 		detail.StackPop()
 		detail.Destroy()
@@ -74,27 +74,27 @@ func browserClose() int {
 func browserChooseCharacter() int {
 	browserAnimationOut()
 	(*gui.Anim)(unsafe.Pointer(browserUI.animation)).FncDoneOutPtr = animationCallbackKey(animationKeyBrowserHide)
-	browserWindow(uint32(uintptr(browserUI.detailPanel))).StackPop()
-	return uiWindowEnable(browserWindow(uint32(uintptr(browserUI.mapWindow))), 0)
+	browserUI.detailPanel.StackPop()
+	return uiWindowEnable(browserUI.mapWindow, 0)
 }
 func browserHideAfterChoice() int {
 	if GetClient().GameGetStateCode() == 1700 {
 		return browserAnimationFinish()
 	}
 	browserUI.world.SetHidden(true)
-	browserWindow(uint32(uintptr(browserUI.detailPanel))).SetHidden(true)
+	browserUI.detailPanel.SetHidden(true)
 	nox_client_setCursorType_477610(0)
 	return 1
 }
 func browserShowList() int {
-	w := browserWindow(uint32(browserUI.filter))
+	w := browserUI.filter
 	if !browserHidden(w) {
 		w.SetHidden(true)
 		sessionFilterSave()
 	}
-	browserWindow(uint32(browserUI.gameList)).SetHidden(false)
-	browserWindow(uint32(uintptr(browserUI.mapWindow))).SetHidden(true)
-	browserWindow(uint32(browserUI.overview)).SetHidden(true)
+	browserUI.gameList.SetHidden(false)
+	browserUI.mapWindow.SetHidden(true)
+	browserUI.overview.SetHidden(true)
 	serverPanelsEnable(browserUI.world, 10006, 10007, 1)
 	serverPanelsHide(browserUI.world, 10047, 10051, false)
 	browserLabel("ListJoinServer")

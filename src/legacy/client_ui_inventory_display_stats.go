@@ -131,7 +131,7 @@ func uiInventoryStats(pos image.Point) {
 		for col := 0; col < 4; col++ {
 			cell := &uiInventoryGrid()[col*21+row]
 			if cell.Count != 0 {
-				weight += int(cell.Count) * int(*(*byte)(unsafe.Add(cell.Drawable.C(), 298)))
+				weight += int(cell.Count) * int(*(*byte)(unsafe.Add(cell.Drawable.C(), int(layoutClientDrawable.Off(298)) /* Weight */)))
 			}
 		}
 	}

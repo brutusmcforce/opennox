@@ -100,7 +100,7 @@ func uiTradeMouse(w *gui.Window, event int, a, b uintptr) int {
 }
 func uiTradePanel(w *gui.Window, event int, a, b uintptr) int {
 	if event == 16391 {
-		id := uiInventoryWindowValue(uint32(a)).ID()
+		id := windowArg(a).ID()
 		uiTradeSound(766)
 		switch id {
 		case 3708:

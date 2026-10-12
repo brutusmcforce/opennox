@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/client/gui"
@@ -23,7 +24,7 @@ func bookFormatInt(format string, number int) string {
 	return alloc.GoString16(&dst[0])
 }
 func bookCreatureName(id int) string {
-	return GoWStringP(unsafe.Pointer(uintptr(uint32(bookGuideCreatureName(int32(id))))))
+	return GoWStringP(memmap.WordPtr(uint32(bookGuideCreatureName(int32(id)))))
 }
 func bookDrawList(w *gui.Window) int {
 	r := GetClient().R2()
@@ -50,10 +51,10 @@ func bookDrawList(w *gui.Window) int {
 		if mode == 3 {
 			off = 1046928
 		}
-		GetClient().Nox_video_drawAnimatedImageOrCursorAt((*ImageRef)(unsafe.Pointer(uintptr(*bookWord(off)))), backPos)
+		GetClient().Nox_video_drawAnimatedImageOrCursorAt((*ImageRef)(memmap.WordPtr(*bookWord(off))), backPos)
 		return 1
 	}
-	p := *bookWord(1047516)
+	p := bookPlayer
 	class := bookClass(p)
 	if *bookContents() != 0 {
 		perColumn := int(141 / *bookWord(1046656) - 1)
@@ -131,7 +132,7 @@ func bookDrawList(w *gui.Window) int {
 		bookDrawImage(uint32(bookGuideImage(int32(id))), image.Pt((108-imageWidth)/2+pos.X+24, y+dy+textSize.Y+2))
 		raw := bookGuideDescription(int32(id))
 		hasDesc = raw != 0
-		desc = GoWStringP(unsafe.Pointer(uintptr(uint32(raw))))
+		desc = GoWStringP(memmap.WordPtr(uint32(raw)))
 	} else if class == 0 {
 		Sub_425450(id)
 		title(GoWString(nox_xxx_abilityGetName_0_425260(id)), pos.Y+53)

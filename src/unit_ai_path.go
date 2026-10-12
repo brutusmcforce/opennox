@@ -134,7 +134,7 @@ func (s *Server) nox_xxx_pathFind_50BA00(far bool, obj *server.Object, a3 *types
 				if ii < 4 {
 					v30 = obj
 				} else {
-					v60 := byte(int8(int32(uint16(int16(^(int32(*(*uint16)(unsafe.Add(unsafe.Pointer(obj), 16)))>>8))))&0xD8 | 0x98))
+					v60 := byte(int8(int32(uint16(int16(^(int32(*(*uint16)(unsafe.Add(unsafe.Pointer(obj), int(layoutServerObject.Off(16)) /* ObjFlags */)))>>8))))&0xD8 | 0x98))
 					s.Doors.SetKeyHolder(obj)
 					switch ii {
 					case 4:
@@ -510,7 +510,7 @@ func sub_50C830(a1 *server.Object, x, y int32) int32 {
 			break
 		}
 		v4 = (*float32)(unsafe.Add(unsafe.Pointer(v4), unsafe.Sizeof(float32(0))*2))
-		if int32(uintptr(unsafe.Pointer(v4))) >= int32(uintptr(memmap.PtrOff(0x587000, 234220))) {
+		if int32(memmap.PtrWord(unsafe.Pointer(v4))) >= int32(memmap.PtrWord(memmap.PtrOff(0x587000, 234220))) {
 			return 1
 		}
 	}

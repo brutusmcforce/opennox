@@ -159,9 +159,9 @@ func sub_462040(code int32) {
 	if slot == 0 {
 		dword_5d4594_1062488 = uint32(dr.NetCode32)
 	}
-	charge := int16(*(*uint16)(unsafe.Add(dr.C(), 448)))
+	charge := int16(*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(448)) /* Union._ */)))
 	if charge >= 0 {
-		sub_470D90(int(charge), int(*(*int16)(unsafe.Add(dr.C(), 450))))
+		sub_470D90(int(charge), int(*(*int16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(450)) /* Union._ */))))
 	}
 	if dword_5d4594_1062496 != 0 {
 		if next := uiInventoryFindCode(uint32(dword_5d4594_1062496)); next != nil {

@@ -6,7 +6,6 @@ import (
 	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"image"
@@ -29,10 +28,10 @@ type uiPotionSlot struct {
 }
 
 func uiMeterSlot(index int) *uiPotionSlot {
-	return (*uiPotionSlot)(memmap.PtrOff(0x5D4594, 1090296+uintptr(index)*536))
+	return &uiPotionSlots[index].Slot
 }
 func uiMeterPotionDrawable(index int) *client.Drawable {
-	return (*client.Drawable)(memmap.PtrOff(0x5D4594, 1090316+uintptr(index)*536))
+	return &uiPotionSlots[index].Drawable
 }
 func uiMeterLinkPotion(index int, typeID uint32) bool {
 	slot := uiMeterSlot(index)
@@ -51,11 +50,11 @@ func uiMeterPotionDraw(w *gui.Window) int {
 	s := uiMeterSlot(int(uintptr(w.WidgetData)))
 	pos := uiWindowPosition(w)
 	r := GetClient().R2()
-	font := r.GetFonts().AsFont(unsafe.Pointer(uintptr(dword_5d4594_1096288)))
+	font := r.GetFonts().AsFont(memmap.WordPtr(dword_5d4594_1096288))
 	if s.Count != 0 {
 		if s.Image != nil {
 			s.Image.PosVec = pos.Add(image.Pt(14, 15))
-			s.Image.CallDraw((*noxrender.Viewport)(memmap.PtrOff(0x5D4594, 1091908)))
+			s.Image.CallDraw(&uiPotionViewport)
 		}
 		r.Data().SetTextColor(noxcolor.RGBA5551(nox_color_white_2523948))
 		r.DrawString(font, strconv.Itoa(int(s.Count)), image.Pt(pos.X-2, pos.Y-r.FontHeight(font)+10))
@@ -80,7 +79,7 @@ func sub_470E90(window, event int) int {
 
 func nox_xxx_guiBottleSlotProc_471B90(window, event int) int {
 	if event == 5 {
-		w := (*gui.Window)(unsafe.Pointer(uintptr(uint32(window))))
+		w := (*gui.Window)(memmap.WordPtr(uint32(window)))
 		if typ := uiMeterSlot(int(uintptr(w.WidgetData))).Type; typ != 0 {
 			uiInventoryUsePotion(typ)
 		}

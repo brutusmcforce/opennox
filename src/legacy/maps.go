@@ -2,6 +2,7 @@ package legacy
 
 import (
 	"fmt"
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/log"
@@ -100,7 +101,7 @@ func Nox_server_mapRWObjectTOC_428B30(_ *cryptfile.CryptFile, a1 unsafe.Pointer)
 }
 
 func Nox_xxx_servMapLoadPlaceObj_4F3F50(obj *server.Object, a2 int, a3 unsafe.Pointer) int {
-	return objectXferPlace(obj, unsafe.Pointer(uintptr(uint32(a2))), a3)
+	return objectXferPlace(obj, memmap.WordPtr(uint32(a2)), a3)
 }
 
 func Nox_xxx_prepareLightningEffects_4BAB30() {

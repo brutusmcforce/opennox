@@ -66,7 +66,7 @@ func playerFileServerLoad(path string, ind int) int {
 			return 1
 		}
 		length, _ := r.cf.ReadAlignedU32()
-		ret, found := playerFileServerSection(id, u, unsafe.Add(unsafe.Pointer(p), 2185))
+		ret, found := playerFileServerSection(id, u, unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(2185)) /* info */))
 		if !found {
 			r.cf.Seek(int64(int32(length)), io.SeekCurrent)
 			continue
@@ -101,7 +101,7 @@ func playerFileClientLoad(path string) int {
 				continue
 			}
 			found = true
-			if callPlayerFileSection(*memmap.PtrPtr(0x587000, off+8)) == 0 {
+			if callPlayerFileSection(memmap.LoadPtr(0x587000, off+8)) == 0 {
 				cryptfile.Close()
 				return 0
 			}
@@ -129,7 +129,7 @@ func playerFileClientWrite(info unsafe.Pointer, all int) int {
 		}
 		r.raw(memmap.PtrOff(0x587000, off+4), 4)
 		r.cf.SectionStart()
-		ret := callPlayerFileSection(*memmap.PtrPtr(0x587000, off+8))
+		ret := callPlayerFileSection(memmap.LoadPtr(0x587000, off+8))
 		r.cf.SectionEnd()
 		if ret == 0 {
 			cryptfile.Close()

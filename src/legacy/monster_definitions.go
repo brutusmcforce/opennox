@@ -85,7 +85,7 @@ func monsterDefinitionStatus(name string) uint16 {
 			continue
 		}
 		for i := uintptr(0); ; i++ {
-			p := *memmap.PtrPtr(0x587000, 247536+4*i)
+			p := memmap.LoadPtr(0x587000, 247536+4*i)
 			if p == nil {
 				break
 			}
@@ -143,7 +143,7 @@ func monsterDefinitionParse(f *binfile.Binfile, name string) bool {
 		}
 		field := uintptr(248192)
 		for {
-			p := *memmap.PtrPtr(0x587000, field)
+			p := memmap.LoadPtr(0x587000, field)
 			if p == nil {
 				return false
 			}
@@ -190,7 +190,7 @@ func monsterDefinitionParse(f *binfile.Binfile, name string) bool {
 		case 8:
 			d.MeleeAttackDamageType124 = 18
 			for i := uintptr(0); i < 18; i++ {
-				name := alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, 247464+4*i)))
+				name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 247464+4*i)))
 				if mapThemeLower(value) == mapThemeLower(name[7:]) {
 					d.MeleeAttackDamageType124 = uint32(i)
 					break

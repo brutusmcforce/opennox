@@ -158,7 +158,7 @@ func scoreboardDrawPlayer(index, side, limit int) {
 		*memmap.PtrUint32(0x5D4594, 1088996) = uint32(side)
 	}
 	scoreboardCellName(side, 0, color, &r.Name[0])
-	scoreboardCellName(side, 2, color, *(**uint16)(memmap.PtrOff(0x5D4594, 1084056+4*uintptr(r.Class))))
+	scoreboardCellName(side, 2, color, scoreboardClassNames[r.Class])
 	if *scoreboardData.mode != 5 || r.Score > 0 {
 		scoreboardCell(side, 3, color, fmt.Sprintf(scoreboardLiteral(146632), int32(r.Score)))
 	} else {

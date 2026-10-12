@@ -48,7 +48,7 @@ func resourceToken(f *binfile.Binfile, out []byte) bool {
 }
 func resourceSoundSetField(row unsafe.Pointer, name string, id uint32) bool {
 	for off := uintptr(64704); ; off += 8 {
-		p := (*byte)(*memmap.PtrPtr(0x587000, off))
+		p := (*byte)(memmap.LoadPtr(0x587000, off))
 		if p == nil {
 			return false
 		}

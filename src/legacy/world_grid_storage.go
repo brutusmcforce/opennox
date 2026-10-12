@@ -17,8 +17,8 @@ const worldTileGridCapacity = 128
 // Words 5 and 10 hold unmanaged subtile-list addresses.
 type worldTileCell [11]uint32
 
-var _ [44 - unsafe.Sizeof(worldTileCell{})]byte
-var _ [unsafe.Sizeof(worldTileCell{}) - 44]byte
+
+
 
 var worldTileGrid **worldTileCell
 var worldTileDefinitions [176]server.TileDef
@@ -86,7 +86,7 @@ func worldDrawableAttach(d *client.Drawable, x, y int) unsafe.Pointer {
 			return nil
 		}
 	}
-	w.Field32 = uint32(uintptr(d.C()))
+	w.Field32 = memmap.PtrWord(d.C())
 	w.Flags4 |= wall.Flags(0x10)
 	point := [2]int32{int32(d.PosVec.X), int32(d.PosVec.Y)}
 	p := mapPolygonFind(&point, 0, false)
@@ -95,13 +95,13 @@ func worldDrawableAttach(d *client.Drawable, x, y int) unsafe.Pointer {
 	}
 	value := byte(1)
 	if p != nil {
-		value = *(*byte)(unsafe.Add(unsafe.Pointer(p), 130))
+		value = *(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutLegacyMapPolygon.Off(130)) /* Level */))
 	}
 	w.Field8 = (w.Field8 & 0xff00) | uint16(value)
 	return unsafe.Pointer(p)
 }
 func worldSecretInsert(p unsafe.Pointer) unsafe.Pointer {
-	*(*uint32)(p) = uint32(uintptr(worldSecretHead))
+	*(*unsafe.Pointer)(p) = worldSecretHead // the record starts with its next pointer
 	worldSecretHead = p
 	return p
 }
@@ -128,7 +128,7 @@ func worldSecretRemove(p unsafe.Pointer) unsafe.Pointer {
 			if prev == nil {
 				worldSecretHead = next
 			} else {
-				*(*uint32)(prev) = uint32(uintptr(next))
+				*(*unsafe.Pointer)(prev) = next
 			}
 			legacyFree(p)
 			return cur

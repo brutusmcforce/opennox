@@ -59,7 +59,7 @@ func quickbarSendSpells(ids *uint32, count int, flag byte) int {
 }
 func quickbarInvokeSlot(slot int) {
 	p := quickbarPlayer()
-	if p == 0 || Nox_xxx_playerAnimCheck_4372B0() != 0 {
+	if p == nil || Nox_xxx_playerAnimCheck_4372B0() != 0 {
 		return
 	}
 	s := &quickbarMain().Current[slot]

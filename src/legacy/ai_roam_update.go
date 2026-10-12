@@ -47,7 +47,7 @@ func roamUpdate(u *server.Object) {
 	}
 	head := ud.AIStackHead()
 	mask := byte(head.Args[2])
-	wp := roamWaypoint(uint32(head.Args[0]))
+	wp := (*server.Waypoint)(unsafe.Pointer(head.Args[0]))
 	if !roamEligible(wp, mask) {
 		head.Args[0] = 0
 		wp = nil
@@ -77,7 +77,7 @@ func roamUpdate(u *server.Object) {
 		ud.Field70 = 0
 	}
 	if ud.Field2 == 0 {
-		wp = roamWaypoint(uint32(head.Args[0]))
+		wp = (*server.Waypoint)(unsafe.Pointer(head.Args[0]))
 		GetServer().Nox_xxx_creatureSetDetailedPath_50D220(u, &wp.PosVec)
 	}
 	if byte(ud.Field71) == 2 {

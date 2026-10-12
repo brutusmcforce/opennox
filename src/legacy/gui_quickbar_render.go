@@ -19,7 +19,7 @@ func quickbarKeyLabel(w *gui.Window, _ *gui.WindowData) int {
 	// The live C adapter returns an interned pointer even for an empty label.
 	quickbarWhite()
 	r := GetClient().R2()
-	r.DrawString(r.GetFonts().AsFont(unsafe.Pointer(uintptr(*quickbarWord(1049684)))), text, w.GlobalPos())
+	r.DrawString(r.GetFonts().AsFont(memmap.WordPtr(*quickbarWord(1049684))), text, w.GlobalPos())
 	return 1
 }
 
@@ -32,9 +32,9 @@ func quickbarRowLabel(w *gui.Window, trap bool) int {
 	pos := w.GlobalPos()
 	name, row := "SpellSet", int(quickbarMain().Selected)+1
 	if trap {
-		name, row = "TrapSet", int(*quickbarByte(1048140))+1
+		name, row = "TrapSet", int(quickbarRecords[0].Selected)+1
 	} else {
-		pos.Y += -r.FontHeight(font) + r.FontHeight(r.GetFonts().AsFont(unsafe.Pointer(uintptr(*quickbarWord(1049684))))) + 1
+		pos.Y += -r.FontHeight(font) + r.FontHeight(r.GetFonts().AsFont(memmap.WordPtr(*quickbarWord(1049684)))) + 1
 	}
 	text := bookFormatInt(quickbarText(name), row)
 	size := r.GetStringSizeWrapped(font, text, 0)
@@ -59,7 +59,7 @@ func quickbarNoIcon(pos image.Point) {
 }
 
 func quickbarDrawAbility(w *gui.Window, _ *gui.WindowData) int {
-	b := (*quickbarRecord)(unsafe.Pointer(uintptr(*quickbarUserData(w))))
+	b := (*quickbarRecord)(memmap.WordPtr(*quickbarUserData(w)))
 	i := 0
 	for i < 5 && b.Slots[i] != w {
 		i++
@@ -96,7 +96,7 @@ func quickbarDrawAbility(w *gui.Window, _ *gui.WindowData) int {
 }
 
 func quickbarDrawSpell(w *gui.Window, _ *gui.WindowData) int {
-	b := (*quickbarRecord)(unsafe.Pointer(uintptr(*quickbarUserData(w))))
+	b := (*quickbarRecord)(memmap.WordPtr(*quickbarUserData(w)))
 	i := 0
 	for i < 5 && b.Slots[i] != w {
 		i++
@@ -134,7 +134,7 @@ func quickbarDrawSpell(w *gui.Window, _ *gui.WindowData) int {
 		}
 	}
 	p := LocalPlayerDrawable
-	buffed := p != nil && *(*uint32)(unsafe.Add(p.C(), 124))&(1<<29) != 0
+	buffed := p != nil && *(*uint32)(unsafe.Add(p.C(), int(layoutClientDrawable.Off(124)) /* Buffs */))&(1<<29) != 0
 	if !bool(nox_xxx_spellIsEnabled_424B70(int(id))) || Nox_xxx_playerAnimCheck_4372B0() != 0 || buffed {
 		GetClient().R2().DrawRectFilledAlpha(pos.X, pos.Y, 30, 30)
 	} else if mana < cost && cost != 0 {

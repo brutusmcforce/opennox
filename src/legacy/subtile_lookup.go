@@ -1,6 +1,6 @@
 package legacy
 
-import "unsafe"
+import "github.com/brutusmcforce/opennox/common/memmap"
 
 func subtileContains(point *[2]int32, category int32) bool {
 	x, y := point[0], point[1]
@@ -38,7 +38,7 @@ func subtileContains(point *[2]int32, category int32) bool {
 func findSubtileAt(head *[5]uint32, point *[2]int32, fallback int32) int32 {
 	result := fallback
 	// The list belongs to C. Keep its 32-bit links and physical word layout.
-	for p := head; p != nil; p = (*[5]uint32)(unsafe.Pointer(uintptr(p[4]))) {
+	for p := head; p != nil; p = (*[5]uint32)(memmap.WordPtr(p[4])) {
 		category := normalizeBorderEdge(int32(p[2]), int32(p[3]))
 		if subtileContains(point, category) {
 			result = int32(p[0])

@@ -101,7 +101,7 @@ func clientSessionSettings(op int, data []byte) {
 				if noxflags.HasGame(128) {
 					if dword_5d4594_1200832 != 0 {
 						p := Get_dword_8531A0_2576()
-						Nox_xxx_printCentered_445490(clientGameProgressText("NameChange", alloc.GoString16((*uint16)(unsafe.Add(p.C(), 4704)))))
+						Nox_xxx_printCentered_445490(clientGameProgressText("NameChange", alloc.GoString16((*uint16)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(4704)) /* NameFinal */)))))
 						dword_5d4594_1200832 = 0
 					}
 					if nox_server_sanctuaryHelp_54276 != 0 {

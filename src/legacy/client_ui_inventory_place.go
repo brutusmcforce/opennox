@@ -98,11 +98,11 @@ func uiInventoryCapacity(typ, quantity int32) int32 {
 }
 func uiInventoryAlterWeapon() {
 	playerDr := LocalPlayerDrawable
-	if playerDr == nil || GetClient().Cli().Cursor != 0 || quickbarAbilityAvailable(1) != 0 {
+	if playerDr == nil || nox_xxx_guiCursor_477600() != 0 || quickbarAbilityAvailable(1) != 0 {
 		return
 	}
 	player := uiMeterPlayer()
-	if player == nil || *(*uint32)(unsafe.Add(playerDr.C(), 276)) == 34 {
+	if player == nil || *(*uint32)(unsafe.Add(playerDr.C(), int(layoutClientDrawable.Off(276)) /* AnimInd */)) == 34 {
 		return
 	}
 	if int32(geometryRectInt((*[2]int32)(unsafe.Pointer(memmap.PtrOff(0x5D4594, 1062572))), (*[4]int32)(unsafe.Pointer(memmap.PtrOff(0x587000, 136336))))) == 1 {

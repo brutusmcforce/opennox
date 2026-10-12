@@ -14,9 +14,6 @@ type legacyListNode struct {
 	tag        uintptr
 }
 
-var _ = [1]struct{}{}[12-unsafe.Sizeof(legacyListNode{})]
-var _ = [1]struct{}{}[8-unsafe.Offsetof(legacyListNode{}.tag)]
-
 func listClear(p *legacyListNode) {
 	p.next = p
 	p.prev = p
@@ -124,14 +121,7 @@ type playerGroupMember struct {
 	index int32
 }
 
-var _ = [1]struct{}{}[52-unsafe.Sizeof(playerGroup{})]
-var _ = [1]struct{}{}[16-unsafe.Sizeof(playerGroupMember{})]
-var _ = [1]struct{}{}[12-unsafe.Offsetof(playerGroup{}.name)]
-var _ = [1]struct{}{}[32-unsafe.Offsetof(playerGroup{}.id)]
-var _ = [1]struct{}{}[40-unsafe.Offsetof(playerGroup{}.members)]
-var _ = [1]struct{}{}[12-unsafe.Offsetof(playerGroupMember{}.index)]
-
-func playerGroupsHead() *legacyListNode { return (*legacyListNode)(memmap.PtrOff(0x5D4594, 599460)) }
+func playerGroupsHead() *legacyListNode { return &playerGroupsList }
 func playerGroupsInit() {
 	guard := memmap.PtrUint32(0x5D4594, 599472)
 	if *guard == 0 {

@@ -93,17 +93,17 @@ func creatureXferPostload(u *server.Object) uint32 {
 			switch kind {
 			case 1:
 				if *arg != 0 {
-					*arg = uint32(uintptr(unsafe.Pointer(objectLookupByScriptID(*arg))))
+					*(*uintptr)(unsafe.Pointer(arg)) = uintptr(unsafe.Pointer(objectLookupByScriptID(*arg))) // AI action arguments are uintptr
 				}
 			case 2:
 				if *arg != 0 {
 					wp := GetServer().S().WPs.ByInd(int(*arg))
-					*arg = uint32(uintptr(unsafe.Pointer(wp)))
+					*(*uintptr)(unsafe.Pointer(arg)) = uintptr(unsafe.Pointer(wp))
 				}
 			}
 		}
 	}
-	return uint32(uintptr(p))
+	return memmap.PtrWord(p)
 }
 
 func creatureXferVoice(u *server.Object) uint32 {

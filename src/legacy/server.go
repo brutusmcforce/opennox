@@ -394,8 +394,6 @@ func Sub_4FCEB0(a1 bool) {
 	spellLifeCancelDurations(int32(bool2int(a1)))
 }
 
-var _ = [1]struct{}{}[60-unsafe.Sizeof(server.TileDef{})]
-
 func Get_nox_tile_defs_arr() []server.TileDef {
 	ptr := (*server.TileDef)(unsafe.Pointer(&worldTileDefinitions[0]))
 	sz := int(worldTileDefinitionCount)

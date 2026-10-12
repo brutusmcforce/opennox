@@ -76,7 +76,7 @@ func objectRenderDraw(vp *noxrender.Viewport, dr *client.Drawable, img noxrender
 	pos := effectScreen(vp, dr).Sub(image.Pt(int(*effectByte(dr, 0)), int(*effectByte(dr, 1))))
 	if memmap.Uint32(0x587000, 80808) != 0 && dr.ObjFlags&0x40000001 == 0 && dr.ObjClass&0x80 != 0 {
 		a := vp.ToScreenPos(dr.PosVec)
-		dir := int(*effectByte(dr, 299))
+		dir := int(*effectByte(dr, int(layoutClientDrawable.Off(299)) /* Field_74_4 */))
 		b := a.Add(image.Pt(int(memmap.Int32(0x587000, 196184+8*uintptr(dir))), int(memmap.Int32(0x587000, 196188+8*uintptr(dir)))))
 		mid := image.Pt((a.X+b.X)>>1, (a.Y+b.Y)>>1)
 		if dir < 24 && dir != 0 && (dir < 8 || dir > 16) {

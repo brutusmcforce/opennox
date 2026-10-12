@@ -30,4 +30,3 @@ func (fx *DrawableFX) C() unsafe.Pointer {
 }
 
 // Match the link written by the C attachment routine.
-var _ = [1]struct{}{}[64-unsafe.Offsetof(DrawableFX{}.Next)]

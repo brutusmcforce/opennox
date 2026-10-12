@@ -2,12 +2,13 @@ package legacy
 
 import (
 	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
 	"unsafe"
 )
 
 func interactionKeyRoot() *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(interactionKeyRootWord)))
+	return (*gui.Window)(memmap.WordPtr(interactionKeyRootWord))
 }
 func interactionSetKeyState(v uint32) {
 	if interactionKeyState == 0 && v == 1 {
@@ -59,7 +60,7 @@ func interactionKeyEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp 
 }
 func interactionKeyOpen() int {
 	w := Nox_new_window_from_file("SKey.wnd", interactionKeyEvent)
-	interactionKeyRootWord = uint32(uintptr(w.C()))
+	interactionKeyRootWord = memmap.PtrWord(w.C())
 	if w == nil {
 		return 0
 	}
@@ -75,17 +76,17 @@ func interactionKeyDestroy() {
 func interactionVoteOpen() int {
 	img := Nox_xxx_gLoadImg("VoteInProgress")
 	w := GetClient().Cli().GUI.NewWindowRaw(nil, 136, int(nox_win_width)-50, int(nox_win_height)/2-100, 50, 50, nil)
-	interactionVoteIcon = uint32(uintptr(w.C()))
+	interactionVoteIcon = memmap.PtrWord(w.C())
 	w.DrawData().BgImageHnd = img.C()
 	w.SetAllFuncs(nil, interactionIconDraw, nil)
 	w.Hide()
 	return 1
 }
 func interactionVoteHide(v int) int {
-	return nox_window_set_hidden((*nox_window)(unsafe.Pointer(uintptr(interactionVoteIcon))), v)
+	return nox_window_set_hidden((*nox_window)(memmap.WordPtr(interactionVoteIcon)), v)
 }
 func interactionVoteDestroy() int {
-	result := nox_xxx_windowDestroyMB_46C4E0((*nox_window)(unsafe.Pointer(uintptr(interactionVoteIcon))))
+	result := nox_xxx_windowDestroyMB_46C4E0((*nox_window)(memmap.WordPtr(interactionVoteIcon)))
 	interactionVoteIcon = 0
 	return result
 }
@@ -99,10 +100,6 @@ func sub_4BFBF0() int32 { return int32(interactionKeyShow()) }
 func sub_4BFC70() int32 { return int32(interactionKeyHide()) }
 
 func sub_4BFC90() int32 { return int32(interactionKeyOpen()) }
-
-func sub_4BFCD0(w, code int32, a *int32, b int32) int32 {
-	return int32(gui.EventRespInt(interactionKeyEvent((*gui.Window)(unsafe.Pointer(uintptr(uint32(w)))), gui.AsWindowEvent(int(code), uintptr(unsafe.Pointer(a)), uintptr(uint32(b))))))
-}
 
 func sub_4BFD10() { interactionKeyDestroy() }
 

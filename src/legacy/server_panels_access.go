@@ -31,8 +31,8 @@ func serverPanelsAccessOpen(parent *gui.Window) int {
 	}{{1045520, 10102}, {1045524, 10103}, {1045532, 10109}, {1045528, 10105}, {1045536, 10200}, {1045540, 10111}, {1045544, 10112}, {1045548, 10113}, {1045556, 10104}, {1045560, 10125}, {1045564, 10127}, {1045568, 10129}, {1045572, 10131}, {1045576, 10126}, {1045580, 10128}, {1045584, 10130}, {1045588, 10132}, {1045552, 10123}, {1045592, 10133}} {
 		*serverPanelsWord(v.off) = uint32(serverOptionsPtr(w.ChildByID(v.id)))
 	}
-	en := noxrender.ImageHandle(unsafe.Pointer(uintptr(uiMeterLoadImage("UISlider"))))
-	lit := noxrender.ImageHandle(unsafe.Pointer(uintptr(uiMeterLoadImage("UISliderLit"))))
+	en := noxrender.ImageHandle(memmap.WordPtr(uiMeterLoadImage("UISlider")))
+	lit := noxrender.ImageHandle(memmap.WordPtr(uiMeterLoadImage("UISliderLit")))
 	for _, v := range []struct{ list, slider, up, down uint }{{10109, 10190, 10188, 10189}, {10105, 10187, 10185, 10186}, {10200, 10203, 10201, 10202}} {
 		list, slider, up, down := w.ChildByID(v.list), w.ChildByID(v.slider), w.ChildByID(v.up), w.ChildByID(v.down)
 		slider.Field100Ptr.SizeVal = image.Pt(16, 10)
@@ -165,10 +165,10 @@ func serverPanelsAccessRefresh() uintptr {
 		allowed, blocked := serverPanelsWindow(1045532), serverPanelsWindow(1045528)
 		teamUIEvent(blocked, 16399, 0, 0)
 		teamUIEvent(allowed, 16399, 0, 0)
-		for node := listNext((*legacyListNode)(memmap.PtrOff(0x5D4594, 371364))); node != nil; node = listNext(node) {
+		for node := listNext(serverConfigAllowedHead()); node != nil; node = listNext(node) {
 			teamUIEvent(allowed, 16397, uintptr(unsafe.Add(unsafe.Pointer(node), 12)), ^uintptr(0))
 		}
-		for node := listNext((*legacyListNode)(memmap.PtrOff(0x5D4594, 371500))); node != nil; node = listNext(node) {
+		for node := listNext(serverConfigBlockedHead()); node != nil; node = listNext(node) {
 			p := unsafe.Add(unsafe.Pointer(node), 12)
 			if *(*byte)(unsafe.Add(unsafe.Pointer(node), 72)) != 0 {
 				teamUIEvent(blocked, 16397, uintptr(p), ^uintptr(0))

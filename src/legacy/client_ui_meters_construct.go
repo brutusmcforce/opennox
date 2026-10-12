@@ -3,7 +3,6 @@ package legacy
 import (
 	"fmt"
 	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
@@ -21,7 +20,9 @@ func uiMeterWindow(parent *gui.Window, flags gui.StatusFlags, x, y, width, heigh
 func uiMeterWindowTooltip(w *gui.Window, key string) {
 	w.DrawData().SetTooltip(GetServer().S().Strings(), uiMeterString(key))
 }
-func uiMeterLoadImage(name string) uint32 { return uint32(uintptr(Nox_xxx_gLoadImg(name).C())) }
+func uiMeterLoadImage(name string) uint32 {
+	return memmap.PtrWord(unsafe.Pointer(Nox_xxx_gLoadImg(name).C()))
+}
 
 func nox_win_init_cur_weapon(p *gui.Window, x, y, width, height int) {
 	uiMeters()[4].Window = uiMeterWindow(p, 1032, x, y, width, height, 4, uiMeterWeaponInputCallback, uiMeterWeaponDrawCallback, uiMeterCallbackIdentity(33))
@@ -45,12 +46,12 @@ func uiMeterInit() int {
 	if player == nil {
 		return 0
 	}
-	dword_5d4594_1096288 = uint32(uintptr(GetClient().R2().GetFonts().FontPtrByName("small")))
+	dword_5d4594_1096288 = memmap.PtrWord(GetClient().R2().GetFonts().FontPtrByName("small"))
 	dword_5d4594_1096264 = 0
 	dword_5d4594_1096256 = 0
 	dword_5d4594_1096260 = 0
 	width, height := int(nox_win_width), int(nox_win_height)
-	vp := (*noxrender.Viewport)(memmap.PtrOff(0x5D4594, 1091908))
+	vp := &uiPotionViewport
 	vp.Screen = image.Rect(0, 0, width, height)
 	vp.Size = image.Pt(width, height)
 	vp.World.Min = image.Point{}
@@ -67,16 +68,16 @@ func uiMeterInit() int {
 	}
 	g := GetClient().Cli().GUI
 	main := g.NewWindowRaw(nil, 136, width-91, height-201, 91, 201, nil)
-	dword_5d4594_1090276 = uint32(uintptr(main.C()))
+	dword_5d4594_1090276 = memmap.PtrWord(main.C())
 	uiMeterSetIcon(main, memmap.Uint32(0x5D4594, 1092996))
 	cure := uiMeterWindow(main, 8, 6, 166, 28, 30, 2, uiMeterPotionInputCallback, uiMeterPotionDrawCallback, nil)
-	dword_5d4594_1091364 = uint32(uintptr(cure.C()))
+	dword_5d4594_1091364 = memmap.PtrWord(cure.C())
 	uiMeterWindowTooltip(cure, "CurePoisonSlotTT")
 	uiMeterSlot(2).Count = 0
 	uiMeterLinkPotion(2, uint32(dword_5d4594_1096276))
 	uiMeterSlot(2).Type = uint32(dword_5d4594_1096276)
 	health := uiMeterWindow(main, 8, 34, 166, 28, 30, 0, uiMeterPotionInputCallback, uiMeterPotionDrawCallback, nil)
-	dword_5d4594_1090292 = uint32(uintptr(health.C()))
+	dword_5d4594_1090292 = memmap.PtrWord(health.C())
 	uiMeterWindowTooltip(health, "HealthSlotTT")
 	uiMeterSlot(0).Count = 0
 	uiMeterSlot(0).Image = nil
@@ -84,7 +85,7 @@ func uiMeterInit() int {
 	m := uiMeters()
 	if *(*byte)(unsafe.Add(player, 2251)) != 0 {
 		mana := uiMeterWindow(main, 8, 62, 166, 28, 30, 1, uiMeterPotionInputCallback, uiMeterPotionDrawCallback, nil)
-		dword_5d4594_1090828 = uint32(uintptr(mana.C()))
+		dword_5d4594_1090828 = memmap.PtrWord(mana.C())
 		uiMeterWindowTooltip(mana, "ManaSlotTT")
 		uiMeterSlot(1).Count = 0
 		uiMeterLinkPotion(1, uint32(dword_5d4594_1096272))

@@ -3,6 +3,7 @@ package legacy
 import (
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
 	"unsafe"
 )
@@ -85,20 +86,20 @@ func uiWindowPointIn(w *gui.Window, x, y int32) bool {
 }
 
 func uiWindowSetBackgroundImage(ptr, img uint32) int32 {
-	w := (*gui.Window)(unsafe.Pointer(uintptr(ptr)))
+	w := (*gui.Window)(memmap.WordPtr(ptr))
 	if w == nil {
 		return -2
 	}
-	w.DrawData().BgImageHnd = noxrender.ImageHandle(unsafe.Pointer(uintptr(img)))
+	w.DrawData().BgImageHnd = noxrender.ImageHandle(memmap.WordPtr(img))
 	return 0
 }
 
 func uiWindowSetSelectedImage(ptr, img uint32) int32 {
-	w := (*gui.Window)(unsafe.Pointer(uintptr(ptr)))
+	w := (*gui.Window)(memmap.WordPtr(ptr))
 	if w == nil {
 		return -2
 	}
-	w.DrawData().SelImageHnd = noxrender.ImageHandle(unsafe.Pointer(uintptr(img)))
+	w.DrawData().SelImageHnd = noxrender.ImageHandle(memmap.WordPtr(img))
 	return 0
 }
 

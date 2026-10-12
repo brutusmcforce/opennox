@@ -22,7 +22,7 @@ func spawnPolicyContains(r types.Rectf, p types.Pointf) bool {
 	return p.X >= r.Min.X && p.X <= r.Max.X && p.Y >= r.Min.Y && p.Y <= r.Max.Y
 }
 func spawnPolicyJoined(p *server.Object) uint32 {
-	return *(*uint32)(unsafe.Add(unsafe.Pointer(p.UpdateDataPlayer().Player), 4792))
+	return *(*uint32)(unsafe.Add(unsafe.Pointer(p.UpdateDataPlayer().Player), int(layoutServerPlayer.Off(4792)) /* Field4792 */))
 }
 func spawnPolicyFarCull() {
 	core := GetServer().S()
@@ -69,10 +69,10 @@ func spawnPolicyAdmission(_ *server.Object, pos types.Pointf) int {
 	return 1
 }
 func spawnPolicyMonsterHead() *spawnPolicyMonsterListNode {
-	return (*spawnPolicyMonsterListNode)(unsafe.Pointer(uintptr(dword_5d4594_2386224)))
+	return (*spawnPolicyMonsterListNode)(memmap.WordPtr(dword_5d4594_2386224))
 }
 func spawnPolicySetMonsterHead(n *spawnPolicyMonsterListNode) {
-	dword_5d4594_2386224 = uint32(uintptr(unsafe.Pointer(n)))
+	dword_5d4594_2386224 = memmap.PtrWord(unsafe.Pointer(n))
 }
 func spawnPolicyFindMonster(u *server.Object) *spawnPolicyMonsterListNode {
 	for n := spawnPolicyMonsterHead(); n != nil; n = n.Next {

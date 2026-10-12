@@ -65,7 +65,7 @@ type Access struct {
 	Blob  uintptr `json:"blob"`
 	Off   int64   `json:"off"`             // constant part of the offset
 	Terms []Term  `json:"terms,omitempty"` // non-constant parts (table index)
-	Kind  string  `json:"kind"`            // ptr, u8, i8, u16, i16, u32, i32, u64, i64, f32, f64, str, addr, overlay
+	Kind  string  `json:"kind"`            // ptr, pword, u8, i8, u16, i16, u32, i32, u64, i64, f32, f64, str, addr, overlay
 	Size  int64   `json:"size"`            // access size on 386, 0 if unknown
 	Type  string  `json:"type,omitempty"`  // overlay type
 	// HasPtr is set for overlays that contain pointers, ArchDep when the overlay size differs on amd64.
@@ -81,7 +81,7 @@ type Access struct {
 func (a *Access) Addr() uintptr { return a.Blob + uintptr(a.Off) }
 
 // IsPtr reports if the access treats the slot as a pointer.
-func (a *Access) IsPtr() bool { return a.Kind == "ptr" || a.PtrConv }
+func (a *Access) IsPtr() bool { return a.Kind == "ptr" || a.Kind == "pword" || a.PtrConv }
 
 func run(pats []string) error {
 	cfg := &packages.Config{
@@ -142,7 +142,7 @@ var scalarFuncs = map[string]string{
 }
 
 var kindSize = map[string]int64{
-	"u8": 1, "i8": 1, "u16": 2, "i16": 2, "u32": 4, "i32": 4, "f32": 4, "ptr": 4,
+	"u8": 1, "i8": 1, "u16": 2, "i16": 2, "u32": 4, "i32": 4, "f32": 4, "ptr": 4, "pword": 4,
 	"u64": 8, "i64": 8, "f64": 8,
 }
 
@@ -245,6 +245,9 @@ func newAccess(info *types.Info, fn string, call *ast.CallExpr, stack []ast.Node
 	switch fn {
 	case "PtrPtr":
 		a.Kind = "ptr"
+	case "LoadPtr", "StorePtr":
+		a.Kind = "pword" // 32-bit pointer word, see memmap.PtrWord
+		a.Write = fn == "StorePtr"
 	case "String":
 		a.Kind = "str"
 	case "PtrT":

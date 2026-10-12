@@ -42,8 +42,8 @@ func browserShow() int {
 		Sub_43BE40(3)
 		Nox_xxx_clientPlaySoundSpecial_452D80(922, 100)
 		root.SetHidden(false)
-		browserWindow(uint32(uintptr(browserUI.detailPanel))).SetHidden(false)
-		uiWindowEnable(browserWindow(uint32(uintptr(browserUI.mapWindow))), 1)
+		browserUI.detailPanel.SetHidden(false)
+		uiWindowEnable(browserUI.mapWindow, 1)
 		if browserUI.creating != 0 {
 			browserMarkersEnable(0)
 		}
@@ -72,22 +72,22 @@ func browserShow() int {
 	anim.Func12Ptr = animationCallbackKey(animationKeyBrowserOut)
 	anim.FncDoneOutPtr = animationCallbackKey(animationKeyBrowserDone)
 	mapWin, overview := root.ChildByID(10020), root.ChildByID(10021)
-	browserUI.mapWindow = mapWin.C()
-	browserUI.overview = uint32(uintptr(overview.C()))
+	browserUI.mapWindow = mapWin
+	browserUI.overview = overview
 	mapWin.SetFunc93(browserMapInput)
 	overview.SetFunc93(browserMapInput)
 	overview.SetFunc94(browserEvent)
-	browserUI.label = root.ChildByID(10011).C()
+	browserUI.label = root.ChildByID(10011)
 	main := root.ChildByID(10037)
-	browserUI.gameList = uint32(uintptr(main.C()))
+	browserUI.gameList = main
 	details := root.ChildByID(10034)
 	browserUI.detailList = details
 	panel := root.ChildByID(10033)
-	browserUI.detailPanel = panel.C()
-	browserUI.filter = uint32(uintptr(sessionFilterOpen(root).C()))
+	browserUI.detailPanel = panel
+	browserUI.filter = sessionFilterOpen(root)
 	browserUI.joinButton = root.ChildByID(10001)
-	for i, p := range []*uint32{&browserUI.playersColumn, &browserUI.modeColumn, &browserUI.mapColumn, &browserUI.pingColumn, &browserUI.statusColumn} {
-		*p = uint32(uintptr(root.ChildByID(uint(10038 + i)).C()))
+	for i, p := range []**gui.Window{&browserUI.playersColumn, &browserUI.modeColumn, &browserUI.mapColumn, &browserUI.pingColumn, &browserUI.statusColumn} {
+		*p = root.ChildByID(uint(10038 + i))
 	}
 	if noxflags.HasGame(0x1000000) {
 		uiWindowEnable(root.ChildByID(10002), 0)
@@ -104,10 +104,10 @@ func browserShow() int {
 	serverPanelsHide(mapWin, 10620, 10631, true)
 	browserMapPolygons()
 	for i, name := range []string{"NWGameIconLargeGreen", "NWGameIconLargeGreenLit", "NWGameIconSmallGreen", "NWGameIconSmallGreenLit", "NWGameIconLargeYellow", "NWGameIconLargeYellowLit", "NWGameIconSmallYellow", "NWGameIconSmallYellowLit", "NWGameIconLargeRed", "NWGameIconLargeRedLit", "NWGameIconSmallRed", "NWGameIconSmallRedLit"} {
-		*memmap.PtrUint32(0x5D4594, 814556+4*uintptr(i)) = uiMeterLoadImage(name)
+		browserGameIcons[i] = Nox_xxx_gLoadImg(name).C()
 	}
 	for i, name := range []string{"NWMapULLg", "NWMapURLg", "NWMapLLLg", "NWMapLRLg"} {
-		*memmap.PtrUint32(0x5D4594, 814900+4*uintptr(i)) = uiMeterLoadImage(name)
+		browserRegionMaps[i] = Nox_xxx_gLoadImg(name).C()
 	}
 	slider := main.ChildByID(10053)
 	browserWireList(main, slider, main.ChildByID(10043), main.ChildByID(10044), 12)

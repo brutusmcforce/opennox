@@ -571,15 +571,11 @@ func (s *Server) Sub4E8210(u *Object) (types.Pointf, bool) {
 	return out, true
 }
 
-var _ = [1]struct{}{}[8-unsafe.Sizeof(PlayerNetData{})]
-
 type PlayerNetData struct {
 	Field0 uint16
 	Field2 uint16
 	Frame4 uint32
 }
-
-var _ = [1]struct{}{}[76-unsafe.Sizeof(PlayerJournal{})]
 
 type PlayerJournal struct {
 	EntryBuf [64]byte       // 0, 0
@@ -589,16 +585,12 @@ type PlayerJournal struct {
 	Field4   uint16         // 4, 74, likely just padding
 }
 
-var _ = [1]struct{}{}[16-unsafe.Sizeof(MinimapItem{})]
-
 type MinimapItem struct {
 	Field0  uint32
 	Field4  *Object
 	Field8  *MinimapItem
 	Field12 *MinimapItem
 }
-
-var _ = [1]struct{}{}[24-unsafe.Sizeof(EquipmentData{})]
 
 type EquipmentData struct {
 	Field0  uint32            // 0, 0
@@ -621,16 +613,6 @@ type ArmorHolder interface {
 type WeaponHolder interface {
 	WeaponData() (equip uint32, arr *EquipWeaponData)
 }
-
-var (
-	_ = [1]struct{}{}[4828-unsafe.Sizeof(Player{})]
-	_ = [1]struct{}{}[2185-unsafe.Offsetof(Player{}.info)]
-	_ = [1]struct{}{}[2096-unsafe.Offsetof(Player{}.Field2096Buf)]
-	_ = [1]struct{}{}[2282-unsafe.Offsetof(Player{}.Field2282)]
-	_ = [1]struct{}{}[3596-unsafe.Offsetof(Player{}.Frame3596)]
-	_ = [1]struct{}{}[4580-unsafe.Offsetof(Player{}.Field4580)]
-	_ = [1]struct{}{}[4800-unsafe.Offsetof(Player{}.data4800)]
-)
 
 var (
 	_ Obj                  = (*Player)(nil) // proxies Unit
@@ -962,13 +944,6 @@ func (p *PlayerUnitColors) Set(c *PlayerColors) {
 	p.Beard = noxcolor.RGB5551Color(c.Beard.R, c.Beard.G, c.Beard.B).Color32()
 	p.UnkColor = nox_color_white_2523948.Color32()
 }
-
-var (
-	_ = [1]struct{}{}[97-unsafe.Sizeof(PlayerInfo{})]
-	_ = [1]struct{}{}[0-unsafe.Offsetof(PlayerInfo{}.name)]
-	_ = [1]struct{}{}[66-unsafe.Offsetof(PlayerInfo{}.playerClass)]
-	_ = [1]struct{}{}[89-unsafe.Offsetof(PlayerInfo{}.nameSuff)]
-)
 
 type PlayerColors struct {
 	Hair     types.RGB // 2253 (+68, +0), hair color

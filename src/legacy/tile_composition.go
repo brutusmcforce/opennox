@@ -23,7 +23,7 @@ func tileCompositionReset() { nox_xxx_waypointCounterMB_587000_154948 = 0xffffff
 func tileCompositionEdges(pos image.Point, edge *[5]uint32) {
 	for edge != nil {
 		tileEdgeCallback(pos, edge)
-		edge = (*[5]uint32)(unsafe.Pointer(uintptr(edge[4])))
+		edge = (*[5]uint32)(memmap.WordPtr(edge[4]))
 	}
 }
 func tileCompositionCell(x, y int32, pos image.Point) {
@@ -44,7 +44,7 @@ func tileCompositionCell(x, y int32, pos image.Point) {
 		}
 		tileDrawCallback(p, img, tile)
 		*memmap.PtrUint32(0x85B3FC, 228+4*uintptr(tile)) = 1
-		tileCompositionEdges(p, (*[5]uint32)(unsafe.Pointer(uintptr(cell[off+4]))))
+		tileCompositionEdges(p, (*[5]uint32)(memmap.WordPtr(cell[off+4])))
 	}
 }
 func tileCompositionBounds(x, y int32) (lx, ly, hx, hy int32) {
@@ -241,9 +241,9 @@ func tileCompositionVertical(vp *noxrender.Viewport, view int) {
 func tileCompositionOverlay(pos image.Point, edge *[5]uint32) {
 	def := &tileDefinitionsAll()[edge[0]]
 	tileImage := *(*noxrender.ImageHandle)(unsafe.Add(def.Data32, 4*uintptr(edge[1]+uint32(def.Field46))))
-	table := memmap.Uint32(0x85B3FC, 28676+60*uintptr(edge[2]))
-	index := edge[3] + uint32(memmap.Uint16(0x85B3FC, 28690+60*uintptr(edge[2])))
-	edgeImage := *(*noxrender.ImageHandle)(unsafe.Pointer(uintptr(table) + 4*uintptr(index)))
+	table := edgeAssets[edge[2]].Data32
+	index := edge[3] + uint32(edgeAssets[edge[2]].Field46)
+	edgeImage := *(*noxrender.ImageHandle)(unsafe.Add(table, 4*uintptr(index)))
 	*memmap.PtrUint32(0x5D4594, 2523980+4*uintptr(edge[2])) = 1
 	data := GetClient().R2().GetBag().AsImage(edgeImage).Pixdata()
 	if len(data) == 0 {

@@ -8,7 +8,7 @@ import (
 
 func unitUndeadUpdate(u *server.Object) {
 	target := *(**server.Object)(u.CollideData)
-	if target != nil && *(*byte)(unsafe.Add(target.CObj(), 88))&1 != 0 || GetServer().S().Frame()-u.Field34 > 70 {
+	if target != nil && *(*byte)(unsafe.Add(target.CObj(), int(layoutServerObject.Off(88)) /* ForceVec.X */))&1 != 0 || GetServer().S().Frame()-u.Field34 > 70 {
 		GetServer().DelayedDelete(u)
 	}
 }

@@ -10,14 +10,13 @@ import (
 	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
 )
 
 func uiInventoryDrawItem(dr *client.Drawable, pos image.Point) {
 	dr.PosVec = pos
-	dr.CallDraw((*noxrender.Viewport)(memmap.PtrOff(0x5D4594, 1049732)))
+	dr.CallDraw(&uiInventoryViewport)
 }
 
 func sub_4625D0(w *gui.Window) int {
@@ -54,7 +53,7 @@ func nox_xxx_inventoryDrawProc_466580(w *gui.Window) int {
 	if memmap.Uint8(0x5D4594, 1049868) != 0 {
 		img = w.DrawData().HlImageHnd
 	}
-	uiMeterImage(uint32(uintptr(img)), pos)
+	uiMeterImage(memmap.PtrWord(unsafe.Pointer(img)), pos)
 	r := GetClient().R2()
 	r.Data().SetTextColor(noxcolor.RGBA5551(nox_color_white_2523948))
 	text := GetClient().GetCtrlEvent().Sub_42E8E0_go(keybind.Event(35), 1)
@@ -90,7 +89,7 @@ func sub_466F50(w *gui.Window, data *gui.WindowData) int {
 		}
 	}
 	pos := uiWindowPosition(w)
-	uiMeterImage(uint32(uintptr(data.BgImageHnd)), pos.Add(data.ImgPtVal))
+	uiMeterImage(memmap.PtrWord(unsafe.Pointer(data.BgImageHnd)), pos.Add(data.ImgPtVal))
 	return 1
 }
 
@@ -122,8 +121,8 @@ func uiInventoryDrawTray(ax, ay int32) int32 {
 				left := x + 60 + col*50
 				r.Data().SetAlphaEnabled(true)
 				r.Data().SetAlpha(64)
-				current := *(*uint16)(unsafe.Add(dr.C(), 292))
-				maximum := *(*uint16)(unsafe.Add(dr.C(), 294))
+				current := *(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */))
+				maximum := *(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(294)) /* Field_73_2 */))
 				var color uint32
 				shade := false
 				if float64(current) < float64(maximum)*memmap.Float64(0x581450, 9608) {
@@ -153,8 +152,8 @@ func uiInventoryDrawTray(ax, ay int32) int32 {
 				}
 				r.Data().SetAlphaEnabled(false)
 				uiInventoryDrawItem(dr, image.Pt(left+25, y+25))
-				charges := *(*uint16)(unsafe.Add(dr.C(), 448))
-				maxCharges := *(*uint16)(unsafe.Add(dr.C(), 450))
+				charges := *(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(448)) /* Union._ */))
+				maxCharges := *(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(450)) /* Union._ */))
 				if uiInventoryMode() == 6 {
 					depleted := uint32(dr.Class())&0x1000 != 0 && charges < maxCharges && maxCharges != 0
 					if (current == maximum || maximum == 0) && !depleted {

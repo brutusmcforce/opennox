@@ -38,13 +38,13 @@ func spellEffectBurn(id int32, a, b, c *server.Object, record unsafe.Pointer, le
 	return 1
 }
 func spellEffectFireball(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
-	name := (*int8)(*memmap.PtrPtr(0x587000, 258864+uintptr(level)*4))
+	name := (*int8)(memmap.LoadPtr(0x587000, 258864+uintptr(level)*4))
 	u := GetServer().S().NewObjectByTypeID(GoStringP(unsafe.Pointer(name)))
 	if u == nil {
 		return 1
 	}
 	dir := spellEffectDirection(int16(c.Direction1))
-	radius := float64(*temporaryFloat(c.CObj(), 176)) * 2
+	radius := float64(*temporaryFloat(c.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) * 2
 	// C stores the X position before adding inherited velocity; Y stays in x87.
 	x := float32(radius*float64(dir.X) + float64(c.PosVec.X))
 	y := radius*float64(dir.Y) + float64(c.PosVec.Y)
@@ -98,9 +98,9 @@ func spellEffectFist(id int32, a, b, c *server.Object, record unsafe.Pointer, le
 		spellEffectCreate(u, c, pos)
 		u.Field5 |= 0x20
 		stateRaise(u, 255)
-		*temporaryFloat(u.CObj(), 108) = float32(-spellEffectScalar("FistSpeed"))
+		*temporaryFloat(u.CObj(), int(layoutServerObject.Off(108)) /* Field27 */) = float32(-spellEffectScalar("FistSpeed"))
 		u.ObjFlags |= 0x800000
-		*spellLifeWord(u.CObj(), 116) = 1091567616
+		*spellLifeWord(u.CObj(), int(layoutServerObject.Off(116)) /* Field29 */) = 1091567616
 		spellEffectAudio(id, 0, c)
 	}
 	return 1
@@ -134,18 +134,18 @@ func spellEffectCleansingFlame(id int32, a, b, c *server.Object, record unsafe.P
 		}
 		u.Direction1 = server.Dir16(s.Rand.Logic.IntClamp(0, 255))
 		dir := spellEffectDirection(int16(u.Direction1))
-		radius := float64(*temporaryFloat(u.CObj(), 176)) + float64(*temporaryFloat(c.CObj(), 176)) + 4
+		radius := float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) + float64(*temporaryFloat(c.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) + 4
 		pos := types.Ptf(float32(radius*float64(dir.X)+float64(c.PosVec.X)), float32(radius*float64(dir.Y)+float64(c.PosVec.Y)))
 		if spellEffectTrace(c.PosVec, pos, 65) {
 			spellEffectCreate(u, c, pos)
 			u.Direction2 = u.Direction1
 			u.VelVec = types.Ptf(dir.X*4, dir.Y*4)
 			u.Field34 = s.Frame() + uint32(s.Rand.Logic.IntClamp(int(3*s.TickRate()), int(6*s.TickRate())))
-			*(*types.Pointf)(unsafe.Add(u.CObj(), 156)) = c.PosVec
+			*(*types.Pointf)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(156)) /* Pos39.X */)) = c.PosVec
 			u.Update = flameCleanseCallbackKey()
 			s.Objs.AddToUpdatable(u)
 			u.ObjClass |= 0x40000000
-			*temporaryFloat(u.CObj(), 112) = 0
+			*temporaryFloat(u.CObj(), int(layoutServerObject.Off(112)) /* Float28 */) = 0
 			visibilityFXPrediction(u)
 		} else {
 			GetServer().DelayedDelete(u)
@@ -189,7 +189,7 @@ func spellEffectMeteor(id int32, a, b, c *server.Object, record unsafe.Pointer, 
 		spellEffectCreate(u, b, pos)
 		u.Field5 |= 0x20
 		stateRaise(u, 255)
-		*temporaryFloat(u.CObj(), 108) = float32(-spellEffectScalar("MeteorSpeed"))
+		*temporaryFloat(u.CObj(), int(layoutServerObject.Off(108)) /* Field27 */) = float32(-spellEffectScalar("MeteorSpeed"))
 		spellEffectPosAudio(id, 0, pos)
 	}
 	return 1

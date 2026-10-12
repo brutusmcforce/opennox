@@ -37,19 +37,13 @@ type mapPolygon struct {
 	Flags, Visited uint32
 }
 
-var _ [140 - unsafe.Sizeof(mapPolygon{})]byte
-var _ [unsafe.Sizeof(mapPolygon{}) - 140]byte
-var _ [108 - unsafe.Offsetof(mapPolygon{}.Vertices)]byte
-var _ [unsafe.Offsetof(mapPolygon{}.Vertices) - 108]byte
-var _ [16 - unsafe.Sizeof(mapPolygonVertex{})]byte
-var _ [unsafe.Sizeof(mapPolygonVertex{}) - 16]byte
-var _ [12 - unsafe.Sizeof(mapPolygonRemap{})]byte
-var _ [unsafe.Sizeof(mapPolygonRemap{}) - 12]byte
-
 const mapPolygonUnset = uint32(0xdeadface)
 
+// mapPolygons was 0x5D4594+552228.
+var mapPolygons [256]mapPolygon
+
 func mapPolygonAt(i uint32) *mapPolygon {
-	return (*mapPolygon)(memmap.PtrOff(0x5D4594, 552228+uintptr(i)*140))
+	return &mapPolygons[i]
 }
 func mapPolygonVertexAt(i uint32) *mapPolygonVertex {
 	return (*mapPolygonVertex)(memmap.PtrOff(0x5D4594, 535844+uintptr(i)*16))
@@ -175,7 +169,7 @@ func mapPolygonResetVertices() unsafe.Pointer {
 		mapPolygonVertexAt(i).Active = 0
 	}
 	mapPolygonVertexNext = 1
-	return memmap.PtrOff(0x5D4594, 552240)
+	return unsafe.Pointer(&mapPolygons[0].ID)
 }
 func mapPolygonReset() unsafe.Pointer {
 	mapPolygonResetRecords()

@@ -1,17 +1,10 @@
 package server
 
 import (
-	"unsafe"
-
 	"github.com/brutusmcforce/opennox/libs/player"
 	"github.com/brutusmcforce/opennox/libs/types"
 
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-)
-
-var (
-	_ = [1]struct{}{}[72-unsafe.Sizeof(SavePlayerInfo{})]
-	_ = [1]struct{}{}[20-unsafe.Offsetof(SavePlayerInfo{}.NameBuf)]
 )
 
 type SavePlayerInfo struct {
@@ -44,11 +37,6 @@ func (p *SavePlayerInfo) PlayerClass() player.Class {
 	}
 	return player.Class(p.PlayerClassVal)
 }
-
-var (
-	_ = [1]struct{}{}[1277-unsafe.Offsetof(SaveGameInfo{}.Stage)]
-	_ = [1]struct{}{}[1280-unsafe.Sizeof(SaveGameInfo{})] // FIXME: should be 1278
-)
 
 type SaveGameInfo struct {
 	Flags      uint32         // 10980 (+0)

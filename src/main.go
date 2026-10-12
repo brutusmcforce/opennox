@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/platform"
 	"github.com/prometheus/client_golang/prometheus"
@@ -66,7 +65,6 @@ func registerOnDataPathSet(fnc func()) {
 }
 
 // Nox only works on 32bit
-var _ = [1]struct{}{}[unsafe.Sizeof(int(0))-4]
 
 func runArgs(args []string, loopFunc func() error) (gerr error) {
 	defer func() {

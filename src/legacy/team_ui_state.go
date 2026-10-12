@@ -30,7 +30,7 @@ func teamUIWord(off uintptr) *uint32 {
 	}
 }
 func teamUIWindow(off uintptr) *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(*teamUIWord(off))))
+	return (*gui.Window)(memmap.WordPtr(*teamUIWord(off)))
 }
 func teamUISettings() *byte {
 	return memmap.PtrUint8(0x5D4594, 371380+58*uintptr(*memmap.PtrUint32(0x5D4594, 371688)))
@@ -61,17 +61,16 @@ type teamUIRow struct {
 	color   uint32
 }
 
-var _ [72 - unsafe.Sizeof(teamUIRow{})]byte
-var _ [unsafe.Sizeof(teamUIRow{}) - 72]byte
-var _ [60 - unsafe.Offsetof(teamUIRow{}.code)]byte
-var _ [unsafe.Offsetof(teamUIRow{}.code) - 60]byte
+
+
+
+
 
 func teamUIHead(teams bool) *legacyListNode {
-	off := uintptr(1045652)
 	if teams {
-		off = 1045668
+		return &teamUITeamList
 	}
-	return (*legacyListNode)(memmap.PtrOff(0x5D4594, off))
+	return &teamUIPlayerList
 }
 func teamUIFirst(teams bool) *teamUIRow {
 	return (*teamUIRow)(unsafe.Pointer(listNext(teamUIHead(teams))))

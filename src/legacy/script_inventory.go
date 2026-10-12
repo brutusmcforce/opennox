@@ -70,7 +70,7 @@ func scriptInventoryHalberd(vm noxscript.VM) int {
 			break
 		}
 	}
-	name := alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, uintptr(247336+4*index))))
+	name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, uintptr(247336+4*index))))
 	item := controlRespawnItem(host, name, nil, 1, 1)
 	if equipped {
 		equipmentTryEquip(host, item)

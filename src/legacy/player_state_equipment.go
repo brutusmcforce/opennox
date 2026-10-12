@@ -86,7 +86,7 @@ func playerStateRespawn(pl *server.Player, mask byte) {
 		return id(s.Modif.Nox_xxx_modifGetDescById413330(int(colorID + uint32(index))))
 	}
 	equip := func(command byte, bit uint32, mods [4]byte) { playerStateEquip(command, pl.NetCodeVal, bit, &mods) }
-	class := *(*byte)(unsafe.Add(pl.C(), 2251))
+	class := *(*byte)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(2251)) /* info */))
 	if class != 0 || noxflags.HasGame(2048) {
 		mods := [4]byte{255, colorAt(2269), colorAt(2270), 255}
 		if mask&1 != 0 {

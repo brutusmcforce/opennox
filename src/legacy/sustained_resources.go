@@ -335,7 +335,7 @@ func sustainedShieldDamage(u *server.Object, damage *int32, kind int32, source *
 		*damage = 0
 	}
 	sustainedShieldAbsorb(u, 999999)
-	*controlPtr(u.CObj(), 520) = source.CObj()
-	*spellLifeWord(u.CObj(), 524) = uint32(kind)
+	*controlPtr(u.CObj(), int(layoutServerObject.Off(520)) /* Obj130 */) = source.CObj()
+	*spellLifeWord(u.CObj(), int(layoutServerObject.Off(524)) /* Field131 */) = uint32(kind)
 	u.Frame134 = sustainedFrame()
 }

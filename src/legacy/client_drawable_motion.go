@@ -10,16 +10,6 @@ import (
 func drawableStatePredicate(dr *client.Drawable) int {
 	return bool2int(dr.ObjClass&0x400000 != 0 && dr.ObjSubClass&8 != 0)
 }
-
-func nox_xxx_spriteSetActiveMB_45A990_drawable(p int32) int32 {
-	(*client.Drawable)(unsafe.Pointer(uintptr(uint32(p)))).SetActive()
-	return p
-}
-
-func nox_xxx_spriteSetFrameMB_45AB80(p, value int32) int32 {
-	(*client.Drawable)(unsafe.Pointer(uintptr(uint32(p)))).SetFrameMB(int(value))
-	return p
-}
 func drawableMotionDamped(vp *noxrender.Viewport, dr *client.Drawable) int {
 	vx, vy := float64(math.Float32frombits(dr.Field_117)), float64(math.Float32frombits(dr.Field_118))
 	drag := float64(math.Float32frombits(dr.Field_119))
@@ -48,11 +38,11 @@ func drawableMotionDamped(vp *noxrender.Viewport, dr *client.Drawable) int {
 	return 0
 }
 func drawableMotionTarget(dr *client.Drawable) int {
-	tx := int32(*(*uint16)(unsafe.Add(dr.C(), 432)))
-	ty := int32(*(*uint16)(unsafe.Add(dr.C(), 434)))
+	tx := int32(*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)))
+	ty := int32(*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(434)) /* Union._ */)))
 	x, y := int32(dr.PosVec.X), int32(dr.PosVec.Y)
 	dx, dy := tx-x, ty-y
-	speed := int32(*(*byte)(unsafe.Add(dr.C(), 443)))
+	speed := int32(*(*byte)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(443)) /* Union._ */)))
 	distance := int32(screenDistance(dx, dy)) + 1
 	nx, ny := x+dx*speed/distance, y+dy*speed/distance
 	if distance <= 10 || (x-tx)*(nx-tx)+(y-ty)*(ny-ty) < 0 {

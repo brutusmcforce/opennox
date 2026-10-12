@@ -4,7 +4,7 @@ import (
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"unsafe"
+	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 func serverOptionsTabOrder(id int) int {
@@ -31,9 +31,9 @@ func serverOptionsTab(tab int) int {
 	general, access, players := serverOptionsChild(10163), serverOptionsChild(10161), serverOptionsChild(10162)
 	setRaw := func(w *gui.Window, v uint32, disabled bool) {
 		if disabled {
-			w.DrawData().DisImageHnd = noxrender.ImageHandle(unsafe.Pointer(uintptr(v)))
+			w.DrawData().DisImageHnd = noxrender.ImageHandle(memmap.WordPtr(v))
 		} else {
-			w.DrawData().BgImageHnd = noxrender.ImageHandle(unsafe.Pointer(uintptr(v)))
+			w.DrawData().BgImageHnd = noxrender.ImageHandle(memmap.WordPtr(v))
 		}
 	}
 	switch tab {

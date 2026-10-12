@@ -2,7 +2,6 @@ package legacy
 
 import (
 	"time"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/env"
 	"github.com/brutusmcforce/opennox/libs/platform"
@@ -12,8 +11,6 @@ type noxSystemTime struct {
 	wYear, wMonth, wDayOfWeek, wDay        uint16
 	wHour, wMinute, wSecond, wMilliseconds uint16
 }
-
-var _ = [1]struct{}{}[16-unsafe.Sizeof(noxSystemTime{})]
 
 func noxGetLocalTime(p *noxSystemTime) {
 	tm := time.Now()

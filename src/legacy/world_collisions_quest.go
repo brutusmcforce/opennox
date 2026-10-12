@@ -105,7 +105,7 @@ func worldCollideExit(a, b *server.Object) {
 		return
 	}
 	pl := b.UpdateDataPlayer().Player
-	if *controlByte(pl.C(), 2251) == 1 {
+	if *controlByte(pl.C(), int(layoutServerPlayer.Off(2251)) /* info */) == 1 {
 		for it := b.Field129; it != nil; it = it.Field128 {
 			if uint32(it.TypeInd) == uint32(dword_5d4594_1567960) && it.InvHolder == nil {
 				GetServer().DelayedDelete(it)
@@ -133,7 +133,7 @@ func worldCollideExit(a, b *server.Object) {
 			stage := uint32(Nox_game_getQuestStage_4E3CC0()) + 1
 			questRuntimeStageComplete(b)
 			pl = (*server.Player)(*controlPtr(d, 276))
-			if highest := equipmentWord(pl.C(), 4696); *highest < stage {
+			if highest := equipmentWord(pl.C(), int(layoutServerPlayer.Off(4696)) /* field4696 */); *highest < stage {
 				*highest = stage
 				questRuntimeHighestMessage(int(uint8(pl.PlayerInd)), uint16(stage))
 			}

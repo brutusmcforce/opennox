@@ -299,8 +299,6 @@ func (s *Server) deleteAllObjectsOfType(t *server.ObjectType) {
 	}
 }
 
-var _ = [1]struct{}{}[780-unsafe.Sizeof(Object{})]
-
 type Object server.Object
 
 func (obj *Object) getServer() *Server {

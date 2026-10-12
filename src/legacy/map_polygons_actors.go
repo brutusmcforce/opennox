@@ -28,10 +28,10 @@ func mapPolygonPlayer(u *server.Object) {
 	}
 	player := u.UpdateDataPlayer().Player
 	pl := unsafe.Pointer(player)
-	cache := equipmentWord(pl, 3664)
+	cache := equipmentWord(pl, int(layoutServerPlayer.Off(3664)) /* field3664 */)
 	var p *mapPolygon
 	if player.PlayerInd == 31 {
-		index := *equipmentWord(pl, 3660)
+		index := *equipmentWord(pl, int(layoutServerPlayer.Off(3660)) /* field3660 */)
 		if index == 0 {
 			*cache = 0
 			mapPolygonPlayerLeave(u, pl)
@@ -80,7 +80,7 @@ func mapPolygonPlayer(u *server.Object) {
 		mapPolygonCall(&p.Enter, u, 28)
 	}
 	*cache = p.ID
-	*(*byte)(unsafe.Add(pl, 3668)) = p.Level
+	*(*byte)(unsafe.Add(pl, int(layoutServerPlayer.Off(3668)) /* field3668 */)) = p.Level
 }
 func mapPolygonMonster(u *server.Object) {
 	if u == nil || uint32(u.ObjClass)&2 == 0 {
@@ -133,7 +133,7 @@ func mapPolygonColor() {
 		return
 	}
 	pl := unsafe.Pointer(player)
-	cache := equipmentWord(pl, 3660)
+	cache := equipmentWord(pl, int(layoutServerPlayer.Off(3660)) /* field3660 */)
 	if mapPolygonNext > 1 {
 		if *cache != mapPolygonUnset && int32(point.X) == memmap.Int32(0x5D4594, 811364) && int32(point.Y) == memmap.Int32(0x5D4594, 811368) {
 			return
@@ -142,14 +142,14 @@ func mapPolygonColor() {
 		p := mapPolygonFind(&pt, *cache, false)
 		if p != nil {
 			if *cache != p.ID {
-				*(*byte)(unsafe.Add(pl, 3668)) = p.Level
+				*(*byte)(unsafe.Add(pl, int(layoutServerPlayer.Off(3668)) /* field3668 */)) = p.Level
 				*cache = p.ID
 				GetClient().R2().Data().SetLightColor(noxrender.RGB{R: int(p.Color[0]), G: int(p.Color[1]), B: int(p.Color[2])})
 			}
 			return
 		}
 	}
-	*(*byte)(unsafe.Add(pl, 3668)) = 1
+	*(*byte)(unsafe.Add(pl, int(layoutServerPlayer.Off(3668)) /* field3668 */)) = 1
 	*cache = 0
 	GetClient().R2().Data().SetLightColor(noxrender.RGB{R: int(memmap.Uint32(0x587000, 142296)), G: int(memmap.Uint32(0x587000, 142300)), B: int(memmap.Uint32(0x587000, 142304))})
 }

@@ -21,18 +21,18 @@ var (
 )
 
 func audioEventCache() *audioStreamCache {
-	return (*audioStreamCache)(unsafe.Pointer(uintptr(*audioEventCacheWord)))
+	return (*audioStreamCache)(memmap.WordPtr(*audioEventCacheWord))
 }
 func audioEventPool() *unsafe.Pointer {
-	return (*unsafe.Pointer)(unsafe.Pointer(uintptr(*audioEventPoolWord)))
+	return (*unsafe.Pointer)(memmap.WordPtr(*audioEventPoolWord))
 }
 func audioEventContext() *audioStreamContext {
-	return (*audioStreamContext)(unsafe.Pointer(uintptr(*audioEventContextWord)))
+	return (*audioStreamContext)(memmap.WordPtr(*audioEventContextWord))
 }
 func audioEventGlobalTimers() *timer.TimerGroup {
 	return (*timer.TimerGroup)(legacyGlobals.dword_587000_127004)
 }
-func audioEventRoot() *legacyListNode { return (*legacyListNode)(memmap.PtrOff(0x5D4594, 840612)) }
+func audioEventRoot() *legacyListNode { return &audioEventList }
 func audioEventContextTimers() *timer.TimerGroup {
 	return (*timer.TimerGroup)(memmap.PtrOff(0x5D4594, 1045228))
 }
@@ -58,15 +58,15 @@ func audioEventDefaults(m *audioEventMetadata) int32 {
 }
 func audioEventInit(ctx *audioStreamContext, cat *audioStreamCatalog) int32 {
 	for i := 0; i < 1023; i++ {
-		m := (*audioEventMetadata)(memmap.PtrOff(0x5D4594, 840628+uintptr(i)*200))
+		m := &audioEventMetadataTable[i]
 		audioEventDefaults(m)
 		m.Name = (*byte)(unsafe.Pointer(internCStr(sound.ID(i).String())))
 	}
-	*audioEventCatalogWord = uint32(uintptr(unsafe.Pointer(cat)))
-	*audioEventContextWord = uint32(uintptr(unsafe.Pointer(ctx)))
+	*audioEventCatalogWord = memmap.PtrWord(unsafe.Pointer(cat))
+	*audioEventContextWord = memmap.PtrWord(unsafe.Pointer(ctx))
 	if cat != nil {
-		*audioEventCacheWord = uint32(uintptr(unsafe.Pointer(audioStreamCacheNew(cat, 0x100000, 200, 0x2000))))
-		*audioEventPoolWord = uint32(uintptr(unsafe.Pointer(audioStreamPoolNew(200, 576))))
+		*audioEventCacheWord = memmap.PtrWord(unsafe.Pointer(audioStreamCacheNew(cat, 0x100000, 200, 0x2000)))
+		*audioEventPoolWord = memmap.PtrWord(unsafe.Pointer(audioStreamPoolNew(200, 576)))
 	}
 	if audioEventCache() == nil || cat == nil || ctx == nil || audioEventPool() == nil {
 		return 0

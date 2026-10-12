@@ -10,24 +10,24 @@ import (
 // Particle initialization consumes randomness only after allocation succeeds.
 // Creation callers then set height/vertical velocity before joining list 3/4.
 func effectInitSpark(dr *client.Drawable, pos image.Point, speed, ttlMin, ttlMax int) {
-	*effectWord(dr, 432) = uint32(pos.X) << 12
-	*effectWord(dr, 436) = uint32(pos.Y) << 12
+	*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(pos.X) << 12
+	*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(pos.Y) << 12
 	dr.Field_74_4 = byte(effectRand(0, 255))
-	*effectWord(dr, 440) = uint32(effectRand(1, speed))
-	*effectWord(dr, 448) = gameFrame() + uint32(effectRand(ttlMin, ttlMax))
-	*effectWord(dr, 444) = gameFrame()
+	*effectWord(dr, int(layoutClientDrawable.Off(440)) /* Union._ */) = uint32(effectRand(1, speed))
+	*effectWord(dr, int(layoutClientDrawable.Off(448)) /* Union._ */) = gameFrame() + uint32(effectRand(ttlMin, ttlMax))
+	*effectWord(dr, int(layoutClientDrawable.Off(444)) /* Union._ */) = gameFrame()
 }
 func effectCreateOrb(typ int, coords *[4]uint16, x, y int, speed, period byte) {
 	dr := effectSpawn(typ, image.Pt(x+int(coords[2]), y+int(coords[3])))
 	if dr == nil {
 		return
 	}
-	*effectShort(dr, 432) = coords[0]
-	*effectShort(dr, 434) = coords[1]
-	*effectByte(dr, 443) = speed
-	*effectByte(dr, 444) = byte(effectRand(3, 10))
-	*effectByte(dr, 446) = period
-	*effectByte(dr, 445) = period
+	*effectShort(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = coords[0]
+	*effectShort(dr, int(layoutClientDrawable.Off(434)) /* Union._ */) = coords[1]
+	*effectByte(dr, int(layoutClientDrawable.Off(443)) /* Union._ */) = speed
+	*effectByte(dr, int(layoutClientDrawable.Off(444)) /* Union._ */) = byte(effectRand(3, 10))
+	*effectByte(dr, int(layoutClientDrawable.Off(446)) /* Union._ */) = period
+	*effectByte(dr, int(layoutClientDrawable.Off(445)) /* Union._ */) = period
 	effectLink(dr)
 }
 func effectCreateOrbit(typ int, coords *[4]int16, angle int16, direction, period byte) {
@@ -39,15 +39,15 @@ func effectCreateOrbit(typ int, coords *[4]int16, angle int16, direction, period
 	for i, v := range coords {
 		*effectShort(dr, 432+2*i) = uint16(v)
 	}
-	*effectByte(dr, 442) = byte(angle)
+	*effectByte(dr, int(layoutClientDrawable.Off(442)) /* Union._ */) = byte(angle)
 	dx, dy := pos.X-int(coords[0]), pos.Y-int(coords[1])
-	*effectShort(dr, 440) = uint16(int64(math.Sqrt(float64(dx*dx + dy*dy))))
-	*effectByte(dr, 443) = direction
-	*effectByte(dr, 444) = byte(effectRand(3, 10))
-	*effectByte(dr, 446) = period
-	*effectByte(dr, 445) = period
+	*effectShort(dr, int(layoutClientDrawable.Off(440)) /* Union._ */) = uint16(int64(math.Sqrt(float64(dx*dx + dy*dy))))
+	*effectByte(dr, int(layoutClientDrawable.Off(443)) /* Union._ */) = direction
+	*effectByte(dr, int(layoutClientDrawable.Off(444)) /* Union._ */) = byte(effectRand(3, 10))
+	*effectByte(dr, int(layoutClientDrawable.Off(446)) /* Union._ */) = period
+	*effectByte(dr, int(layoutClientDrawable.Off(445)) /* Union._ */) = period
 	dr.ClientUpdateFuncPtr = drawableUpdateIdentity(updateID_sub_4CA720)
-	*effectShort(dr, 508) = uint16(angle)
+	*effectShort(dr, int(layoutClientDrawable.Off(508)) /* Field_127 */) = uint16(angle)
 	effectLink(dr)
 }
 func effectCreatePointSparks(typ, count, speed, ttl, x, y int) int {
@@ -81,10 +81,10 @@ func effectCreateRainOrb(typ int, from, to image.Point, z uint16, velocity int8)
 	dr.ZVal = z
 	dr.ZVal2 = 0
 	dr.VelZ = velocity
-	*effectShort(dr, 440) = z
-	*effectByte(dr, 442) = byte(effectRand(3, 10))
-	*effectWord(dr, 432) = uint32(to.X)
-	*effectWord(dr, 436) = uint32(to.Y)
+	*effectShort(dr, int(layoutClientDrawable.Off(440)) /* Union._ */) = z
+	*effectByte(dr, int(layoutClientDrawable.Off(442)) /* Union._ */) = byte(effectRand(3, 10))
+	*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(to.X)
+	*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(to.Y)
 	effectLink(dr)
 	return dr
 }
@@ -147,7 +147,7 @@ func effectSparkBurst(pos image.Point, typ int, amount byte) int {
 var effectParticleCallbacks = make(map[unsafe.Pointer]func(unsafe.Pointer))
 
 func effectParticleUpdate(dr *client.Drawable) int {
-	particle := *(*unsafe.Pointer)(unsafe.Add(dr.C(), 432))
+	particle := *(*unsafe.Pointer)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */))
 	dr.PosVec = image.Pt(int(*(*uint32)(unsafe.Add(particle, 80))>>16), int(*(*uint32)(unsafe.Add(particle, 84))>>16))
 	if callback := *(*unsafe.Pointer)(unsafe.Add(particle, 124)); callback != nil {
 		fn := effectParticleCallbacks[callback]

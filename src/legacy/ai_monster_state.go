@@ -345,8 +345,11 @@ func objectFromInt(p int32) *server.Object {
 	return objectFromWord(uint32(p))
 }
 
+// objectArg returns the object passed in a callback argument.
+func objectArg(a uintptr) *server.Object { return (*server.Object)(unsafe.Pointer(a)) }
+
 func objectFromWord(p uint32) *server.Object {
-	return (*server.Object)(unsafe.Pointer(uintptr(p)))
+	return (*server.Object)(memmap.WordPtr(p))
 }
 
 func monsterCanBlockHead(u *server.Object) bool {

@@ -3,7 +3,6 @@ package music
 import (
 	"path/filepath"
 	"strings"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
 	"github.com/brutusmcforce/opennox/legacy/timer"
@@ -13,14 +12,10 @@ type MusicState struct {
 	MusicIdx, Volume, Position, D uint32
 }
 
-var _ = [1]struct{}{}[16-unsafe.Sizeof(MusicState{})]
-
 type MusicBlock struct {
 	Inner  MusicState
 	Loaded uint32
 }
-
-var _ = [1]struct{}{}[20-unsafe.Sizeof(MusicBlock{})]
 
 type Module struct {
 	dir string

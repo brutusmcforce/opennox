@@ -18,12 +18,12 @@ func motionRadial(p *types.Pointf, radius float32, callback func(*server.Object)
 			return true
 		})
 	}
-	return uint32(uintptr(unsafe.Pointer(p)))
+	return memmap.PtrWord(unsafe.Pointer(p))
 }
 func motionScorchInit() int32 {
 	var result uint32
 	for _, off := range []uintptr{276824, 276832, 276840} {
-		name := alloc.GoString((*byte)(*memmap.PtrPtr(0x587000, off)))
+		name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, off)))
 		result = uint32(GetServer().S().Types.IndByID(name))
 		*memmap.PtrUint32(0x587000, off+4) = result
 	}

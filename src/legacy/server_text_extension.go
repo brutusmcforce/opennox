@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/types"
@@ -33,7 +34,7 @@ func extensionPlayerName(record unsafe.Pointer, teamOut *int32) int {
 			return 0
 		}
 		if teamOut != nil {
-			*teamOut = int32(uintptr(team.C()))
+			*teamOut = int32(memmap.PtrWord(team.C()))
 		}
 		*(*byte)(unsafe.Add(record, 1)) = byte(team.ID)
 		*(*byte)(record) = byte(pl.PlayerClass())
@@ -45,7 +46,7 @@ func extensionPlayerName(record unsafe.Pointer, teamOut *int32) int {
 func extensionWeaponRoll(u *server.Object, direction int8) int {
 	ud := u.UpdateData
 	pl := u.UpdateDataPlayer().Player
-	if *(*byte)(unsafe.Add(pl.C(), 3680))&3 != 0 || *(*byte)(unsafe.Add(ud, 88)) == 1 {
+	if *(*byte)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(3680)) /* Field3680 */))&3 != 0 || *(*byte)(unsafe.Add(ud, 88)) == 1 {
 		return 0
 	}
 	current := *(**server.Object)(unsafe.Add(ud, 104))
@@ -76,8 +77,8 @@ func extensionDropTrap(u *server.Object) int {
 		return 0
 	}
 	pl := u.UpdateDataPlayer().Player
-	pos := types.Pointf{X: *(*float32)(unsafe.Add(pl.C(), 3632)), Y: *(*float32)(unsafe.Add(pl.C(), 3636))}
-	if *(*byte)(unsafe.Add(pl.C(), 3680))&3 != 0 || *(*byte)(unsafe.Add(u.UpdateData, 88)) == 1 {
+	pos := types.Pointf{X: *(*float32)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(3632)) /* Pos3632Vec.X */)), Y: *(*float32)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(3636)) /* Pos3632Vec.Y */))}
+	if *(*byte)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(3680)) /* Field3680 */))&3 != 0 || *(*byte)(unsafe.Add(u.UpdateData, 88)) == 1 {
 		return 0
 	}
 	for it := u.InvFirstItem; it != nil; it = it.InvNextItem {

@@ -13,13 +13,6 @@ type summonRecord struct {
 	Index, Flash       uint32
 }
 
-var _ [32 - int(unsafe.Sizeof(summonRecord{}))]byte
-var _ [int(unsafe.Sizeof(summonRecord{})) - 32]byte
-var _ [20 - int(unsafe.Offsetof(summonRecord{}.Size))]byte
-var _ [int(unsafe.Offsetof(summonRecord{}.Size)) - 20]byte
-var _ [24 - int(unsafe.Offsetof(summonRecord{}.Index))]byte
-var _ [int(unsafe.Offsetof(summonRecord{}.Index)) - 24]byte
-
 func summonWord(off uintptr) *uint32 {
 	switch off {
 	case 1320988:
@@ -51,13 +44,13 @@ func summonMenuWidth() *uint32 {
 func summonAt(i int32) *summonRecord {
 	return (*summonRecord)(memmap.PtrOff(0x5D4594, 1321052+uintptr(i)*32))
 }
-func summonAddress(r *summonRecord) uint32 { return uint32(uintptr(unsafe.Pointer(r))) }
+func summonAddress(r *summonRecord) uint32 { return memmap.PtrWord(unsafe.Pointer(r)) }
 func summonGrid(x, y int32) *uint32        { return summonWord(1321180 + uintptr(y+2*x)*4) }
 func summonClearGrid() uint32 {
 	for i := uintptr(1321180); i < 1321196; i += 4 {
 		*summonWord(i) = 0
 	}
-	return uint32(uintptr(unsafe.Pointer(summonWord(1321200))))
+	return memmap.PtrWord(unsafe.Pointer(summonWord(1321200)))
 }
 func summonFirst() *summonRecord {
 	for i := int32(0); i < 4; i++ {

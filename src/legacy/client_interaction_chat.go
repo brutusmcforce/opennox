@@ -12,12 +12,12 @@ import (
 )
 
 func interactionChatRoot() *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(interactionChatRootWord)))
+	return (*gui.Window)(memmap.WordPtr(interactionChatRootWord))
 }
 func interactionChatEdit() *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(interactionChatEditWord)))
+	return (*gui.Window)(memmap.WordPtr(interactionChatEditWord))
 }
-func interactionChatData() unsafe.Pointer { return unsafe.Pointer(uintptr(interactionChatDataWord)) }
+func interactionChatData() unsafe.Pointer { return memmap.WordPtr(interactionChatDataWord) }
 func interactionChatStart(team uint32) {
 	if noxflags.HasGame(2048) || interactionChatActive != 0 {
 		return
@@ -94,19 +94,19 @@ func interactionChatOpen() *gui.Window {
 	*memmap.PtrUint32(0x5D4594, 1064876) = uint32(x)
 	*memmap.PtrUint32(0x5D4594, 1064880) = uint32(y)
 	root := Nox_new_window_from_file("GuiChat.wnd", interactionChatEvent)
-	interactionChatRootWord = uint32(uintptr(root.C()))
+	interactionChatRootWord = memmap.PtrWord(root.C())
 	if root == nil {
 		return nil
 	}
 	root.SetPos(image.Pt(int(x), int(y)))
 	edit := root.ChildByID(9201)
-	interactionChatEditWord = uint32(uintptr(edit.C()))
+	interactionChatEditWord = memmap.PtrWord(edit.C())
 	if edit == nil {
 		return nil
 	}
 	edit.SetDraw(interactionChatDraw)
 	edit.SetFunc93(interactionChatKey)
-	interactionChatDataWord = uint32(uintptr(edit.WidgetData))
+	interactionChatDataWord = memmap.PtrWord(edit.WidgetData)
 	return root
 }
 func interactionChatKey(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
@@ -152,20 +152,8 @@ func nox_xxx_cmdSayDo_46A4B0(text *uint16, v int32) uint32 {
 	return uint32(interactionSay((*uint16)(unsafe.Pointer(text)), int(v)))
 }
 
-func sub_46A5D0(w *uint32, d int32) int32 {
-	return int32(interactionChatDraw((*gui.Window)(unsafe.Pointer(w)), (*gui.WindowData)(unsafe.Pointer(uintptr(uint32(d))))))
-}
-
 func sub_46A6A0() int32 { return int32(interactionChatClose()) }
 
 func sub_46A730() *uint32 { return (*uint32)(interactionChatOpen().C()) }
-
-func sub_46A7E0(w *uint32, code, a, b int32) int32 {
-	return int32(gui.EventRespInt(interactionChatKey((*gui.Window)(unsafe.Pointer(w)), &gui.RawEvent{Event: int(code), Arg1: uintptr(uint32(a)), Arg2: uintptr(uint32(b))})))
-}
-
-func sub_46A820(w, code, a, b int32) int32 {
-	return int32(gui.EventRespInt(interactionChatEvent((*gui.Window)(unsafe.Pointer(uintptr(uint32(w)))), &gui.RawEvent{Event: int(code), Arg1: uintptr(uint32(a)), Arg2: uintptr(uint32(b))})))
-}
 
 func sub_46A860() int32 { return int32(interactionChatDestroy()) }

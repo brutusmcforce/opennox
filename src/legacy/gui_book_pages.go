@@ -3,13 +3,14 @@ package legacy
 import (
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
 	"unsafe"
 )
 
 func bookInputBlocked() bool {
 	p := LocalPlayerDrawable
-	return p != nil && uiShopActive() == 0 && sub_47A260() == 0 && *(*byte)(unsafe.Add(p.C(), 120))&2 != 0
+	return p != nil && uiShopActive() == 0 && sub_47A260() == 0 && *(*byte)(unsafe.Add(p.C(), int(layoutClientDrawable.Off(120)) /* ObjFlags */))&2 != 0
 }
 func bookPageComplete(guide bool) int {
 	v := uint32(0)
@@ -25,7 +26,7 @@ func bookStartTurn(back, guide bool) {
 	if back {
 		off, mode = 1046928, 3
 	}
-	anim := (*ImageRef)(unsafe.Pointer(uintptr(*bookWord(off)))).Field24ptr()
+	anim := (*ImageRef)(memmap.WordPtr(*bookWord(off))).Field24ptr()
 	if guide {
 		anim.OnEnd = bookImageEndKey(1)
 	} else {
@@ -130,9 +131,9 @@ func bookTab(w *gui.Window, event uint32) int {
 	case 1310:
 		if *bookWord(1046872) != 0 {
 			bookPageComplete(false)
-			if bookSort(bookClass(*bookWord(1047516))) == 0 {
+			if bookSort(bookClass(bookPlayer)) == 0 {
 				bookPageComplete(true)
-				bookSort(bookClass(*bookWord(1047516)))
+				bookSort(bookClass(bookPlayer))
 				bookSound(925)
 				return 1
 			}
@@ -151,9 +152,9 @@ func bookTab(w *gui.Window, event uint32) int {
 	case 1320:
 		if *bookWord(1046872) != 1 {
 			bookPageComplete(true)
-			if bookSort(bookClass(*bookWord(1047516))) == 0 {
+			if bookSort(bookClass(bookPlayer)) == 0 {
 				bookPageComplete(false)
-				bookSort(bookClass(*bookWord(1047516)))
+				bookSort(bookClass(bookPlayer))
 				bookSound(925)
 				return 1
 			}
@@ -193,7 +194,7 @@ func bookListEvents(w *gui.Window, event uint32, pos image.Point) int {
 	switch event {
 	case 5:
 		p := LocalPlayerDrawable
-		if p != nil && *(*byte)(unsafe.Add(p.C(), 120))&2 != 0 {
+		if p != nil && *(*byte)(unsafe.Add(p.C(), int(layoutClientDrawable.Off(120)) /* ObjFlags */))&2 != 0 {
 			return 1
 		}
 		*bookWord(1047536) = uint32(pos.Y)
@@ -213,11 +214,11 @@ func bookListEvents(w *gui.Window, event uint32, pos image.Point) int {
 			*bookSelection() = 0xffffffff
 			return 1
 		}
-		class := bookClass(*bookWord(1047516))
+		class := bookClass(bookPlayer)
 		guide := *bookWord(1046868)
 		id := *bookWord(1046960 + 4*uintptr(*bookSelection()))
 		if class == 2 && guide == 1 {
-			if *bookPlayerWord(*bookWord(1047516), 4232, 0) == 0 && (!noxflags.HasGame(noxflags.GameFlag(0x2000)) || noxflags.HasGame(noxflags.GameModeQuest)) {
+			if *bookPlayerWord(bookPlayer, 4232, 0) == 0 && (!noxflags.HasGame(noxflags.GameFlag(0x2000)) || noxflags.HasGame(noxflags.GameModeQuest)) {
 				w.Capture(false)
 				bookMoveToPage(int(*bookSelection()))
 				*bookWord(1047528) = 0

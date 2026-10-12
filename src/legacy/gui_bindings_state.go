@@ -9,38 +9,39 @@ import (
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
-func bindingWord(off int) *uint32 {
+// bindingSlot returns the variable that holds a window of the key binding editors.
+func bindingSlot(off int) **gui.Window {
 	switch off {
 	case 1321224:
-		return (*uint32)(unsafe.Pointer(&dword_5d4594_1321224))
+		return &dword_5d4594_1321224
 	case 1321228:
-		return (*uint32)(unsafe.Pointer(&dword_5d4594_1321228))
+		return &dword_5d4594_1321228
 	case 1321232:
-		return (*uint32)(unsafe.Pointer(&dword_5d4594_1321232))
+		return &dword_5d4594_1321232
 	case 1321236:
-		return (*uint32)(unsafe.Pointer(&legacyGlobals.dword_5d4594_1321236))
+		return &legacyGlobals.dword_5d4594_1321236
 	case 1321240:
-		return (*uint32)(unsafe.Pointer(&legacyGlobals.dword_5d4594_1321240))
+		return &legacyGlobals.dword_5d4594_1321240
 	case 1321244:
-		return (*uint32)(unsafe.Pointer(&legacyGlobals.dword_5d4594_1321244))
+		return &legacyGlobals.dword_5d4594_1321244
 	case 1321248:
-		return (*uint32)(unsafe.Pointer(&legacyGlobals.dword_5d4594_1321248))
+		return &legacyGlobals.dword_5d4594_1321248
 	case 1321252:
-		return (*uint32)(unsafe.Pointer(&dword_5d4594_1321252))
+		return &dword_5d4594_1321252
 	case 1522604:
-		return (*uint32)(unsafe.Pointer(&dword_5d4594_1522604))
+		return &dword_5d4594_1522604
 	case 1522612:
-		return (*uint32)(unsafe.Pointer(&dword_5d4594_1522612))
+		return &dword_5d4594_1522612
 	case 1522616:
-		return (*uint32)(unsafe.Pointer(&legacyGlobals.dword_5d4594_1522616))
+		return &legacyGlobals.dword_5d4594_1522616
 	case 1522620:
-		return (*uint32)(unsafe.Pointer(&legacyGlobals.dword_5d4594_1522620))
+		return &legacyGlobals.dword_5d4594_1522620
 	case 1522624:
-		return (*uint32)(unsafe.Pointer(&legacyGlobals.dword_5d4594_1522624))
+		return &legacyGlobals.dword_5d4594_1522624
 	case 1522628:
-		return (*uint32)(unsafe.Pointer(&legacyGlobals.dword_5d4594_1522628))
+		return &legacyGlobals.dword_5d4594_1522628
 	case 1522632:
-		return (*uint32)(unsafe.Pointer(&dword_5d4594_1522632))
+		return &dword_5d4594_1522632
 	}
 	panic(off)
 }
@@ -60,9 +61,9 @@ func (e bindingEditor) offsets() (root, modal, base, selected, buffer int) {
 	return 1321228, 1321232, 1321236, 1321252, 1321256
 }
 func bindingWindow(off int) *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(*bindingWord(off))))
+	return *bindingSlot(off)
 }
-func bindingStore(off int, w *gui.Window)              { *bindingWord(off) = uint32(uintptr(w.C())) }
+func bindingStore(off int, w *gui.Window)              { *bindingSlot(off) = w }
 func bindingList(w *gui.Window) *gui.ScrollListBoxData { return (*gui.ScrollListBoxData)(w.WidgetData) }
 func bindingSend(w *gui.Window, event int, a, b uintptr) int {
 	return gui.EventRespInt(w.Func94(gui.AsWindowEvent(event, a, b)))
@@ -71,7 +72,7 @@ func bindingSetText(w *gui.Window, event int, text string, row int) {
 	bindingSend(w, event, uintptr(unsafe.Pointer(alloc.InternCString16(text))), uintptr(row))
 }
 func bindingGetText(w *gui.Window, row int) string {
-	return GoWStringP(unsafe.Pointer(uintptr(uint32(bindingSend(w, 16406, uintptr(row), 0)))))
+	return GoWStringP(unsafe.Pointer(uintptr(bindingSend(w, 16406, uintptr(row), 0))))
 }
 func (e bindingEditor) assign(key uint32, mouse bool) int {
 	k := keybind.Key(key)
@@ -103,7 +104,7 @@ func (e bindingEditor) assign(key uint32, mouse bool) int {
 	}
 	bindingSetText(dst, 16407, title, int(int32(bindingList(dst).Field_12)))
 	bindingSend(dst, 16403, ^uintptr(0), 0)
-	*bindingWord(selected) = 0
+	*bindingSlot(selected) = nil
 	return 1
 }
 func (e bindingEditor) apply() uint32 {

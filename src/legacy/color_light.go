@@ -23,7 +23,7 @@ func colorLightInterpolation(d *client.Drawable, kind int) (first, next int, ste
 	idx := int64(pos)
 	first = int(int8(idx))
 	next = first + 1
-	if *effectByte(d, 176)&(1<<(2*kind)) != 0 {
+	if *effectByte(d, int(layoutClientDrawable.Off(176)) /* Field_44 */)&(1<<(2*kind)) != 0 {
 		if next >= count {
 			next = 0
 		}
@@ -51,7 +51,7 @@ func colorLightColor(d *client.Drawable) {
 		end := int(*effectByte(d, 178+3*b+i))
 		rgb[i] = int(int64(float64(end-start)/period*step + float64(start)))
 	}
-	particleLightColor(unsafe.Add(d.C(), 136), rgb[0], rgb[1], rgb[2])
+	particleLightColor(unsafe.Add(d.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), rgb[0], rgb[1], rgb[2])
 }
 func colorLightIntensity(d *client.Drawable) {
 	a, b, step, period, ok := colorLightInterpolation(d, 1)
@@ -61,10 +61,10 @@ func colorLightIntensity(d *client.Drawable) {
 	start := int(*effectByte(d, 226+a))
 	end := int(*effectByte(d, 226+b))
 	value := float32(step*(float64(end-start)/period) + float64(start))
-	particleLightIntensity(unsafe.Add(d.C(), 136), value, true)
+	particleLightIntensity(unsafe.Add(d.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), value, true)
 }
 func colorLightPenumbra(d *client.Drawable) int {
-	mode := *effectWord(d, 168)
+	mode := *effectWord(d, int(layoutClientDrawable.Off(168)) /* Field_42 */)
 	if mode != 0 {
 		return int(mode)
 	}
@@ -75,13 +75,13 @@ func colorLightPenumbra(d *client.Drawable) int {
 	start := int(*effectByte(d, 242+a))
 	end := int(*effectByte(d, 242+b))
 	value := int(int64(step*(float64(end-start)/period) + float64(start)))
-	return int(particleLightAngle(unsafe.Add(d.C(), 136), value, true))
+	return int(particleLightAngle(unsafe.Add(d.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), value, true))
 }
 func colorLightTarget(d *client.Drawable) {
-	if *effectByte(d, 176)&0x40 == 0 {
+	if *effectByte(d, int(layoutClientDrawable.Off(176)) /* Field_44 */)&0x40 == 0 {
 		return
 	}
-	target := GetClient().Cli().Objs.ByNetCodeStatic(int(*effectWord(d, 264)))
+	target := GetClient().Cli().Objs.ByNetCodeStatic(int(*effectWord(d, int(layoutClientDrawable.Off(264)) /* Field_66 */)))
 	if target == nil {
 		return
 	}
@@ -93,21 +93,21 @@ func colorLightTarget(d *client.Drawable) {
 	if dy < 0 {
 		angle = 360 - angle
 	}
-	particleLightAngle(unsafe.Add(d.C(), 136), int(effectsTruncWord(angle)), false)
+	particleLightAngle(unsafe.Add(d.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), int(effectsTruncWord(angle)), false)
 }
 func colorLightRotate(d *client.Drawable) {
-	if *effectWord(d, 168) == 0 {
+	if *effectWord(d, int(layoutClientDrawable.Off(168)) /* Field_42 */) == 0 {
 		return
 	}
-	flags := *effectShort(d, 176)
-	speed := int16(*effectShort(d, 270))
+	flags := *effectShort(d, int(layoutClientDrawable.Off(176)) /* Field_44 */)
+	speed := int16(*effectShort(d, int(layoutClientDrawable.Off(270)) /* Field_67 */))
 	if flags&0x80 == 0 || speed == 0 {
 		return
 	}
-	start := float64(*effectShort(d, 268))
+	start := float64(*effectShort(d, int(layoutClientDrawable.Off(268)) /* Field_67 */))
 	span := 360.0
 	if flags&0x100 != 0 {
-		span = float64(int(*effectShort(d, 272)) - int(*effectShort(d, 268)))
+		span = float64(int(*effectShort(d, int(layoutClientDrawable.Off(272)) /* Field_68 */)) - int(*effectShort(d, int(layoutClientDrawable.Off(268)) /* Field_67 */)))
 	}
 	if span == 0 {
 		return
@@ -126,10 +126,10 @@ func colorLightRotate(d *client.Drawable) {
 	} else if angle < 0 {
 		angle += 360
 	}
-	particleLightAngle(unsafe.Add(d.C(), 136), int(angle), false)
+	particleLightAngle(unsafe.Add(d.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), int(angle), false)
 }
 func colorLightUpdate(vp *noxrender.Viewport, d *client.Drawable) int {
-	if *effectByte(d, 432) == 0 && *effectByte(d, 433) == 0 && *effectByte(d, 434) == 0 {
+	if *effectByte(d, int(layoutClientDrawable.Off(432)) /* Union._ */) == 0 && *effectByte(d, int(layoutClientDrawable.Off(433)) /* Union._ */) == 0 && *effectByte(d, int(layoutClientDrawable.Off(434)) /* Union._ */) == 0 {
 		GetClient().Cli().Objs.List5Delete(d)
 		return 1
 	}

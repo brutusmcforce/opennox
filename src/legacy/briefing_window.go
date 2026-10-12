@@ -10,20 +10,19 @@ import (
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/server"
 )
 
 func briefingParent() *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(legacyGlobals.dword_5d4594_831236)))
+	return (*gui.Window)(memmap.WordPtr(legacyGlobals.dword_5d4594_831236))
 }
 func briefingWindow() *gui.Window {
-	return (*gui.Window)(unsafe.Pointer(uintptr(nox_wnd_briefing_831232)))
+	return (*gui.Window)(memmap.WordPtr(nox_wnd_briefing_831232))
 }
 func briefingPlayVoice() int {
 	result := int(dword_5d4594_831224)
 	*memmap.PtrUint32(0x5D4594, 831248) = 1
 	if result != 0 {
-		result = Dialogs.PlayFile(alloc.GoString((*byte)(unsafe.Pointer(uintptr(dword_5d4594_831240)))), 100)
+		result = Dialogs.PlayFile(alloc.GoString((*byte)(memmap.WordPtr(dword_5d4594_831240))), 100)
 		dword_5d4594_831244 = 1
 	}
 	return result
@@ -47,14 +46,14 @@ func briefingCreateWindow() *gui.Window {
 	*memmap.PtrUint32(0x5D4594, 831284) = uint32(ox)
 	*memmap.PtrUint32(0x5D4594, 831288) = uint32(oy)
 	parent := GetClient().Cli().GUI.NewWindowRaw(nil, 56, 0, 0, int(nox_win_width), int(nox_win_height), briefingEvent(briefingBackgroundEvent))
-	legacyGlobals.dword_5d4594_831236 = uint32(uintptr(parent.C()))
+	legacyGlobals.dword_5d4594_831236 = memmap.PtrWord(parent.C())
 	if parent == nil {
 		return nil
 	}
 	parent.SetFunc93(briefingEvent(briefingInput))
 	parent.DrawData().BgColorVal = uint32(nox_color_black_2650656)
 	w := Nox_new_window_from_file("Briefing.wnd", nil)
-	nox_wnd_briefing_831232 = uint32(uintptr(w.C()))
+	nox_wnd_briefing_831232 = memmap.PtrWord(w.C())
 	if w == nil {
 		return nil
 	}
@@ -133,7 +132,7 @@ func briefingDrawWindow(w *gui.Window, data *gui.WindowData) int {
 func briefingShow(chapter, begin int, mode byte) int {
 	dword_5d4594_831260 = 1
 	dword_5d4594_831244 = 1
-	p := (*server.Player)(unsafe.Pointer(uintptr(dword_8531A0_2576)))
+	p := dword_8531A0_2576
 	*memmap.PtrUint32(0x5D4594, 832488) = 0
 	*memmap.PtrUint32(0x5D4594, 832472) = 0
 	dword_5d4594_831256 = 0
@@ -163,7 +162,7 @@ func briefingShow(chapter, begin int, mode byte) int {
 		if s := Nox_xxx_GetEndgameDialog(); s != "" {
 			voice = alloc.InternCString(s)
 		}
-		dword_5d4594_831240 = uint32(uintptr(unsafe.Pointer(voice)))
+		dword_5d4594_831240 = memmap.PtrWord(unsafe.Pointer(voice))
 		music = 24
 		dword_5d4594_831220 = 255
 	} else if chapter == 254 {
@@ -198,7 +197,7 @@ func briefingShow(chapter, begin int, mode byte) int {
 		setImage(slide.Image)
 		setText(unsafe.Pointer(slide.Text))
 		music = slide.Duration
-		dword_5d4594_831240 = uint32(uintptr(unsafe.Pointer(slide.Voice)))
+		dword_5d4594_831240 = memmap.PtrWord(unsafe.Pointer(slide.Voice))
 	}
 	r := GetClient().R2()
 	font := r.GetFonts().AsFont(child.DrawData().FontPtr)
@@ -254,7 +253,7 @@ func briefingDestroy() int {
 	for _, i := range []int{3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11} {
 		p := sprites[i]
 		if *p != 0 {
-			v := GetClient().Nox_xxx_spriteDelete_45A4B0((*client.Drawable)(unsafe.Pointer(uintptr(*p))))
+			v := GetClient().Nox_xxx_spriteDelete_45A4B0((*client.Drawable)(memmap.WordPtr(*p)))
 			if i == 11 {
 				result = v
 			}

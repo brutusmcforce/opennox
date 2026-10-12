@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
@@ -26,10 +27,10 @@ func spellLifeBookPool() alloc.ClassT[spellLifeBook] {
 	return alloc.AsClassT[spellLifeBook](legacyGlobals.nox_alloc_magicEnt_1569668)
 }
 func spellLifeBookHead() *spellLifeBook {
-	return (*spellLifeBook)(unsafe.Pointer(uintptr(dword_5d4594_1569672)))
+	return (*spellLifeBook)(memmap.WordPtr(dword_5d4594_1569672))
 }
 func spellLifeSetBookHead(p *spellLifeBook) {
-	dword_5d4594_1569672 = uint32(uintptr(unsafe.Pointer(p)))
+	dword_5d4594_1569672 = memmap.PtrWord(unsafe.Pointer(p))
 }
 func spellLifeUnlinkBook(p *spellLifeBook) *spellLifeBook {
 	next := p.Next

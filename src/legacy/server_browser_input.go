@@ -10,7 +10,7 @@ import (
 
 func browserMouseDraw(_ *gui.Window, _ *gui.WindowData) int {
 	p := GetClient().GetMousePos()
-	detail := browserWindow(uint32(uintptr(browserUI.detailPanel)))
+	detail := browserUI.detailPanel
 	if !browserHidden(detail) {
 		enlarged := *detail
 		enlarged.Off.X -= 32
@@ -19,13 +19,13 @@ func browserMouseDraw(_ *gui.Window, _ *gui.WindowData) int {
 		enlarged.SizeVal.Y += 64
 		if browserUI.transition == 0 && !serverOptionsPointIn(&enlarged, p) {
 			detail.SetHidden(true)
-			optionsSend(browserWindow(uint32(browserUI.gameList)), 16403, 0xffffffff, 0)
+			optionsSend(browserUI.gameList, 16403, 0xffffffff, 0)
 			browserUI.hasSelection = 0
 			detail.StackPop()
 			GetClient().Cli().GUI.Focus(browserUI.world)
 		}
 	}
-	if browserUI.popup != 0 && !serverOptionsPointIn(browserUI.popupWindow, p) {
+	if browserUI.popup != nil && !serverOptionsPointIn(browserUI.popupWindow, p) {
 		browserPopupClose()
 		GetClient().Cli().GUI.Focus(browserUI.world)
 	}

@@ -38,12 +38,12 @@ func resourceClientParser(kind string, typ *client.ObjectType, f *binfile.MemFil
 			return false
 		}
 		for off := uintptr(175072); ; off += 8 {
-			p := (*byte)(*memmap.PtrPtr(0x587000, off))
+			p := (*byte)(memmap.LoadPtr(0x587000, off))
 			if p == nil {
 				return false
 			}
 			if alloc.GoString(p) == name {
-				typ.ClientUpdate = *memmap.PtrPtr(0x587000, off+4)
+				typ.ClientUpdate = memmap.LoadPtr(0x587000, off+4)
 				return true
 			}
 		}
@@ -58,7 +58,7 @@ func resourceClientParser(kind string, typ *client.ObjectType, f *binfile.MemFil
 			_, _ = f.Read(raw)
 			name = alloc.GoStringS(raw)
 		}
-		typ.PrettyImage = uint32(uintptr(GetClient().R2().GetBag().ImageRef(int(id), imageType, name).C()))
+		typ.PrettyImage = memmap.PtrWord(unsafe.Pointer(GetClient().R2().GetBag().ImageRef(int(id), imageType, name).C()))
 		return true
 	}
 	panic(kind)
@@ -74,7 +74,7 @@ func resourceClientField(kind string) client.ThingFieldFunc {
 }
 func resourceLinkCatalogs() int {
 	for off := uintptr(208180); ; off += 20 {
-		p := (*byte)(*memmap.PtrPtr(0x587000, off))
+		p := (*byte)(memmap.LoadPtr(0x587000, off))
 		if p == nil {
 			break
 		}
@@ -86,13 +86,13 @@ func resourceLinkCatalogs() int {
 	}
 	for _, start := range []uintptr{210712, 210856, 211000, 209344} {
 		for off := start; ; off += 24 {
-			p := (*byte)(*memmap.PtrPtr(0x587000, off))
+			p := (*byte)(memmap.LoadPtr(0x587000, off))
 			if p == nil {
 				break
 			}
 			mods := &GetServer().S().Modif
 			id := mods.Nox_xxx_modifGetIdByName413290(alloc.GoString(p))
-			*memmap.PtrPtr(0x587000, off-4) = unsafe.Pointer(mods.Nox_xxx_modifGetDescById413330(id))
+			memmap.StorePtr(0x587000, off-4, unsafe.Pointer(mods.Nox_xxx_modifGetDescById413330(id)))
 		}
 	}
 	return 0

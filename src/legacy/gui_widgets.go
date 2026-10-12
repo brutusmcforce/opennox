@@ -1,14 +1,8 @@
 package legacy
 
 import (
-	"unsafe"
-
 	"github.com/brutusmcforce/opennox/client/gui"
 )
-
-var _ = [1]struct{}{}[524-unsafe.Sizeof(gui.ScrollListBoxItem{})]
-var _ = [1]struct{}{}[56-unsafe.Sizeof(gui.ScrollListBoxData{})]
-var _ = [1]struct{}{}[1056-unsafe.Sizeof(gui.EntryFieldData{})]
 
 var (
 	NewButtonOrCheckbox func(parent *gui.Window, status gui.StatusFlags, px, py, w, h int, draw *gui.WindowData) *gui.Window

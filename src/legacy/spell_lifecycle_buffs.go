@@ -103,8 +103,8 @@ func spellLifeUpdateBuffs(u *server.Object) {
 		if i == 7 {
 			u.ObjFlags &^= 0x40
 		} else if i == 16 {
-			*spellLifeWord(u.CObj(), 520) = 0
-			*spellLifeWord(u.CObj(), 524) = 13
+			*spellLifeWord(u.CObj(), int(layoutServerObject.Off(520)) /* Obj130 */) = 0
+			*spellLifeWord(u.CObj(), int(layoutServerObject.Off(524)) /* Field131 */) = 13
 			resourceDamage(u, 9999999)
 			GetServer().S().Audio.EventObj(779, u, 0, 0)
 			if u.ObjClass&4 != 0 {
@@ -116,6 +116,6 @@ func spellLifeUpdateBuffs(u *server.Object) {
 		u.BuffsPower[i] = 0
 	}
 	if spellLifeHasBuff(u, 9) {
-		*(*float32)(unsafe.Add(u.CObj(), 544)) = float32(float64(*(*float32)(unsafe.Add(u.CObj(), 544))) * 1.25)
+		*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(544)) /* SpeedCur */)) = float32(float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(544)) /* SpeedCur */))) * 1.25)
 	}
 }

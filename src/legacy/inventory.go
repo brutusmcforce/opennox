@@ -7,7 +7,7 @@ import (
 	"unsafe"
 )
 
-func inventoryInt(u *server.Object) int32 { return int32(uintptr(u.CObj())) }
+func inventoryInt(u *server.Object) int32 { return int32(memmap.PtrWord(u.CObj())) }
 func inventoryWeight(u *server.Object) {
 	var weight uint32
 	for it := u.InvFirstItem; it != nil; it = it.InvNextItem {

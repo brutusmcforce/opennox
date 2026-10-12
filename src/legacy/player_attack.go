@@ -213,7 +213,7 @@ func attackPlayer(u *server.Object) int {
 			inventoryRemove(u, it)
 			GetServer().CreateObjectAt(p, u, pos)
 			inventoryInsert(p, it, 1)
-			Nox_xxx_modifSetItemAttrs_4E4990(p, it.InitData)
+			Nox_xxx_modifSetItemAttrs_4E4990(p, it.InitDataModifier())
 			attackProjectileVelocity(u, p)
 			*(*byte)(unsafe.Add(data, 4)) = 4
 			*(*types.Pointf)(unsafe.Add(data, 16)) = u.PosVec
@@ -223,7 +223,7 @@ func attackPlayer(u *server.Object) int {
 			b := unsafe.Slice((*byte)(it.UseData.Ptr), 3)
 			*temporaryRefWord(p.CollideData, 4) = u
 			GetServer().CreateObjectAt(p, u, pos)
-			Nox_xxx_modifSetItemAttrs_4E4990(p, it.InitData)
+			Nox_xxx_modifSetItemAttrs_4E4990(p, it.InitDataModifier())
 			attackProjectileVelocity(u, p)
 			inventorySound(891, u, 0, 0)
 			if b[2] == 0 {

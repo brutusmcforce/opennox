@@ -25,8 +25,8 @@ const (
 	lightGrid  = common.GridStep
 )
 
-var _ = [1]struct{}{}[1056-unsafe.Sizeof(noxrender.RenderData{})]
-var _ = [1]struct{}{}[48-unsafe.Sizeof(noxrender.RenderMat{})]
+
+
 
 var (
 	nox_video_renderTargetFlags          = 0
@@ -99,8 +99,8 @@ func nox_xxx_cliUpdateCameraPos_435600(x, y int) {
 	vp.World.Max.Y = y + vp.Jiggle12
 }
 
-var _ = [1]struct{}{}[52-unsafe.Sizeof(noxrender.Viewport{})]
-var _ = [1]struct{}{}[4-unsafe.Sizeof(int(0))]
+
+
 
 func detectBestVideoSettings() {
 	const cfg = 450

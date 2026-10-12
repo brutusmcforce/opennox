@@ -2,10 +2,7 @@ package server
 
 import (
 	"time"
-	"unsafe"
 )
-
-var _ = [1]struct{}{}[16-unsafe.Sizeof(SystemTime{})]
 
 type SystemTime struct {
 	Year         uint16

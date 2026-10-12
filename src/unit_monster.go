@@ -11,8 +11,6 @@ import (
 	"github.com/brutusmcforce/opennox/server"
 )
 
-var _ = [1]struct{}{}[248-unsafe.Sizeof(server.MonsterDef{})]
-
 func objectMonsterInit(obj *server.Object) {
 	s := obj.Server()
 	ud := obj.UpdateDataMonster()

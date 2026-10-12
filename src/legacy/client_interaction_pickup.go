@@ -2,7 +2,6 @@ package legacy
 
 import (
 	"encoding/binary"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/common/memmap"
@@ -38,5 +37,5 @@ func interactionReportSecondary(dr *client.Drawable) int {
 func nox_xxx_clientPickup_46C140(dr *nox_drawable) { interactionPickup(asDrawable(dr)) }
 
 func nox_xxx_clientReportSecondaryWeapon_4BF010(dr int32) int32 {
-	return int32(interactionReportSecondary((*client.Drawable)(unsafe.Pointer(uintptr(uint32(dr))))))
+	return int32(interactionReportSecondary((*client.Drawable)(memmap.WordPtr(uint32(dr)))))
 }

@@ -38,7 +38,7 @@ func updateCloud(dr *client.Drawable, count, radius int) int {
 		if child := effectSpawn(int(typ), pos); child != nil {
 			child.ZVal = 0
 			effectLink(child)
-			*effectByte(child, 432) = byte(effectRand(1, 3))
+			*effectByte(child, int(layoutClientDrawable.Off(432)) /* Union._ */) = byte(effectRand(1, 3))
 			child.Field_115 = drawableUpdateIdentity(updateID_sub_4CE340)
 			GetClient().Cli().Objs.TransparentDecay(child, effectRand(10, 32))
 			GetClient().Cli().Objs.List5Add(child)
@@ -48,7 +48,7 @@ func updateCloud(dr *client.Drawable, count, radius int) int {
 	}
 	return count
 }
-func updateCloudRise(dr *client.Drawable) int { dr.ZVal += uint16(*effectByte(dr, 432)); return 1 }
+func updateCloudRise(dr *client.Drawable) int { dr.ZVal += uint16(*effectByte(dr, int(layoutClientDrawable.Off(432)) /* Union._ */)); return 1 }
 func updateCloudFrame(dr *client.Drawable, radius int) int {
 	if gameFrame()&1 != 0 {
 		updateCloud(dr, 1, radius)
@@ -62,16 +62,16 @@ func updateDeathBallSparks(dr *client.Drawable, count int) uint32 {
 	out := uint32(count)
 	for ; count > 0; count-- {
 		child := effectSpawn(int(typ), dr.PosVec)
-		out = uint32(uintptr(unsafe.Pointer(child)))
+		out = memmap.PtrWord(unsafe.Pointer(child))
 		if child == nil {
 			continue
 		}
-		*effectWord(child, 432) = uint32(dr.PosVec.X) << 12
-		*effectWord(child, 436) = uint32(dr.PosVec.Y) << 12
+		*effectWord(child, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(dr.PosVec.X) << 12
+		*effectWord(child, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(dr.PosVec.Y) << 12
 		child.Field_74_4 = byte(effectRand(0, 255))
-		*effectWord(child, 440) = uint32(effectRand(1000, 3000))
-		*effectWord(child, 448) = gameFrame() + uint32(effectRand(10, 40))
-		*effectWord(child, 444) = gameFrame()
+		*effectWord(child, int(layoutClientDrawable.Off(440)) /* Union._ */) = uint32(effectRand(1000, 3000))
+		*effectWord(child, int(layoutClientDrawable.Off(448)) /* Union._ */) = gameFrame() + uint32(effectRand(10, 40))
+		*effectWord(child, int(layoutClientDrawable.Off(444)) /* Union._ */) = gameFrame()
 		child.ZVal = 22
 		child.VelZ = int8(effectRand(0, 4))
 		effectLink(child)
@@ -109,13 +109,13 @@ func updateFireball(dr *client.Drawable, speed int) {
 		fraction := effectRand(0, 100)
 		pos := image.Pt(int(dr.Field_8)+dx*fraction/100, int(dr.Field_9)+dy*fraction/100)
 		if child := effectSpawn(int(typ), pos); child != nil {
-			*effectWord(child, 432) = uint32(pos.X) << 12
-			*effectWord(child, 436) = uint32(pos.Y) << 12
+			*effectWord(child, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(pos.X) << 12
+			*effectWord(child, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(pos.Y) << 12
 			jitter := effectRand(-25, 25)
 			child.Field_74_4 = byte(effectAngle(float32(-dx), float32(-dy)) + jitter)
-			*effectWord(child, 440) = uint32(speed * effectRand(100, 300))
-			*effectWord(child, 448) = gameFrame() + uint32(effectRand(30, 45))
-			*effectWord(child, 444) = gameFrame()
+			*effectWord(child, int(layoutClientDrawable.Off(440)) /* Union._ */) = uint32(speed * effectRand(100, 300))
+			*effectWord(child, int(layoutClientDrawable.Off(448)) /* Union._ */) = gameFrame() + uint32(effectRand(30, 45))
+			*effectWord(child, int(layoutClientDrawable.Off(444)) /* Union._ */) = gameFrame()
 			child.ZVal, child.ZVal2 = 28, 0
 			child.VelZ = int8(effectRand(-2, 4))
 			effectLink(child)
@@ -141,12 +141,12 @@ func updateManaBomb(dr *client.Drawable) int {
 		}
 		angle := effectRand(0, 255)
 		if child := effectSpawn(int(*effectMapped(1522960)), updateRadial(dr.PosVec, angle, r)); child != nil {
-			*effectWord(child, 432) = uint32(child.PosVec.X) << 12
-			*effectWord(child, 436) = uint32(child.PosVec.Y) << 12
+			*effectWord(child, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(child.PosVec.X) << 12
+			*effectWord(child, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(child.PosVec.Y) << 12
 			child.Field_74_4 = 0
-			*effectWord(child, 440) = 0
-			*effectWord(child, 448) = gameFrame() + uint32(effectRand(10, 30))
-			*effectWord(child, 444) = gameFrame()
+			*effectWord(child, int(layoutClientDrawable.Off(440)) /* Union._ */) = 0
+			*effectWord(child, int(layoutClientDrawable.Off(448)) /* Union._ */) = gameFrame() + uint32(effectRand(10, 30))
+			*effectWord(child, int(layoutClientDrawable.Off(444)) /* Union._ */) = gameFrame()
 			child.ZVal = 0
 			child.VelZ = int8(effectRand(2, 8))
 			effectLink(child)
@@ -180,12 +180,12 @@ func updateMagicMissile(dr *client.Drawable) int {
 		x := int(dr.Field_8) + dx*effectRand(0, 100)/100
 		y := int(dr.Field_9) + dy*effectRand(0, 100)/100
 		if child := effectSpawn(int(*effectMapped(1522984)), image.Pt(x, y)); child != nil {
-			*effectWord(child, 432) = uint32(x) << 12
-			*effectWord(child, 436) = uint32(y) << 12
+			*effectWord(child, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(x) << 12
+			*effectWord(child, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(y) << 12
 			child.Field_74_4 = byte(effectRand(0, 255))
-			*effectWord(child, 440) = 0
-			*effectWord(child, 448) = gameFrame() + uint32(effectRand(3, 10))
-			*effectWord(child, 444) = gameFrame()
+			*effectWord(child, int(layoutClientDrawable.Off(440)) /* Union._ */) = 0
+			*effectWord(child, int(layoutClientDrawable.Off(448)) /* Union._ */) = gameFrame() + uint32(effectRand(3, 10))
+			*effectWord(child, int(layoutClientDrawable.Off(444)) /* Union._ */) = gameFrame()
 			child.ZVal = 20
 			child.VelZ = int8(effectRand(0, 6))
 			effectLink(child)
@@ -197,22 +197,22 @@ func updateMagicMissile(dr *client.Drawable) int {
 
 // Advance the anchor only after ownership and decay can be assigned to a tail.
 func updateTailLink(dr *client.Drawable, typ uint32, lifetime int) {
-	anchor := image.Pt(int(*effectWord(dr, 432)), int(*effectWord(dr, 436)))
+	anchor := image.Pt(int(*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */)), int(*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */)))
 	dx, dy := dr.PosVec.X-anchor.X, dr.PosVec.Y-anchor.Y
 	if uint32(dx*dx+dy*dy) <= 200 {
 		return
 	}
 	if child := effectSpawn(int(typ), anchor); child != nil {
-		*effectWord(child, 432) = uint32(dr.PosVec.X)
-		*effectWord(child, 436) = uint32(dr.PosVec.Y)
+		*effectWord(child, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(dr.PosVec.X)
+		*effectWord(child, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(dr.PosVec.Y)
 		effectLink(child)
-		*effectWord(dr, 432) = uint32(dr.PosVec.X)
-		*effectWord(dr, 436) = uint32(dr.PosVec.Y)
+		*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(dr.PosVec.X)
+		*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(dr.PosVec.Y)
 		GetClient().Cli().Objs.TransparentDecay(child, lifetime)
 	}
 }
 func updateMagicTrail(dr *client.Drawable) {
-	dx, dy := dr.PosVec.X-int(*effectWord(dr, 432)), dr.PosVec.Y-int(*effectWord(dr, 436))
+	dx, dy := dr.PosVec.X-int(*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */)), dr.PosVec.Y-int(*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */))
 	if uint32(dx*dx+dy*dy) > 200 {
 		updateTailLink(dr, updateType(1523000, "MagicTailLink"), int(gameFPS()))
 	}
@@ -241,12 +241,12 @@ func updateTrailSparks(dr *client.Drawable, magic bool) int {
 				child.DrawFuncPtr = unsafe.Pointer(drawableDrawKey(drawKey_nox_thing_pixie_dust_draw))
 				child.SetLightColor(255, 200, 75)
 			}
-			*effectWord(child, 432) = uint32(pos.X) << 12
-			*effectWord(child, 436) = uint32(pos.Y) << 12
+			*effectWord(child, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(pos.X) << 12
+			*effectWord(child, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(pos.Y) << 12
 			child.Field_74_4 = 0
-			*effectWord(child, 440) = 0
-			*effectWord(child, 448) = gameFrame() + uint32(effectRand(lo, hi))
-			*effectWord(child, 444) = gameFrame()
+			*effectWord(child, int(layoutClientDrawable.Off(440)) /* Union._ */) = 0
+			*effectWord(child, int(layoutClientDrawable.Off(448)) /* Union._ */) = gameFrame() + uint32(effectRand(lo, hi))
+			*effectWord(child, int(layoutClientDrawable.Off(444)) /* Union._ */) = gameFrame()
 			child.ZVal, child.ZVal2 = dr.ZVal, dr.ZVal2
 			child.VelZ = 0
 			effectLink(child)
@@ -276,18 +276,18 @@ func updateVortex(dr *client.Drawable) int {
 	}
 	angle := effectRand(0, 255)
 	if child := effectSpawn(int(*effectMapped(1522952)), updateRadial(dr.PosVec, angle, 50)); child != nil {
-		*effectByte(child, 448) = byte(angle)
+		*effectByte(child, int(layoutClientDrawable.Off(448)) /* Union._ */) = byte(angle)
 		dr.ZVal = 0 // The source clears the parent height, not the new orb's height.
-		*effectByte(child, 449) = byte(effectRand(2, 3))
+		*effectByte(child, int(layoutClientDrawable.Off(449)) /* Union._ */) = byte(effectRand(2, 3))
 		if effectRand(0, 100) > 50 {
-			*effectByte(child, 449) = -*effectByte(child, 449)
+			*effectByte(child, int(layoutClientDrawable.Off(449)) /* Union._ */) = -*effectByte(child, int(layoutClientDrawable.Off(449)) /* Union._ */)
 		}
-		*effectByte(child, 451) = 1
-		*effectByte(child, 450) = 50
-		*effectWord(child, 440) = uint32(dr.PosVec.X)
-		*effectWord(child, 444) = uint32(dr.PosVec.Y)
-		*effectWord(child, 432) = *effectMapped(1522944)
-		*effectWord(child, 436) = *effectMapped(1522948)
+		*effectByte(child, int(layoutClientDrawable.Off(451)) /* Union._ */) = 1
+		*effectByte(child, int(layoutClientDrawable.Off(450)) /* Union._ */) = 50
+		*effectWord(child, int(layoutClientDrawable.Off(440)) /* Union._ */) = uint32(dr.PosVec.X)
+		*effectWord(child, int(layoutClientDrawable.Off(444)) /* Union._ */) = uint32(dr.PosVec.Y)
+		*effectWord(child, int(layoutClientDrawable.Off(432)) /* Union._ */) = *effectMapped(1522944)
+		*effectWord(child, int(layoutClientDrawable.Off(436)) /* Union._ */) = *effectMapped(1522948)
 		effectLink(child)
 		GetClient().Cli().Objs.List6Add(child)
 	}
@@ -330,10 +330,10 @@ func updateTransfer(typ int, vp *noxrender.Viewport, dr *client.Drawable, revers
 	}
 	if child := effectSpawn(typ, image.Pt(x, y)); child != nil {
 		speed := effectRand(6, 12)
-		*effectShort(child, 432) = uint16(to.X)
-		*effectShort(child, 434) = uint16(to.Y)
-		*effectByte(child, 443) = byte(speed)
-		*effectByte(child, 444) = byte(effectRand(3, 10))
+		*effectShort(child, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint16(to.X)
+		*effectShort(child, int(layoutClientDrawable.Off(434)) /* Union._ */) = uint16(to.Y)
+		*effectByte(child, int(layoutClientDrawable.Off(443)) /* Union._ */) = byte(speed)
+		*effectByte(child, int(layoutClientDrawable.Off(444)) /* Union._ */) = byte(effectRand(3, 10))
 	}
 }
 func updateHealDrain(vp *noxrender.Viewport, dr *client.Drawable, heal bool) int {
@@ -353,10 +353,10 @@ func updateCharm(vp *noxrender.Viewport, dr *client.Drawable) int {
 	return 1
 }
 func updateHeight(dr *client.Drawable, bounce bool) int {
-	h := (*float32)(unsafe.Add(dr.C(), 436))
-	v := (*float32)(unsafe.Add(dr.C(), 440))
-	restitution := math.Float32frombits(*effectWord(dr, 444))
-	for frame := *effectWord(dr, 432); frame < gameFrame(); frame++ {
+	h := (*float32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(436)) /* Union._ */))
+	v := (*float32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(440)) /* Union._ */))
+	restitution := math.Float32frombits(*effectWord(dr, int(layoutClientDrawable.Off(444)) /* Union._ */))
+	for frame := *effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */); frame < gameFrame(); frame++ {
 		if !bounce {
 			if *h > 0 {
 				*h = float32(float64(*h) + float64(*v))
@@ -382,6 +382,6 @@ func updateHeight(dr *client.Drawable, bounce bool) int {
 	}
 	dr.ZVal = uint16(int64(*h))
 	dr.VelZ = int8(int64(*v))
-	*effectWord(dr, 432) = gameFrame()
+	*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = gameFrame()
 	return 1
 }

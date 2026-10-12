@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
@@ -13,17 +14,8 @@ import (
 type shopSession = server.TradeSession
 type shopItem = server.TradeItem
 
-var (
-	_ [64 - unsafe.Sizeof(shopSession{})]byte
-	_ [unsafe.Sizeof(shopSession{}) - 64]byte
-	_ [16 - unsafe.Sizeof(shopItem{})]byte
-	_ [unsafe.Sizeof(shopItem{}) - 16]byte
-	_ [28 - unsafe.Sizeof(shopStockEntry{})]byte
-	_ [unsafe.Sizeof(shopStockEntry{}) - 28]byte
-)
-
-func shopHead() *shopSession     { return (*shopSession)(unsafe.Pointer(uintptr(dword_5d4594_2386500))) }
-func shopSetHead(s *shopSession) { dword_5d4594_2386500 = uint32(uintptr(unsafe.Pointer(s))) }
+func shopHead() *shopSession     { return (*shopSession)(memmap.WordPtr(dword_5d4594_2386500)) }
+func shopSetHead(s *shopSession) { dword_5d4594_2386500 = memmap.PtrWord(unsafe.Pointer(s)) }
 func shopCached() []*shopSession {
 	return shopCachedList[:]
 }
@@ -156,14 +148,14 @@ func shopDestroy(s *shopSession) {
 func shopDetach(s *shopSession, u *server.Object) uint32 {
 	s.Active = 0
 	if u.ObjClass&4 == 0 {
-		return uint32(uintptr(u.CObj()))
+		return memmap.PtrWord(u.CObj())
 	}
 	data := u.UpdateData
 	ptr := (**shopSession)(unsafe.Add(data, 280))
 	if *ptr == s {
 		*ptr = nil
 	}
-	return uint32(uintptr(data))
+	return memmap.PtrWord(data)
 }
 func shopExit(s *shopSession) {
 	shopDetach(s, s.Units[0])
@@ -192,16 +184,6 @@ func shopPlayerCleanup(ind int) {
 		shopDestroy(s)
 	}
 	shopCached()[ind] = nil
-}
-func shopLookup(u *server.Object, code uint32) uint32 {
-	s := *(**shopSession)(unsafe.Add(u.UpdateData, 280))
-	if s == nil {
-		return 0
-	}
-	if n := shopFind(s.Stock, code); n != nil {
-		return uint32(uintptr(n.Object.CObj()))
-	}
-	return 0
 }
 func shopAddGold(u *server.Object, value uint32) uint32 {
 	return resourceAddGold(u, value)

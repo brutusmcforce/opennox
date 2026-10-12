@@ -39,7 +39,7 @@ func bookEnchantNext(id int32) int32 {
 }
 func bookAbilityID(name string) int32 {
 	for i := int32(0); ; i++ {
-		p := (*byte)(*memmap.PtrPtr(0x587000, uintptr(69736+4*i)))
+		p := (*byte)(memmap.LoadPtr(0x587000, uintptr(69736+4*i)))
 		if p == nil {
 			return 0
 		}
@@ -56,7 +56,7 @@ func bookGuideID(name string) int32 {
 	}
 	return 0
 }
-func bookGuideName(id int32) *byte { return (*byte)(*memmap.PtrPtr(0x587000, uintptr(70500+4*id))) }
+func bookGuideName(id int32) *byte { return (*byte)(memmap.LoadPtr(0x587000, uintptr(70500+4*id))) }
 func bookGuideWord(id, field int32) uint32 {
 	return *memmap.PtrUint32(0x5D4594, uintptr(740076+28*id+field))
 }
@@ -112,16 +112,16 @@ func bookLoadGuides() int {
 		}
 		row := unsafe.Slice(memmap.PtrUint32(0x5D4594, uintptr(740076+28*i)), 7)
 		text := GetServer().S().Strings().GetStringInFile(strman.ID("creature:"+name), "ComGuide.c")
-		row[0] = uint32(uintptr(unsafe.Pointer(alloc.InternCString16(text))))
+		row[0] = memmap.PtrWord(unsafe.Pointer(alloc.InternCString16(text)))
 		if alloc.GoString(typ.Name) == "Bomber" {
 			row[1] = 0
 		} else {
 			row[1] = uint32(GetClient().Cli().Things.IndByID(name))
 		}
 		text = GetServer().S().Strings().GetStringInFile(strman.ID("creature_desc:"+name), "ComGuide.c")
-		row[2] = uint32(uintptr(unsafe.Pointer(alloc.InternCString16(text))))
-		row[3] = uint32(uintptr(Nox_xxx_gLoadImg(bookGuideImagePrefix(71248, "Cage") + name).C()))
-		row[4] = uint32(uintptr(Nox_xxx_gLoadImg(bookGuideImagePrefix(71264, "k") + name).C()))
+		row[2] = memmap.PtrWord(unsafe.Pointer(alloc.InternCString16(text)))
+		row[3] = memmap.PtrWord(unsafe.Pointer(Nox_xxx_gLoadImg(bookGuideImagePrefix(71248, "Cage") + name).C()))
+		row[4] = memmap.PtrWord(unsafe.Pointer(Nox_xxx_gLoadImg(bookGuideImagePrefix(71264, "k") + name).C()))
 		row[5] = 0
 		size := byte(4)
 		if typ.ObjSubClass&1 != 0 {

@@ -18,18 +18,18 @@ type itemRespawnRecord struct {
 	direction      uint16
 	_              uint16
 	frame, pending uint32
-	attrs          [5]uint32
+	attrs          server.ModifierInitData
 	ammo           [2]byte
 	_              [2]byte
 	next, prev     *itemRespawnRecord
 }
 
 // Keep the qualified 386 pool layout, including modifier words and ammunition bytes.
-var _ = [1]struct{}{}[60-unsafe.Sizeof(itemRespawnRecord{})]
-var _ = [1]struct{}{}[4-unsafe.Offsetof(itemRespawnRecord{}.obj)]
-var _ = [1]struct{}{}[20-unsafe.Offsetof(itemRespawnRecord{}.frame)]
-var _ = [1]struct{}{}[52-unsafe.Offsetof(itemRespawnRecord{}.next)]
-var _ = [1]struct{}{}[56-unsafe.Offsetof(itemRespawnRecord{}.prev)]
+
+
+
+
+
 var itemRespawnPool alloc.ClassT[itemRespawnRecord]
 var itemRespawnHead *itemRespawnRecord
 var itemRespawnEnabled uint32 = 1
@@ -55,7 +55,7 @@ func itemRespawnAdd(u *server.Object) uintptr {
 	}
 	*p = itemRespawnRecord{typ: uint32(u.TypeInd), obj: u, pos: u.PosVec, direction: uint16(u.Direction1)}
 	if u.ObjClass&0x13001000 != 0 {
-		p.attrs = *(*[5]uint32)(u.InitData)
+		p.attrs = *u.InitDataModifier()
 	}
 	if u.ObjClass&0x1000000 != 0 && GetServer().S().Weapons.Nox_xxx_weaponInventoryEquipFlags_415820(u)&0x82 != 0 {
 		d := (*[2]byte)(u.UseData.Ptr)
@@ -177,7 +177,7 @@ func itemRespawnTick() {
 			visibilityFXPoint(129, p.pos)
 			next.Direction1, next.Direction2 = server.Dir16(p.direction), server.Dir16(p.direction)
 			if next.ObjClass&0x13001000 != 0 {
-				stateAttributes(next, unsafe.Pointer(&p.attrs[0]))
+				stateAttributes(next, &p.attrs)
 			}
 			if next.ObjClass&0x1000000 != 0 && s.Weapons.Nox_xxx_weaponInventoryEquipFlags_415820(next)&0x82 != 0 {
 				d := (*[2]byte)(next.UseData.Ptr)

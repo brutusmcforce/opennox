@@ -55,7 +55,7 @@ func uiItemTooltip(dr *client.Drawable) *uint16 {
 		if metadata == 0 {
 			var request [4]byte
 			request[0], request[3] = 0xe2, kind
-			binary.LittleEndian.PutUint16(request[1:3], uint16(nox_xxx_netGetUnitCodeCli_578B00(int32(uintptr(unsafe.Pointer(dr))))))
+			binary.LittleEndian.PutUint16(request[1:3], uint16(nox_xxx_netGetUnitCodeCli_578B00(int32(memmap.PtrWord(unsafe.Pointer(dr))))))
 			item.Field_108 = sentinel
 			Nox_xxx_netClientSend2_4E53C0(31, unsafe.Pointer(&request[0]), 4, 0, 1)
 			return &dst[0]
@@ -69,7 +69,7 @@ func uiItemTooltip(dr *client.Drawable) *uint16 {
 		case 1:
 			title = (*uint16)(unsafe.Pointer(nox_xxx_spellTitle_424930(int(metadata))))
 		case 2:
-			title = (*uint16)(unsafe.Pointer(uintptr(uint32(bookGuideCreatureName(int32(metadata))))))
+			title = (*uint16)(memmap.WordPtr(uint32(bookGuideCreatureName(int32(metadata)))))
 		case 4:
 			title = alloc.InternCString16(Nox_xxx_abilityGetName_0_425260(int(metadata)))
 		}
@@ -110,7 +110,7 @@ func uiItemTooltip(dr *client.Drawable) *uint16 {
 			if word == 0 {
 				continue
 			}
-			mod := (*server.ModifierEff)(unsafe.Pointer(uintptr(word)))
+			mod := (*server.ModifierEff)(memmap.WordPtr(word))
 			if i == 3 {
 				mods[i] = mod.SecondaryDescPtr()
 			} else {

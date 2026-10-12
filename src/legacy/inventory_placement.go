@@ -9,14 +9,14 @@ import (
 )
 
 func inventoryShapeRadius(u *server.Object) float64 {
-	shape := *(*uint32)(unsafe.Add(u.CObj(), 172))
+	shape := *(*uint32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(172)) /* Shape.Kind */))
 	if shape == 2 {
-		return float64(*(*float32)(unsafe.Add(u.CObj(), 176)))
+		return float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)))
 	}
 	if shape != 3 {
 		return 0
 	}
-	w, h := float64(*(*float32)(unsafe.Add(u.CObj(), 184))), float64(*(*float32)(unsafe.Add(u.CObj(), 188)))
+	w, h := float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(184)) /* Shape.Box.W */))), float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(188)) /* Shape.Box.H */)))
 	if w <= h {
 		return h * 0.5
 	}
@@ -69,7 +69,7 @@ func inventoryForceDrop(u, it *server.Object) int {
 func inventoryDropAll(u *server.Object) uint32 {
 	var radius float32
 	for it := u.InvFirstItem; it != nil; it = it.InvNextItem {
-		r := *(*float32)(unsafe.Add(it.CObj(), 176))
+		r := *(*float32)(unsafe.Add(it.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */))
 		if inventoryDropEligible(u, it) && float64(r) > float64(radius) {
 			radius = r
 		}

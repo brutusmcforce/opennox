@@ -9,7 +9,7 @@ import (
 func worldAngleQueue(ud unsafe.Pointer) {
 	if *equipmentWord(ud, 28) == 0 {
 		*equipmentWord(ud, 36) = uint32(collisionAngleHead)
-		collisionAngleHead = uint32(uintptr(ud))
+		collisionAngleHead = memmap.PtrWord(ud)
 		*equipmentWord(ud, 28) = 1
 	}
 }

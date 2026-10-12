@@ -30,7 +30,7 @@ func Nox_cmd_ban(i int, t []string) bool {
 	} else {
 		Nox_xxx_playerDisconnByPlrID_4DEB00(ntype.PlayerInd(p.PlayerInd))
 	}
-	serverConfigBlockedAdd(0, alloc.InternCString16(name), (*byte)(unsafe.Add(p.C(), 2112)))
+	serverConfigBlockedAdd(0, alloc.InternCString16(name), (*byte)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(2112)) /* SerialBuf */)))
 	consoleCommandCentered("banned", p.Name())
 	return true
 }

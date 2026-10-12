@@ -90,7 +90,7 @@ func stateFreeze(u *server.Object, force int32) int8 {
 	if u.ObjClass&2 != 0 {
 		result = int8(u.ObjFlags)
 		if u.ObjFlags&0x8000 == 0 {
-			result = int8(uintptr(unsafe.Pointer(u.MonsterPushAction(0))))
+			result = int8(memmap.PtrWord(unsafe.Pointer(u.MonsterPushAction(0))))
 		}
 	}
 	return result
@@ -110,7 +110,7 @@ func stateUnfreeze(u *server.Object, force int32) int8 {
 		result = int8(gameplayReportPlayerStatus(u))
 		for it := u.Field129; it != nil; it = it.Field128 {
 			if it.ObjClass&2 != 0 {
-				result = int8(uintptr(it.UpdateData))
+				result = int8(memmap.PtrWord(it.UpdateData))
 				if *equipmentWord(it.UpdateData, 1440)&0x80 != 0 {
 					result = stateUnfreeze(it, force)
 				}
@@ -231,7 +231,7 @@ func stateResetPixie(u *server.Object) int32 {
 	typ := stateType(1567728, "Pixie")
 	if u != nil && uint32(u.TypeInd) == typ {
 		*equipmentWord(u.UpdateData, 4) = 0
-		return int32(uintptr(u.UpdateData))
+		return int32(memmap.PtrWord(u.UpdateData))
 	}
 	return int32(typ)
 }

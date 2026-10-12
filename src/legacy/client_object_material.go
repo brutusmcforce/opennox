@@ -18,20 +18,20 @@ func objectTeamColor(arg unsafe.Pointer) int {
 	}
 	name := alloc.GoString(*(**byte)(arg))
 	for off := uintptr(177488); ; off += 8 {
-		p := *memmap.PtrUint32(0x587000, off)
-		if p == 0 {
+		p := (*byte)(memmap.LoadPtr(0x587000, off))
+		if p == nil {
 			return 0
 		}
-		if name == alloc.GoString((*byte)(unsafe.Pointer(uintptr(p)))) {
+		if name == alloc.GoString(p) {
 			return int(memmap.Uint32(0x587000, off+4))
 		}
 	}
 }
 func objectDrawableTeamColor(dr *client.Drawable) int {
-	if *effectWord(dr, 112)&0x10000000 == 0 {
+	if *effectWord(dr, int(layoutClientDrawable.Off(112)) /* ObjClass */)&0x10000000 == 0 {
 		return 0
 	}
-	return objectTeamColor(unsafe.Pointer(uintptr(*effectWord(dr, 436))))
+	return objectTeamColor(*(*unsafe.Pointer)(unsafe.Pointer(effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */))))
 }
 func objectTeamByColor(color int) *server.Team {
 	teams := &GetServer().S().Teams
@@ -50,7 +50,7 @@ func objectBaseMaterials(typ int) uint32 {
 	objectSetBaseMaterials(def)
 	// Preserve the retained C/UI entry point's pointer bits with its low byte
 	// replaced by the final base material's red component.
-	return uint32(uintptr(def.C()))&0xffffff00 | uint32(def.Colors12[6].R)
+	return memmap.PtrWord(def.C())&0xffffff00 | uint32(def.Colors12[6].R)
 }
 func objectSetBaseMaterials(def *server.Modifier) {
 	d := GetClient().R2().Data()
@@ -72,11 +72,11 @@ func objectEquipmentMaterials(dr *client.Drawable, armor bool) {
 	}
 	objectSetBaseMaterials(def)
 	for i, slot := range def.ColorIndexes() {
-		p := *effectWord(dr, 432+4*i)
-		if p == 0 {
+		p := *drawableModifier(dr, i)
+		if p == nil {
 			continue
 		}
-		cl := (*server.ModifierEff)(unsafe.Pointer(uintptr(p))).Color24
+		cl := (*server.ModifierEff)(p).Color24
 		GetClient().R2().Data().SetMaterialRGB(int(slot), int(cl.R), int(cl.G), int(cl.B))
 	}
 }
@@ -89,7 +89,7 @@ func objectEquipmentDraw(vp *noxrender.Viewport, dr *client.Drawable, armor, ani
 }
 func objectFlagDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	objectEquipmentDraw(vp, dr, false, true)
-	if !noxflags.HasGame(noxflags.GameFlag(128)) || *effectWord(dr, 120)&0x1000000 == 0 {
+	if !noxflags.HasGame(noxflags.GameFlag(128)) || *effectWord(dr, int(layoutClientDrawable.Off(120)) /* ObjFlags */)&0x1000000 == 0 {
 		return 1
 	}
 	team := objectTeamByColor(objectDrawableTeamColor(dr))
@@ -97,7 +97,7 @@ func objectFlagDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 		return 1
 	}
 	p := vp.ToScreenPos(dr.PosVec)
-	p.Y -= int(int16(dr.ZVal)) + int(int64(*(*float32)(unsafe.Add(dr.C(), 100))))
+	p.Y -= int(int16(dr.ZVal)) + int(int64(*(*float32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(100)) /* ZSizeMax */))))
 	r := GetClient().R2()
 	r.Data().SetTextColor(noxcolor.RGBA5551(dword_8531A0_2572))
 	name := team.Name()

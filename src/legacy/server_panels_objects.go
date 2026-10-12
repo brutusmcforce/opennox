@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
@@ -30,7 +31,7 @@ func serverPanelsOwner(w, parent *gui.Window) {
 func serverPanelsBackground(w *gui.Window, d *gui.WindowData) int {
 	pos := uiWindowPosition(w)
 	if w.Flags.Has(gui.StatusImage) {
-		bookDrawImage(uint32(uintptr(d.BgImageHnd)), pos)
+		bookDrawImage(memmap.PtrWord(unsafe.Pointer(d.BgImageHnd)), pos)
 	} else if d.BgColorVal != 0x80000000 {
 		GetClient().R2().DrawRectFilledAlpha(pos.X, pos.Y, w.SizeVal.X, w.SizeVal.Y)
 	}

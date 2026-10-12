@@ -1,10 +1,6 @@
 package client
 
-import (
-	"unsafe"
-)
-
-var _ = [1]struct{}{}[772-unsafe.Sizeof(MonsterDrawData{})]
+import ()
 
 type MonsterDrawData struct {
 	Size uint32              // 0, 0

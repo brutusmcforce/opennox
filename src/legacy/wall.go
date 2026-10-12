@@ -19,8 +19,6 @@ var (
 	Sub_5000B0                               func(a1 *server.Object) int
 )
 
-var _ = [1]struct{}{}[12332-unsafe.Sizeof(server.WallDef{})]
-
 func nox_xxx_wallFlags(ind int) uint32 {
 	return GetServer().S().Walls.DefByInd(ind).Flags32
 }

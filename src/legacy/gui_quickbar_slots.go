@@ -22,7 +22,7 @@ func quickbarSetSlot(b *quickbarRecord, id uint32, slot int) {
 	if b.Slots[slot] != nil {
 		quickbarSlotTooltip(b, slot)
 	}
-	if quickbarPlayer() != 0 {
+	if quickbarPlayer() != nil {
 		bookSound(794)
 	}
 }
@@ -141,7 +141,7 @@ func quickbarBuildTrap() {
 		}
 	}
 	if n == 0 {
-		if p := quickbarPlayer(); p != 0 && *bookPlayerWord(p, 3832, 0) != 0 {
+		if p := quickbarPlayer(); p != nil && *bookPlayerWord(p, 3832, 0) != 0 {
 			Nox_xxx_printCentered_445490(quickbarText("TrapError"))
 			bookSound(925)
 		}

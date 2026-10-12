@@ -24,7 +24,7 @@ func damageBall(source, u *server.Object, amount int32) {
 		nox_xxx_objectApplyForce_52DF80((*float32)(unsafe.Pointer(&u.PosVec)), asObjectC(it), 30)
 		nox_xxx_unitClearOwner_4EC300(asObjectC(it))
 		objectiveRememberOwner(it, u)
-		ind := *(*byte)(unsafe.Add(source.CObj(), 52))
+		ind := *(*byte)(unsafe.Add(source.CObj(), int(layoutServerObject.Off(52)) /* TeamVal.ID */))
 		if it.TeamVal.Has() {
 			t := nox_xxx_getTeamByID_418AB0(int(ind))
 			if t != nil {
@@ -38,9 +38,9 @@ func damageBall(source, u *server.Object, amount int32) {
 	}
 }
 func damageSetSource(u, source *server.Object, kind int32) {
-	*(*unsafe.Pointer)(unsafe.Add(u.CObj(), 520)) = source.CObj()
-	*equipmentWord(u.CObj(), 524) = uint32(kind)
-	*equipmentWord(u.CObj(), 536) = GetServer().S().Frame()
+	*(*unsafe.Pointer)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(520)) /* Obj130 */)) = source.CObj()
+	*equipmentWord(u.CObj(), int(layoutServerObject.Off(524)) /* Field131 */) = uint32(kind)
+	*equipmentWord(u.CObj(), int(layoutServerObject.Off(536)) /* Frame134 */) = GetServer().S().Frame()
 }
 func damageDefault(u, source, weapon *server.Object, amount, kind int32) int32 {
 	if u == nil {
@@ -128,8 +128,8 @@ func damageDefault(u, source, weapon *server.Object, amount, kind int32) int32 {
 		}
 	}
 	if source == nil {
-		*equipmentWord(u.CObj(), 528) = 0
-		*equipmentWord(u.CObj(), 532) = 0
+		*equipmentWord(u.CObj(), int(layoutServerObject.Off(528)) /* Pos132.X */) = 0
+		*equipmentWord(u.CObj(), int(layoutServerObject.Off(532)) /* Pos132.Y */) = 0
 		if kind == 12 {
 			spellLifeBuffOff(u, int32(0))
 		}
@@ -138,8 +138,8 @@ func damageDefault(u, source, weapon *server.Object, amount, kind int32) int32 {
 		if weapon != nil && weapon.ObjClass&0x1001000 == 0 {
 			from = weapon
 		}
-		*equipmentWord(u.CObj(), 528) = *equipmentWord(from.CObj(), 72)
-		*equipmentWord(u.CObj(), 532) = *equipmentWord(from.CObj(), 76)
+		*equipmentWord(u.CObj(), int(layoutServerObject.Off(528)) /* Pos132.X */) = *equipmentWord(from.CObj(), int(layoutServerObject.Off(72)) /* PrevPos.X */)
+		*equipmentWord(u.CObj(), int(layoutServerObject.Off(532)) /* Pos132.Y */) = *equipmentWord(from.CObj(), int(layoutServerObject.Off(76)) /* PrevPos.Y */)
 		if u.ObjClass&2 != 0 && (weapon != nil && weapon != source || weapon == nil && (kind == 10 || kind == 2)) {
 			*equipmentWord(u.UpdateData, 2188) = 1
 			*equipmentWord(u.UpdateData, 2184) = uint32(actual.TypeInd)
@@ -175,7 +175,7 @@ func damageDefault(u, source, weapon *server.Object, amount, kind int32) int32 {
 			}
 		}
 		if play {
-			fn := *(*unsafe.Pointer)(unsafe.Add(u.CObj(), 720))
+			fn := *(*unsafe.Pointer)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(720)) /* DamageSound */))
 			if fn != nil {
 				u.CallDamageSound(actual)
 			} else {
@@ -263,7 +263,7 @@ func damageArmor(u, source, weapon *server.Object, amount, kind int32) int32 {
 	if u.ObjClass&0x2000000 == 0 || u.InvHolder == nil && kind != 12 {
 		return 0
 	}
-	if kind == 2 && *(*byte)(unsafe.Add(u.CObj(), 24))&0x10 != 0 {
+	if kind == 2 && *(*byte)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(24)) /* Material */))&0x10 != 0 {
 		amount *= 2
 	}
 	if amount == 0 {
@@ -296,7 +296,7 @@ func damageGenerator(u, source, weapon *server.Object, amount, kind int32) int32
 		return 0
 	}
 	frame := GetServer().S().Frame()
-	if frame-*equipmentWord(u.CObj(), 536) > 20 || frame%30 == 0 {
+	if frame-*equipmentWord(u.CObj(), int(layoutServerObject.Off(536)) /* Frame134 */) > 20 || frame%30 == 0 {
 		pos := u.PosVec
 		if weapon != nil {
 			pos.X = float32(float64(weapon.PosVec.X) - float64(u.PosVec.X) + 0.0099999998)
@@ -316,13 +316,13 @@ func damageGenerator(u, source, weapon *server.Object, amount, kind int32) int32
 	if u.ObjFlags&0x8020 == 0 {
 		hp := int32(u.HealthData.Cur)
 		if hp <= floatToInt32(float32(float64(u.HealthData.Max)*.333)) {
-			if *equipmentWord(u.CObj(), 20)&0x100 != 0 {
+			if *equipmentWord(u.CObj(), int(layoutServerObject.Off(20)) /* Field5 */)&0x100 != 0 {
 				nox_xxx_unitUnsetXStatus_4E4780(asObjectC(u), 256)
 			}
-			if *equipmentWord(u.CObj(), 20)&0x200 == 0 {
+			if *equipmentWord(u.CObj(), int(layoutServerObject.Off(20)) /* Field5 */)&0x200 == 0 {
 				nox_xxx_unitSetXStatus_4E4800(asObjectC(u), 512)
 			}
-		} else if hp <= floatToInt32(float32(float64(u.HealthData.Max)*.66600001)) && *equipmentWord(u.CObj(), 20)&0x100 == 0 {
+		} else if hp <= floatToInt32(float32(float64(u.HealthData.Max)*.66600001)) && *equipmentWord(u.CObj(), int(layoutServerObject.Off(20)) /* Field5 */)&0x100 == 0 {
 			nox_xxx_unitSetXStatus_4E4800(asObjectC(u), 256)
 		}
 	}

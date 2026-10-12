@@ -55,7 +55,7 @@ func sessionQuitToggle() {
 	player := LocalPlayerDrawable.C()
 	solo := noxflags.HasGame(noxflags.GameModeCoop)
 	if player != nil && solo {
-		state := *(*uint32)(unsafe.Add(player, 276))
+		state := *(*uint32)(unsafe.Add(player, int(layoutClientDrawable.Off(276)) /* AnimInd */))
 		if state == 1 || state == 2 || state == 51 {
 			return
 		}
@@ -118,7 +118,7 @@ func SessionQuitEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 		}
 	case 9002:
 		p := LocalPlayerDrawable.C()
-		if *(*uint32)(unsafe.Add(p, 120))&0x8000 == 0 {
+		if *(*uint32)(unsafe.Add(p, int(layoutClientDrawable.Off(120)) /* ObjFlags */))&0x8000 == 0 {
 			sessionQuitToggle()
 			if noxflags.HasGame(noxflags.GameModeCoop) {
 				Nox_setSaveFileName_4DB130("AUTOSAVE")

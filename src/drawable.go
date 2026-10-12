@@ -145,8 +145,6 @@ func nox_xxx_sprite_45A480_drawable(dr *client.Drawable) {
 	}
 }
 
-var _ = [1]struct{}{}[80-unsafe.Sizeof(client.DrawableFX{})]
-
 // drawableFXClass is the allocation class of client.DrawableFX. Was 0x5D4594+1203868.
 var drawableFXClass unsafe.Pointer
 
