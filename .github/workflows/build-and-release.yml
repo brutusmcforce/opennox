@@ -205,6 +205,8 @@ jobs:
           rm -rf /tmp/opennox-linux
           mkdir -p /tmp/opennox-linux
           cp /tmp/linux-tmp/* /tmp/opennox-linux
+          # artifacts don't keep file permissions
+          chmod 755 /tmp/opennox-linux/opennox /tmp/opennox-linux/opennox-server
           cp ./CHANGELOG.md /tmp/opennox-linux
 
           export VERSION=$(git describe --tags --always)
