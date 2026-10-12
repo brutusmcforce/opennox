@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"path/filepath"
 	"strings"
+	"time"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/common"
@@ -28,6 +29,7 @@ import (
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/internal/cryptfile"
 	"github.com/brutusmcforce/opennox/internal/netlist"
@@ -100,6 +102,8 @@ type Server struct {
 	quest           questServer
 	springs         serverSprings
 	mapSwitchWPName string
+	// sysopTries is when each player last sent a sysop password, to rate-limit guessing.
+	sysopTries map[ntype.PlayerInd]time.Duration
 	// scriptObject is the raw script section of the current map. It's written back when the map is saved.
 	scriptObject []byte
 

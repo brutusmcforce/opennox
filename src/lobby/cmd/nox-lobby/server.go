@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
-	_ "net/http/pprof"
+	"net/http/pprof"
 	"time"
 
 	"github.com/brutusmcforce/opennox/xwis"
@@ -21,6 +21,7 @@ func init() {
 	}
 	fHost := cmd.Flags().String("host", ":8080", "host the server will listen on")
 	fMonitor := cmd.Flags().String("monitor", "127.0.0.1:6060", "host the monitoring api will listen on")
+	fPprof := cmd.Flags().Bool("pprof", false, "serve pprof debug handlers on the monitoring api")
 	fGlobal := cmd.Flags().Bool("global", false, "run the server in a global mode (monitor other servers)")
 	fXWIS := cmd.Flags().Bool("xwis", true, "list games from XWIS as well")
 	fXLogin := cmd.Flags().String("xlogin", "", "XWIS login to use")
@@ -44,7 +45,12 @@ func init() {
 		lsrv := lobby.NewServer(lb)
 		// TODO: auto TLS with Let's Encrypt
 		srv := &http.Server{
-			Addr: *fHost,
+			Addr:              *fHost,
+			ReadHeaderTimeout: 10 * time.Second,
+			ReadTimeout:       30 * time.Second,
+			WriteTimeout:      30 * time.Second,
+			IdleTimeout:       2 * time.Minute,
+			MaxHeaderBytes:    16 << 10,
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				log.Println(r.RemoteAddr, r.Method, r.URL)
 				lsrv.ServeHTTP(w, r)
@@ -52,10 +58,19 @@ func init() {
 		}
 		log.Println("serving lobby on", srv.Addr)
 		if *fMonitor != "" {
-			http.Handle("/metrics", promhttp.Handler())
+			mon := http.NewServeMux()
+			mon.Handle("/metrics", promhttp.Handler())
+			if *fPprof {
+				mon.HandleFunc("/debug/pprof/", pprof.Index)
+				mon.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+				mon.HandleFunc("/debug/pprof/profile", pprof.Profile)
+				mon.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+				mon.HandleFunc("/debug/pprof/trace", pprof.Trace)
+			}
 			log.Println("serving monitoring on", *fMonitor)
 			go func() {
-				if err := http.ListenAndServe(*fMonitor, nil); err != nil {
+				msrv := &http.Server{Addr: *fMonitor, Handler: mon, ReadHeaderTimeout: 10 * time.Second}
+				if err := msrv.ListenAndServe(); err != nil {
 					log.Println(err)
 				}
 			}()

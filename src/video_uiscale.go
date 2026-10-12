@@ -175,6 +175,9 @@ func videoInitWorldBuffer(ui image.Point) {
 }
 
 func videoAllocWorldBuffer(sz image.Point) {
+	if g := noxClient.gpu; g != nil && uiScaleState.world != nil {
+		g.Forget(uiScaleState.world)
+	}
 	uiScaleState.world = noximage.NewImage16(image.Rectangle{Max: sz})
 	if g := noxClient.gpu; g != nil && noxPixBuffer.img != nil {
 		// draw the GUI at the full resolution; it allows drawing smooth text
@@ -187,8 +190,11 @@ func videoFreeWorldBuffer() {
 	if uiScaleState.inWorld {
 		noxClient.endWorldDraw()
 	}
-	if g := noxClient.gpu; g != nil && uiScaleState.world != nil && noxPixBuffer.img != nil {
-		g.SetTargetSize(noxPixBuffer.img, image.Point{})
+	if g := noxClient.gpu; g != nil && uiScaleState.world != nil {
+		if noxPixBuffer.img != nil {
+			g.SetTargetSize(noxPixBuffer.img, image.Point{})
+		}
+		g.Forget(uiScaleState.world)
 	}
 	uiScaleState.world = nil
 	uiScaleState.worldReady = false

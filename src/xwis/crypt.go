@@ -1,5 +1,7 @@
 package xwis
 
+import "fmt"
+
 const (
 	preHeaderLength  = 4
 	headerLength     = 8
@@ -72,6 +74,10 @@ func decrypt(data []byte) {
 }
 
 func decryptAndDecode(data []byte) (*GameInfo, error) {
+	// the payload is set by remote game hosts
+	if len(data) < fullHeaderLength {
+		return nil, fmt.Errorf("game info too short: %d bytes", len(data))
+	}
 	data = data[fullHeaderLength:]
 	decrypt(data)
 

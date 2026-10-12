@@ -38,6 +38,10 @@ var (
 	}
 )
 
+
+// maxReplayPacket limits the size of a single recorded packet (network packets are much smaller).
+const maxReplayPacket = 64 << 10
+
 func (s *Server) nox_xxx_replayStartSave_4D3370(name string) error {
 	replayLog.Printf("writing replay to: %q", name)
 	f, err := os.Create(name)
@@ -218,8 +222,11 @@ func (s *Server) nox_xxx_replayTickMB(a1 bool) error {
 				return fmt.Errorf("cannot read packet header: %w", err)
 			}
 			ind := ntype.PlayerInd(buf[0])
-			sz := int(binary.LittleEndian.Uint32(buf[1:5]))
-			if cap(data) < sz {
+			sz := binary.LittleEndian.Uint32(buf[1:5])
+			if sz > maxReplayPacket {
+				return fmt.Errorf("invalid packet size in replay: %d", sz)
+			}
+			if cap(data) < int(sz) {
 				data = make([]byte, sz)
 			} else {
 				data = data[:sz]

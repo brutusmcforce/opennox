@@ -333,6 +333,9 @@ func (c *Client) nox_xxx_netOnPacketRecvCli48EA70_switch(ind ntype.PlayerInd, op
 		}
 		bind := binary.LittleEndian.Uint16(data[2:])
 		sz := binary.LittleEndian.Uint16(data[4:])
+		if len(data) < 6+int(sz) {
+			return -1
+		}
 		c.mapsend.onMapDownloadPart(uint(bind), data[6:6+sz])
 		return 6 + int(sz)
 	case netmsg.MSG_MAP_SEND_ABORT:

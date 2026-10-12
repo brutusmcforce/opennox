@@ -221,7 +221,6 @@ func (r *Reader) nextSection() (string, error) {
 }
 
 func (r *Reader) ReadSections() error {
-	var buf bytes.Buffer
 	for {
 		sect, err := r.nextSection()
 		if err == io.EOF {
@@ -229,16 +228,17 @@ func (r *Reader) ReadSections() error {
 		} else if err != nil {
 			return err
 		}
-		buf.Reset()
-		if _, err := io.Copy(&buf, r.r); err != nil {
+		// each section gets its own buffer: raw sections and decoded data may keep references to it
+		data, err := io.ReadAll(r.r)
+		if err != nil {
 			return err
 		}
-		rd := binenc.NewReader(buf.Bytes())
+		rd := binenc.NewReader(data)
 		switch sect {
 		default:
 			r.m.Unknown = append(r.m.Unknown, RawSection{
 				Name: sect,
-				Data: buf.Bytes(),
+				Data: data,
 			})
 			continue
 		case "MapInfo":

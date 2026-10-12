@@ -16,6 +16,10 @@ const (
 	retryInterval  = 3 * time.Second
 	receiveTimeout = 30 * time.Second
 	maxRetries     = 20
+
+	maxRecvSize      = 64 << 20  // largest transfer accepted from a peer
+	maxRecvTotal     = 128 << 20 // all active incoming transfers together
+	maxPendingChunks = 1024      // out-of-order chunks buffered per transfer
 )
 
 type Data struct {

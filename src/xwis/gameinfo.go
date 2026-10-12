@@ -16,7 +16,9 @@ const (
 	unk1Value    = 0xff
 	unk2Value    = 0x489e
 	unkLength    = 9
-	defaultFlags = 8199
+	// gameInfoLength is the size of the fixed part of the game info, before the unknown trailing bytes.
+	gameInfoLength = 69
+	defaultFlags   = 8199
 )
 
 var unk3Data = [28]byte{
@@ -333,7 +335,7 @@ func (g *GameInfo) setDefaults() {
 }
 
 func (g *GameInfo) MarshalBinary() ([]byte, error) {
-	data := make([]byte, 69+len(g.Unknown))
+	data := make([]byte, gameInfoLength+len(g.Unknown))
 	p := data
 
 	// byte 0: access code
@@ -410,6 +412,9 @@ func (g *GameInfo) MarshalBinary() ([]byte, error) {
 
 func (g *GameInfo) UnmarshalBinary(data []byte) error {
 	*g = GameInfo{}
+	if len(data) < gameInfoLength {
+		return fmt.Errorf("game info too short: %d bytes", len(data))
+	}
 
 	// byte 0: access code
 	acc := data[0]

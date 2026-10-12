@@ -172,7 +172,10 @@ func (c *Client) mainloopDrawAndPresent() {
 		// draw the cursor and full-screen effects in full resolution
 		c.drawDeferredCursor()
 		c.r.DrawFade(true)
-		c.maybeScreenshot()
+		if !c.interp.renderOnly {
+			// keep screenshots consistent with the original frame timing
+			c.maybeScreenshot()
+		}
 	}) {
 		return
 	}

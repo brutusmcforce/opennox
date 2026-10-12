@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/subtle"
 	"crypto/x509"
 	"encoding/binary"
 	"encoding/pem"
@@ -16,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 
@@ -43,6 +45,9 @@ type RconOptions struct {
 func NewRemoteConsole(host string, exec console.ExecFunc, opts RconOptions) (*RemoteConsole, error) {
 	if opts.KeyPath == "" {
 		opts.KeyPath = userFilePath("server.pem")
+	}
+	if opts.Pass == "" && !isLoopbackHost(host) {
+		return nil, fmt.Errorf("rcon on %q needs a password: without one it's only allowed on a loopback address", host)
 	}
 	l, err := net.Listen("tcp", host)
 	if err != nil {
@@ -83,6 +88,21 @@ func NewRemoteConsole(host string, exec console.ExecFunc, opts RconOptions) (*Re
 }
 
 var _ console.Printer = (*RemoteConsole)(nil)
+
+const rconHandshakeTimeout = 10 * time.Second
+
+// isLoopbackHost reports whether a listen address (host:port) only accepts local connections.
+func isLoopbackHost(addr string) bool {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		host = addr
+	}
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
 
 type RemoteConsole struct {
 	l        net.Listener
@@ -169,18 +189,25 @@ func (rc *RemoteConsole) Serve() error {
 		if err != nil {
 			return err
 		}
-		sc, chans, reqs, err := ssh.NewServerConn(c, &rc.conf)
-		if err != nil {
-			_ = c.Close()
-			rconLog.Println(err)
-			continue
-		}
-		go rc.serveConn(sc, chans, reqs)
+		go rc.handshake(c)
 	}
 }
 
+// handshake runs the SSH handshake off the accept loop, so a slow peer can't block other logins.
+func (rc *RemoteConsole) handshake(c net.Conn) {
+	_ = c.SetDeadline(time.Now().Add(rconHandshakeTimeout))
+	sc, chans, reqs, err := ssh.NewServerConn(c, &rc.conf)
+	if err != nil {
+		_ = c.Close()
+		rconLog.Println(err)
+		return
+	}
+	_ = c.SetDeadline(time.Time{})
+	rc.serveConn(sc, chans, reqs)
+}
+
 func (rc *RemoteConsole) authPassword(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
-	if len(rc.opts.Pass) != len(pass) || rc.opts.Pass != string(pass) {
+	if subtle.ConstantTimeCompare([]byte(rc.opts.Pass), pass) != 1 {
 		return nil, errRconInvalidPass
 	}
 	return &ssh.Permissions{}, nil

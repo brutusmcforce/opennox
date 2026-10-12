@@ -1,0 +1,46 @@
+name: Test
+on:
+  push:
+    branches:
+      - main
+      - master
+      - dev
+  pull_request:
+    branches:
+      - main
+      - master
+      - dev
+
+jobs:
+  libs:
+    name: Vet and test libraries
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src
+    env:
+      # The game is a 32-bit build, so the libraries are tested as 386 (int is 32 bits there).
+      # Without cgo, 386 test binaries run directly on the 64-bit runner.
+      GOARCH: "386"
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: src/go.mod
+          cache-dependency-path: src/go.sum
+
+      - name: List packages
+        # packages that need cgo (the SDL/OpenGL seats) are covered by the game build
+        run: |
+          go list -e -f '{{if not .Error}}{{if not .DepsErrors}}{{.ImportPath}}{{end}}{{end}}' \
+            ./libs/... ./noxcrypt/... ./xwis/... ./lobby/... ./nat/... ./noxscript/... ./opennoxcontrol/... ./vqa-decode/... \
+            > "$RUNNER_TEMP/packages.txt"
+          wc -l < "$RUNNER_TEMP/packages.txt"
+
+      - name: Vet
+        run: go vet $(cat "$RUNNER_TEMP/packages.txt")
+
+      - name: Test
+        run: go test -short -timeout 10m $(cat "$RUNNER_TEMP/packages.txt")

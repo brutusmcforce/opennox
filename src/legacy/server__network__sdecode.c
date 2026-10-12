@@ -272,6 +272,10 @@ int nox_xxx_netOnPacketRecvServ_51BAD0_net_sdecode_switch(int a1, unsigned char*
 		v10 = (int*)v85;
 		return 3;
 	case 0xA5u: // MSG_NEW_ALIAS
+		if (data[1] >= 255) {
+			// the player only has 255 alias slots; index 255 would overwrite the player unit pointer
+			return -1;
+		}
 		*(uint16_t*)(v8 + 8 * data[1] + 16) = *((uint16_t*)data + 1);
 		*(uint16_t*)(v8 + 8 * data[1] + 18) = *((uint16_t*)data + 2);
 		v14 = data[1];
@@ -298,6 +302,11 @@ int nox_xxx_netOnPacketRecvServ_51BAD0_net_sdecode_switch(int a1, unsigned char*
 		}
 		v61 = nox_xxx_equipedItemByCode_4F7920(unit, v60);
 		if (v61 || (v61 = sub_510DE0(unit, v60)) != 0 || (v61 = nox_server_getObjectFromNetCode_4ECCB0(v60)) != 0) {
+			// only readable objects (books) have the expected use data; the net code comes from the client
+			if (!(*(uint32_t*)(v61 + 8) & 0x40000) || !*(uint32_t*)(v61 + 736)) {
+				v10 = (int*)v85;
+				return 4;
+			}
 			v88[0] = -30;
 			*(uint16_t*)&v88[1] = nox_xxx_netGetUnitCodeServ_578AC0((uint32_t*)v61);
 			v62 = data[3];

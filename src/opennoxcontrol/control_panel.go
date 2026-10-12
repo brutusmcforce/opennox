@@ -46,11 +46,13 @@ func NewControlPanel(game Game, opts *Options) *ControlPanel {
 	}
 	cp.mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(assets.Static()))))
 	cp.mux.HandleFunc("/", cp.rootHandler)
+	// these change the game: only accept form posts from the panel itself, not from other sites (CSRF)
+	csrf := http.NewCrossOriginProtection()
 	if opts.AllowMapChange || opts.AllowCommands {
-		cp.mux.HandleFunc("/map/", cp.mapHandler)
+		cp.mux.Handle("POST /map/", csrf.Handler(http.HandlerFunc(cp.mapHandler)))
 	}
 	if opts.AllowCommands {
-		cp.mux.HandleFunc("/cmd/", cp.commandHandler)
+		cp.mux.Handle("POST /cmd/", csrf.Handler(http.HandlerFunc(cp.commandHandler)))
 	}
 	if list, err := game.ListMaps(); err == nil {
 		cp.maps = nil
@@ -102,13 +104,13 @@ func (cp *ControlPanel) rootHandler(w http.ResponseWriter, r *http.Request) {
 func (cp *ControlPanel) mapHandler(w http.ResponseWriter, r *http.Request) {
 	if cp.opts.AllowMapChange || cp.opts.AllowCommands {
 		r.ParseForm()
+		var data = r.PostForm.Get("data")
 
 		info, err := cp.g.GameInfo()
 		if err != nil {
 			// silently return since we can't print and expect refresh to work
 			return
 		}
-		var data = r.Form.Get("data")
 
 		if (cp.opts.AllowCommands || info.PlayerInfo.Cur == 0) && len(data) > 0 {
 			cp.g.ChangeMap(data)
@@ -121,7 +123,7 @@ func (cp *ControlPanel) mapHandler(w http.ResponseWriter, r *http.Request) {
 func (cp *ControlPanel) commandHandler(w http.ResponseWriter, r *http.Request) {
 	if cp.opts.AllowCommands {
 		r.ParseForm()
-		var data = r.Form.Get("data")
+		var data = r.PostForm.Get("data")
 
 		cp.g.Command(data)
 	}

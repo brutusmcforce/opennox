@@ -416,7 +416,8 @@ jobs:
     name: Github release
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [release_repackage_linux_appimage, release_repackage_linux_gzip, release_repackage_win, release_repackage_win7]
+    # release_repackage_win7 isn't listed: its build job is disabled, and a skipped dependency skips the release too
+    needs: [release_repackage_linux_appimage, release_repackage_linux_gzip, release_repackage_win]
     steps:
       - name: Cleanup
         run: |
@@ -439,12 +440,6 @@ jobs:
         name: Preparing Windows (NSIS installer, Zip archive) files for release.
         with:
           name: opennox-release-win
-          path: /tmp/release-tmp/
-
-      - uses: actions/download-artifact@v4
-        name: Preparing Windows (Win7 compatible) (NSIS installer, Zip archive) files for release.
-        with:
-          name: opennox-release-win7
           path: /tmp/release-tmp/
 
       - name: Releasing prepared files.

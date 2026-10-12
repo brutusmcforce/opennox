@@ -3,6 +3,7 @@ package opennox
 import (
 	"encoding/binary"
 	"fmt"
+	"time"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/console"
@@ -19,7 +20,10 @@ import (
 )
 
 func (s *Server) onPacket(ind ntype.PlayerInd, data []byte) bool {
-	cdata, cfree := alloc.Make([]byte{}, len(data))
+	if len(data) == 0 {
+		return s.onPacketRaw(ind, nil)
+	}
+	cdata, cfree := alloc.CloneSlice(data)
 	defer cfree()
 	return s.onPacketRaw(ind, cdata)
 }
@@ -126,6 +130,12 @@ func (s *Server) onPacketOp(pli ntype.PlayerInd, op netmsg.Op, data []byte, pl *
 		if pl != nil && (pl.Field3680>>2)&0x1 != 0 {
 			return msz, true
 		}
+		// The sender and flags come from the client: clients only set the team and encoding flags,
+		// and may only speak as themselves (the team for team chat is also looked up from this net code).
+		msg.Flags &= noxnet.TextTeam | 0x2 | 0x4
+		if pl != nil {
+			msg.NetCode = uint16(pl.NetCode())
+		}
 		var pu *server.Object
 		if pl != nil {
 			pu = pl.PlayerUnit
@@ -191,6 +201,15 @@ func (s *Server) onPacketOp(pli ntype.PlayerInd, op netmsg.Op, data []byte, pl *
 		if len(data) < 21 {
 			return 0, false
 		}
+		// one attempt per second, otherwise a packet full of these is a fast password guesser
+		now := s.FrameTS()
+		if last, ok := s.sysopTries[pl.PlayerIndex()]; ok && now-last < time.Second && now >= last {
+			return 1 + 20, true
+		}
+		if s.sysopTries == nil {
+			s.sysopTries = make(map[ntype.PlayerInd]time.Duration)
+		}
+		s.sysopTries[pl.PlayerIndex()] = now
 		var buf [2]byte
 		buf[0] = byte(netmsg.MSG_SYSOP_RESULT)
 		pass := legacy.Nox_xxx_sysopGetPass_40A630()
@@ -251,6 +270,9 @@ func (s *Server) onPacketOp(pli ntype.PlayerInd, op netmsg.Op, data []byte, pl *
 		if len(data) < 10 {
 			return 0, false
 		}
+		if netcode := int(binary.LittleEndian.Uint16(data[6:])); !s.canChangeTeamOf(pl, netcode) {
+			return 10, true
+		}
 		switch data[1] {
 		case 10:
 			ti := server.TeamID(binary.LittleEndian.Uint32(data[2:]))
@@ -260,6 +282,9 @@ func (s *Server) onPacketOp(pli ntype.PlayerInd, op netmsg.Op, data []byte, pl *
 			}
 			netcode := int(binary.LittleEndian.Uint16(data[6:]))
 			obj := s.getObjectFromNetCode(netcode)
+			if obj == nil {
+				return 10, true
+			}
 			legacy.Nox_xxx_createAtImpl_4191D0(tm.ID(), obj.TeamPtr(), 1, netcode, 1)
 			return 10, true
 		case 11:
@@ -325,10 +350,70 @@ func (s *Server) onPacketOp(pli ntype.PlayerInd, op netmsg.Op, data []byte, pl *
 		}
 		return 0, false
 	default:
+		if n := sdecodeLen(data); n <= 0 || len(data) < n {
+			// the C decoder doesn't check the length, so it must never see a short packet
+			return 0, false
+		}
 		res := legacy.Nox_xxx_netOnPacketRecvServ_51BAD0_net_sdecode_switch(pli, data, pl, u, u.UpdateData)
 		if res <= 0 || res > len(data) {
 			return 0, false
 		}
 		return res, true
 	}
+}
+
+// sdecodeLen returns the size of a packet handled by nox_xxx_netOnPacketRecvServ_51BAD0_net_sdecode_switch,
+// or -1 if the C decoder doesn't handle it. The sizes match what each case consumes.
+func sdecodeLen(data []byte) int {
+	if len(data) == 0 {
+		return -1
+	}
+	switch netmsg.Op(data[0]) {
+	case netmsg.MSG_TRY_GET, netmsg.MSG_TRY_USE, netmsg.MSG_TRY_EQUIP, netmsg.MSG_TRY_DEQUIP,
+		netmsg.MSG_TRY_COLLIDE, netmsg.MSG_REPORT_SECONDARY_WEAPON, netmsg.MSG_INVENTORY_FAIL:
+		return 3
+	case netmsg.MSG_TRY_CREATURE_COMMAND, netmsg.MSG_INFO_BOOK_DATA:
+		return 4
+	case netmsg.MSG_PLAYER_SET_WAYPOINT, netmsg.MSG_TRY_DROP:
+		return 7
+	case netmsg.MSG_NEW_ALIAS:
+		return 10
+	case netmsg.MSG_TRY_SPELL:
+		return 22
+	case netmsg.MSG_GAUNTLET:
+		return 2
+	case netmsg.MSG_VOTE:
+		if len(data) < 2 {
+			return 2
+		}
+		if data[1] <= 3 {
+			return 52
+		}
+		return 2
+	case netmsg.MSG_TRADE:
+		if len(data) < 2 {
+			return 2
+		}
+		switch data[1] {
+		case 0x0E, 0x11, 0x12:
+			return 2
+		case 0x17, 0x19:
+			return 5
+		default:
+			return 4
+		}
+	}
+	return -1
+}
+
+// canChangeTeamOf reports whether a player may move the object with the given net code to another team:
+// players may pick their own team, the host and sysops may move anyone.
+func (s *Server) canChangeTeamOf(pl *server.Player, netcode int) bool {
+	if pl == nil {
+		return false
+	}
+	if pl.Index() == server.HostPlayerIndex || legacy.Sub_4D12A0(pl.Index()) != 0 {
+		return true
+	}
+	return netcode == pl.NetCode()
 }

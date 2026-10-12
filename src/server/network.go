@@ -140,7 +140,10 @@ func (s *Server) OnPacketOpSub(pli ntype.PlayerInd, op netmsg.Op, data []byte, p
 		})
 		return 1 + n, true, nil
 	case netmsg.MSG_PLAYER_INPUT:
-		n := s.netOnPlayerInput(pl, data[1:])
+		n, err := s.netOnPlayerInput(pl, data[1:])
+		if err != nil {
+			return 0, false, err
+		}
 		return 1 + n, true, nil
 	case netmsg.MSG_IMPORTANT:
 		if len(data) < 5 {
@@ -173,19 +176,25 @@ func (s *Server) OnPacketOpSub(pli ntype.PlayerInd, op netmsg.Op, data []byte, p
 	return 0, false, nil
 }
 
-func (s *Server) netOnPlayerInput(pl *Player, data []byte) int {
+func (s *Server) netOnPlayerInput(pl *Player, data []byte) (int, error) {
+	if len(data) < 1 {
+		return 0, io.ErrUnexpectedEOF
+	}
 	sz := int(data[0])
+	if len(data) < 1+sz {
+		return 0, io.ErrUnexpectedEOF
+	}
 	data = data[1 : 1+sz]
 	if pl.Field3680&0x10 == 0 {
-		return 1 + sz
+		return 1 + sz, nil
 	}
 	buf := netDecodePlayerInput(data, nil)
 	s.Players.Control.Player(pl.Index()).Append(buf)
-	return 1 + sz
+	return 1 + sz, nil
 }
 
 func netDecodePlayerInput(data []byte, out []PlayerCtrl) []PlayerCtrl {
-	for len(data) > 0 {
+	for len(data) >= 4 {
 		code := player.CtrlCode(data[0])
 		data = data[4:]
 		v := PlayerCtrl{
@@ -193,6 +202,9 @@ func netDecodePlayerInput(data []byte, out []PlayerCtrl) []PlayerCtrl {
 			Active: true,
 		}
 		if sz := code.DataSize(); sz != 0 {
+			if len(data) < sz {
+				break
+			}
 			var b [4]byte
 			copy(b[:], data[:sz])
 			v.Data = binary.LittleEndian.Uint32(b[:4])

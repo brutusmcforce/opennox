@@ -281,12 +281,18 @@ func (p *PlayerOpts) MarshalBinary() ([]byte, error) {
 func (s *Server) newPlayerFromPacket(ind ntype.PlayerInd, data []byte) int {
 	var opts PlayerOpts
 	if err := opts.UnmarshalBinary(data); err != nil {
-		panic(err)
+		// a short join packet from a remote peer must not take the server down
+		networkLogPrintf("invalid join packet from player %d: %v", ind, err)
+		return 0
 	}
 	return s.newPlayer(ind, &opts)
 }
 
 func (s *Server) newPlayer(ind ntype.PlayerInd, opts *PlayerOpts) int {
+	if !opts.Info.PlayerClass().Valid() {
+		// the class indexes 3-entry tables and the class-ban flags
+		return 0
+	}
 	v2 := opts.Byte152
 	opts.Byte152 &= 0x7F
 	v3 := v2 >> 7

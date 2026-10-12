@@ -28,7 +28,6 @@ type serverMapSend struct {
 	players     [common.MaxPlayers - 1]playerMapSend
 	mapName     string
 	currentData []byte // shared
-	activeCnt   int
 
 	OnEndReceive func(pli ntype.PlayerInd)
 }
@@ -49,8 +48,15 @@ type playerMapSend struct {
 	Start     time.Duration   // 10, 40
 }
 
+// Active returns the number of map downloads in progress.
 func (s *serverMapSend) Active() int {
-	return s.activeCnt
+	n := 0
+	for i := range s.players {
+		if s.players[i].Active {
+			n++
+		}
+	}
+	return n
 }
 
 func (p *playerMapSend) Clear(pli ntype.PlayerInd) {
@@ -64,23 +70,22 @@ func (p *playerMapSend) Clear(pli ntype.PlayerInd) {
 }
 
 func (s *serverMapSend) CountQueued(pli ntype.PlayerInd) int {
-	nind := s.players[pli].PlayerInd
-	if nind == 0 || pli >= 32 {
+	if pli < 0 || int(pli) >= len(s.players) {
 		return 0
 	}
+	nind := s.players[pli].PlayerInd
 	return s.s.NetStr.ConnByPlayerInd(nind).ReliableInQueue(netmsg.MSG_MAP_SEND_START, netmsg.MSG_MAP_SEND_PACKET)
 }
 
 func (s *serverMapSend) Reset() {
 	s.currentData = nil
-	s.activeCnt = 0
 	for i := range s.players {
 		s.players[i].Clear(ntype.PlayerInd(i))
 	}
 }
 
 func (s *serverMapSend) Sub_51A100() {
-	if s.activeCnt != 0 {
+	if s.Active() != 0 {
 		s.AbortAll(0)
 	}
 	s.currentData = nil
@@ -94,9 +99,6 @@ func (s *serverMapSend) abort(p *playerMapSend, errCode byte) {
 	buf[0] = byte(netmsg.MSG_MAP_SEND_ABORT)
 	buf[1] = byte(errCode)
 	s.s.NetStr.ConnByPlayerInd(p.PlayerInd).SendReliable(buf[:2])
-	if s.activeCnt != 0 {
-		s.activeCnt--
-	}
 	format := s.s.Strings().GetStringInFile("downloadaborted", "mapsend.c")
 	s.s.Print(console.ColorRed, fmt.Sprintf(format, int(p.PlayerInd), errCode))
 }
@@ -150,12 +152,9 @@ func (s *serverMapSend) SendMore(p *playerMapSend) {
 		format := s.s.Strings().GetStringInFile("downloaddone", "mapsend.c")
 		s.s.Print(console.ColorRed, fmt.Sprintf(format, p.SentSize, p.Sequence-1, speed, int(sec), pl.Name()))
 	}
-	if s.activeCnt != 0 {
-		s.activeCnt--
-	}
-	format := s.s.Strings().GetStringInFile("InProgress", "mapsend.c")
-	s.s.Print(console.ColorRed, fmt.Sprintf(format, s.activeCnt))
 	p.Clear(p.PlayerInd)
+	format := s.s.Strings().GetStringInFile("InProgress", "mapsend.c")
+	s.s.Print(console.ColorRed, fmt.Sprintf(format, s.Active()))
 }
 
 func (s *serverMapSend) AbortAll(errCode byte) {
@@ -177,7 +176,6 @@ func (s *serverMapSend) EndReceive(pli ntype.PlayerInd) {
 }
 
 func (s *serverMapSend) StartSendShared(pli ntype.PlayerInd) {
-	s.activeCnt++
 	p := &s.players[pli]
 	if p.Active {
 		str := s.s.Strings().GetStringInFile("Sending", "mapsend.c")
@@ -195,7 +193,6 @@ func (s *serverMapSend) ForceCopy() {
 	for i := range s.players {
 		it := &s.players[i]
 		if !it.Active {
-			s.abort(it, 1)
 			continue
 		}
 		data := make([]byte, len(s.currentData))
@@ -210,7 +207,7 @@ func (s *serverMapSend) ForceCopy() {
 
 func (s *serverMapSend) ReadMapFile() error {
 	mname := s.s.CurrentMapXxx()
-	if s.activeCnt != 0 {
+	if s.Active() != 0 {
 		s.ForceCopy()
 	}
 	if mname == "" {
@@ -241,7 +238,7 @@ func (s *serverMapSend) ReadMapFile() error {
 }
 
 func (s *serverMapSend) Update() {
-	if s.activeCnt == 0 {
+	if s.Active() == 0 {
 		return
 	}
 	if len(s.currentData) == 0 {
@@ -262,9 +259,6 @@ func (s *serverMapSend) Cancel(pli ntype.PlayerInd) {
 	p := &s.players[pli]
 	p.Active = false
 	p.Clear(pli)
-	if s.activeCnt != 0 {
-		s.activeCnt--
-	}
 	if pl := s.s.Players.ByInd(pli); pl != nil {
 		format := s.s.Strings().GetStringInFile("downloadcancelled", "mapsend.c")
 		s.s.Print(console.ColorRed, fmt.Sprintf(format, pl.Name()))

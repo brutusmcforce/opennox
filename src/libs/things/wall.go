@@ -101,8 +101,8 @@ func (f *Reader) readWALL() ([]Wall, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := make([]Wall, 0, n)
-	for wi := 0; wi < int(n); wi++ {
+	out := make([]Wall, 0, capHint(uint64(n)))
+	for range n {
 		name, err := f.readString8()
 		if err != nil {
 			return nil, err
@@ -127,8 +127,8 @@ func (f *Reader) readWALL() ([]Wall, error) {
 		if err != nil {
 			return nil, err
 		}
-		debris := make([]string, 0, int(dnum))
-		for i := 0; i < int(dnum); i++ {
+		debris := make([]string, 0, capHint(dnum))
+		for range dnum {
 			s, err := f.readString8()
 			if err != nil {
 				return nil, err
@@ -166,8 +166,8 @@ func (f *Reader) readWALL() ([]Wall, error) {
 			if err != nil {
 				return nil, err
 			}
-			vars := make([]WallVariant, 0, int(vn))
-			for j := 0; j < int(vn); j++ {
+			vars := make([]WallVariant, 0, capHint(vn))
+			for range vn {
 				var vari WallVariant
 				for k := 0; k < 4; k++ {
 					x, err := f.readI32()

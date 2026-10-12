@@ -97,7 +97,7 @@ func (l *xwisLister) metricsForRooms(list []GameInfo) {
 	}
 	for k, v := range l.prev {
 		if _, ok := seen[k]; !ok {
-			cntGamePlayers.WithLabelValues(v...).Set(0)
+			cntGamePlayers.DeleteLabelValues(v...)
 		}
 	}
 	l.prev = seen

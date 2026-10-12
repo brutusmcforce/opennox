@@ -349,6 +349,7 @@ func sub_4DCE00() {
 
 func xferSet446520(i int, data []byte) {
 	if len(data) != 0 {
+		xferFree446580(i) // a server may send the MOTD more than once
 		buf, _ := alloc.Make([]byte{}, len(data))
 		copy(buf, data)
 		*memmap.PtrPtr(0x5D4594, 826056+4*uintptr(i)) = unsafe.Pointer(&buf[0])
@@ -375,6 +376,19 @@ func xferDataCallback40AF90(ind ntype.PlayerInd, data netxfer.Data) {
 	s := noxServer
 	if s.NetXferHandle(ind, data) {
 		return
+	}
+	isHost := noxflags.HasGame(noxflags.GameHost)
+	switch data.Action {
+	case server.NetXferMOTD, server.NetXferSavedata:
+		// sent by the server to players; on a host only our own local player may deliver these
+		if isHost && ind != server.HostPlayerIndex {
+			return
+		}
+	case server.NetXferSaveServer:
+		// sent by players to the host
+		if !isHost {
+			return
+		}
 	}
 	switch data.Action {
 	case server.NetXferMOTD:

@@ -289,11 +289,24 @@ func (r *Renderer) SetTarget(img *noximage.Image16) {
 func (r *Renderer) pruneTargets() {
 	for img, t := range r.targets {
 		if t != r.cur && r.frame-t.used > 600 {
+			// the physical size is kept: the image may be drawn again, and the target is then recreated with it
 			t.free()
 			delete(r.targets, img)
-			delete(r.phys, img)
 		}
 	}
+}
+
+// Forget releases the render target of an image that won't be used anymore.
+func (r *Renderer) Forget(img *noximage.Image16) {
+	if t := r.targets[img]; t != nil {
+		if r.cur == t {
+			r.flush()
+			r.cur = nil
+		}
+		t.free()
+		delete(r.targets, img)
+	}
+	delete(r.phys, img)
 }
 
 // Clear implements noxrender.GPU.

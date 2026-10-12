@@ -48,6 +48,8 @@ type gpuBackend interface {
 	// SetTargetSize sets the physical size of the render target associated with an image (zero resets it).
 	// Drawing coordinates are still in the image coordinates, and are scaled to the physical size.
 	SetTargetSize(img *noximage.Image16, sz image.Point)
+	// Forget releases the render target of an image that won't be used anymore.
+	Forget(img *noximage.Image16)
 	Close()
 }
 

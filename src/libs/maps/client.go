@@ -21,6 +21,8 @@ import (
 const (
 	DefaultPort      = common.GameHTTPPort
 	mapFileSizeLimit = 30 * 1024 * 1024 // 30 MB
+	// mapUnpackLimit limits the unpacked size of a downloaded map archive (zip bombs).
+	mapUnpackLimit = 200 * 1024 * 1024
 )
 
 var (
@@ -145,7 +147,7 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 		}
 		defer func() {
 			_ = tmp.Close()
-			//_ = os.Remove(tmp.Name())
+			_ = os.Remove(tmp.Name())
 		}()
 		sz, err := io.Copy(tmp, r)
 		if err != nil {
@@ -160,13 +162,19 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 		if err != nil {
 			return fmt.Errorf("zip read failed: %w", err)
 		}
+		budget := int64(mapUnpackLimit)
 		for _, f := range zf.File {
 			path := strings.ToLower(f.Name)
+			// the archive comes from a remote server: its entries must stay inside dest
+			if strings.Contains(path, "\\") || !filepath.IsLocal(filepath.FromSlash(path)) {
+				c.log.Warn("skipping file outside of the map dir", "name", path)
+				continue
+			}
 			if !IsAllowedFile(path) {
 				c.log.Info("skipping disallowed file", "name", path)
 				continue
 			}
-			path = filepath.Join(dest, path)
+			path = filepath.Join(dest, filepath.FromSlash(path))
 			if err := ifs.Mkdir(filepath.Dir(path)); err != nil {
 				return fmt.Errorf("cannot create dir for map file %q: %w", path, err)
 			}
@@ -183,9 +191,13 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 				}
 				defer r.Close()
 
-				_, err = io.Copy(w, r)
+				n, err := io.Copy(w, io.LimitReader(r, budget+1))
 				if err != nil {
 					return err
+				}
+				budget -= n
+				if budget < 0 {
+					return fmt.Errorf("map archive unpacks to more than %d bytes", mapUnpackLimit)
 				}
 				return w.Close()
 			}()

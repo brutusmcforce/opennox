@@ -64,8 +64,9 @@ func (sm *StringManager) readCSF(path string, conv func(data []uint16) string) e
 		sm.lang = int(binary.LittleEndian.Uint32(buf[20:24]))
 		_, err = f.Seek(24, io.SeekStart)
 	}
-	sm.entries = make([]Entry, 0, cntEnt)
-	variants := make([]Variant, 0, cntVar)
+	// the counts are only hints for preallocation: a corrupted file must not allocate gigabytes up front
+	sm.entries = make([]Entry, 0, min(cntEnt, 1<<16))
+	variants := make([]Variant, 0, min(cntVar, 1<<16))
 	for {
 		_, err := io.ReadFull(f, buf[:12])
 		if err == io.EOF {

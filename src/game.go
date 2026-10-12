@@ -664,6 +664,21 @@ func execConsoleCmd(ctx context.Context, cmd string) bool { // nox_server_parseC
 	return execConsoleCmdAuthed(ctx, cmd)
 }
 
+// execConsoleCmdInLoop runs a command from another goroutine (e.g. the remote console) on the game loop
+// and waits for it, so it doesn't race with the game state.
+func execConsoleCmdInLoop(ctx context.Context, cmd string) bool {
+	done := make(chan bool, 1)
+	noxServer.QueueInLoop(ctx, func() {
+		done <- execConsoleCmdAuthed(ctx, cmd)
+	})
+	select {
+	case ok := <-done:
+		return ok
+	case <-ctx.Done():
+		return false
+	}
+}
+
 func execConsoleCmdAuthed(ctx context.Context, cmd string) bool {
 	cmd = strings.TrimSpace(cmd)
 	if len(cmd) == 0 {

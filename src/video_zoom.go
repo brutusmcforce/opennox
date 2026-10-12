@@ -158,9 +158,13 @@ func (c *Client) updateWorldView() {
 	l := c.zoom.level()
 	view := phys
 	if l < 1 {
+		// Limit the zoom-out uniformly: clamping each axis separately would change the aspect ratio
+		// of the world view, which then gets stretched on the screen (on 4K or ultrawide screens).
+		maxView := image.Pt(max(worldViewMax.X, phys.X), max(worldViewMax.Y, phys.Y))
+		l = max(l, float64(phys.X)/float64(maxView.X), float64(phys.Y)/float64(maxView.Y))
 		view = image.Pt(int(float64(phys.X)/l+0.5), int(float64(phys.Y)/l+0.5))
-		view.X = min(view.X, max(worldViewMax.X, phys.X))
-		view.Y = min(view.Y, max(worldViewMax.Y, phys.Y))
+		view.X = min(view.X, maxView.X)
+		view.Y = min(view.Y, maxView.Y)
 	}
 	if st.worldSize == (image.Point{}) && view == phys && l == 1 {
 		// no UI scaling and no zoom: the world is drawn directly

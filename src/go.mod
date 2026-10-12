@@ -6,7 +6,6 @@ require (
 	github.com/JoshuaDoes/adpcm-go v0.0.0-20190311011514-2274d526c08b
 	github.com/fxamacker/cbor/v2 v2.7.0
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6
-	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240118000515-a250818d05e3
 	github.com/huin/goupnp v1.3.0
 	github.com/icza/bitio v1.1.0
 	github.com/jpillora/backoff v1.0.0

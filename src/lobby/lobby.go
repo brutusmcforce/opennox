@@ -3,6 +3,7 @@ package lobby
 import (
 	"context"
 	"errors"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -152,6 +153,11 @@ func (l *Service) RegisterGame(ctx context.Context, s *Game) error {
 	}
 	if s.Port <= 0 {
 		s.Port = DefaultGamePort
+	} else if s.Port > 0xffff {
+		return errors.New("invalid port")
+	}
+	if len(s.Name) > maxFieldLen || len(s.Map) > maxFieldLen || len(s.Vers) > maxFieldLen || len(s.Mode) > maxFieldLen {
+		return errors.New("field is too long")
 	}
 	s.Map = strings.ToLower(s.Map)
 	labels := serverLabels(sourceOpenNox, s)
@@ -161,6 +167,12 @@ func (l *Service) RegisterGame(ctx context.Context, s *Game) error {
 	key := s.gameKey()
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	if prev := l.byAddr[key]; prev != nil {
+		// the game changed its name, map, etc: drop the series with the old labels
+		if old := serverLabels(sourceOpenNox, &prev.Game); !slices.Equal(old, labels) {
+			cntGamePlayers.DeleteLabelValues(old...)
+		}
+	}
 	info.SeenAt = time.Now().UTC()
 	l.byAddr[key] = info
 	l.maybeGC(info.SeenAt)
@@ -183,7 +195,7 @@ func (l *Service) maybeGC(now time.Time) {
 			delete(l.byAddr, k)
 			labels := serverLabels(sourceOpenNox, &v.Game)
 			cntGameExpired.WithLabelValues(labels...).Inc()
-			cntGamePlayers.WithLabelValues(labels...).Set(0)
+			cntGamePlayers.DeleteLabelValues(labels...)
 		}
 	}
 }

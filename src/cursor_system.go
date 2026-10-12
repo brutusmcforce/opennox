@@ -37,6 +37,26 @@ type sysCursorState struct {
 	hasWant bool
 	cur     seat.Cursor // current cursor; nil if hidden
 	missed  int         // frames presented without a cursor
+
+	cacheScale int // the scale of the cached cursors
+}
+
+// sysCursorCacheMax limits the number of cached system cursors: color fades create a cursor for every step.
+const sysCursorCacheMax = 64
+
+// flushSysCursors frees all cached system cursors, keeping system cursors enabled.
+func (c *Client) flushSysCursors() {
+	st := &c.sysCursor
+	if st.cur != nil {
+		st.scr.SetCursor(nil)
+		st.cur = nil
+	}
+	for key, cur := range st.cache {
+		if cur != nil {
+			cur.Free()
+		}
+		delete(st.cache, key)
+	}
 }
 
 // initSysCursor enables system cursors, if the seat supports them.
@@ -58,7 +78,9 @@ func (c *Client) freeSysCursor() {
 		st.scr.SetCursor(nil)
 	}
 	for _, cur := range st.cache {
-		cur.Free()
+		if cur != nil {
+			cur.Free()
+		}
 	}
 	*st = sysCursorState{}
 }
@@ -95,8 +117,9 @@ func (c *Client) drawCursorImage(img *noxrender.Image, pos image.Point) {
 
 // sysCursorScale returns the scale of the cursor image, so that it has the same size as the cursor drawn by the game.
 func (c *Client) sysCursorScale() float64 {
-	if uiScaleState.world != nil {
-		// the game draws the cursor at the screen resolution
+	if uiScaleState.worldSize != (image.Point{}) {
+		// with UI scaling the game draws the cursor at the screen resolution
+		// (zoom alone also allocates a world buffer, but the cursor is still drawn at the game resolution)
 		return 1
 	}
 	view := c.sysCursor.view
@@ -143,10 +166,16 @@ func (c *Client) sysCursorFor(key sysCursorKey) seat.Cursor {
 	if cur, ok := st.cache[key]; ok {
 		return cur
 	}
+	if len(st.cache) >= sysCursorCacheMax || st.cacheScale != key.scale {
+		// cursors for another window size (or from a long fade) won't be used again
+		c.flushSysCursors()
+		st.cacheScale = key.scale
+	}
 	img, hot, err := cursorImage(key)
 	if err != nil {
+		// with no system cursor and the game not drawing one, the cursor would be invisible
 		videoLog.Printf("cannot decode cursor image: %v", err)
-		st.cache[key] = nil
+		c.disableSysCursor()
 		return nil
 	}
 	cur, err := st.scr.NewCursor(img, hot)

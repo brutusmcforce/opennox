@@ -147,7 +147,7 @@ func (sect *Waypoints) Decode(r *binenc.Reader) error {
 		return io.ErrUnexpectedEOF
 	}
 	sect.Waypoints = make([]Waypoint, 0, capHint(r, n, 18))
-	for i := 0; i < int(n); i++ {
+	for range n {
 		var w Waypoint
 		if err := w.Decode(r); err != nil {
 			return err

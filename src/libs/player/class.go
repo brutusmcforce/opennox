@@ -19,6 +19,11 @@ const (
 
 type Class byte
 
+// Valid reports whether c is one of the three player classes.
+func (c Class) Valid() bool {
+	return c <= Conjurer
+}
+
 func (c Class) String() string {
 	switch c {
 	case Warrior:

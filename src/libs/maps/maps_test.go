@@ -280,3 +280,21 @@ func TestHugeSectionCounts(t *testing.T) {
 	must.Error(t, p.UnmarshalBinary([]byte{4, 0, 0xff, 0xff, 0xff, 0xff}))
 	must.Error(t, p.UnmarshalBinary([]byte{4, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xff}))
 }
+
+func TestReadSectionsUnknown(t *testing.T) {
+	// sections the reader doesn't decode used to share one buffer and overwrite each other
+	exp := []maps.RawSection{
+		{Name: "FirstUnknown", Data: []byte("first-section-data")},
+		{Name: "SecondUnknown", Data: []byte("XXXXX")},
+	}
+	var buf buffer
+	wr, err := maps.NewWriter(&buf, maps.Header{})
+	must.NoError(t, err)
+	must.NoError(t, wr.WriteRawSections(exp))
+	must.NoError(t, wr.Close())
+
+	rd, err := maps.NewReader(bytes.NewReader(buf.Bytes()))
+	must.NoError(t, err)
+	must.NoError(t, rd.ReadSections())
+	must.Eq(t, exp, rd.Map().Unknown)
+}

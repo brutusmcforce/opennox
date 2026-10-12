@@ -372,7 +372,7 @@ func (f *Reader) SkipSpellsSect() error {
 	} else if n <= 0 {
 		return nil
 	}
-	for i := 0; i < int(n); i++ {
+	for range n {
 		if err := f.skipBytes8(); err != nil {
 			return err
 		}
@@ -426,8 +426,8 @@ func (f *Reader) ReadSpellsSect() ([]Spell, error) {
 	} else if n <= 0 {
 		return nil, nil
 	}
-	out := make([]Spell, 0, n)
-	for i := 0; i < int(n); i++ {
+	out := make([]Spell, 0, capHint(uint64(n)))
+	for range n {
 		id, err := f.readString8()
 		if err != nil {
 			return out, err

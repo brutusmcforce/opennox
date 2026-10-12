@@ -427,3 +427,9 @@ func (f *Reader) ReadAll() (*Data, error) {
 		}
 	}
 }
+
+// capHint limits a preallocation hint taken from a count in the file,
+// so a corrupted count doesn't allocate a huge slice up front.
+func capHint(n uint64) int {
+	return int(min(n, 4096))
+}

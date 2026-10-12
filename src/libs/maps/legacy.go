@@ -1,9 +1,9 @@
 package maps
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/brutusmcforce/opennox/libs/datapath"
 	"github.com/brutusmcforce/opennox/libs/ifs"
@@ -35,12 +35,17 @@ type NativeDownloader struct {
 	curPart    uint
 	sizeCur    uint
 	sizeTotal  uint
+	sizePend   uint // bytes in out-of-order parts
 	first      *mapDownloadPart
 	last       *mapDownloadPart
 }
 
 func (d *NativeDownloader) WritePart(ind uint, data []byte) {
-	if len(data) == 0 {
+	if len(data) == 0 || d.file == nil || ind < d.curPart {
+		return
+	}
+	// the parts come from the server: never take more than the size it announced
+	if d.sizeCur+d.sizePend+uint(len(data)) > d.sizeTotal {
 		return
 	}
 	if ind == d.curPart {
@@ -62,6 +67,7 @@ func (d *NativeDownloader) WritePart(ind uint, data []byte) {
 		if d.first == nil {
 			d.first = v3
 		}
+		d.sizePend += uint(len(buf))
 	}
 
 	// outer loop accounts for packet reordering
@@ -75,6 +81,7 @@ func (d *NativeDownloader) WritePart(ind uint, data []byte) {
 			found = true
 			d.file.Write(it.Data)
 			d.sizeCur += uint(len(it.Data))
+			d.sizePend -= uint(len(it.Data))
 			d.curPart++
 			if v6 := it.Prev; v6 != nil {
 				v6.Next = it.Next
@@ -98,7 +105,7 @@ func (d *NativeDownloader) CancelAndCleanup() {
 	if d.file != nil {
 		d.file.Close()
 	}
-	mapDownloadCleanupDir(d.dir, d.path)
+	mapDownloadCleanupDir(d.path)
 	d.Reset()
 }
 
@@ -110,6 +117,7 @@ func (d *NativeDownloader) CancelAndDelete() {
 	d.curPart = 1
 	d.sizeTotal = 0
 	d.sizeCur = 0
+	d.sizePend = 0
 
 	var v1 *mapDownloadPart
 	for v0 := d.first; v0 != nil; v0 = v1 {
@@ -143,17 +151,18 @@ func (d *NativeDownloader) Reset() {
 	d.first = nil
 	d.sizeTotal = 0
 	d.sizeCur = 0
+	d.sizePend = 0
 	d.curPart = 1
 	d.path = ""
 }
 
 func (d *NativeDownloader) Start(path string, sz uint) error {
 	d.Reset()
+	if sz > mapFileSizeLimit {
+		return fmt.Errorf("map is too large: %d bytes", sz)
+	}
 	path = ifs.Normalize(path)
 	mdir := filepath.Dir(path)
-	ext := filepath.Ext(path)
-	mname := strings.TrimSuffix(filepath.Base(path), ext)
-	mapDownloadCleanupDir(d.dir, mname)
 	if _, err := ifs.Stat(mdir); os.IsNotExist(err) {
 		ifs.MkdirAll(mdir)
 	}
@@ -169,12 +178,7 @@ func (d *NativeDownloader) Start(path string, sz uint) error {
 	return nil
 }
 
-func mapDownloadCleanupDir(ddir, path string) {
-	if !strings.ContainsAny(path, "\\/") {
-		ext := filepath.Ext(path)
-		name := strings.TrimSuffix(path, ext)
-		path = filepath.Join(ddir, path, name, path)
-	}
+func mapDownloadCleanupDir(path string) {
 	if _, err := os.Stat(path); err == nil {
 		ifs.Remove(path)
 	}

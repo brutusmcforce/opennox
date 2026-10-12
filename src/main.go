@@ -439,7 +439,7 @@ func runArgs(args []string, loopFunc func() error) (gerr error) {
 	mainloopNoSkip = *fNoSkip
 	if host := *fRcon; host != "" {
 		rconLog.Println("starting rcon at", host)
-		rcon, err := NewRemoteConsole(host, execConsoleCmdAuthed, RconOptions{
+		rcon, err := NewRemoteConsole(host, execConsoleCmdInLoop, RconOptions{
 			Pass: *fRconPass,
 		})
 		if err != nil {

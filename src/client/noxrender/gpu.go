@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"image"
 	"image/color"
+	"math"
 
 	"github.com/brutusmcforce/opennox/libs/noximage"
 	"golang.org/x/image/font"
@@ -235,7 +236,9 @@ func (r *NoxRender) gpuDrawString(s string, dot fixed.Point26_6, clip image.Rect
 	if of != nil {
 		sx, sy = r.gpu.TargetScale()
 		if sx > 1.01 || sy > 1.01 {
-			hi = of.scaledFace(sx)
+			// The scale changes with every window size, and each face fills the glyph atlas, which is never freed.
+			// Glyphs are positioned with the exact scale, so a slightly different glyph size isn't noticeable.
+			hi = of.scaledFace(math.Round(sx*8) / 8)
 		}
 	}
 	prev := rune(-1)

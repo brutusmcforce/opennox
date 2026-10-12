@@ -7,7 +7,7 @@ func (f *Reader) skipABIL() error {
 	} else if n <= 0 {
 		return nil
 	}
-	for i := 0; i < int(n); i++ {
+	for range n {
 		if err := f.skipBytes8(); err != nil {
 			return err
 		}

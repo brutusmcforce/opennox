@@ -5,6 +5,9 @@ import "context"
 const (
 	// DefaultGamePort is a default UDP port for Nox games.
 	DefaultGamePort = 18590
+
+	// maxFieldLen limits text fields of a registered game (name, map, etc).
+	maxFieldLen = 128
 )
 
 // GameMode is a Nox game mode.

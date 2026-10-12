@@ -41,7 +41,7 @@ func NewServer(l Lobby) *Server {
 }
 
 func (api *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	cntRequests.WithLabelValues(r.Method, r.URL.Path, r.Header.Get("User-Agent")).Inc()
+	cntRequests.WithLabelValues(requestLabels(r)...).Inc()
 	api.mux.ServeHTTP(w, r)
 }
 

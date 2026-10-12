@@ -41,7 +41,8 @@ func (r *Reader) Err() error {
 }
 
 func (r *Reader) ReadNext(n int) ([]byte, bool) {
-	if r.off+n > len(r.data) {
+	// n may come from a 32-bit length field, which is negative as an int on 32-bit systems
+	if n < 0 || n > r.Remaining() {
 		return nil, false
 	}
 	v := r.data[r.off : r.off+n : r.off+n]
@@ -186,7 +187,7 @@ func (r *Reader) ReadBytes(sz int) ([]byte, bool) {
 }
 
 func (r *Reader) ReadString(sz int) (string, bool) {
-	if r.off+sz > len(r.data) {
+	if sz < 0 || sz > r.Remaining() {
 		return "", false
 	}
 	s := r.data[r.off : r.off+sz]
@@ -246,7 +247,7 @@ func (r *Reader) ReadString32() (string, bool) {
 }
 
 func (r *Reader) ReadWString(sz int) (string, bool) {
-	if r.off+2*sz > len(r.data) {
+	if sz < 0 || sz > r.Remaining()/2 {
 		return "", false
 	}
 	s := r.data[r.off : r.off+2*sz]

@@ -31,3 +31,12 @@ func TestDecodeEncode(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, encodedInfoHdr[preHeaderLength:], string(data))
 }
+
+func TestDecodeShortPayload(t *testing.T) {
+	// payloads come from remote hosts and must not panic when truncated
+	for n := 0; n < len(encodedInfoHdr); n++ {
+		_, _ = decryptAndDecode([]byte(encodedInfoHdr[:n]))
+	}
+	_, err := decryptAndDecode([]byte(encodedInfoHdr[:20]))
+	require.Error(t, err)
+}

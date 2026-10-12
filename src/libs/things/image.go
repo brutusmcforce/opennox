@@ -213,8 +213,8 @@ func (f *Reader) readImages() ([]Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := make([]Image, 0, n)
-	for i := 0; i < int(n); i++ {
+	out := make([]Image, 0, capHint(uint64(n)))
+	for range n {
 		img, err := f.readImage()
 		if err != nil {
 			return out, err
@@ -247,7 +247,7 @@ func (f *Reader) skipIMAG() error {
 	if err != nil {
 		return err
 	}
-	for i := 0; i < int(n); i++ {
+	for range n {
 		if err := f.skipBytes8(); err != nil {
 			return err
 		}

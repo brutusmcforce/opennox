@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"log/slog"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -80,27 +81,15 @@ func (c *clientMapDownload) startNative(name string, sz uint) error {
 		name += maps.Ext
 	}
 	c.ndl.Reset()
-	var (
-		fpath string
-		mdir  string
-	)
-	if strings.ContainsAny(name, "\\/") {
-		name = strings.ReplaceAll(name, "\\", string(filepath.Separator))
-		i := strings.IndexByte(name, '/')
-		j := strings.IndexByte(name, '.')
-		if i <= 0 || j <= 0 {
-			return fmt.Errorf("unexpected map name: %q", name)
-		}
-		mname := name[i+1 : j]
-		mdir = datapath.Maps(mname)
-		fpath = filepath.Join(mdir, mname+".nxz")
-		c.iface.setMapPath(name[i+1:])
-	} else {
-		c.iface.setMapPath(name)
-		mname := strings.TrimSuffix(name, filepath.Ext(name))
-		mdir = datapath.Maps(mname)
-		fpath = filepath.Join(mdir, mname+".nxz")
+	// the name comes from the server: only keep the file name, whatever separators it uses
+	base := path.Base(strings.ReplaceAll(name, "\\", "/"))
+	mname := strings.TrimSuffix(base, maps.Ext)
+	if mname == "" || mname == "." || mname == ".." || strings.HasPrefix(mname, ".") {
+		return fmt.Errorf("unexpected map name: %q", name)
 	}
+	c.iface.setMapPath(base)
+	mdir := datapath.Maps(mname)
+	fpath := filepath.Join(mdir, mname+".nxz")
 	c.log.Info("downloading map to", "path", fpath)
 	if err := c.ndl.Start(fpath, sz); err != nil {
 		return err

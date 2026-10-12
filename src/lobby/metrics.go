@@ -1,7 +1,9 @@
 package lobby
 
 import (
+	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -50,4 +52,26 @@ func serverLabels(src string, g *Game) []string {
 		string(g.Mode),
 		g.Map,
 	}
+}
+
+// requestLabels returns the metric labels for an API request. All values come from a fixed set:
+// the path, method and agent are sent by the client, and every distinct value would be a new time series.
+func requestLabels(r *http.Request) []string {
+	method := r.Method
+	switch method {
+	case http.MethodGet, http.MethodPost, http.MethodHead:
+	default:
+		method = "other"
+	}
+	endpoint := r.URL.Path
+	switch endpoint {
+	case "/api/v0/address", "/api/v0/games/list", "/api/v0/games/register":
+	default:
+		endpoint = "other"
+	}
+	agent := "other"
+	if strings.HasPrefix(r.Header.Get("User-Agent"), "OpenNox/") {
+		agent = "opennox"
+	}
+	return []string{method, endpoint, agent}
 }

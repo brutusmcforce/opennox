@@ -25,6 +25,7 @@ type recvStream[C Conn] struct {
 	nextChunk Chunk // for large payloads
 	first     *recvChunk
 	last      *recvChunk
+	pending   int // number of buffered chunks
 }
 
 func (p *recvStream[C]) AddChunk(ts time.Duration, m *MsgData) {
@@ -63,9 +64,14 @@ func (p *recvStream[C]) AddChunk(ts time.Duration, m *MsgData) {
 	// For large payloads, we have to handle overflows and interpret
 	// chunk number as an ID and not an index.
 	if chunk == p.nextChunk {
-		cur := p.received
-		p.received += copy(p.full.Data[cur:cur+len(data)], data)
+		p.received += copy(p.full.Data[p.received:], data)
 		p.nextChunk++
+		p.drainPending()
+		return
+	}
+	if p.pending >= maxPendingChunks {
+		// the sender is too far ahead, or never sends the chunk we wait for
+		p.Abort(ErrRecvTimeout)
 		return
 	}
 	b := &recvChunk{
@@ -80,23 +86,33 @@ func (p *recvStream[C]) AddChunk(ts time.Duration, m *MsgData) {
 	if first := p.first; first == nil {
 		p.first = b
 	}
+	p.pending++
+}
 
-	for it := p.first; it != nil; it = it.next {
-		if p.nextChunk == it.ind {
-			cur := p.received
-			p.received += copy(p.full.Data[cur:], it.data)
-			p.nextChunk++
-			if prev := it.prev; prev != nil {
-				prev.next = it.next
-			} else {
-				p.first = it.next
+// drainPending appends buffered chunks for as long as one of them is the next one expected.
+func (p *recvStream[C]) drainPending() {
+	for found := true; found; {
+		found = false
+		for it := p.first; it != nil; {
+			next := it.next
+			if p.nextChunk == it.ind {
+				p.received += copy(p.full.Data[p.received:], it.data)
+				p.nextChunk++
+				if prev := it.prev; prev != nil {
+					prev.next = it.next
+				} else {
+					p.first = it.next
+				}
+				if next != nil {
+					next.prev = it.prev
+				} else {
+					p.last = it.prev
+				}
+				*it = recvChunk{} // GC
+				p.pending--
+				found = true
 			}
-			if next := it.next; next != nil {
-				next.prev = it.prev
-			} else {
-				p.last = it.prev
-			}
-			*it = recvChunk{} // GC
+			it = next
 		}
 	}
 }
@@ -107,6 +123,7 @@ func (p *recvStream[C]) Close() {
 	}
 	p.x.arr[p.id] = nil
 	p.x.active--
+	p.x.allocated -= len(p.full.Data)
 	*p = recvStream[C]{}
 }
 
@@ -157,8 +174,9 @@ func (p *recvStream[C]) Update(ts time.Duration) {
 }
 
 type Receiver[C Conn] struct {
-	arr    []*recvStream[C]
-	active int
+	arr       []*recvStream[C]
+	active    int
+	allocated int // bytes allocated for all active streams
 
 	onReceive ReceiveFunc[C]
 }
@@ -174,6 +192,7 @@ func (x *Receiver[C]) Reset(n int) {
 		n = maxStreams
 	}
 	x.active = 0
+	x.allocated = 0
 	x.arr = make([]*recvStream[C], n)
 }
 
@@ -193,7 +212,11 @@ func (x *Receiver[C]) get(conn C, rid RecvID) *recvStream[C] {
 	if int(rid) >= len(x.arr) {
 		return nil
 	}
-	return x.arr[rid]
+	// streams belong to the connection that started them
+	if p := x.arr[rid]; p != nil && p.conn == conn {
+		return p
+	}
+	return nil
 }
 
 func (x *Receiver[C]) Update(ts time.Duration) {
@@ -206,6 +229,10 @@ func (x *Receiver[C]) Update(ts time.Duration) {
 }
 
 func (x *Receiver[C]) HandleStart(conn C, ts time.Duration, m *MsgStart) {
+	// the size comes from the remote side: check it before allocating anything
+	if m.Size > maxRecvSize || x.allocated+int(m.Size) > maxRecvTotal {
+		return
+	}
 	s := &recvStream[C]{
 		x:          x,
 		conn:       conn,
@@ -214,12 +241,14 @@ func (x *Receiver[C]) HandleStart(conn C, ts time.Duration, m *MsgStart) {
 		full: Data{
 			Action: m.Act,
 			Type:   m.Type.Value,
-			Data:   make([]byte, m.Size),
 		},
 	}
-	if x.add(s) {
-		s.Accept(m.SendID)
+	if !x.add(s) {
+		return
 	}
+	s.full.Data = make([]byte, m.Size)
+	x.allocated += len(s.full.Data)
+	s.Accept(m.SendID)
 }
 
 func (x *Receiver[C]) HandleData(conn C, ts time.Duration, m *MsgData) {

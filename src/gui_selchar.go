@@ -377,7 +377,7 @@ func nox_xxx_findAutosaves_4A5150() {
 	})
 	for i := 0; i < v9; i++ {
 		sv := &nox_xxx_saves_arr[i]
-		classStrID := strman.ID(fmt.Sprintf("nox.str:%s", saveClasses[sv.Player.PlayerClass()]))
+		classStrID := strman.ID(fmt.Sprintf("nox.str:%s", saveClassName(sv.Player.PlayerClass())))
 		classStr := strMan.GetStringInFile(classStrID, "C:\\NoxPost\\src\\client\\shell\\selchar.c")
 		pname := sv.Player.Name()
 		v14 := strMan.GetStringInFile("GuiInv.c:ElaborateNameFormat", "C:\\NoxPost\\src\\client\\shell\\selchar.c")
@@ -456,6 +456,14 @@ func sub_4A5C70() {
 	nox_xxx_findAutosaves_4A5150()
 }
 
+// saveClassName returns the name of the player class stored in a save file, which may be corrupted.
+func saveClassName(c player.Class) string {
+	if !c.Valid() {
+		return "Unknown"
+	}
+	return saveClasses[c]
+}
+
 var saveClasses = []string{
 	"Warrior",
 	"Wizard",
@@ -498,7 +506,7 @@ func nox_savegame_sub_46CE40(wlist, wnames, wstyles *gui.Window, sarr []server.S
 		playerName := sv.Player.Name()
 		sname := datapath.SaveNameFromPath(spath)
 		class := sv.Player.PlayerClass()
-		classNameID := fmt.Sprintf("nox.str:%s", saveClasses[class])
+		classNameID := fmt.Sprintf("nox.str:%s", saveClassName(class))
 		v39 := strMan.GetStringInFile(strman.ID(classNameID), stringsFile)
 		v13 := strMan.GetStringInFile("the", stringsFile)
 		v42 := fmt.Sprintf(v13, playerName, v39)
