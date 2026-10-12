@@ -6,6 +6,9 @@ import (
 	"github.com/brutusmcforce/opennox/libs/client/seat"
 )
 
+// e2eScreenSize is the screen size for E2E tests. Positions in test scripts are in this screen.
+var e2eScreenSize = image.Point{X: 1024, Y: 768}
+
 func e2eWrapSeat(s seat.Seat) seat.Seat {
 	e2e.real = s
 	s.OnInput(e2eRealInput)
@@ -25,7 +28,7 @@ func (e *e2eSeat) ScreenSize() image.Point {
 }
 
 func (e *e2eSeat) ScreenMaxSize() image.Point {
-	return image.Point{X: 1024, Y: 768}
+	return e2eScreenSize
 }
 
 func (e *e2eSeat) ResizeScreen(sz image.Point) {

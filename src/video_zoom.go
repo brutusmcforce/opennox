@@ -114,6 +114,9 @@ func (c *Client) zoomStep(in bool) {
 // It must be called before drawing the world.
 func (c *Client) updateZoom() {
 	z := &c.zoom
+	if z.target <= 0 {
+		z.target = 1 // not set yet
+	}
 	if lo := c.zoomMin(); z.target < lo {
 		z.target = lo
 	}

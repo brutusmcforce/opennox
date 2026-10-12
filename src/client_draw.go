@@ -132,10 +132,6 @@ func (c *Client) nox_xxx_client_435F80_draw() bool {
 	c.nox_xxx_clientDrawAll_436100_draw()
 	c.sub_49BB40()
 	c.sub_49BA70()
-	if !videoUIScaled() {
-		// with UI scaling, the screenshot is taken from the final full-resolution image
-		c.maybeScreenshot()
-	}
 	if memmap.Uint32(0x5D4594, 826068) != 0 {
 		legacy.Nox_xxx_motd_4467F0()
 	}

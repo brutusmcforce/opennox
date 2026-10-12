@@ -236,7 +236,12 @@ func runArgs(args []string, loopFunc func() error) (gerr error) {
 		return fmt.Errorf("failed to load strings file: %w", err)
 	}
 	if !*fServer && !*fNoDraw {
-		err = noxClient.initSeat(image.Point{X: noxDefaultWidth, Y: noxDefaultHeight})
+		sz := image.Point{X: noxDefaultWidth, Y: noxDefaultHeight}
+		if env.IsE2E() {
+			// the window can't be resized in E2E tests, see sdl.New
+			sz = e2eScreenSize
+		}
+		err = noxClient.initSeat(sz)
 		if err != nil {
 			return err
 		}
@@ -370,7 +375,7 @@ func runArgs(args []string, loopFunc func() error) (gerr error) {
 		return fmt.Errorf("failed to load config file: %w", err)
 	}
 	if env.IsE2E() {
-		noxClient.videoSetGameMode(image.Point{X: 1024, Y: 768})
+		noxClient.videoSetGameMode(e2eScreenSize)
 	} else {
 		noxClient.videoSetGameMode(image.Point{
 			X: viper.GetInt(configVideoWidth),

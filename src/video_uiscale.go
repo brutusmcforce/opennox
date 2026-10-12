@@ -50,11 +50,6 @@ var uiScaleState struct {
 	hasCursor bool
 }
 
-// videoUIScaled checks if the world and the GUI are rendered at different resolutions.
-func videoUIScaled() bool {
-	return uiScaleState.world != nil
-}
-
 // videoSetWorldSize sets the size of the world buffer. It will be applied on the next pixel buffer init.
 // Zero size or size equal to the main buffer disables separate world buffer.
 func videoSetWorldSize(sz image.Point) {

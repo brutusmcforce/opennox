@@ -10,6 +10,7 @@ import (
 
 	"github.com/brutusmcforce/opennox/libs/client/seat"
 	"github.com/brutusmcforce/opennox/libs/client/seat/opengl"
+	"github.com/brutusmcforce/opennox/libs/env"
 	noxlog "github.com/brutusmcforce/opennox/libs/log"
 )
 
@@ -45,8 +46,13 @@ func New(log *slog.Logger, title string, sz image.Point) (*Window, error) {
 		return nil, fmt.Errorf("cannot set OpenGL attribute: %w", err)
 	}
 
-	win, err := sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, int32(sz.X), int32(sz.Y),
-		sdl.WINDOW_RESIZABLE|sdl.WINDOW_OPENGL|sdl.WINDOW_ALLOW_HIGHDPI)
+	var flags sdl.WindowFlags = sdl.WINDOW_RESIZABLE | sdl.WINDOW_OPENGL | sdl.WINDOW_ALLOW_HIGHDPI
+	if env.IsE2E() {
+		// E2E tests compare screenshots, so the size in pixels must not depend on the display scale
+		// and the window must not be resized by the window manager
+		flags &^= sdl.WINDOW_ALLOW_HIGHDPI | sdl.WINDOW_RESIZABLE
+	}
+	win, err := sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, int32(sz.X), int32(sz.Y), flags)
 	if err != nil {
 		sdl.Quit()
 		return nil, fmt.Errorf("SDL Window creation failed: %w", err)
@@ -152,6 +158,10 @@ func (win *Window) ResizeScreen(sz image.Point) {
 }
 
 func (win *Window) SetScreenMode(mode seat.ScreenMode) {
+	if env.IsE2E() {
+		// E2E tests need an exact window size, see New
+		mode = seat.Windowed
+	}
 	if win.mode == mode {
 		return
 	}
@@ -163,7 +173,8 @@ func (win *Window) SetScreenMode(mode seat.ScreenMode) {
 	switch mode {
 	case seat.Windowed:
 		win.win.SetFullscreen(0)
-		win.win.SetResizable(true)
+		// E2E tests need an exact window size; window managers don't resize fixed-size windows
+		win.win.SetResizable(!env.IsE2E())
 		win.win.SetBordered(true)
 		win.setSize(win.prevSz)
 		if win.prevPos != (image.Point{}) {

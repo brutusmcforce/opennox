@@ -56,6 +56,7 @@ var e2e struct {
 	recorded  []e2eRecordedEvent
 	err       error
 	checkSave *e2eCheckSave
+	screens   []string // names of screens to capture on the next frame
 }
 
 func e2eError(err error) {
@@ -153,7 +154,7 @@ func (sc *e2eScenario) ClickSlowLeft(x, y int, name string) {
 }
 
 func e2eAngToPos(ang float64, dist int) image.Point {
-	sz := image.Point{X: 1024, Y: 768}
+	sz := e2eScreenSize
 	rad := (0.5 - ang) * math.Pi
 	return image.Point{
 		X: sz.X/2 + int(math.Cos(rad)*float64(dist)),
@@ -272,61 +273,80 @@ func (sc *e2eScenario) Save(name string, hashes map[string]string) {
 
 func (sc *e2eScenario) Screen(name string) {
 	sc.add(0, name, func() {
-		fname := strings.ReplaceAll(strings.ToLower(name), " ", "_")
-		fname = filepath.Join(e2e.path, "testdata", fname)
-		img := noxClient.r.CopyPixBuffer()
-		var ibuf bytes.Buffer
-		if err := png.Encode(&ibuf, img); err != nil {
+		// the screen is captured when the frame is drawn, see e2eCaptureScreens
+		e2e.screens = append(e2e.screens, name)
+	})
+}
+
+// e2eCaptureScreens compares the current frame with the expected screens requested by the test script.
+// It must be called when the frame is fully drawn.
+func e2eCaptureScreens() {
+	if len(e2e.screens) == 0 {
+		return
+	}
+	for _, name := range e2e.screens {
+		e2eCompareScreen(name, noxClient.r.CopyPixBuffer())
+	}
+	e2e.screens = e2e.screens[:0]
+}
+
+func e2eCompareScreen(name string, img *image.NRGBA) {
+	fname := strings.ReplaceAll(strings.ToLower(name), " ", "_")
+	fname = filepath.Join(e2e.path, "testdata", fname)
+	var ibuf bytes.Buffer
+	if err := png.Encode(&ibuf, img); err != nil {
+		panic(err)
+	}
+	if e2eOverride {
+		_ = os.WriteFile(fname+".png", ibuf.Bytes(), 0644)
+		return
+	}
+	gotName := fname + "_got.png"
+	diffName := fname + "_diff.png"
+	if _, err := os.Stat(gotName); err == nil {
+		if err = os.Remove(gotName); err != nil {
+			e2eLog.Println(err)
+		}
+	}
+	if _, err := os.Stat(diffName); err == nil {
+		if err = os.Remove(diffName); err != nil {
+			e2eLog.Println(err)
+		}
+	}
+	if data, err := os.ReadFile(fname + ".png"); err == nil {
+		exp, err := png.Decode(bytes.NewReader(data))
+		if err != nil {
 			panic(err)
 		}
-		if e2eOverride {
-			_ = os.WriteFile(fname+".png", ibuf.Bytes(), 0644)
-			return
+		var edata []byte
+		switch exp := exp.(type) {
+		case *image.RGBA:
+			edata = exp.Pix
+		case *image.NRGBA:
+			edata = exp.Pix
+		default:
+			panic(exp)
 		}
-		gotName := fname + "_got.png"
-		diffName := fname + "_diff.png"
-		if _, err := os.Stat(gotName); err == nil {
-			if err = os.Remove(gotName); err != nil {
-				e2eLog.Println(err)
-			}
-		}
-		if _, err := os.Stat(diffName); err == nil {
-			if err = os.Remove(diffName); err != nil {
-				e2eLog.Println(err)
-			}
-		}
-		if data, err := os.ReadFile(fname + ".png"); err == nil {
-			exp, err := png.Decode(bytes.NewReader(data))
-			if err != nil {
+		if got, want := img.Rect.Size(), exp.Bounds().Size(); got != want {
+			_ = os.WriteFile(gotName, ibuf.Bytes(), 0644)
+			e2eError(fmt.Errorf("%s: screen size %v, expected %v", name, got, want))
+		} else if !bytes.Equal(img.Pix, edata) {
+			_ = os.WriteFile(gotName, ibuf.Bytes(), 0644)
+
+			diff := imageDiff(img.Pix, edata)
+			ibuf.Reset()
+			img.Pix = diff
+			if err := png.Encode(&ibuf, img); err != nil {
 				panic(err)
 			}
-			var edata []byte
-			switch exp := exp.(type) {
-			case *image.RGBA:
-				edata = exp.Pix
-			case *image.NRGBA:
-				edata = exp.Pix
-			default:
-				panic(exp)
-			}
-			if !bytes.Equal(img.Pix, edata) {
-				_ = os.WriteFile(gotName, ibuf.Bytes(), 0644)
-
-				diff := imageDiff(img.Pix, edata)
-				ibuf.Reset()
-				img.Pix = diff
-				if err := png.Encode(&ibuf, img); err != nil {
-					panic(err)
-				}
-				_ = os.WriteFile(diffName, ibuf.Bytes(), 0644)
-				e2eError(err)
-			}
-		} else if os.IsNotExist(err) {
-			_ = os.WriteFile(fname+".png", ibuf.Bytes(), 0644)
-		} else {
-			panic(err)
+			_ = os.WriteFile(diffName, ibuf.Bytes(), 0644)
+			e2eError(fmt.Errorf("%s: screen differs", name))
 		}
-	})
+	} else if os.IsNotExist(err) {
+		_ = os.WriteFile(fname+".png", ibuf.Bytes(), 0644)
+	} else {
+		panic(err)
+	}
 }
 
 type e2eFileYML struct {

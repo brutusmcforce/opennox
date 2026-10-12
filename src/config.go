@@ -140,6 +140,11 @@ func readConfig(path string) error {
 			fnc()
 		}
 	}()
+	if env.IsE2E() {
+		// tests must not depend on the local config
+		configLog.Println("e2e: using defaults")
+		return nil
+	}
 	if path != "" {
 		if abs, err := filepath.Abs(path); err == nil {
 			path = abs

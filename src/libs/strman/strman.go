@@ -4,12 +4,12 @@ package strman
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/platform"
 )
 
 type ID string
@@ -23,7 +23,8 @@ func (e Entry) Value() Variant {
 	if len(e.Vals) == 1 {
 		return e.Vals[0]
 	}
-	i := rand.Intn(len(e.Vals))
+	// the game's random source is deterministic in tests
+	i := platform.RandInt() % len(e.Vals)
 	return e.Vals[i]
 }
 

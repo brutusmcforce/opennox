@@ -22,6 +22,7 @@ func init() {
 }
 
 func (c *Client) maybeScreenshot() {
+	e2eCaptureScreens()
 	select {
 	default:
 		return
