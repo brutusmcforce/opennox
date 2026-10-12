@@ -1273,18 +1273,6 @@ func Init(p *Ptrs) {
 	*memmap.PtrPtr(0x587000, 171880) = memmap.PtrOff(0x587000, 172196)
 	*memmap.PtrPtr(0x587000, 171888) = memmap.PtrOff(0x587000, 172204)
 	*memmap.PtrPtr(0x587000, 171896) = memmap.PtrOff(0x587000, 172216)
-	*memmap.PtrPtr(0x587000, 171928) = p.Ptr_sub_4A7A80
-	*memmap.PtrPtr(0x587000, 171948) = p.Ptr_sub_4A7AC0
-	*memmap.PtrPtr(0x587000, 171968) = p.Ptr_sub_4A7B00
-	*memmap.PtrPtr(0x587000, 171988) = p.Ptr_sub_4A7B40
-	*memmap.PtrPtr(0x587000, 172008) = p.Ptr_sub_4A7BA0
-	*memmap.PtrPtr(0x587000, 172028) = p.Ptr_sub_4A7BC0
-	*memmap.PtrPtr(0x587000, 172048) = p.Ptr_sub_4A7C00
-	*memmap.PtrPtr(0x587000, 172068) = p.Ptr_sub_4A7C40
-	*memmap.PtrPtr(0x587000, 172088) = p.Ptr_sub_4A7C60
-	*memmap.PtrPtr(0x587000, 172108) = p.Ptr_sub_4A7CE0
-	*memmap.PtrPtr(0x587000, 172128) = p.Ptr_sub_4A7D00
-	*memmap.PtrPtr(0x587000, 172148) = p.Ptr_sub_4A7D50
 	*memmap.PtrPtr(0x587000, 172892) = memmap.PtrOff(0x587000, 172904)
 	*memmap.PtrPtr(0x587000, 172896) = memmap.PtrOff(0x587000, 172928)
 	*memmap.PtrPtr(0x587000, 172900) = memmap.PtrOff(0x587000, 172952)
@@ -1471,9 +1459,6 @@ func Init(p *Ptrs) {
 	*memmap.PtrPtr(0x587000, 178972) = memmap.PtrOff(0x587000, 179844)
 	*memmap.PtrPtr(0x587000, 178976) = memmap.PtrOff(0x587000, 179852)
 	*memmap.PtrPtr(0x587000, 178980) = memmap.PtrOff(0x587000, 179864)
-	*memmap.PtrPtr(0x587000, 180020) = p.Ptr_sub_454120
-	*memmap.PtrPtr(0x587000, 180024) = p.Ptr_sub_453750
-	*memmap.PtrPtr(0x587000, 180028) = p.Ptr_sub_453750
 	*memmap.PtrPtr(0x587000, 180048) = memmap.PtrOff(0x587000, 180128)
 	*memmap.PtrPtr(0x587000, 180052) = memmap.PtrOff(0x587000, 180140)
 	*memmap.PtrPtr(0x587000, 180056) = memmap.PtrOff(0x587000, 180152)
@@ -3267,7 +3252,6 @@ func Init(p *Ptrs) {
 	*memmap.PtrPtr(0x587000, 316784) = memmap.PtrOff(0x581450, 11564)
 	*memmap.PtrUint32(0x587000, 316808) = 0xDEADBEEF
 	*p.Ptr_nox_xxx_aClosewoodengat_587000_133480 = memmap.PtrOff(0x5D4594, 1049220)
-	*p.Ptr_dword_587000_155144 = memmap.PtrOff(0x5D4594, 1193204)
 	*p.Ptr_dword_587000_127004 = memmap.PtrOff(0x5D4594, 1045324)
 	*p.Ptr_dword_587000_93164 = memmap.PtrOff(0x5D4594, 816244)
 	*p.Ptr_dword_587000_122852 = memmap.PtrOff(0x5D4594, 830980)

@@ -179,17 +179,13 @@ func (c *Client) nox_client_processInput_4308A0() {
 	}
 }
 
-func nox_input_reset_430140(a1 int) {
-	noxClient.ResetInput()
-}
-
 func nox_xxx_freeKeyboard_430210() {
 	noxClient.inDraw1 = false
 }
 
 func nox_xxx_initInput_430190() error {
 	inputInitMouse()
-	legacy.Sub_42EBB0(2, legacy.Get_nox_input_reset_430140(), 0, "Input")
+
 	return nil
 }
 

@@ -1,18 +1,6 @@
 package legacy
 
-/*
-#include "GAME3_3.h"
-#include "GAME4.h"
-#include "GAME4_1.h"
-#include "GAME4_3.h"
-#include "GAME5_2.h"
-#include "server__script__builtin.h"
-void nox_server_gotoHome(nox_object_t* obj);
-*/
-import "C"
 import (
-	"unsafe"
-
 	"github.com/brutusmcforce/opennox/libs/types"
 
 	"github.com/brutusmcforce/opennox/server"
@@ -23,54 +11,45 @@ var (
 	Nox_xxx_unitMove_4E7010     func(a1 *server.Object, pos types.Pointf)
 )
 
-//export nox_xxx_unitIsUnitTT_4E7C80
-func nox_xxx_unitIsUnitTT_4E7C80(a1 *nox_object_t, a2 int) int {
-	return Nox_xxx_unitIsUnitTT_4E7C80(asObjectS(a1), a2)
-}
-
-//export nox_xxx_unitMove_4E7010
-func nox_xxx_unitMove_4E7010(a1 *nox_object_t, pos *C.float2) {
-	Nox_xxx_unitMove_4E7010(asObjectS(a1), AsPointf(unsafe.Pointer(pos)))
-}
 func Nox_xxx_unitSetHP_4E4560(a1 *server.Object, a2 uint16) {
-	C.nox_xxx_unitSetHP_4E4560(asObjectC(a1), C.ushort(a2))
+	resourceSetHP(a1, a2)
 }
 func Nox_xxx_mobInformOwnerHP_4EE4C0(a1 *server.Object) {
-	C.nox_xxx_mobInformOwnerHP_4EE4C0(asObjectC(a1))
+	resourceInformOwner(a1)
 }
 func Nox_xxx_protectMana_56F9E0(a1 int, a2 int16) {
-	C.nox_xxx_protectMana_56F9E0(C.int(a1), C.short(a2))
+	addProtectionRecord(int32(a1), uint32(int32(a2)))
 }
 func Nox_xxx_monsterWalkTo_514110(a1 *server.Object, a2 float32, a3 float32) {
-	C.nox_xxx_monsterWalkTo_514110(asObjectC(a1), C.float(a2), C.float(a3))
+	monsterControlWalk(a1, types.Pointf{X: a2, Y: a3})
 }
 func Nox_xxx_monsterLookAt_5125A0(a1 *server.Object, a2 int) {
-	C.nox_xxx_monsterLookAt_5125A0(asObjectC(a1), C.int(a2))
+	monsterControlLook(a1, int32(a2))
 }
 func Nox_xxx_unitFreeze_4E79C0(a1 *server.Object, a2 int) {
-	C.nox_xxx_unitFreeze_4E79C0(asObjectC(a1), C.int(a2))
+	stateFreeze(a1, int32(a2))
 }
 func Nox_xxx_unitUnFreeze_4E7A60(a1 *server.Object, a2 int) {
-	C.nox_xxx_unitUnFreeze_4E7A60(asObjectC(a1), C.int(a2))
+	stateUnfreeze(a1, int32(a2))
 }
 func Nox_xxx_scriptMonsterRoam_512930(a1 *server.Object) {
-	C.nox_xxx_scriptMonsterRoam_512930(asObjectC(a1))
+	scriptBindingRoam(a1)
 }
 func Nox_server_gotoHome(a1 *server.Object) {
-	C.nox_server_gotoHome(asObjectC(a1))
+	scriptBindingHome(a1)
 }
 func Nox_xxx_unitIdle_515820(a1 *server.Object) {
-	C.nox_xxx_unitIdle_515820(asObjectC(a1))
+	monsterControlIdle(a1, false)
 }
 func Nox_xxx_unitSetFollow_5158C0(a1 *server.Object, a2 *server.Object) {
-	C.nox_xxx_unitSetFollow_5158C0(asObjectC(a1), asObjectC(a2))
+	monsterControlFollow(a1, a2)
 }
 func Nox_xxx_unitHunt_5157A0(a1 *server.Object) {
-	C.nox_xxx_unitHunt_5157A0(asObjectC(a1))
+	monsterControlIdle(a1, true)
 }
 func Nox_xxx_playerSubGold_4FA5D0(a1 *server.Object, a2 int) {
-	C.nox_xxx_playerSubGold_4FA5D0(C.int(uintptr(a1.CObj())), C.uint(a2))
+	resourceSubGold(a1, uint32(a2))
 }
 func Nox_xxx_playerAddGold_4FA590(a1 *server.Object, a2 int) {
-	C.nox_xxx_playerAddGold_4FA590(C.int(uintptr(a1.CObj())), C.int(a2))
+	resourceAddGold(a1, uint32(a2))
 }

@@ -1,13 +1,16 @@
 package main
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestNoxFactor(t *testing.T) {
-	if err := run("../../"); err != nil {
+	dir := t.TempDir()
+	require.NoError(t, os.CopyFS(dir, os.DirFS("../..")))
+	if err := run(dir); err != nil {
 		t.Fatal(err)
 	}
 }

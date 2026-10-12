@@ -1,11 +1,5 @@
 package legacy
 
-/*
-#include <stddef.h>
-#include <stdlib.h>
-#include "nox_wchar.h"
-*/
-import "C"
 import (
 	"bytes"
 	"unicode/utf16"
@@ -14,19 +8,10 @@ import (
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
-type wchar2_t = C.wchar2_t
+type wchar2_t = uint16
 
 func StrFree[T comparable](s *T) {
-	C.free(unsafe.Pointer(s))
-}
-
-func CStringArray(arr []string) []*C.char {
-	out := make([]*C.char, 0, len(arr)+1)
-	for _, arg := range arr {
-		out = append(out, CString(arg))
-	}
-	out = append(out, nil)
-	return out[:len(arr):len(arr)]
+	legacyFree(unsafe.Pointer(s))
 }
 
 func StrLenBytes(s []byte) int {
@@ -37,18 +22,18 @@ func StrLenBytes(s []byte) int {
 	return i
 }
 
-func StrCopy(dst *C.char, max int, src string) int {
+func StrCopy(dst *int8, max int, src string) int {
 	d := unsafe.Slice((*byte)(unsafe.Pointer(dst)), max)
 	return StrCopyBytes(d, src)
 }
 
-func StrNCopy(dst *C.char, max int, src string) int {
+func StrNCopy(dst *int8, max int, src string) int {
 	d := unsafe.Slice((*byte)(unsafe.Pointer(dst)), max)
 	return StrNCopyBytes(d, src)
 }
 
 func StrCopyP(dst unsafe.Pointer, max int, src string) int {
-	return StrCopy((*C.char)(dst), max, src)
+	return StrCopy((*int8)(dst), max, src)
 }
 
 func StrCopyBytes(dst []byte, src string) int {
@@ -106,15 +91,22 @@ func WStrCopySlice(dst []uint16, src string) int {
 	return n
 }
 
-func GoString(s *C.char) string {
-	return C.GoString(s)
+func GoString(s *int8) string {
+	if s == nil {
+		return ""
+	}
+	n := 0
+	for p := (*byte)(unsafe.Pointer(s)); *p != 0; p = (*byte)(unsafe.Add(unsafe.Pointer(p), 1)) {
+		n++
+	}
+	return string(unsafe.Slice((*byte)(unsafe.Pointer(s)), n))
 }
 
 func GoStringP(s unsafe.Pointer) string {
-	return GoString((*C.char)(s))
+	return GoString((*int8)(s))
 }
 
-func GoStringN(s *C.char, n int) string {
+func GoStringN(s *int8, n int) string {
 	return GoStringNP(unsafe.Pointer(s), n)
 }
 
@@ -131,12 +123,15 @@ func GoStringS(s []byte) string {
 	return string(s[:StrLenBytes(s)])
 }
 
-func CString(s string) *C.char {
-	return C.CString(s)
-}
-
-func CBytes(s []byte) unsafe.Pointer {
-	return C.CBytes(s)
+func CString(s string) *int8 {
+	if len(s)+1 <= 0 {
+		panic("string too large")
+	}
+	p := legacyMalloc(uintptr(len(s) + 1))
+	buf := unsafe.Slice((*byte)(p), len(s)+1)
+	copy(buf, s)
+	buf[len(s)] = 0
+	return (*int8)(p)
 }
 
 func GoWStringP(s unsafe.Pointer) string {
@@ -195,12 +190,12 @@ func CWStringCopyTo(dst *wchar2_t, dstSz int, src string) {
 	str[n] = 0
 }
 
-func GoWStrSlice(arr **C.wchar2_t) []string {
+func GoWStrSlice(arr **uint16) []string {
 	n := alloc.ZeroTermLen(arr)
 	return GoWStrSliceN(arr, n)
 }
 
-func GoWStrSliceN(arr **C.wchar2_t, n int) []string {
+func GoWStrSliceN(arr **uint16, n int) []string {
 	if n == 0 {
 		return nil
 	}
@@ -209,18 +204,4 @@ func GoWStrSliceN(arr **C.wchar2_t, n int) []string {
 		out = append(out, GoWString(c))
 	}
 	return out
-}
-
-func CWStrSlice(arr []string) ([]*wchar2_t, func()) {
-	out, freeList := alloc.Make([]*wchar2_t{}, len(arr)+1)
-	out = out[:len(out)-1]
-	for i, s := range arr {
-		out[i], _ = CWString(s)
-	}
-	return out, func() {
-		for _, p := range out {
-			StrFree(p)
-		}
-		freeList()
-	}
 }

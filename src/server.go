@@ -23,7 +23,7 @@ import (
 	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/nat"
-	"github.com/brutusmcforce/opennox/noxcrypt"
+	crypt "github.com/brutusmcforce/opennox/noxcrypt"
 
 	"github.com/brutusmcforce/opennox/libs/console"
 
@@ -360,10 +360,6 @@ func (s *Server) nox_xxx_gameTick_4D2580_server_B(ticks uint64) bool {
 		s.ProtectTypeCheck()
 		inputSetKeyTimeoutLegacy(16)
 	}
-	if noxflags.HasGame(noxflags.GameOnline) && false && !noxflags.HasGame(noxflags.GameModeChat) && inputKeyCheckTimeoutLegacy(0xF, s.SecToFrames(60)) {
-		legacy.Nox_xxx_net_4263C0()
-		inputSetKeyTimeoutLegacy(15)
-	}
 	return true
 }
 
@@ -372,9 +368,6 @@ func sub_446040() uint32 {
 }
 
 func (s *Server) nox_xxx_gameTick_4D2580_server_E() {
-	if noxflags.HasEngine(noxflags.EngineReplayWrite | noxflags.EngineReplayRead) {
-		legacy.Sub_4E76C0()
-	}
 	if nox_xxx_gameGet_4DB1B0() {
 		s.nox_xxx_gameTick_4D2580_server_D()
 	}
@@ -668,7 +661,7 @@ func (s *Server) newSession() error {
 	legacy.Sub_4259C0()
 	s.Players.Camper.Reset()
 	if legacy.Sub_518770() == 0 {
-		return errors.New("sub_518770 failed")
+		return errors.New("object report type cache initialization failed")
 	}
 	noxflags.HasGame(noxflags.GameFlag22)
 	if !s.Objs.Init(5000) {
@@ -834,7 +827,6 @@ func (s *Server) nox_server_loadMapFile_4CF5F0(mname string, noCrypt bool) error
 	if !noxflags.HasGame(noxflags.GameFlag22) {
 		s.nox_xxx_mapReadSetFlags_4CF990()
 		if false {
-			legacy.Sub_416690()
 		}
 		noxflags.UnsetGame(noxflags.GameSuddenDeath)
 		legacy.Sub_470680()

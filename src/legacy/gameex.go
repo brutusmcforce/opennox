@@ -1,41 +1,30 @@
 package legacy
 
-/*
-#include "defs.h"
-#include "client__gui__window.h"
-int sub_4BDFD0();
-char  mix_MouseKeyboardWeaponRoll(nox_object_t* playerObj, char a2);
-int getFlagValueFromFlagIndex(signed int a1);
-int  modifyWndInputHandler(int a1, int a2, int a3, int a4);
-int  nox_xxx_clientUpdateButtonRow_45E110(int a1);
-unsigned int*  nox_xxx_objGetTeamByNetCode_418C80(int a1);
-void  nox_xxx_printCentered_445490(wchar2_t* a1);
-char  playerDropATrap(int playerObj);
-char playerInfoStructParser_0(void* a1);
-char playerInfoStructParser_1(void* a1, int* a3);
-*/
-import "C"
 import (
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/server"
 )
 
-func Sub_4BDFD0() {
-	C.sub_4BDFD0()
+func Sub_4BDFD0() { serverPanelsAdvancedServerOpen() }
+func Mix_MouseKeyboardWeaponRoll(u *server.Object, direction int8) int {
+	return extensionWeaponRoll(u, direction)
 }
-func Mix_MouseKeyboardWeaponRoll(a1 *server.Object, a2 int8) int {
-	return int(C.mix_MouseKeyboardWeaponRoll(asObjectC(a1), C.char(a2)))
+func PlayerInfoStructParser_0(record unsafe.Pointer) int {
+	return extensionPlayerName(record, nil)
 }
-func PlayerInfoStructParser_0(a1 unsafe.Pointer) int {
-	return int(C.playerInfoStructParser_0(a1))
+func PlayerInfoStructParser_1(record unsafe.Pointer, team *int32) int {
+	if team == nil {
+		return 0
+	}
+	return extensionPlayerName(record, team)
 }
-func PlayerInfoStructParser_1(a1 unsafe.Pointer, a2 *int32) int {
-	return int(C.playerInfoStructParser_1(a1, (*C.int)(unsafe.Pointer(a2))))
-}
-func PlayerDropATrap(a1 *server.Object) {
-	C.playerDropATrap(C.int(uintptr(a1.CObj())))
-}
-func GetFlagValueFromFlagIndex(a1 int) uint32 {
-	return uint32(C.getFlagValueFromFlagIndex(C.int(a1)))
+func PlayerDropATrap(u *server.Object) { extensionDropTrap(u) }
+func GetFlagValueFromFlagIndex(index int) uint32 {
+	// The settings UI uses 1..5. Explicitly handle the wider Go input domain,
+	// including values that made the old C helper divide by zero.
+	if index < 0 || index >= 32 {
+		return 0
+	}
+	return uint32(1) << uint(index)
 }

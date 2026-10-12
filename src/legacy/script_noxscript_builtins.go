@@ -1,40 +1,10 @@
 package legacy
 
-/*
-#include "defs.h"
-int nox_script_SetQuestInt_514BE0();
-int nox_script_SetQuestFloat_514C10();
-int nox_script_GetQuestInt_514C40();
-int nox_script_GetQuestFloat_514C60();
-int nox_script_ResetQuestStatus_514C90();
-int nox_script_SetRoamFlag_515C40();
-int nox_script_SetRoamFlagGroup_515CB0();
-int nox_script_JournalDelete_515550();
-int nox_script_JournalEdit_5155A0();
-int nox_script_RetreatLevel_515DF0();
-int nox_script_RetreatLevelGroup_515E50();
-int nox_script_SetResumeLevel_515E80();
-int nox_script_SetResumeLevelGroup_515EE0();
-int nox_script_GiveExp_516190();
-int nox_script_IsTalking_5166A0();
-int nox_script_MakeFriendly_516720();
-int nox_script_MakeEnemy_516760();
-int nox_script_BecomePet_5167D0();
-int nox_script_BecomeEnemy_516810();
-int nox_script_builtin_516790();
-int nox_script_builtin_516850();
-int nox_script_OblivionGive_516890();
-int nox_script_PlayerIsTrading_5166E0();
-void nox_script_StartupScreen_516600_A();
-int sub_512E80(wchar2_t* a1);
-*/
-import "C"
 import (
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/noxscript/ns/asm"
 
-	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 	"github.com/brutusmcforce/opennox/server/noxscript"
 )
 
@@ -42,22 +12,6 @@ var (
 	Nox_script_shouldReadMoreXxx     func(fi asm.Builtin) bool
 	Nox_script_shouldReadEvenMoreXxx func(fi asm.Builtin) bool
 )
-
-//export nox_script_shouldReadMoreXxx
-func nox_script_shouldReadMoreXxx(fi int) C.bool {
-	return C.bool(Nox_script_shouldReadMoreXxx(asm.Builtin(fi)))
-}
-
-//export nox_script_shouldReadEvenMoreXxx
-func nox_script_shouldReadEvenMoreXxx(fi int) C.bool {
-	return C.bool(Nox_script_shouldReadEvenMoreXxx(asm.Builtin(fi)))
-}
-
-func wrapScriptC(fnc unsafe.Pointer) noxscript.Builtin {
-	return func(_ noxscript.VM) int {
-		return ccall.CallIntVoid(fnc)
-	}
-}
 
 func CallScriptBuiltin(fi asm.Builtin) (int, bool) {
 	if fi < 0 || int(fi) >= len(noxScriptBuiltins) {
@@ -72,32 +26,32 @@ func CallScriptBuiltin(fi asm.Builtin) (int, bool) {
 }
 
 func Nox_script_StartupScreen_516600_A() {
-	C.nox_script_StartupScreen_516600_A()
+	scriptInventoryStartup()
 }
 
 func Sub_512E80(str string) int {
 	cstr, _ := CWString(str)
-	return int(C.sub_512E80(cstr))
+	return scriptBindingIntern(unsafe.Pointer(cstr))
 }
 
 var noxScriptBuiltins = [asm.BuiltinGetScore + 1]noxscript.Builtin{
-	asm.BuiltinSetQuestStatus:      wrapScriptC(C.nox_script_SetQuestInt_514BE0),
-	asm.BuiltinSetQuestStatusFloat: wrapScriptC(C.nox_script_SetQuestFloat_514C10),
-	asm.BuiltinGetQuestStatus:      wrapScriptC(C.nox_script_GetQuestInt_514C40),
-	asm.BuiltinGetQuestStatusFloat: wrapScriptC(C.nox_script_GetQuestFloat_514C60),
-	asm.BuiltinResetQuestStatus:    wrapScriptC(C.nox_script_ResetQuestStatus_514C90),
-	asm.BuiltinSetRoamFlag:         wrapScriptC(C.nox_script_SetRoamFlag_515C40),
-	asm.BuiltinGroupSetRoamFlag:    wrapScriptC(C.nox_script_SetRoamFlagGroup_515CB0),
-	asm.BuiltinJournalDelete:       wrapScriptC(C.nox_script_JournalDelete_515550),
-	asm.BuiltinJournalEdit:         wrapScriptC(C.nox_script_JournalEdit_5155A0),
-	asm.BuiltinGiveXp:              wrapScriptC(C.nox_script_GiveExp_516190),
-	asm.BuiltinIsTalking:           wrapScriptC(C.nox_script_IsTalking_5166A0),
-	asm.BuiltinMakeFriendly:        wrapScriptC(C.nox_script_MakeFriendly_516720),
-	asm.BuiltinMakeEnemy:           wrapScriptC(C.nox_script_MakeEnemy_516760),
-	asm.BuiltinBecomePet:           wrapScriptC(C.nox_script_BecomePet_5167D0),
-	asm.BuiltinBecomeEnemy:         wrapScriptC(C.nox_script_BecomeEnemy_516810),
-	asm.BuiltinUnknownb8:           wrapScriptC(C.nox_script_builtin_516790),
-	asm.BuiltinUnknownb9:           wrapScriptC(C.nox_script_builtin_516850),
-	asm.BuiltinSetHalberd:          wrapScriptC(C.nox_script_OblivionGive_516890),
-	asm.BuiltinIsTrading:           wrapScriptC(C.nox_script_PlayerIsTrading_5166E0),
+	asm.BuiltinSetQuestStatus:      func(vm noxscript.VM) int { name := vm.PopString(); questProgressSet(name, vm.PopU32(), 0); return 0 },
+	asm.BuiltinSetQuestStatusFloat: func(vm noxscript.VM) int { name := vm.PopString(); questProgressSet(name, vm.PopU32(), 1); return 0 },
+	asm.BuiltinGetQuestStatus:      func(vm noxscript.VM) int { vm.PushU32(questProgressInt(vm.PopString())); return 0 },
+	asm.BuiltinGetQuestStatusFloat: func(vm noxscript.VM) int { vm.PushF32(float32(questProgressFloat(vm.PopString()))); return 0 },
+	asm.BuiltinResetQuestStatus:    func(vm noxscript.VM) int { questProgressReset(vm.PopString()); return 0 },
+	asm.BuiltinSetRoamFlag:         func(vm noxscript.VM) int { return scriptBindingRoamByte(vm, false) },
+	asm.BuiltinGroupSetRoamFlag:    func(vm noxscript.VM) int { return scriptBindingRoamByte(vm, true) },
+	asm.BuiltinJournalDelete:       func(vm noxscript.VM) int { return scriptBindingJournal(vm, false) },
+	asm.BuiltinJournalEdit:         func(vm noxscript.VM) int { return scriptBindingJournal(vm, true) },
+	asm.BuiltinGiveXp:              func(vm noxscript.VM) int { return scriptBindingGiveXP(vm) },
+	asm.BuiltinIsTalking:           func(vm noxscript.VM) int { return scriptBindingHostState(vm, false) },
+	asm.BuiltinMakeFriendly:        func(vm noxscript.VM) int { return scriptBindingOwnership(vm, 0) },
+	asm.BuiltinMakeEnemy:           func(vm noxscript.VM) int { return scriptBindingOwnership(vm, 1) },
+	asm.BuiltinBecomePet:           func(vm noxscript.VM) int { return scriptBindingOwnership(vm, 2) },
+	asm.BuiltinBecomeEnemy:         func(vm noxscript.VM) int { return scriptBindingOwnership(vm, 3) },
+	asm.BuiltinUnknownb8:           func(vm noxscript.VM) int { return scriptBindingSubclass(vm, 0x100) },
+	asm.BuiltinUnknownb9:           func(vm noxscript.VM) int { return scriptBindingSubclass(vm, 0x80) },
+	asm.BuiltinSetHalberd:          scriptInventoryHalberd,
+	asm.BuiltinIsTrading:           func(vm noxscript.VM) int { return scriptBindingHostState(vm, true) },
 }

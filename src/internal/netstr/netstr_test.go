@@ -2,9 +2,10 @@ package netstr
 
 import (
 	"testing"
+	"time"
 
-	"github.com/brutusmcforce/opennox/libs/log"
 	"github.com/brutusmcforce/opennox/libs/noxnet"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
 	"github.com/stretchr/testify/require"
 
 	"github.com/brutusmcforce/opennox/common/ntype"
@@ -12,105 +13,71 @@ import (
 )
 
 func TestNetstr(t *testing.T) {
-	DebugSockets = true
+	var frame uint32 = 1
+	server := NewStreams(func() uint32 { return frame })
+	server.IsHost = func() bool { return true }
+	server.GetMaxPlayers = func() int { return 10 }
+	server.Xor = false
+	received := make(chan []byte, 1)
+	opts := &Options{
+		Port: 18501, Max: 10, BufferSize: 2048,
+		OnReceive: func(id netlib.StreamID, buf []byte) int {
+			select {
+			case received <- append([]byte(nil), buf...):
+			default:
+			}
+			return len(buf)
+		},
+		OnJoin: func(p *noxnet.MsgServerTryJoin, full bool, add func(ntype.Player) bool) netmsg.Message {
+			return &noxnet.MsgJoinOK{}
+		},
+		CheckPass: func(p *noxnet.MsgServerPass) netmsg.Message { return &noxnet.MsgJoinOK{} },
+	}
+	listener, err := server.Listen(opts)
+	require.NoError(t, err)
+	// Start only after binding succeeds; stop and join before closing shared state.
+	stop, done := make(chan struct{}), make(chan struct{})
 	go func() {
-		var frame uint32 = 1
-		s := NewStreams(func() uint32 {
-			return frame
-		})
-		s.Debug = true
-		s.Log = log.New("SRV")
-		s.IsHost = func() bool {
-			return true
-		}
-		s.GetMaxPlayers = func() int {
-			return 10
-		}
-		s.Xor = false
-		conn, err := s.Listen(&Options{
-			Port:       18501,
-			Max:        10,
-			BufferSize: 2048,
-			SendPoll: func(id netlib.StreamID, buf []byte) int {
-				t.Logf("SRV: func1: %v, [%d]", id.Player(), len(buf))
-				return len(buf)
-			},
-			OnReceive: func(id netlib.StreamID, buf []byte) int {
-				t.Logf("SRV: func2: %v, [%d]", id.Player(), len(buf))
-				return len(buf)
-			},
-			OnJoin: func(out []byte, packet []byte, a4a bool, add func(pid ntype.Player) bool) int {
-				t.Logf("SRV: check14: [%d], %v: %x", len(packet), a4a, packet)
-				out[2] = 20 // OK
-				return 3
-			},
-			CheckPass: func(out []byte, packet []byte) int {
-				t.Logf("SRV: check17: [%d]: %x", len(packet), packet)
-				out[2] = 20 // OK
-				return 3
-			},
-		})
-		require.NoError(t, err)
-		defer conn.Close()
-
+		defer close(done)
+		ticker := time.NewTicker(time.Millisecond)
+		defer ticker.Stop()
 		for {
-			s.Update()
-			conn.RecvLoop(false)
-			frame++
+			select {
+			case <-stop:
+				return
+			case <-ticker.C:
+				server.Update()
+				listener.RecvLoop(false)
+				frame++
+			}
 		}
 	}()
+	defer func() { close(stop); <-done; listener.Close() }()
 
-	s := NewStreams(nil)
-	s.Debug = true
-	s.Log = log.New("CLI")
-	s.Xor = false
-
-	conn, err := s.NewClient(&Options{
-		Max:        10,
-		BufferSize: 2048,
-		SendPoll: func(id netlib.StreamID, buf []byte) int {
-			t.Logf("CLI: func1: %v, [%d]", id.Player(), len(buf))
-			return len(buf)
-		},
-		OnReceive: func(id netlib.StreamID, buf []byte) int {
-			op := netmsg.Op(buf[0])
-			switch op {
-			case netmsg.MSG_XXX_STOP:
-				t.Error("failed")
-			}
-			t.Logf("CLI: func2: %v, [%d]", id.Player(), len(buf))
-			return len(buf)
-		},
-		OnJoin: func(out []byte, packet []byte, a4a bool, add func(pid ntype.Player) bool) int {
-			t.Logf("CLI: check14: [%d], %v: %x", len(packet), a4a, packet)
-			out[2] = 20 // OK
-			return 3
-		},
-		CheckPass: func(out []byte, packet []byte) int {
-			t.Logf("CLI: check17: [%d]: %x", len(packet), packet)
-			out[2] = 20 // OK
-			return 3
-		},
-	})
+	client := NewStreams(nil)
+	client.Xor = false
+	conn, err := client.NewClient(&Options{Max: 10, BufferSize: 2048})
 	require.NoError(t, err)
 	defer conn.Close()
-
-	err = conn.Dial("localhost", 18501, 18502, &fakeOpts{Str: "Hello\x01\x02\x03"})
+	payload := "Hello\x01\x02\x03"
+	// Listen may select a free port after the preferred one; let the OS allocate
+	// the client port and keep all traffic on loopback.
+	err = conn.Dial("127.0.0.1", opts.Port, 0, &fakeOpts{Str: payload})
 	require.NoError(t, err)
-
-	err = conn.DialWait(-1, func() {
-		t.Logf("CLI: dial resend")
-	}, func() bool {
-		t.Logf("CLI: dial check")
-		return true
+	var got []byte
+	err = conn.DialWait(3*time.Second, func() {}, func() bool {
+		select {
+		case got = <-received:
+			return true
+		default:
+			return false
+		}
 	})
 	require.NoError(t, err)
+	require.True(t, client.Responded)
+	require.Equal(t, append([]byte{byte(netmsg.MSG_CLIENT_ACCEPT)}, []byte(payload)...), got)
 }
 
-type fakeOpts struct {
-	Str string
-}
+type fakeOpts struct{ Str string }
 
-func (opt *fakeOpts) MarshalBinary() ([]byte, error) {
-	return []byte(opt.Str), nil
-}
+func (opt *fakeOpts) MarshalBinary() ([]byte, error) { return []byte(opt.Str), nil }

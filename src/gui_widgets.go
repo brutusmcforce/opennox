@@ -115,7 +115,14 @@ func newRadioButton(g *gui.GUI, parent *gui.Window, status gui.StatusFlags, px, 
 	if !draw.Style.IsRadioButton() {
 		return nil
 	}
-	win := g.NewWindowRaw(parent, status, px, py, w, h, legacy.Nox_xxx_wndRadioButtonProcPre_4A93C0)
+	win := g.NewWindowRaw(parent, status, px, py, w, h, func(win *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
+		// The Go constructor owns this allocation; its legacy callback does not.
+		if ev.EventCode() == 2 && win.WidgetData != nil {
+			alloc.Free((*gui.RadioButtonData)(win.WidgetData))
+			win.WidgetData = nil
+		}
+		return legacy.Nox_xxx_wndRadioButtonProcPre_4A93C0(win, ev)
+	})
 	if win == nil {
 		return nil
 	}

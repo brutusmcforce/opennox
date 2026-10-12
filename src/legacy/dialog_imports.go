@@ -1,19 +1,5 @@
 package legacy
 
-/*
-#include <stdint.h>
-
-extern uint32_t dword_5d4594_816376;
-extern uint32_t dword_5d4594_830864;
-extern uint32_t dword_5d4594_831076;
-extern uint32_t dword_5d4594_831084;
-extern uint32_t dword_5d4594_831092;
-extern uint32_t dword_587000_122856;
-extern uint32_t dword_587000_122848;
-extern void* dword_587000_81128;
-extern void* dword_587000_122852;
-*/
-import "C"
 import (
 	"unsafe"
 
@@ -21,7 +7,7 @@ import (
 
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+
 	"github.com/brutusmcforce/opennox/legacy/dialog"
 	"github.com/brutusmcforce/opennox/legacy/timer"
 )
@@ -37,16 +23,16 @@ var (
 func initDialog() {
 	Dialogs = dialog.NewDialog(
 		"dialog",
-		(*uint32)(&C.dword_587000_122848),
-		(*uint32)(&C.dword_5d4594_830864), (*uint32)(&C.dword_5d4594_831084), (*uint32)(&C.dword_587000_122856), (*uint32)(&C.dword_5d4594_831076), (*ail.Driver)(unsafe.Pointer(&C.dword_5d4594_831092)),
+		(*uint32)(&dword_587000_122848),
+		(*uint32)(&dword_5d4594_830864), (*uint32)(&dword_5d4594_831084), (*uint32)(&dword_587000_122856), (*uint32)(&dword_5d4594_831076), (*ail.Driver)(unsafe.Pointer(&dword_5d4594_831092)),
 		memmap.PtrUint32(0x5D4594, 830860),
 		func() *strman.StringManager {
 			return GetServer().S().Strings()
 		},
 		memmap.PtrT[timer.TimerGroup](0x5D4594, 830876),
 		memmap.PtrT[timer.TimerGroup](0x5D4594, 830980),
-		(*timer.TimerGroup)(C.dword_587000_81128),
-		(*timer.TimerGroup)(C.dword_587000_122852),
+		(*timer.TimerGroup)(legacyGlobals.dword_587000_81128),
+		(*timer.TimerGroup)(legacyGlobals.dword_587000_122852),
 		Sub_413890,
 
 		func() ail.Driver {
@@ -58,14 +44,4 @@ func initDialog() {
 		Set_dword_5d4594_831080,
 		func() uint32 { return uint32(Get_dword_587000_93160()) },
 	)
-}
-
-//export sub_44D930
-func sub_44D930() int {
-	return bool2int(Dialogs.Sub_44D930())
-}
-
-//export nox_xxx_playDialogFile_44D900
-func nox_xxx_playDialogFile_44D900(a1p *byte, a2 int) int {
-	return Dialogs.PlayFile(alloc.GoString(a1p), a2)
 }

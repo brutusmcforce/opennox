@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image/color"
 	"math"
+	"runtime"
 	"strings"
 	"time"
 	"unsafe"
@@ -20,7 +21,6 @@ import (
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/common/unit/ai"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 )
 
 const (
@@ -376,7 +376,8 @@ func (s *serverObjects) NewObject(t *ObjectType) *Object {
 		obj.Field189, _ = alloc.Malloc(2572)
 	}
 	if t.Create != nil {
-		ccall.CallVoidPtr(t.Create, obj.CObj())
+		objectCreateFuncs.Get(t.Create)(obj)
+		runtime.KeepAlive(obj)
 	}
 	if !noxflags.HasGame(noxflags.GameFlag22) {
 		obj.ScriptIDVal = int(s.NextObjectScriptID())
@@ -519,7 +520,7 @@ func (s *serverObjects) ObjectsClearPending() {
 }
 
 func (s *serverObjects) PendingByScriptID(sid int) *Object {
-	for it := s.Pending; it != nil; it.Next() {
+	for it := s.Pending; it != nil; it = it.Next() {
 		if it.ScriptIDVal == sid {
 			return it
 		}
@@ -1320,7 +1321,7 @@ func (obj *Object) EnchantPower(v EnchantID) int { // nox_xxx_buffGetPower_4FF57
 	if obj == nil || v >= 32 {
 		return 0
 	}
-	return int(obj.BuffsDur[v])
+	return int(obj.BuffsPower[v])
 }
 
 func (obj *Object) Aggression() float32 {
@@ -1432,22 +1433,74 @@ func (obj *Object) SetDialogPortrait(name string) {
 }
 
 func (obj *Object) CallInit() {
-	if obj.Init != nil {
-		ccall.CallVoidPtr(obj.Init, obj.CObj())
+	if obj.Init == nil {
+		return
 	}
+	if fnc := objectInitGoFuncs[obj.Init]; fnc != nil {
+		fnc(obj)
+	} else {
+		panic("unregistered object initializer")
+	}
+	runtime.KeepAlive(obj)
+}
+
+// CallInitWithArg preserves object-only initializer priority; argument-aware
+// callbacks receive both arguments.
+func (obj *Object) CallInitWithArg(arg unsafe.Pointer) {
+	if fnc := objectInitGoFuncs[obj.Init]; fnc != nil {
+		fnc(obj)
+	} else if fnc := objectInitArgGoFuncs[obj.Init]; fnc != nil {
+		fnc(obj, arg)
+	} else {
+		panic("unregistered object initializer")
+	}
+	runtime.KeepAlive(obj)
+	runtime.KeepAlive(arg)
 }
 
 func (obj *Object) CallUpdate() {
 	if obj.Update == nil {
 		return
 	}
-	ccall.CallVoidPtr(obj.Update, obj.CObj())
+	objUpdate.Get(obj.Update)(obj)
+	runtime.KeepAlive(obj)
 }
 
 func (obj *Object) CallCollide(a2, a3 int) {
-	if obj.Collide != nil {
-		ccall.CallVoidUPtr3(obj.Collide, uintptr(obj.CObj()), uintptr(a2), uintptr(a3))
+	if obj.Collide == nil {
+		return
 	}
+	if fnc := objectCollideGoFuncs[obj.Collide].call; fnc != nil {
+		fnc(obj, uintptr(a2), uintptr(a3))
+	} else {
+		panic("unregistered object collision callback")
+	}
+	runtime.KeepAlive(obj)
+}
+
+// CallCollideResult requires a registered callback and preserves its result bits.
+func (obj *Object) CallCollideResult(a2, a3 uintptr) uint32 {
+	var result uint32
+	if fnc := objectCollideGoFuncs[obj.Collide].result; fnc != nil {
+		result = fnc(obj, a2, a3)
+	} else {
+		panic("unregistered object collision callback")
+	}
+	runtime.KeepAlive(obj)
+	return result
+}
+
+// CallCollideWith requires a registered callback. Pointer arguments remain live
+// through dispatch.
+func (obj *Object) CallCollideWith(target *Object, normal *types.Pointf) {
+	if fnc := objectCollideGoFuncs[obj.Collide].call; fnc != nil {
+		fnc(obj, uintptr(unsafe.Pointer(target)), uintptr(unsafe.Pointer(normal)))
+	} else {
+		panic("unregistered object collision callback")
+	}
+	runtime.KeepAlive(obj)
+	runtime.KeepAlive(target)
+	runtime.KeepAlive(normal)
 }
 
 func (obj *Object) SetPickup(cfnc unsafe.Pointer) {
@@ -1461,11 +1514,39 @@ func (obj *Object) CallPickup(who *Object, a3, a4 int) bool {
 	return obj.Pickup.Get()(who, obj, a3, a4)
 }
 
-func (obj *Object) CallDamage(who Obj, a3 Obj, dmg int, typ object.DamageType) bool {
-	if obj.Damage != nil {
-		return ccall.CallIntUPtr5(obj.Damage, uintptr(obj.CObj()), uintptr(toObjectC(who)), uintptr(toObjectC(a3)), uintptr(uint(dmg)), uintptr(typ)) != 0
+func (obj *Object) CallDeath() {
+	if obj.Death == nil {
+		return
 	}
-	return false
+	fn := objDeath.Get(obj.Death)
+	fn(obj)
+	runtime.KeepAlive(obj)
+}
+
+func (obj *Object) CallDamage(who Obj, a3 Obj, dmg int, typ object.DamageType) bool {
+	if obj.Damage == nil {
+		return false
+	}
+	// Preserve the original dispatch order: adapters may change the callback slot.
+	whoObj := ToObject(who)
+	a3Obj := ToObject(a3)
+	fn := objDamage.Get(obj.Damage)
+	ret := fn(obj, whoObj, a3Obj, int32(dmg), int32(typ))
+	runtime.KeepAlive(obj)
+	runtime.KeepAlive(whoObj)
+	runtime.KeepAlive(a3Obj)
+	return ret
+}
+
+// CallDamageValue preserves the callback's full signed C int result. Unlike
+// CallDamage, callers must provide a configured callback.
+func (obj *Object) CallDamageValue(source, weapon *Object, amount, kind int32) int32 {
+	fn := objDamageValue.Get(obj.Damage)
+	ret := fn(obj, source, weapon, amount, kind)
+	runtime.KeepAlive(obj)
+	runtime.KeepAlive(source)
+	runtime.KeepAlive(weapon)
+	return ret
 }
 
 func (obj *Object) CallDrop(it Obj, pos types.Pointf) bool {
@@ -1476,11 +1557,32 @@ func (obj *Object) CallDrop(it Obj, pos types.Pointf) bool {
 	return fnc(obj, ToObject(it), pos)
 }
 
+// CallXfer requires a configured callback and preserves the legacy nonzero-success result.
 func (obj *Object) CallXfer(a2 unsafe.Pointer) error {
-	if ccall.CallIntPtr2(obj.Xfer, obj.CObj(), a2) == 0 {
+	var result int
+	if fnc := objectXferGoFuncs[obj.Xfer]; fnc != nil {
+		result = fnc(obj, a2)
+	} else {
+		panic("unregistered object transfer callback")
+	}
+	runtime.KeepAlive(obj)
+	runtime.KeepAlive(a2)
+	if result == 0 {
 		return fmt.Errorf("xfer for %s failed", obj.String())
 	}
 	return nil
+}
+
+// CallDamageSound requires a configured callback. The damage owner handles its
+// separate nil-slot default; sound callback return values are intentionally ignored.
+func (obj *Object) CallDamageSound(other *Object) {
+	if fnc := objectDamageSoundGoFuncs[obj.DamageSound]; fnc != nil {
+		fnc(obj, other)
+	} else {
+		panic("unregistered object damage sound callback")
+	}
+	runtime.KeepAlive(obj)
+	runtime.KeepAlive(other)
 }
 
 func (obj *Object) SetOwner(owner *Object) {

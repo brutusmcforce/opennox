@@ -1,52 +1,23 @@
 package legacy
 
-/*
-#include "server__object__die__die.h"
-#include "GAME4_3.h"
-#include "GAME5.h"
-
-static int nox_call_objectType_parseDeath_go(int (*fnc)(char*, void*), char* arg1, void* arg2) { return fnc(arg1, arg2); }
-*/
-import "C"
-import (
-	"fmt"
-	"strings"
-	"unsafe"
-
-	"github.com/brutusmcforce/opennox/server"
-)
+import "github.com/brutusmcforce/opennox/server"
 
 func init() {
-	server.RegisterObjectDeath("PlayerDie", C.nox_xxx_diePlayer_54D2B0, 0)
-	server.RegisterObjectDeath("PotionDie", C.nox_xxx_diePotion_54CBB0, 0)
-	server.RegisterObjectDeath("ImpEggDie", C.nox_xxx_dieImpEgg_54CAE0, 0)
-	server.RegisterObjectDeath("GlyphDie", C.nox_xxx_dieGlyph_54DF30, 0)
-	server.RegisterObjectDeath("BarrelDie", C.nox_xxx_dieBarrel_54DFA0, 0)
-	server.RegisterObjectDeath("CreateObjectDie", C.nox_xxx_dieCreateObject_54E010, 132)
-	server.RegisterObjectDeath("SpawnObjectDie", C.nox_xxx_dieSpawnObject_54E070, 132)
-	server.RegisterObjectDeath("PolypDie", C.nox_xxx_diePolyp_54CB10, 0)
-	server.RegisterObjectDeath("MarkerDie", C.nox_xxx_dieMarker_54E460, 0)
-	server.RegisterObjectDeath("WeaponDie", C.nox_xxx_dieWeapon_54E370_obj_die, 0)
-	server.RegisterObjectDeath("ArmorDie", C.nox_xxx_dieArmor_54E170_obj_die, 0)
-	server.RegisterObjectDeath("BoulderDie", C.nox_xxx_dieBoulder_54E4B0, 0)
-	server.RegisterObjectDeath("GameBallDie", C.nox_xxx_dieGameBall_54E620, 0)
-	server.RegisterObjectDeath("MonsterGeneratorDie", C.nox_xxx_dieMonsterGen_54E630, 0)
+	server.RegisterObjectDeathGo("PlayerDie", deathKey(deathIdentityPlayer), func(u *server.Object) { playerDeath(u) }, 0)
+	server.RegisterObjectDeathGo("PotionDie", deathKey(deathIdentityPotion), objectDeathPotion, 0)
+	server.RegisterObjectDeathGo("ImpEggDie", deathKey(deathIdentityImpEgg), func(u *server.Object) { objectDeathImpEgg(u) }, 0)
+	server.RegisterObjectDeathGo("GlyphDie", deathKey(deathIdentityGlyph), func(u *server.Object) { Nox_xxx_dieGlyph_54DF30(u) }, 0)
+	server.RegisterObjectDeathGo("BarrelDie", deathKey(deathIdentityBarrel), objectDeathBarrel, 0)
+	server.RegisterObjectDeathGo("CreateObjectDie", deathKey(deathIdentityCreateObject), func(u *server.Object) { objectDeathCreate(u, false) }, 132)
+	server.RegisterObjectDeathGo("SpawnObjectDie", deathKey(deathIdentitySpawnObject), func(u *server.Object) { objectDeathCreate(u, true) }, 132)
+	server.RegisterObjectDeathGo("PolypDie", deathKey(deathIdentityPolyp), diePolyp, 0)
+	server.RegisterObjectDeathGo("MarkerDie", deathKey(deathIdentityMarker), objectDeathMarker, 0)
+	server.RegisterObjectDeathGo("WeaponDie", deathKey(deathIdentityWeapon), objectDeathWeapon, 0)
+	server.RegisterObjectDeathGo("ArmorDie", deathKey(deathIdentityArmor), objectDeathArmor, 0)
+	server.RegisterObjectDeathGo("BoulderDie", deathKey(deathIdentityBoulder), objectDeathBoulder, 0)
+	server.RegisterObjectDeathGo("GameBallDie", deathKey(deathIdentityGameBall), func(u *server.Object) { objectiveBallReset(u) }, 0)
+	server.RegisterObjectDeathGo("MonsterGeneratorDie", deathKey(deathIdentityMonsterGenerator), generatorDeath, 0)
 
-	server.RegisterObjectDeathParse("CreateObjectDie", wrapObjectDeathParseC(C.sub_536B40))
-	server.RegisterObjectDeathParse("SpawnObjectDie", wrapObjectDeathParseC(C.sub_536B40))
-}
-
-func wrapObjectDeathParseC(ptr unsafe.Pointer) server.ObjectParseFunc {
-	return func(objt *server.ObjectType, args []string) error {
-		if Nox_call_objectType_parseDeath_go(ptr, strings.Join(args, " "), objt.DeathData) == 0 {
-			return fmt.Errorf("cannot parse death data for %q", objt.ID())
-		}
-		return nil
-	}
-}
-
-func Nox_call_objectType_parseDeath_go(a1 unsafe.Pointer, a2 string, a3 unsafe.Pointer) int {
-	cstr := CString(a2)
-	defer StrFree(cstr)
-	return int(C.nox_call_objectType_parseDeath_go((*[0]byte)(a1), cstr, a3))
+	server.RegisterObjectDeathParse("CreateObjectDie", resourceObjectParser("death", "spawn"))
+	server.RegisterObjectDeathParse("SpawnObjectDie", resourceObjectParser("death", "spawn"))
 }

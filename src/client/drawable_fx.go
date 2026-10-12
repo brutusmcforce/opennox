@@ -7,7 +7,7 @@ type DrawableFX struct {
 	Field4  uint32      // 1, 4
 	Field8  uint32      // 2, 8
 	Field12 uint32      // 3, 12
-	Next    *DrawableFX // 4, 16
+	Field16 uint32      // 4, 16
 	Field20 uint32      // 5, 20
 	Field24 uint32      // 6, 24
 	Field28 uint32      // 7, 28
@@ -19,7 +19,7 @@ type DrawableFX struct {
 	Field52 uint32      // 13, 52
 	Field56 uint32      // 14, 56
 	Field60 uint32      // 15, 60
-	Field64 uint32      // 16, 64
+	Next    *DrawableFX // 16, 64
 	Field68 uint32      // 17, 68
 	Field72 uint32      // 18, 72
 	Field76 uint32      // 19, 76
@@ -28,3 +28,6 @@ type DrawableFX struct {
 func (fx *DrawableFX) C() unsafe.Pointer {
 	return unsafe.Pointer(fx)
 }
+
+// Match the link written by the C attachment routine.
+var _ = [1]struct{}{}[64-unsafe.Offsetof(DrawableFX{}.Next)]

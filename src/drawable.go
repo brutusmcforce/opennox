@@ -2,7 +2,6 @@ package opennox
 
 import (
 	"image"
-	"math"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/object"
@@ -12,7 +11,6 @@ import (
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 )
 
 func (c *Client) Nox_xxx_spriteCreate_48E970(typeID int, code uint16, x, y int) *client.Drawable {
@@ -49,6 +47,7 @@ func (c *Client) Nox_new_drawable_for_thing(typeID int) *client.Drawable {
 		return nil
 	}
 	if c.DrawableLinkThing(dr, typeID) == 0 {
+		c.Objs.Alloc.FreeObjectFirst(dr)
 		return nil
 	}
 	draw := dr.DrawFuncPtr
@@ -305,11 +304,7 @@ func (c *Client) sub_495B00(dr *client.Drawable) {
 	aclass := alloc.AsClassT[client.DrawableFX](*memmap.PtrPtr(0x5D4594, 1203868))
 	for p := dr.Field_114; p != nil; p = next {
 		next = p.Next
-		if uintptr(next.C()) < math.MaxUint16 {
-			// FIXME: Sometimes this pointer contains garbage.
-			//        Equip throwable like shuriken or chakram and fire it. Once it hits, this will eventually trigger.
-			next = nil
-		}
+
 		legacy.Sub_495B50(p)
 		aclass.FreeObjectFirst(p)
 	}
@@ -348,9 +343,9 @@ func (c *Client) sub_49BD70(vp *noxrender.Viewport) {
 	var next *client.Drawable
 	for it := c.Objs.FirstList5(); it != nil; it = next {
 		next = it.Field_94
-		if fnc1 := it.ClientUpdateFuncPtr; fnc1 == nil || ccall.CallIntPtr2(fnc1, vp.C(), it.C()) != 0 {
+		if fnc1 := it.ClientUpdateFuncPtr; fnc1 == nil || client.CallDrawableUpdateResult(fnc1, vp, it) != 0 {
 			if fnc2 := it.Field_115; fnc2 != nil {
-				ccall.CallVoidPtr2(fnc2, vp.C(), it.C())
+				client.CallDrawableUpdateDiscard(fnc2, vp, it)
 			}
 		}
 	}

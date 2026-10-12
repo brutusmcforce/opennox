@@ -23,7 +23,6 @@ import (
 	"github.com/brutusmcforce/opennox/internal/cryptfile"
 	"github.com/brutusmcforce/opennox/legacy"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -185,7 +184,7 @@ func (s *Server) ObjectsAddPending() {
 			legacy.Sub_5117F0(it)
 		}
 		if it.Init != nil {
-			ccall.CallVoidPtr2(it.Init, it.CObj(), nil)
+			it.CallInitWithArg(nil)
 		}
 		var v6 bool
 		if it.Class().Has(object.ClassImmobile) {

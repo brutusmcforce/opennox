@@ -695,18 +695,6 @@ steps:
     dt: 90
   - name: "con01-073 Locked door"
     action: screen
-  - name: "Swing at the urchin that woke up on the way to the door; it's out of reach, but keeps its distance"
-    action: melee
-    ang: 0.69
-  - action: melee
-    ang: 0.69
-    dt: 8
-  - action: melee
-    ang: 0.69
-    dt: 8
-  - action: melee
-    ang: 0.69
-    dt: 8
   - name: "Run back"
     action: run-dir
     ang: -0.75

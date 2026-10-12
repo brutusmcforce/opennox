@@ -350,7 +350,13 @@ func (g *GUI) FreeDestroyed() {
 		if g.WinYYY == win {
 			g.WinYYY = nil
 		}
-		win.Func94(WindowDestroy{})
+		if ext := win.ext(); ext != nil && ext.destroy != nil {
+			fn := ext.destroy
+			ext.destroy = nil
+			// Ordinary dispatch rejects destroyed windows. Deliver only the saved
+			// cleanup callback, while the window and its GUI still exist.
+			fn(win, WindowDestroy{})
+		}
 		setExt(win, nil)
 		g.alloc.FreeObjectFirst(win)
 		win = prev
@@ -358,10 +364,7 @@ func (g *GUI) FreeDestroyed() {
 }
 
 func (g *GUI) destroyWindow(win *Window) {
-	if win == nil {
-		return
-	}
-	if win.GetFlags().Has(StatusDestroyed) {
+	if win.isNilOrDead() {
 		return
 	}
 	win.Flags |= StatusDestroyed
@@ -398,8 +401,12 @@ func (g *GUI) destroyWindow(win *Window) {
 	g.free = win
 
 	ext := win.ext()
-	// clear everything except GUI reference
-	*ext = windowExt{GUI: ext.GUI}
+	destroy := ext.Func94
+	if destroy == nil && win.field94 != nil && uintptr(win.field94) != deadWord {
+		panic("unregistered raw window destroy callback")
+	}
+	// Disable ordinary callbacks immediately, preserving deferred cleanup.
+	*ext = windowExt{GUI: ext.GUI, destroy: destroy}
 }
 
 func (g *GUI) showModal(win *Window) int {

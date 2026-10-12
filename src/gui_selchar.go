@@ -27,7 +27,6 @@ import (
 	"github.com/brutusmcforce/opennox/internal/cryptfile"
 	"github.com/brutusmcforce/opennox/legacy"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -91,7 +90,7 @@ func sub_4A50D0() int {
 	winSelSave.Destroy()
 	winSelSave = nil
 	if v0 != nil {
-		ccall.CallIntVoid(unsafe.Pointer(v0))
+		gui.CallAnimationCallback(unsafe.Pointer(v0))
 		return 1
 	}
 	nox_client_resetScreenParticles_431510()
@@ -269,7 +268,7 @@ func nox_game_showSelChar4A4DB0() bool {
 	if win == nil {
 		return false
 	}
-	win.SetFunc93(gui.WrapFuncC(legacy.Get_sub_4A18E0()))
+	win.SetFunc93(legacy.MainMenuEvent)
 	anim := nox_gui_makeAnimation(win, 0, 0, 0, -440, 0, 20, 0, -40)
 	nox_wnd_xxx_1307748 = anim
 	if anim == nil {

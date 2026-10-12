@@ -18,7 +18,7 @@ import (
 	"github.com/brutusmcforce/opennox/libs/ifs"
 	"github.com/brutusmcforce/opennox/libs/log"
 	"github.com/brutusmcforce/opennox/libs/object"
-	"github.com/brutusmcforce/opennox/noxcrypt"
+	crypt "github.com/brutusmcforce/opennox/noxcrypt"
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
@@ -27,7 +27,6 @@ import (
 	"github.com/brutusmcforce/opennox/legacy"
 	"github.com/brutusmcforce/opennox/legacy/cnxz"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -261,7 +260,7 @@ func nox_xxx_mapWriteSectionsMB_426E20(a1 unsafe.Pointer) int {
 	return 1
 }
 
-func nox_xxx_mapReadSectionSpecial_426F40(a1 unsafe.Pointer, name string, fnc unsafe.Pointer) error {
+func nox_xxx_mapReadSectionSpecial_426F40(a1 unsafe.Pointer, name string, fnc func(unsafe.Pointer) int) error {
 	if fnc == nil {
 		return errors.New("empty map section function")
 	}
@@ -270,7 +269,7 @@ func nox_xxx_mapReadSectionSpecial_426F40(a1 unsafe.Pointer, name string, fnc un
 		mapLog.Printf("unsupported map section: %q", name)
 		return nil // TODO: why is returns true here?
 	}
-	if ccall.CallIntPtr(fnc, a1) == 0 {
+	if fnc(a1) == 0 {
 		return fmt.Errorf("cannot parse map section: %q", name)
 	}
 	return nil
@@ -305,7 +304,7 @@ func nox_xxx_mapCliReadAllA(path string) error {
 		sz, _ := cf.ReadAlignedU32()
 		var berr error
 		if sect == "ObjectData" {
-			berr = nox_xxx_mapReadSectionSpecial_426F40(nil, "ObjectData", legacy.Get_nox_client_mapSpecialRWObjectData_4AC610())
+			berr = nox_xxx_mapReadSectionSpecial_426F40(nil, "ObjectData", func(unsafe.Pointer) int { return legacy.MapDrawableSection() })
 		} else if noxflags.HasGame(noxflags.GameHost) {
 			cf.Seek(int64(sz), io.SeekCurrent) // skip section
 		} else {
@@ -525,7 +524,7 @@ func (s *Server) Nox_xxx_free503F40() {
 			if legacy.Get_dword_5d4594_1599476() == 0 {
 				s.Objs.FreeObject(asObject(*(*unsafe.Pointer)(unsafe.Add(v0, 0))).SObj())
 			}
-			alloc.FreePtr(v0)
+			legacy.MapPrefabFreeNode(v0)
 		}
 	}
 
@@ -534,9 +533,10 @@ func (s *Server) Nox_xxx_free503F40() {
 		for it := legacy.Get_dword_5d4594_1599548(); it != nil; it = next {
 			next = *(*unsafe.Pointer)(unsafe.Add(it, 4))
 			if legacy.Get_dword_5d4594_1599476() == 0 {
+				alloc.Free(*(**server.Waypoint)(it))
 				*(*unsafe.Pointer)(unsafe.Add(it, 0)) = nil
 			}
-			alloc.FreePtr(it)
+			legacy.MapPrefabFreeNode(it)
 		}
 	}
 
@@ -550,8 +550,9 @@ func (s *Server) Nox_xxx_free503F40() {
 				next2 = *(*unsafe.Pointer)(unsafe.Add(it2, 16))
 				legacy.Nox_xxx_tileFreeTileOne_4221E0(it2)
 			}
-			*(*unsafe.Pointer)(unsafe.Add(it, 0)) = nil
-			alloc.FreePtr(it)
+			legacy.MapPrefabFreeNode(*(*unsafe.Pointer)(it))
+			*(*unsafe.Pointer)(it) = nil
+			legacy.MapPrefabFreeNode(it)
 		}
 	}
 
@@ -559,11 +560,14 @@ func (s *Server) Nox_xxx_free503F40() {
 		var next unsafe.Pointer
 		for it := legacy.Get_dword_5d4594_1599532(); it != nil; it = next {
 			next = *(*unsafe.Pointer)(unsafe.Add(it, 4))
-			if legacy.Get_dword_5d4594_1599476() == 0 && *(*uint8)(unsafe.Add(*(*unsafe.Pointer)(unsafe.Add(it, 0)), 4))&0x4 != 0 {
-				*(*unsafe.Pointer)(unsafe.Add(*(*unsafe.Pointer)(unsafe.Add(it, 0)), 4*7)) = nil
+			w := *(**server.Wall)(it)
+			// Placed secret data is moved out of the cache, even on partial failure.
+			if w.Flags4&4 != 0 && w.Data != nil {
+				legacy.MapPrefabFreeNode(w.Data)
 			}
-			*(*unsafe.Pointer)(unsafe.Add(it, 0)) = nil
-			alloc.FreePtr(it)
+			legacy.MapPrefabFreeNode(unsafe.Pointer(w))
+			*(*unsafe.Pointer)(it) = nil
+			legacy.MapPrefabFreeNode(it)
 		}
 	}
 

@@ -1,6 +1,5 @@
 package server
 
-import "C"
 import (
 	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/libs/types"

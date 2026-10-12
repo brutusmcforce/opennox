@@ -1,18 +1,5 @@
 package legacy
 
-/*
-#include "noxstring.h"
-void sub_4519C0();
-int sub_495430();
-void sub_44D3A0();
-void nox_xxx_sprite_49C4F0();
-void sub_45D810();
-void sub_49A630();
-void sub_49BBB0();
-void sub_479280();
-void nox_xxx_createTextBubble_48D880(void* a1, wchar2_t* a2);
-*/
-import "C"
 import (
 	"image"
 	"image/color"
@@ -108,31 +95,31 @@ var (
 )
 
 func Sub_4519C0() {
-	C.sub_4519C0()
+	audioEventUpdate()
 }
 
 func Sub_495430() {
-	C.sub_495430()
+	combatFeedDraw()
 }
 
 func Sub_479280() {
-	C.sub_479280()
+	uiShopClose()
 }
 
 func Sub_45D810() {
-	C.sub_45D810()
+	bookStopAddition()
 }
 
 func Nox_xxx_sprite_49C4F0() {
-	C.nox_xxx_sprite_49C4F0()
+	presentationRayClear()
 }
 
 func Sub_49A630() {
-	C.sub_49A630()
+	combatHealthClear()
 }
 
 func Sub_49BBB0() {
-	C.sub_49BBB0()
+	presentationChantClear()
 }
 
 func Nox_xxx_createTextBubble_48D880(pck []byte, text string) {
@@ -140,5 +127,5 @@ func Nox_xxx_createTextBubble_48D880(pck []byte, text string) {
 	defer pfree()
 	ctext, tfree := CWString(text)
 	defer tfree()
-	C.nox_xxx_createTextBubble_48D880(unsafe.Pointer(&cpck[0]), ctext)
+	chatBubbleCreate(unsafe.Pointer(&cpck[0]), (*uint16)(unsafe.Pointer(ctext)))
 }

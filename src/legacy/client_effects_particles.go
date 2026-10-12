@@ -1,0 +1,160 @@
+package legacy
+
+import (
+	"github.com/brutusmcforce/opennox/client"
+	"image"
+	"math"
+	"unsafe"
+)
+
+// Particle initialization consumes randomness only after allocation succeeds.
+// Creation callers then set height/vertical velocity before joining list 3/4.
+func effectInitSpark(dr *client.Drawable, pos image.Point, speed, ttlMin, ttlMax int) {
+	*effectWord(dr, 432) = uint32(pos.X) << 12
+	*effectWord(dr, 436) = uint32(pos.Y) << 12
+	dr.Field_74_4 = byte(effectRand(0, 255))
+	*effectWord(dr, 440) = uint32(effectRand(1, speed))
+	*effectWord(dr, 448) = gameFrame() + uint32(effectRand(ttlMin, ttlMax))
+	*effectWord(dr, 444) = gameFrame()
+}
+func effectCreateOrb(typ int, coords *[4]uint16, x, y int, speed, period byte) {
+	dr := effectSpawn(typ, image.Pt(x+int(coords[2]), y+int(coords[3])))
+	if dr == nil {
+		return
+	}
+	*effectShort(dr, 432) = coords[0]
+	*effectShort(dr, 434) = coords[1]
+	*effectByte(dr, 443) = speed
+	*effectByte(dr, 444) = byte(effectRand(3, 10))
+	*effectByte(dr, 446) = period
+	*effectByte(dr, 445) = period
+	effectLink(dr)
+}
+func effectCreateOrbit(typ int, coords *[4]int16, angle int16, direction, period byte) {
+	pos := image.Pt(int(coords[2]), int(coords[3]))
+	dr := effectSpawn(typ, pos)
+	if dr == nil {
+		return
+	}
+	for i, v := range coords {
+		*effectShort(dr, 432+2*i) = uint16(v)
+	}
+	*effectByte(dr, 442) = byte(angle)
+	dx, dy := pos.X-int(coords[0]), pos.Y-int(coords[1])
+	*effectShort(dr, 440) = uint16(int64(math.Sqrt(float64(dx*dx + dy*dy))))
+	*effectByte(dr, 443) = direction
+	*effectByte(dr, 444) = byte(effectRand(3, 10))
+	*effectByte(dr, 446) = period
+	*effectByte(dr, 445) = period
+	dr.ClientUpdateFuncPtr = drawableUpdateIdentity(updateID_sub_4CA720)
+	*effectShort(dr, 508) = uint16(angle)
+	effectLink(dr)
+}
+func effectCreatePointSparks(typ, count, speed, ttl, x, y int) int {
+	for count > 0 {
+		if dr := effectSpawn(typ, image.Pt(x, y)); dr != nil {
+			effectInitSpark(dr, dr.PosVec, speed, ttl, 64)
+			dr.ZVal = 0
+			dr.VelZ = int8(effectRand(2, 10))
+			effectLink(dr)
+		}
+		count--
+	}
+	return count
+}
+func effectCreateEnergySparks(x, y int, z int16, typ int) int {
+	for i := 0; i < 2; i++ {
+		if dr := effectSpawn(typ, image.Pt(x, y)); dr != nil {
+			effectInitSpark(dr, image.Pt(x, y), 3000, 5, 20)
+			dr.ZVal = uint16(int(z) + effectRand(0, 20))
+			dr.VelZ = int8(effectRand(0, 4))
+			effectLink(dr)
+		}
+	}
+	return 0
+}
+func effectCreateRainOrb(typ int, from, to image.Point, z uint16, velocity int8) *client.Drawable {
+	dr := effectSpawn(typ, from)
+	if dr == nil {
+		return nil
+	}
+	dr.ZVal = z
+	dr.ZVal2 = 0
+	dr.VelZ = velocity
+	*effectShort(dr, 440) = z
+	*effectByte(dr, 442) = byte(effectRand(3, 10))
+	*effectWord(dr, 432) = uint32(to.X)
+	*effectWord(dr, 436) = uint32(to.Y)
+	effectLink(dr)
+	return dr
+}
+func effectLightningParticles(typ int, from, to image.Point) int {
+	dx, dy := to.X-from.X, to.Y-from.Y
+	distance := int(int64(math.Sqrt(float64(dx*dx + dy*dy))))
+	result := distance
+	if distance > 0 {
+		result = effectRand(0, distance)
+		for offset := result; offset <= distance; {
+			pos := image.Pt(from.X+dx*offset/distance, from.Y+dy*offset/distance)
+			if dr := effectSpawn(typ, pos); dr != nil {
+				effectInitSpark(dr, pos, 3000, 5, 20)
+				dr.ZVal = uint16(effectRand(15, 30))
+				dr.VelZ = int8(effectRand(-4, 4))
+				effectLink(dr)
+			}
+			result = effectRand(8, 100)
+			offset += result
+		}
+	}
+	// The historical return is the final spacing sample, not the emission count.
+	return result
+}
+func effectScreenParticles(kind, x, y, width, height, axis, direction int) int {
+	for i := 0; i < 100; i++ {
+		px, py := x, y
+		if axis == 2 {
+			px += effectRand(0, width)
+		} else {
+			py += effectRand(0, height)
+		}
+		radius := effectRand(2, 5)
+		vy := effectRand(-40, -20)
+		var vx int
+		if direction == 1 {
+			vx = effectRand(-20, 0)
+		} else {
+			vx = effectRand(0, 20)
+		}
+		screenParticleCreate(kind, px, py, vx, vy, 1, byte(radius), 0, 0, 1)
+	}
+	return 0
+}
+func effectSparkBurst(pos image.Point, typ int, amount byte) int {
+	speed := 2400*int(amount)/255 + 200
+	ttl := 10*int(amount)/255 + 5
+	for count := 180*int(amount)/255 + 10; count > 0; count-- {
+		if dr := effectSpawn(typ, pos); dr != nil {
+			effectInitSpark(dr, dr.PosVec, speed, ttl, 96)
+			dr.ZVal = uint16(effectRand(5, 15))
+			dr.ZVal2 = 0
+			dr.VelZ = int8(effectRand(0, 8))
+			effectLink(dr)
+		}
+	}
+	return 0
+}
+
+var effectParticleCallbacks = make(map[unsafe.Pointer]func(unsafe.Pointer))
+
+func effectParticleUpdate(dr *client.Drawable) int {
+	particle := *(*unsafe.Pointer)(unsafe.Add(dr.C(), 432))
+	dr.PosVec = image.Pt(int(*(*uint32)(unsafe.Add(particle, 80))>>16), int(*(*uint32)(unsafe.Add(particle, 84))>>16))
+	if callback := *(*unsafe.Pointer)(unsafe.Add(particle, 124)); callback != nil {
+		fn := effectParticleCallbacks[callback]
+		if fn == nil {
+			panic("unregistered particle update callback")
+		}
+		fn(particle)
+	}
+	return 1
+}

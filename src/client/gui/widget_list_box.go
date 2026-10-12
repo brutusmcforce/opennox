@@ -24,7 +24,7 @@ type ScrollListBoxData struct {
 	Field_10    uint32             // 10, 40
 	Field_11_0  uint16             // 11, 44
 	Field_11_1  uint16             // 11, 46
-	Field_12    *uint32            // 12, 48, []*void? []int32?
+	Field_12    uint32             // 12, 48: selection index or address of selection array
 	Field_13_0  uint16             // 13, 52
 	Field_13_1  uint16             // 13, 54
 }

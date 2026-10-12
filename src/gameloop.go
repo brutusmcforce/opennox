@@ -313,7 +313,6 @@ func (c *Client) nox_game_cdMaybeSwitchState_413800() {
 		return
 	}
 	initialStateSwitch = true
-	legacy.Sub_4137E0()
 	if !c.GameStateSwitch() {
 		nox_game_exit_xxx2()
 	}
@@ -640,7 +639,6 @@ func mainloopMaybeSwitchMapXXX() {
 	}
 	if noxServer.Frame() >= memmap.Uint32(0x5D4594, 816400) {
 		legacy.Sub_4161E0()
-		legacy.Sub_416690()
 		*memmap.PtrUint32(0x5D4594, 816400) = noxServer.Frame() + noxServer.SecToFrames(60)
 	}
 }
@@ -827,7 +825,7 @@ func sub_435EB0() {
 	sub_473840()
 	c.Nox_things_free_44C580()
 	c.Objs.Free()
-	legacy.Sub_49AEA0()
+
 	c.Server.NPCs.Init()
 	legacy.Sub_4951C0()
 	gameSetPlayState(2)

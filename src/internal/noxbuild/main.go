@@ -153,6 +153,7 @@ func goBuild(cmd string, bin string, opts *buildOpts) error {
 	if opts.CGO {
 		envs = append(envs,
 			"GOARCH=386",
+			"GO386=sse2",
 			"CGO_ENABLED=1",
 			`CGO_CFLAGS_ALLOW=(-fshort-wchar)|(-fno-strict-aliasing)|(-fno-strict-overflow)`,
 		)

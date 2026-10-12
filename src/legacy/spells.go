@@ -1,35 +1,10 @@
 package legacy
 
-/*
-#include "defs.h"
-#include "server__magic__plyrspel.h"
-#include "GAME3_2.h"
-#include "GAME3_3.h"
-#include "GAME4.h"
-#include "GAME4_2.h"
-#include "GAME4_3.h"
-#include "GAME5_2.h"
-#include "server__magic__spell__execdur.h"
-void nox_xxx_spellCastByBook_4FCB80();
-void nox_xxx_spellCastByPlayer_4FEEF0();
-
-extern void* nox_alloc_magicEnt_1569668;
-extern uint32_t dword_5d4594_1569672;
-
-int nox_xxx_spellCastCleansingFlame_52D5C0(int a1, nox_object_t* a2p, nox_object_t* a3p, nox_object_t* a4p, void* a5p, int a6);
-int nox_xxx_spellWallCreate_4FFA90(void* a1);
-int nox_xxx_spellWallUpdate_500070(void* a1);
-void nox_xxx_spellWallDestroy_500080(void* a1);
-
-static int nox_spells_call_intint6_go(int (*f)(int, void*, nox_object_t*, nox_object_t*, void*, int), int a1, nox_object_t* a2, nox_object_t* a3, nox_object_t* a4, void* a5, int a6) { return f(a1, a2, a3, a4, a5, a6); }
-*/
-import "C"
 import (
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/libs/things"
-	"github.com/brutusmcforce/opennox/libs/types"
 
 	"github.com/brutusmcforce/opennox/server"
 )
@@ -48,73 +23,20 @@ var (
 	Nox_xxx_spellWallDestroy_500080   func(sp *server.DurSpell)
 )
 
-//export nox_xxx_spellGetDefArrayPtr_424820
-func nox_xxx_spellGetDefArrayPtr_424820() unsafe.Pointer {
-	return GetServer().S().Spells.PhonemeTree().C()
-}
-
-//export nox_xxx_getEnchantSpell_424920
 func nox_xxx_getEnchantSpell_424920(enc int) int {
 	return int(server.EnchantID(enc).Spell())
 }
 
-//export nox_xxx_getEnchantName_4248F0
-func nox_xxx_getEnchantName_4248F0(enc int) *C.char {
-	return internCStr(server.EnchantID(enc).String())
-}
+func nox_xxx_spellAwardAll1_4EFD80(p *nox_playerInfo) { Nox_xxx_spellAwardAll1_4EFD80(asPlayerS(p)) }
 
-//export nox_xxx_enchantByName_424880
-func nox_xxx_enchantByName_424880(cname *C.char) int {
-	id, ok := server.ParseEnchant(GoString(cname))
-	if !ok {
-		return -1
-	}
-	return int(id)
-}
+func nox_xxx_spellAwardAll2_4EFC80(p *nox_playerInfo) { Nox_xxx_spellAwardAll2_4EFC80(asPlayerS(p)) }
 
-//export nox_xxx_spellNameByN_424870
-func nox_xxx_spellNameByN_424870(ind int) *C.char {
-	s := spell.ID(ind).String()
-	if s == "" {
-		return nil
-	}
-	return internCStr(s)
-}
+func nox_xxx_spellAwardAll3_4EFE10(p *nox_playerInfo) { Nox_xxx_spellAwardAll3_4EFE10(asPlayerS(p)) }
 
-//export nox_xxx_spellNameToN_4243F0
-func nox_xxx_spellNameToN_4243F0(cid *C.char) int {
-	id := GoString(cid)
-	ind := spell.ParseID(id)
-	if ind <= 0 {
-		return 0
-	}
-	return int(ind)
-}
-
-//export nox_xxx_spellAwardAll1_4EFD80
-func nox_xxx_spellAwardAll1_4EFD80(p *C.nox_playerInfo) { Nox_xxx_spellAwardAll1_4EFD80(asPlayerS(p)) }
-
-//export nox_xxx_spellAwardAll2_4EFC80
-func nox_xxx_spellAwardAll2_4EFC80(p *C.nox_playerInfo) { Nox_xxx_spellAwardAll2_4EFC80(asPlayerS(p)) }
-
-//export nox_xxx_spellAwardAll3_4EFE10
-func nox_xxx_spellAwardAll3_4EFE10(p *C.nox_playerInfo) { Nox_xxx_spellAwardAll3_4EFE10(asPlayerS(p)) }
-
-//export nox_xxx_spellFlySearchTarget_540610
-func nox_xxx_spellFlySearchTarget_540610(cpos *C.float2, msl *nox_object_t, sflags C.int, dist C.float, a5 C.int, self *nox_object_t) *nox_object_t {
-	var pos *types.Pointf
-	if cpos != nil {
-		pos = &types.Pointf{X: float32(cpos.field_0), Y: float32(cpos.field_4)}
-	}
-	return asObjectC(GetServer().S().Nox_xxx_spellFlySearchTarget(pos, ToObjS(msl), things.SpellFlags(sflags), float32(dist), int(a5), asObjectS(self)))
-}
-
-//export nox_xxx_spellGetAud44_424800
 func nox_xxx_spellGetAud44_424800(ind, a2 int) int {
 	return int(GetServer().S().Spells.DefByInd(spell.ID(ind)).GetAudio(a2))
 }
 
-//export nox_xxx_spellTitle_424930
 func nox_xxx_spellTitle_424930(ind int) *wchar2_t {
 	s, ok := Nox_xxx_spellTitle_424930(ind)
 	if !ok {
@@ -123,7 +45,6 @@ func nox_xxx_spellTitle_424930(ind int) *wchar2_t {
 	return internWStr(s)
 }
 
-//export nox_xxx_spellDescription_424A30
 func nox_xxx_spellDescription_424A30(ind int) *wchar2_t {
 	s, ok := Nox_xxx_spellDescription_424A30(ind)
 	if !ok {
@@ -132,460 +53,383 @@ func nox_xxx_spellDescription_424A30(ind int) *wchar2_t {
 	return internWStr(s)
 }
 
-//export nox_xxx_spellByTitle_424960
-func nox_xxx_spellByTitle_424960(ctitle *wchar2_t) int {
-	return int(GetServer().S().Spells.ByTitle((GoWString(ctitle))))
-}
-
-//export nox_xxx_spellManaCost_4249A0
 func nox_xxx_spellManaCost_4249A0(ind, a2 int) int {
 	return GetServer().S().Spells.ManaCost(spell.ID(ind), a2)
 }
 
-//export nox_xxx_spellPhonemes_424A20
-func nox_xxx_spellPhonemes_424A20(ind, ind2 int) C.char {
-	return C.char(GetServer().S().Spells.Phoneme(spell.ID(ind), ind2))
+func nox_xxx_spellHasFlags_424A50(ind, flags int) bool {
+	return GetServer().S().Spells.HasFlags(spell.ID(ind), things.SpellFlags(flags))
 }
 
-//export nox_xxx_spellHasFlags_424A50
-func nox_xxx_spellHasFlags_424A50(ind, flags int) C.bool {
-	return C.bool(GetServer().S().Spells.HasFlags(spell.ID(ind), things.SpellFlags(flags)))
+func nox_xxx_spellFlags_424A70(ind int) uint32 {
+	return uint32(GetServer().S().Spells.Flags(spell.ID(ind)))
 }
 
-//export nox_xxx_spellFlags_424A70
-func nox_xxx_spellFlags_424A70(ind int) C.uint {
-	return C.uint(GetServer().S().Spells.Flags(spell.ID(ind)))
-}
-
-//export nox_xxx_spellIcon_424A90
 func nox_xxx_spellIcon_424A90(ind int) unsafe.Pointer { return Nox_xxx_spellIcon_424A90(ind) }
 
-//export nox_xxx_spellIconHighlight_424AB0
 func nox_xxx_spellIconHighlight_424AB0(ind int) unsafe.Pointer {
 	return Nox_xxx_spellIconHighlight_424AB0(ind)
 }
 
-//export nox_xxx_spellFirstValid_424AD0
 func nox_xxx_spellFirstValid_424AD0() int { return int(GetServer().S().Spells.FirstValid()) }
 
-//export nox_xxx_spellNextValid_424AF0
 func nox_xxx_spellNextValid_424AF0(ind int) int {
 	return int(GetServer().S().Spells.NextValid(spell.ID(ind)))
 }
 
-//export nox_xxx_spellIsValid_424B50
-func nox_xxx_spellIsValid_424B50(ind int) C.bool {
-	return C.bool(GetServer().S().Spells.DefByInd(spell.ID(ind)).IsValid())
+func nox_xxx_spellIsValid_424B50(ind int) bool {
+	return GetServer().S().Spells.DefByInd(spell.ID(ind)).IsValid()
 }
 
-//export nox_xxx_spellIsEnabled_424B70
-func nox_xxx_spellIsEnabled_424B70(ind int) C.bool {
-	return C.bool(GetServer().S().Spells.DefByInd(spell.ID(ind)).IsEnabled())
+func nox_xxx_spellIsEnabled_424B70(ind int) bool {
+	return GetServer().S().Spells.DefByInd(spell.ID(ind)).IsEnabled()
 }
 
-//export nox_xxx_spellEnable_424B90
-func nox_xxx_spellEnable_424B90(ind int) C.bool {
-	return C.bool(GetServer().S().Spells.Enable(spell.ID(ind), true))
-}
-
-//export nox_xxx_spellDisable_424BB0
-func nox_xxx_spellDisable_424BB0(ind int) C.bool {
-	return C.bool(GetServer().S().Spells.Enable(spell.ID(ind), false))
-}
-
-//export nox_xxx_spellCanUseInTrap_424BF0
-func nox_xxx_spellCanUseInTrap_424BF0(ind int) C.bool {
-	return C.bool(GetServer().S().Spells.CanUseInTraps(spell.ID(ind)))
-}
-
-//export nox_xxx_spellPrice_424C40
-func nox_xxx_spellPrice_424C40(ind int) int { return GetServer().S().Spells.Price(spell.ID(ind)) }
-
-//export nox_xxx_spellEnableAll_424BD0
-func nox_xxx_spellEnableAll_424BD0() { GetServer().S().Spells.EnableAll() }
-
-//export nox_xxx_spellAccept_4FD400
-func nox_xxx_spellAccept_4FD400(ispellID int, a2, a3p, a4p *nox_object_t, a5p unsafe.Pointer, lvli int) int {
-	if GetServer().Nox_xxx_spellAccept4FD400(spell.ID(ispellID), asObjectS(a2), asObjectS(a3p), asObjectS(a4p), (*server.SpellAcceptArg)(a5p), lvli) {
-		return 1
-	}
-	return 0
-}
-
-//export nox_xxx_castSpellByUser_4FDD20
 func nox_xxx_castSpellByUser_4FDD20(a1 int, a2 *nox_object_t, a3 unsafe.Pointer) int {
 	return Nox_xxx_castSpellByUser_4FDD20(a1, asObjectS(a2), a3)
 }
 
-//export nox_xxx_spellWallCreate_4FFA90
-func nox_xxx_spellWallCreate_4FFA90(p unsafe.Pointer) int {
-	return Nox_xxx_spellWallCreate_4FFA90((*server.DurSpell)(p))
-}
-
-//export nox_xxx_spellWallUpdate_500070
-func nox_xxx_spellWallUpdate_500070(p unsafe.Pointer) int {
-	return Nox_xxx_spellWallUpdate_500070((*server.DurSpell)(p))
-}
-
-//export nox_xxx_spellWallDestroy_500080
-func nox_xxx_spellWallDestroy_500080(p unsafe.Pointer) {
-	Nox_xxx_spellWallDestroy_500080((*server.DurSpell)(p))
-}
-
-//export nox_xxx_spellCancelSpellDo_4FE9D0
-func nox_xxx_spellCancelSpellDo_4FE9D0(p unsafe.Pointer) {
-	GetServer().S().Spells.Dur.CancelSpell((*server.DurSpell)(p))
-}
-
-//export nox_xxx_netStopRaySpell_4FEF90
-func nox_xxx_netStopRaySpell_4FEF90(p unsafe.Pointer, obj *nox_object_t) {
-	GetServer().S().NetStopRaySpell((*server.DurSpell)(p), asObjectS(obj))
-}
-
 func Nox_xxx_spellCastByBook_4FCB80() {
-	C.nox_xxx_spellCastByBook_4FCB80()
+	spellLifeCastBooks()
 }
 func Nox_xxx_playerResetProtectionCRC_56F7D0(a1 uint32, a2 int) {
-	C.nox_xxx_playerResetProtectionCRC_56F7D0(C.int(a1), C.int(a2))
+	nox_xxx_playerResetProtectionCRC_56F7D0(int32(a1), int32(a2))
 }
 func Nox_xxx_playerAwardSpellProtectionCRC_56FCE0(a1 uint32, a2 int, a3 int) {
-	C.nox_xxx_playerAwardSpellProtectionCRC_56FCE0(C.int(a1), C.int(a2), C.int(a3))
+	nox_xxx_playerAwardSpellProtectionCRC_56FCE0(int32(a1), int32(a2), int32(a3))
 }
 func Nox_xxx_playerApplyProtectionCRC_56FD50(a1 uint32, a2 unsafe.Pointer, a3 int) {
-	C.nox_xxx_playerApplyProtectionCRC_56FD50(C.int(a1), a2, C.int(a3))
+	nox_xxx_playerApplyProtectionCRC_56FD50(int32(a1), a2, int32(a3))
 }
 func Nox_xxx_spellGrantToPlayer_4FB550(a1 *server.Object, a2 spell.ID, a3 int, a4 int, a5 int) int {
-	return int(C.nox_xxx_spellGrantToPlayer_4FB550(asObjectC(a1), C.int(a2), C.int(a3), C.int(a4), C.int(a5)))
+	return int(bookAwardSpell(a1, int32(a2), int32(a3), int32(a4), int32(a5)))
 }
 func Nox_xxx_gameCaptureMagic_4FDC10(a1 spell.ID, a2 *server.Object) int {
-	return int(C.nox_xxx_gameCaptureMagic_4FDC10(C.int(a1), asObjectC(a2)))
-}
-func Nox_spells_call_intint6_go(a1 unsafe.Pointer, a2 spell.ID, a3 *server.Object, a4 *server.Object, a5 *server.Object, a6 *server.SpellAcceptArg, a7 int) int {
-	return int(C.nox_spells_call_intint6_go((*[0]byte)(a1), C.int(a2), asObjectC(a3), asObjectC(a4), asObjectC(a5), unsafe.Pointer(a6), C.int(a7)))
+	return int(spellLifeCaptureAllowed(int32(a1), a2))
 }
 func Nox_xxx_createSpellFly_4FDDA0(a1 *server.Object, a2 *server.Object, a3 spell.ID) {
-	C.nox_xxx_createSpellFly_4FDDA0(asObjectC(a1), asObjectC(a2), C.int(a3))
+	spellLifeCreateFly(a1, a2, int32(a3))
 }
 func Nox_xxx_spellGetPower_4FE7B0(a1 spell.ID, a2 *server.Object) int {
-	return int(C.nox_xxx_spellGetPower_4FE7B0(C.int(a1), asObjectC(a2)))
+	return int(spellLifePower(int32(a1), a2))
 }
 
 func Nox_xxx_spellArachna_52DC80(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_spellArachna_52DC80, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectArachna(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castBurn_52C3E0(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castBurn_52C3E0, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectBurn(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_spellCastCleansingFlame_52D5C0(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_spellCastCleansingFlame_52D5C0, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectCleansingFlame(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castConfuse_52C1E0(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castConfuse_52C1E0, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectConfuse(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castCurePoison_52CDB0(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castCurePoison_52CDB0, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectCurePoison(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castEquake_52DE40(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castEquake_52DE40, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectQuake(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castFireball_52C790(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castFireball_52C790, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectFireball(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castFist_52D3C0(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castFist_52D3C0, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectFist(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castFumble_52C060(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castFumble_52C060, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectFumble(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Sub_52BEB0(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.sub_52BEB0, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectInversion(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Sub_52DD50(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.sub_52DD50, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectLesserHeal(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castLock_52CE90(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castLock_52CE90, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectLock(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Sub_52CA80(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.sub_52CA80, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectPortal(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Sub_52CBD0(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.sub_52CBD0, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectNamedPortal(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castMeteor_52D9D0(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castMeteor_52D9D0, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectMeteor(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castMeteorShower_52D8A0(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castMeteorShower_52D8A0, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectMeteorShower(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castPixies_540440(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castPixies_540440, spellID, a2, a3, a4, sa, lvl)
+	return spellStartPixies(spellID, a3, a4, lvl)
 }
 
 func Nox_xxx_castPoison_52C720(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castPoison_52C720, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectPoison(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castPull_52BFA0(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castPull_52BFA0, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectPull(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castPush_52C000(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castPush_52C000, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectPush(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castSpellWinkORrestoreHealth_52BF20(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castSpellWinkORrestoreHealth_52BF20, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectRestoreHealth(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Sub_52BF50(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.sub_52BF50, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectRestoreMana(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_useShock_52C5A0(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_useShock_52C5A0, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectShock(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castStun_52C2C0(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castStun_52C2C0, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectStun(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castTelekinesis_52D330(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castTelekinesis_52D330, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectTelekinesis(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Nox_xxx_castToxicCloud_52DB60(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.nox_xxx_castToxicCloud_52DB60, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectToxicCloud(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Sub_52CCD0(spellID spell.ID, a2, a3, a4 *server.Object, sa *server.SpellAcceptArg, lvl int) int {
-	return Nox_spells_call_intint6_go(C.sub_52CCD0, spellID, a2, a3, a4, sa, lvl)
+	return int(spellEffectDetonateGlyph(int32(spellID), a2, a3, a4, unsafe.Pointer(sa), int32(lvl)))
 }
 
 func Get_nox_xxx_spellBlink2_530310() unsafe.Pointer {
-	return C.nox_xxx_spellBlink2_530310
+	return durationCallbackKey(durationKeyNoxXxxSpellBlink2530310)
 }
 
 func Get_nox_xxx_spellBlink1_530380() unsafe.Pointer {
-	return C.nox_xxx_spellBlink1_530380
+	return durationCallbackKey(durationKeyNoxXxxSpellBlink1530380)
 }
 
 func Get_sub_52F460() unsafe.Pointer {
-	return C.sub_52F460
+	return durationCallbackKey(durationKeySub52F460)
 }
 
 func Get_nox_xxx_charmCreature1_5011F0() unsafe.Pointer {
-	return C.nox_xxx_charmCreature1_5011F0
+	return durationCallbackKey(durationKeyNoxXxxCharmCreature15011F0)
 }
 
 func Get_nox_xxx_charmCreatureFinish_5013E0() unsafe.Pointer {
-	return C.nox_xxx_charmCreatureFinish_5013E0
+	return durationCallbackKey(durationKeyNoxXxxCharmCreatureFinish5013E0)
 }
 
 func Get_nox_xxx_charmCreature2_501690() unsafe.Pointer {
-	return C.nox_xxx_charmCreature2_501690
+	return durationCallbackKey(durationKeyNoxXxxCharmCreature2501690)
 }
 
 func Get_nox_xxx_spellTurnUndeadCreate_531310() unsafe.Pointer {
-	return C.nox_xxx_spellTurnUndeadCreate_531310
+	return durationCallbackKey(durationKeyNoxXxxSpellTurnUndeadCreate531310)
 }
 
 func Get_nox_xxx_spellTurnUndeadUpdate_531410() unsafe.Pointer {
-	return C.nox_xxx_spellTurnUndeadUpdate_531410
+	return durationCallbackKey(durationKeyNoxXxxSpellTurnUndeadUpdate531410)
 }
 
 func Get_nox_xxx_spellTurnUndeadDelete_531420() unsafe.Pointer {
-	return C.nox_xxx_spellTurnUndeadDelete_531420
+	return durationCallbackKey(durationKeyNoxXxxSpellTurnUndeadDelete531420)
 }
 
 func Get_nox_xxx_spellDrainMana_52E210() unsafe.Pointer {
-	return C.nox_xxx_spellDrainMana_52E210
+	return durationCallbackKey(durationKeyNoxXxxSpellDrainMana52E210)
 }
 
 func Get_nox_xxx_spellEnergyBoltStop_52E820() unsafe.Pointer {
-	return C.nox_xxx_spellEnergyBoltStop_52E820
+	return durationCallbackKey(durationKeyNoxXxxSpellEnergyBoltStop52E820)
 }
 
 func Get_nox_xxx_spellEnergyBoltTick_52E850() unsafe.Pointer {
-	return C.nox_xxx_spellEnergyBoltTick_52E850
+	return durationCallbackKey(durationKeyNoxXxxSpellEnergyBoltTick52E850)
 }
 
 func Get_nullsub_29() unsafe.Pointer {
-	return C.nullsub_29
+	return durationCallbackKey(durationKeyNullsub29)
 }
 
 func Get_nox_xxx_firewalkTick_52ED40() unsafe.Pointer {
-	return C.nox_xxx_firewalkTick_52ED40
+	return durationCallbackKey(durationKeyNoxXxxFirewalkTick52ED40)
 }
 
 func Get_sub_52EF30() unsafe.Pointer {
-	return C.sub_52EF30
+	return durationCallbackKey(durationKeySub52EF30)
 }
 
 func Get_sub_52EFD0() unsafe.Pointer {
-	return C.sub_52EFD0
+	return durationCallbackKey(durationKeySub52EFD0)
 }
 
 func Get_sub_52F1D0() unsafe.Pointer {
-	return C.sub_52F1D0
+	return durationCallbackKey(durationKeySub52F1D0)
 }
 
 func Get_sub_52F220() unsafe.Pointer {
-	return C.sub_52F220
+	return durationCallbackKey(durationKeySub52F220)
 }
 
 func Get_sub_52F2E0() unsafe.Pointer {
-	return C.sub_52F2E0
+	return durationCallbackKey(durationKeySub52F2E0)
 }
 
 func Get_nox_xxx_onStartLightning_52F820() unsafe.Pointer {
-	return C.nox_xxx_onStartLightning_52F820
+	return durationCallbackKey(durationKeyNoxXxxOnStartLightning52F820)
 }
 
 func Get_nox_xxx_onFrameLightning_52F8A0() unsafe.Pointer {
-	return C.nox_xxx_onFrameLightning_52F8A0
+	return durationCallbackKey(durationKeyNoxXxxOnFrameLightning52F8A0)
 }
 
 func Get_sub_530100() unsafe.Pointer {
-	return C.sub_530100
+	return durationCallbackKey(durationKeySub530100)
 }
 
 func Get_nox_xxx_castShield1_52F5A0() unsafe.Pointer {
-	return C.nox_xxx_castShield1_52F5A0
+	return durationCallbackKey(durationKeyNoxXxxCastShield152F5A0)
 }
 
 func Get_sub_52F650() unsafe.Pointer {
-	return C.sub_52F650
+	return durationCallbackKey(durationKeySub52F650)
 }
 
 func Get_sub_52F670() unsafe.Pointer {
-	return C.sub_52F670
+	return durationCallbackKey(durationKeySub52F670)
 }
 
 func Get_nox_xxx_spellCreateMoonglow_531A00() unsafe.Pointer {
-	return C.nox_xxx_spellCreateMoonglow_531A00
+	return durationCallbackKey(durationKeyNoxXxxSpellCreateMoonglow531A00)
 }
 
 func Get_sub_531AF0() unsafe.Pointer {
-	return C.sub_531AF0
+	return durationCallbackKey(durationKeySub531AF0)
 }
 
 func Get_nox_xxx_manaBomb_530F90() unsafe.Pointer {
-	return C.nox_xxx_manaBomb_530F90
+	return durationCallbackKey(durationKeyNoxXxxManaBomb530F90)
 }
 
 func Get_nox_xxx_manaBombBoom_5310C0() unsafe.Pointer {
-	return C.nox_xxx_manaBombBoom_5310C0
+	return durationCallbackKey(durationKeyNoxXxxManaBombBoom5310C0)
 }
 
 func Get_sub_531290() unsafe.Pointer {
-	return C.sub_531290
+	return durationCallbackKey(durationKeySub531290)
 }
 
 func Get_nox_xxx_plasmaSmth_531580() unsafe.Pointer {
-	return C.nox_xxx_plasmaSmth_531580
+	return durationCallbackKey(durationKeyNoxXxxPlasmaSmth531580)
 }
 
 func Get_nox_xxx_plasmaShot_531600() unsafe.Pointer {
-	return C.nox_xxx_plasmaShot_531600
+	return durationCallbackKey(durationKeyNoxXxxPlasmaShot531600)
 }
 
 func Get_sub_5319E0() unsafe.Pointer {
-	return C.sub_5319E0
+	return durationCallbackKey(durationKeySub5319E0)
 }
 
 func Get_sub_531490() unsafe.Pointer {
-	return C.sub_531490
+	return durationCallbackKey(durationKeySub531490)
 }
 
 func Get_sub_5314F0() unsafe.Pointer {
-	return C.sub_5314F0
+	return durationCallbackKey(durationKeySub5314F0)
 }
 
 func Get_sub_531560() unsafe.Pointer {
-	return C.sub_531560
+	return durationCallbackKey(durationKeySub531560)
 }
 
 func Get_nox_xxx_summonStart_500DA0() unsafe.Pointer {
-	return C.nox_xxx_summonStart_500DA0
+	return durationCallbackKey(durationKeyNoxXxxSummonStart500DA0)
 }
 
 func Get_nox_xxx_summonFinish_5010D0() unsafe.Pointer {
-	return C.nox_xxx_summonFinish_5010D0
+	return durationCallbackKey(durationKeyNoxXxxSummonFinish5010D0)
 }
 
 func Get_nox_xxx_summonCancel_5011C0() unsafe.Pointer {
-	return C.nox_xxx_summonCancel_5011C0
+	return durationCallbackKey(durationKeyNoxXxxSummonCancel5011C0)
 }
 
 func Get_sub_530CA0() unsafe.Pointer {
-	return C.sub_530CA0
+	return durationCallbackKey(durationKeySub530CA0)
 }
 
 func Get_sub_530D30() unsafe.Pointer {
-	return C.sub_530D30
+	return durationCallbackKey(durationKeySub530D30)
 }
 
 func Get_nox_xxx_spellTagCreature_530160() unsafe.Pointer {
-	return C.nox_xxx_spellTagCreature_530160
+	return durationCallbackKey(durationKeyNoxXxxSpellTagCreature530160)
 }
 
 func Get_sub_530250() unsafe.Pointer {
-	return C.sub_530250
+	return durationCallbackKey(durationKeySub530250)
 }
 
 func Get_sub_530270() unsafe.Pointer {
-	return C.sub_530270
+	return durationCallbackKey(durationKeySub530270)
 }
 
 func Get_sub_5305D0() unsafe.Pointer {
-	return C.sub_5305D0
+	return durationCallbackKey(durationKeySub5305D0)
 }
 
 func Get_sub_530650() unsafe.Pointer {
-	return C.sub_530650
+	return durationCallbackKey(durationKeySub530650)
 }
 
 func Get_nox_xxx_castTele_530820() unsafe.Pointer {
-	return C.nox_xxx_castTele_530820
+	return durationCallbackKey(durationKeyNoxXxxCastTele530820)
 }
 
 func Get_sub_530880() unsafe.Pointer {
-	return C.sub_530880
+	return durationCallbackKey(durationKeySub530880)
 }
 
 func Get_sub_530A30_spell_execdur() unsafe.Pointer {
-	return C.sub_530A30_spell_execdur
+	return durationCallbackKey(durationKeySub530A30SpellExecdur)
 }
 
 func Get_nox_xxx_castTTT_530B70() unsafe.Pointer {
-	return C.nox_xxx_castTTT_530B70
+	return durationCallbackKey(durationKeyNoxXxxCastTTT530B70)
 }
 
 func Get_nox_xxx_spellWallCreate_4FFA90() unsafe.Pointer {
-	return C.nox_xxx_spellWallCreate_4FFA90
+	return durationCallbackKey(durationKeyNoxXxxSpellWallCreate4FFA90)
 }
 
 func Get_nox_xxx_spellWallUpdate_500070() unsafe.Pointer {
-	return C.nox_xxx_spellWallUpdate_500070
+	return durationCallbackKey(durationKeyNoxXxxSpellWallUpdate500070)
 }
 
 func Get_nox_xxx_spellWallDestroy_500080() unsafe.Pointer {
-	return C.nox_xxx_spellWallDestroy_500080
+	return durationCallbackKey(durationKeyNoxXxxSpellWallDestroy500080)
 }

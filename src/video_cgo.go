@@ -278,7 +278,6 @@ func recreateRenderTarget(sz image.Point) error {
 		flags |= 0x200
 	}
 	c := noxClient
-	legacy.Nox_xxx_setSomeFunc_48A210(legacy.Get_sub_47FCE0()) // TODO: another callback
 
 	v1 := c.Nox_client_getCursorType()
 	c.Nox_client_setCursorType(gui.CursorSelect)

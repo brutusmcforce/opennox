@@ -9,7 +9,6 @@ import (
 	"github.com/brutusmcforce/opennox/libs/things"
 
 	"github.com/brutusmcforce/opennox/common/sound"
-	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -42,7 +41,7 @@ func (sp *spellsDuration) destroyDurSpell(spl *server.DurSpell) {
 		sp.s.Audio.EventObj(snd, spl.Caster16, 0, 0)
 	}
 	if destroy := spl.Destroy; destroy != nil {
-		ccall.CallVoidPtr(destroy, spl.C())
+		server.CallDurSpellDiscard(destroy, spl)
 	}
 	if u := spl.Caster16; u != nil {
 		if u.Class().Has(object.ClassPlayer) {
@@ -80,7 +79,7 @@ func (sp *spellsDuration) spellCastByPlayer() {
 		if obj24 := it.Obj24; obj24 != nil && obj24.Flags().Has(object.FlagDestroyed) {
 			it.Obj24 = nil
 		}
-		if it.Frame68 != it.Frame60 && it.Frame68 <= sp.s.Frame() || it.Update != nil && ccall.CallIntPtr(it.Update, it.C()) != 0 {
+		if it.Frame68 != it.Frame60 && it.Frame68 <= sp.s.Frame() || it.Update != nil && server.CallDurSpellResult(it.Update, it) != 0 {
 			sp.CancelSpell(it)
 		}
 	}
@@ -136,7 +135,7 @@ func (sp *spellsDuration) New(spellID spell.ID, u1, u2, u3 *server.Object, sa *s
 		aud = def.GetCastSound()
 	}
 	sp.s.Audio.EventObj(aud, u2, 0, 0)
-	if create == nil || ccall.CallIntPtr(create, p.C()) == 0 {
+	if create == nil || server.CallDurSpellResult(create, p) == 0 {
 		return true
 	}
 	sp.CancelSpell(p)

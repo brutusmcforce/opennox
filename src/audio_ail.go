@@ -15,7 +15,6 @@ import (
 	"github.com/brutusmcforce/opennox/legacy"
 	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 	"github.com/brutusmcforce/opennox/legacy/timer"
 )
 
@@ -36,7 +35,7 @@ func sub_43EFD0(a1 unsafe.Pointer) int {
 	if s.Flag7 == 0 {
 		ptr := s.Field1
 		fptr := (*unsafe.Pointer)(unsafe.Add(ptr, 284))
-		ccall.CallVoidPtr(*fptr, ptr)
+		legacy.AudioStreamCallbackVoid(*fptr, ptr)
 		s.Flag7 = 1
 	}
 	return 0
@@ -87,8 +86,7 @@ func sub_43E940(a1 unsafe.Pointer) int {
 	}
 	audioTimer93944.SetFrequency(30)
 	audioTimer93944.Start()
-	legacy.Sub_42EBB0(1, legacy.Get_sub_43E910(), 0, "Audio")
-	legacy.Sub_42EBB0(2, legacy.Get_sub_43E8E0(), 0, "Audio")
+
 	*(*uint32)(unsafe.Add(a1, 20)) = 1
 	return 0
 }
@@ -279,7 +277,7 @@ func sub_486EF0() {
 			v1 := *(*unsafe.Pointer)(unsafe.Add(legacy.Get_dword_587000_155144(), 12))
 			for it := unsafe.Add(legacy.Get_dword_587000_155144(), 12); v1 != it; v1 = *(*unsafe.Pointer)(v1) {
 				if (*(*int32)(unsafe.Add(v1, 4*3)) & 2) == 0 {
-					ccall.CallVoidPtr(*(*unsafe.Pointer)(unsafe.Add(v1, 4*54)), v1)
+					legacy.AudioStreamCallbackVoid(*(*unsafe.Pointer)(unsafe.Add(v1, 4*54)), v1)
 				}
 			}
 		}
@@ -407,20 +405,8 @@ func sub_4866F0(path1 string, path2 string) *audioStructXxx {
 		if i := alloc.StrLenS(p.path2_8[:]); p.path2_8[i] == '\\' {
 			p.path2_8[i] = 0
 		}
-		var find legacy.WIN32_FIND_DATAA
-
-		if h := legacy.FindFirstFileA(&p.path2_8[0], &find); int(h) != -1 {
-			if find.FileAttributes&0x10 != 0 {
-				p.field276 = 1
-			} else {
-				for legacy.FindNextFileA(h, &find) != 0 {
-					if find.FileAttributes&0x10 != 0 {
-						p.field276 = 1
-						break
-					}
-				}
-			}
-			legacy.FindClose(h)
+		if info, err := ifs.Stat(alloc.GoStringS(p.path2_8[:])); err == nil && info.IsDir() {
+			p.field276 = 1
 		}
 		// TODO: strlen()-1 ?
 		if i := alloc.StrLenS(p.path2_8[:]); p.path2_8[i] != '\\' {

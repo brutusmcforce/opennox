@@ -253,7 +253,7 @@ func nox_script_readWriteZzz_541670(cpath, cpath2, cdst *byte) int {
 		return 1
 	}
 
-	df, err := ifs.OpenFile(dst, os.O_RDWR)
+	df, err := ifs.OpenFile(dst, os.O_CREATE|os.O_TRUNC|os.O_RDWR)
 	if err != nil {
 		return 0
 	}

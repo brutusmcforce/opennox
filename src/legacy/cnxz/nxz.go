@@ -1,31 +1,12 @@
 package cnxz
 
-/*
-#include <stdint.h>
-#include <stdlib.h>
-
-void* nxz_decompress_new();
-void nxz_decompress_free(void* p);
-int nxz_decompress(void* p, uint8_t* a2, int* a3, uint8_t* a4, int* a5);
-
-void* nxz_compress_new();
-void nxz_compress_free(void* p);
-int nxz_compress(void* a1p, uint8_t* a2p, uint8_t* a3p, int a4p);
-*/
-import "C"
 import (
 	"encoding/binary"
 	"errors"
 	"io"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/ifs"
-
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
-
-// only works on 32bit
-var _ = [1]struct{}{}[unsafe.Sizeof(int(0))-4]
 
 func DecompressFile(src, dst string) error {
 	if src == "" {
@@ -43,36 +24,22 @@ func DecompressFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	srcSz := int(fi.Size() - 4)
 	var buf [4]byte
-	if _, err = io.ReadFull(r, buf[:4]); err != nil {
+	if _, err = io.ReadFull(r, buf[:]); err != nil {
 		return err
 	}
-	dstSz := int(binary.LittleEndian.Uint32(buf[:]))
-
-	sbuf, sfree := alloc.Make([]byte{}, srcSz)
-	defer sfree()
-	_, err = io.ReadFull(r, sbuf)
-	if err != nil {
+	dstSize := binary.LittleEndian.Uint32(buf[:])
+	if uint64(dstSize) > uint64(^uint(0)>>1) || fi.Size()-4 > int64(^uint(0)>>1) {
+		return errors.New("nxz: file exceeds addressable size")
+	}
+	sbuf := make([]byte, int(fi.Size()-4))
+	if _, err = io.ReadFull(r, sbuf); err != nil {
 		return err
 	}
-
-	dbuf, dfree := alloc.Make([]byte{}, dstSz)
-	defer dfree()
-
-	sleft := srcSz
-	dleft := dstSz
-
-	ptr := C.nxz_decompress_new()
-	for sleft > 0 && dleft > 0 {
-		if C.nxz_decompress(ptr,
-			(*C.uchar)(unsafe.Pointer(&dbuf[dstSz-dleft])), (*C.int)(unsafe.Pointer(&dleft)),
-			(*C.uchar)(unsafe.Pointer(&sbuf[srcSz-sleft])), (*C.int)(unsafe.Pointer(&sleft)),
-		) == 0 {
-			break
-		}
+	dbuf := make([]byte, int(dstSize))
+	if err := newMapDecoder(sbuf).decode(dbuf); err != nil {
+		return err
 	}
-	C.nxz_decompress_free(ptr)
 
 	w, err := ifs.Create(dst)
 	if err != nil {
@@ -83,10 +50,6 @@ func DecompressFile(src, dst string) error {
 		return err
 	}
 	return w.Close()
-}
-
-func compBufferSize(sz int) int {
-	return sz + sz/2 + 32
 }
 
 func CompressFile(src, dst string) error {
@@ -106,30 +69,24 @@ func CompressFile(src, dst string) error {
 		return err
 	}
 
+	if fi.Size() < 0 || fi.Size() > int64(^uint(0)>>1)-5 || fi.Size() > int64(^uint32(0)) {
+		return errors.New("nxz: file exceeds addressable size")
+	}
 	srcSz := int(fi.Size())
-	sbuf, sfree := alloc.Make([]byte{}, srcSz)
-	defer sfree()
-	if _, err = io.ReadFull(r, sbuf); err != nil {
+	// Block-end rolling hashes inspect five following bytes. Preserve actual
+	// following file bytes and bound the final lookahead with zero padding.
+	sbuf := make([]byte, srcSz+5)
+	if _, err = io.ReadFull(r, sbuf[:srcSz]); err != nil {
 		return err
 	}
-
-	dbuf, dfree := alloc.Make([]byte{}, compBufferSize(srcSz))
-	defer dfree()
-
-	ptr := C.nxz_compress_new()
-	cnt := 0
-	for i := 0; i < srcSz; i += 500000 {
-		v := srcSz - i
-		if v > 500000 {
-			v = 500000
-		}
-		cnt += int(C.nxz_compress(ptr,
-			(*C.uchar)(unsafe.Pointer(&dbuf[cnt])),
-			(*C.uchar)(unsafe.Pointer(&sbuf[i])),
-			C.int(v),
-		))
+	encoder := newMapEncoder()
+	var dbuf []byte
+	for i := 0; i < srcSz; {
+		n := min(srcSz-i, 500000)
+		dbuf = append(dbuf, encoder.block(sbuf[i:], n)...)
+		// Advancing by the final partial chunk cannot overflow the source size.
+		i += n
 	}
-	C.nxz_compress_free(ptr)
 
 	w, err := ifs.Create(dst)
 	if err != nil {
@@ -142,7 +99,7 @@ func CompressFile(src, dst string) error {
 	if _, err := w.Write(buf[:4]); err != nil {
 		return err
 	}
-	if _, err := w.Write(dbuf[:cnt]); err != nil {
+	if _, err := w.Write(dbuf); err != nil {
 		return err
 	}
 	return w.Close()

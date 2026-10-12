@@ -6,6 +6,7 @@ import (
 	"image"
 	"io"
 	"math"
+	"strconv"
 	"strings"
 	"unsafe"
 
@@ -1276,6 +1277,11 @@ func (s *NoxScriptVM) ReadScript(r io.Reader) error {
 		s.vm.funcs = make([]ScriptFunc, 0, len(scr.Funcs))
 	}
 	for _, fnc := range scr.Funcs {
+		// The script reader assigns both prefab offsets to X; restore both axes.
+		if parts := strings.SplitN(fnc.Name, "%", 4); len(parts) == 4 {
+			fnc.PosOff.X, _ = strconv.Atoi(parts[2])
+			fnc.PosOff.Y, _ = strconv.Atoi(parts[3])
+		}
 		cur := ScriptFunc{FuncDef: fnc}
 		if len(fnc.Name) >= 1024 {
 			return fmt.Errorf("function name too long: %d", len(fnc.Name))

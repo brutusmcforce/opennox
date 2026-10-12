@@ -501,7 +501,7 @@ func (s *Server) sendSettings(u *server.Object) {
 	}
 	{
 		var buf [129]byte
-		nox_xxx_netNewPlayerMakePacket_4DDA90(buf[:], pl)
+		server.EncodePlayerRoster(buf[:], pl)
 		s.NetList.AddToMsgListCli(pl.PlayerIndex(), netlist.Kind1, buf[:129])
 		s.Nox_xxx_netSendBySock_4DDDC0(pl.PlayerIndex())
 	}

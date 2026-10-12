@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/brutusmcforce/opennox/client/noxrender"
-
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy"
 )

@@ -1,0 +1,292 @@
+[
+  {
+    "input": "",
+    "integer": 0,
+    "float_bits": "0000000000000000"
+  },
+  {
+    "input": " ",
+    "integer": 0,
+    "float_bits": "0000000000000000"
+  },
+  {
+    "input": "\t\r\n -12tail",
+    "integer": -12,
+    "float_bits": "c028000000000000"
+  },
+  {
+    "input": "+",
+    "integer": 0,
+    "float_bits": "0000000000000000"
+  },
+  {
+    "input": "-",
+    "integer": 0,
+    "float_bits": "0000000000000000"
+  },
+  {
+    "input": "0",
+    "integer": 0,
+    "float_bits": "0000000000000000"
+  },
+  {
+    "input": "-0",
+    "integer": 0,
+    "float_bits": "8000000000000000"
+  },
+  {
+    "input": "-0.0",
+    "integer": 0,
+    "float_bits": "8000000000000000"
+  },
+  {
+    "input": "2147483647",
+    "integer": 2147483647,
+    "float_bits": "41dfffffffc00000"
+  },
+  {
+    "input": "2147483648",
+    "integer": 2147483647,
+    "float_bits": "41e0000000000000"
+  },
+  {
+    "input": "-2147483648",
+    "integer": -2147483648,
+    "float_bits": "c1e0000000000000"
+  },
+  {
+    "input": "-2147483649",
+    "integer": -2147483648,
+    "float_bits": "c1e0000000200000"
+  },
+  {
+    "input": "99999999999999999999999",
+    "integer": 2147483647,
+    "float_bits": "44b52d02c7e14af6"
+  },
+  {
+    "input": "-99999999999999999999999",
+    "integer": -2147483648,
+    "float_bits": "c4b52d02c7e14af6"
+  },
+  {
+    "input": "0123",
+    "integer": 123,
+    "float_bits": "405ec00000000000"
+  },
+  {
+    "input": "0x10",
+    "integer": 0,
+    "float_bits": "4030000000000000"
+  },
+  {
+    "input": "-0x",
+    "integer": 0,
+    "float_bits": "8000000000000000"
+  },
+  {
+    "input": "0x",
+    "integer": 0,
+    "float_bits": "0000000000000000"
+  },
+  {
+    "input": "0x.",
+    "integer": 0,
+    "float_bits": "0000000000000000"
+  },
+  {
+    "input": "-0x.",
+    "integer": 0,
+    "float_bits": "8000000000000000"
+  },
+  {
+    "input": "0x1",
+    "integer": 0,
+    "float_bits": "3ff0000000000000"
+  },
+  {
+    "input": "-0x1.8",
+    "integer": 0,
+    "float_bits": "bff8000000000000"
+  },
+  {
+    "input": "0x1p",
+    "integer": 0,
+    "float_bits": "3ff0000000000000"
+  },
+  {
+    "input": "0x1p+",
+    "integer": 0,
+    "float_bits": "3ff0000000000000"
+  },
+  {
+    "input": "0x1p-3",
+    "integer": 0,
+    "float_bits": "3fc0000000000000"
+  },
+  {
+    "input": "0x.8p4",
+    "integer": 0,
+    "float_bits": "4020000000000000"
+  },
+  {
+    "input": ".5",
+    "integer": 0,
+    "float_bits": "3fe0000000000000"
+  },
+  {
+    "input": "-.5",
+    "integer": 0,
+    "float_bits": "bfe0000000000000"
+  },
+  {
+    "input": "1e",
+    "integer": 1,
+    "float_bits": "3ff0000000000000"
+  },
+  {
+    "input": "1e+",
+    "integer": 1,
+    "float_bits": "3ff0000000000000"
+  },
+  {
+    "input": "1e-",
+    "integer": 1,
+    "float_bits": "3ff0000000000000"
+  },
+  {
+    "input": "1e309",
+    "integer": 1,
+    "float_bits": "7ff0000000000000"
+  },
+  {
+    "input": "-1e309",
+    "integer": -1,
+    "float_bits": "fff0000000000000"
+  },
+  {
+    "input": "1e-400",
+    "integer": 1,
+    "float_bits": "0000000000000000"
+  },
+  {
+    "input": "-1e-400",
+    "integer": -1,
+    "float_bits": "8000000000000000"
+  },
+  {
+    "input": "1.7976931348623157e308",
+    "integer": 1,
+    "float_bits": "7fefffffffffffff"
+  },
+  {
+    "input": "2.2250738585072014e-308",
+    "integer": 2,
+    "float_bits": "0010000000000000"
+  },
+  {
+    "input": "4.9406564584124654e-324",
+    "integer": 4,
+    "float_bits": "0000000000000001"
+  },
+  {
+    "input": "inf",
+    "integer": 0,
+    "float_bits": "7ff0000000000000"
+  },
+  {
+    "input": "-infinity",
+    "integer": 0,
+    "float_bits": "fff0000000000000"
+  },
+  {
+    "input": "INFINITYtail",
+    "integer": 0,
+    "float_bits": "7ff0000000000000"
+  },
+  {
+    "input": "infi",
+    "integer": 0,
+    "float_bits": "7ff0000000000000"
+  },
+  {
+    "input": "nan",
+    "integer": 0,
+    "float_bits": "7ff8000000000000"
+  },
+  {
+    "input": "-nan",
+    "integer": 0,
+    "float_bits": "fff8000000000000"
+  },
+  {
+    "input": "nan(1)",
+    "integer": 0,
+    "float_bits": "7ff8000000000001"
+  },
+  {
+    "input": "nan(0x123)",
+    "integer": 0,
+    "float_bits": "7ff8000000000123"
+  },
+  {
+    "input": "nan(077)",
+    "integer": 0,
+    "float_bits": "7ff800000000003f"
+  },
+  {
+    "input": "nan(0b10)",
+    "integer": 0,
+    "float_bits": "7ff8000000000000"
+  },
+  {
+    "input": "nan(1_2)",
+    "integer": 0,
+    "float_bits": "7ff8000000000000"
+  },
+  {
+    "input": "nan(999999999999999999999999)",
+    "integer": 0,
+    "float_bits": "7fffffffffffffff"
+  },
+  {
+    "input": "nan(foo)",
+    "integer": 0,
+    "float_bits": "7ff8000000000000"
+  },
+  {
+    "input": "nan(",
+    "integer": 0,
+    "float_bits": "7ff8000000000000"
+  },
+  {
+    "input": "nan(123\u0000)",
+    "integer": 0,
+    "float_bits": "7ff8000000000000"
+  },
+  {
+    "input": "1\u00002",
+    "integer": 1,
+    "float_bits": "3ff0000000000000"
+  },
+  {
+    "input": "\u00a0123",
+    "integer": 0,
+    "float_bits": "0000000000000000"
+  },
+  {
+    "input": "+.",
+    "integer": 0,
+    "float_bits": "0000000000000000"
+  },
+  {
+    "input": "-.",
+    "integer": 0,
+    "float_bits": "0000000000000000"
+  },
+  {
+    "input": "  -000junk",
+    "integer": 0,
+    "float_bits": "8000000000000000"
+  }
+]

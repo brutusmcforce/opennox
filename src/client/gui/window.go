@@ -2,11 +2,10 @@ package gui
 
 import (
 	"image"
+	"runtime"
 	"unsafe"
 
 	noxcolor "github.com/brutusmcforce/opennox/libs/color"
-
-	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 )
 
 const deadWord = 0xacacacac
@@ -14,35 +13,12 @@ const deadWord = 0xacacacac
 type WindowFunc func(win *Window, ev WindowEvent) WindowEventResp
 type WindowDrawFunc func(win *Window, draw *WindowData) int
 
-func WrapFuncC(fnc unsafe.Pointer) WindowFunc {
-	if fnc == nil {
-		return nil
-	}
-	return func(win *Window, e WindowEvent) WindowEventResp {
-		ev := e.EventCode()
-		a1, a2 := e.EventArgsC()
-		r := ccall.CallUPtrUPtr4(fnc, uintptr(win.C()), uintptr(ev), a1, a2)
-		if r == 0 {
-			return nil
-		}
-		return RawEventResp(r)
-	}
-}
-
-func WrapDrawFuncC(fnc unsafe.Pointer) WindowDrawFunc {
-	if fnc == nil {
-		return nil
-	}
-	return func(win *Window, draw *WindowData) int {
-		return ccall.CallIntPtr2(fnc, win.C(), draw.C())
-	}
-}
-
 type windowExt struct {
-	GUI    *GUI
-	Func93 WindowFunc
-	Func94 WindowFunc
-	Draw   WindowDrawFunc
+	GUI     *GUI
+	Func93  WindowFunc
+	Func94  WindowFunc
+	Draw    WindowDrawFunc
+	destroy WindowFunc // retained only for deferred cleanup
 }
 
 type WidgetData interface {
@@ -376,13 +352,7 @@ func (win *Window) Func93(e WindowEvent) WindowEventResp {
 	if win.field93 == nil || uintptr(win.field93) == deadWord {
 		return nil
 	}
-	ev := e.EventCode()
-	a1, a2 := e.EventArgsC()
-	r := ccall.CallUPtrUPtr4(win.field93, uintptr(win.C()), uintptr(ev), a1, a2)
-	if r == 0 {
-		return nil
-	}
-	return RawEventResp(r)
+	panic("unregistered raw window event callback")
 }
 
 func (win *Window) Func94(e WindowEvent) WindowEventResp {
@@ -395,13 +365,7 @@ func (win *Window) Func94(e WindowEvent) WindowEventResp {
 	if win.field94 == nil || uintptr(win.field94) == deadWord {
 		return nil
 	}
-	ev := e.EventCode()
-	a1, a2 := e.EventArgsC()
-	r := ccall.CallUPtrUPtr4(win.field94, uintptr(win.C()), uintptr(ev), a1, a2)
-	if r == 0 {
-		return nil
-	}
-	return RawEventResp(r)
+	panic("unregistered raw window event callback")
 }
 
 func (win *Window) Draw() {
@@ -415,7 +379,7 @@ func (win *Window) Draw() {
 	if win.drawFunc == nil || uintptr(win.drawFunc) == deadWord {
 		return
 	}
-	ccall.CallVoidPtr2(win.drawFunc, win.C(), win.DrawData().C())
+	panic("unregistered raw window draw callback")
 }
 
 func (win *Window) TooltipFunc(a1 uintptr) {
@@ -425,7 +389,12 @@ func (win *Window) TooltipFunc(a1 uintptr) {
 	if win.TooltipFuncPtr == nil || uintptr(win.TooltipFuncPtr) == deadWord {
 		return
 	}
-	ccall.CallVoidUPtr3(win.TooltipFuncPtr, uintptr(win.C()), uintptr(win.DrawData().C()), a1)
+	if fn := tooltipCallbacksGo[win.TooltipFuncPtr]; fn != nil {
+		fn(win, win.DrawData(), a1)
+		runtime.KeepAlive(win)
+		return
+	}
+	panic("unregistered window tooltip callback")
 }
 
 func (win *Window) Focus() {

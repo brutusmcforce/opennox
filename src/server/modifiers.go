@@ -16,7 +16,6 @@ import (
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 )
 
 func init() {
@@ -219,13 +218,18 @@ func (p *ModifierEff) Desc() string {
 	return alloc.GoString16(p.desc8)
 }
 
+// DescPtr exposes the original UTF16 storage for legacy text assembly.
+// Preserve nil, empty, and raw UTF16 units without a string round trip.
+func (p *ModifierEff) DescPtr() *uint16          { return p.desc8 }
+func (p *ModifierEff) SecondaryDescPtr() *uint16 { return p.secdesc12 }
+
 func (p *ModifierEff) Next() *ModifierEff {
 	return p.next136
 }
 
 func (p *ModifierEff) CallUpdateNil(obj *Object) {
 	if p.Update100.Fnc != nil {
-		ccall.CallVoidPtr3(p.Update100.Fnc, p.C(), obj.CObj(), nil)
+		CallModifierEffect3Discard(p.Update100.Fnc, p, obj, nil)
 	}
 }
 

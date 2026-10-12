@@ -15,7 +15,7 @@ import (
 )
 
 func nox_xxx_wndLoadQuitMenu_445790() int {
-	win := newWindowFromFile(noxClient.GUI, "QuitMenu.wnd", gui.WrapFuncC(legacy.Get_nox_xxx_menuGameOnButton_445840()))
+	win := newWindowFromFile(noxClient.GUI, "QuitMenu.wnd", legacy.SessionQuitEvent)
 	if win == nil {
 		return 0
 	}

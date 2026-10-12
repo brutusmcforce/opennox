@@ -2,18 +2,12 @@
 
 package ail
 
-/*
-#include <stdint.h>
-#define MINIMP3_ONLY_MP3
-#define MINIMP3_NO_SIMD
-#include "../mp3/minimp3.h"
-*/
-import "C"
 import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"unsafe"
+
+	"github.com/brutusmcforce/opennox/legacy/client/audio/mp3"
 )
 
 func newMP3Decoder(r *wavReader, hr io.Reader, wf waveFormat, hdr []byte) (*mp3Decoder, error) {
@@ -33,7 +27,7 @@ func newMP3Decoder(r *wavReader, hr io.Reader, wf waveFormat, hdr []byte) (*mp3D
 		sampleRate: int(wf.samplesPerSec),
 		channel:    int(wf.channels),
 	}
-	C.mp3dec_init(&d.dec)
+	d.dec.Init()
 	audioLog.Printf("MP3 stream: %q, %d channels", r.Name(), wf.channels)
 	return d, nil
 }
@@ -51,7 +45,7 @@ type waveFormatMP3 struct {
 
 type mp3Decoder struct {
 	r          *wavReader
-	dec        C.mp3dec_t
+	dec        mp3.Decoder
 	sampleRate int
 	channel    int
 
@@ -89,9 +83,9 @@ func (d *mp3Decoder) Decode(out []int16) (int, bool) {
 		}
 	}
 	for {
-		var info C.mp3dec_frame_info_t
-		samples := int(C.mp3dec_decode_frame(&d.dec, (*C.uchar)(unsafe.Pointer(&d.buf[d.bufOff])), C.int(d.bufSz), (*C.short)(unsafe.Pointer(&out[0])), &info))
-		n := int(info.frame_bytes)
+		var info mp3.FrameInfo
+		samples := d.dec.DecodeFrame(d.buf[d.bufOff:d.bufOff+d.bufSz], out, &info)
+		n := info.FrameBytes
 		d.bufOff += n
 		d.bufSz -= n
 		if samples != 0 {
@@ -106,7 +100,7 @@ func (d *mp3Decoder) Decode(out []int16) (int, bool) {
 func (d *mp3Decoder) Seek(position int) {
 	d.bufOff = 0
 	d.bufSz = 0
-	C.mp3dec_init(&d.dec)
+	d.dec.Init()
 }
 
 func (d *mp3Decoder) Position() int {

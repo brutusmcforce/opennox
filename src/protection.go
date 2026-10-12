@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"unicode/utf16"
 
+	"github.com/brutusmcforce/opennox/internal/protection"
 	"github.com/brutusmcforce/opennox/legacy"
 )
 
@@ -34,11 +35,7 @@ func protectUint32(v uint32) uint32 {
 }
 
 func protectBytes(data []byte) uint32 { // nox_xxx_protectionStringCRC_56FAC0 or nox_xxx_protectionStringCRCLen_56FAE0
-	var res uint32
-	for i := 0; i+4 <= len(data); i += 4 {
-		res ^= binary.LittleEndian.Uint32(data[i:])
-	}
-	return res
+	return protection.Checksum(data)
 }
 
 func protectStr(str string) uint32 {

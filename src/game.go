@@ -950,9 +950,6 @@ func (s *Server) nox_xxx_gameTick_4D2580_server_C() bool {
 		noxflags.HasGamePlay(noxflags.GameplayFlag4) && !noxflags.HasGame(noxflags.GameModeChat) {
 		legacy.Sub_4181F0(1)
 	}
-	if noxflags.HasGame(noxflags.GameModeQuest) && false && !noxflags.HasGame(noxflags.GameModeChat) {
-		legacy.Sub_4264D0()
-	}
 	noxflags.SetGame(noxflags.GameFlag28)
 	noxAudioServeT(500)
 	err := s.nox_xxx_mapExitAndCheckNext_4D1860_server()
@@ -970,19 +967,6 @@ func (s *Server) nox_xxx_gameTick_4D2580_server_C() bool {
 	}
 	crc := nox_xxx_mapCrcGetMB_409B00()
 	s.nox_xxx_netUseMap_4DEE00(mname+".map", crc)
-	if false {
-		legacy.Sub_416690()
-		if noxflags.HasGame(noxflags.GameModeChat) {
-			if noxflags.HasGame(noxflags.GameFlag16) {
-				s.TeamsRemoveActive(true)
-			}
-			noxflags.UnsetGame(noxflags.GameFlag15 | noxflags.GameFlag16)
-		} else {
-			legacy.Sub_426060()
-			legacy.Sub_41D6C0()
-			inputSetKeyTimeoutLegacy(15)
-		}
-	}
 	legacy.Nox_xxx_guiServerOptionsHide_4597E0(0)
 	return true
 }

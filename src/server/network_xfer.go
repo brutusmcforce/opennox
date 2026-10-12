@@ -4,9 +4,9 @@ import (
 	"image/color"
 	"reflect"
 
+	"github.com/fxamacker/cbor/v2"
 	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
 	"github.com/brutusmcforce/opennox/libs/noxnet/netxfer"
-	"github.com/fxamacker/cbor/v2"
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/ntype"

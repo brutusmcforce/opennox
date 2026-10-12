@@ -1,23 +1,10 @@
 package legacy
 
-/*
-#include "GAME3_3.h"
-#include "GAME4_3.h"
-#include "GAME5.h"
-
-int nox_objectCollideDefault(int a1, int a2, float* a3);
-static int nox_call_objectType_parseCollide_go(int (*fnc)(char*, void*), char* arg1, void* arg2) { return fnc(arg1, arg2); }
-void nox_xxx_collideDeathBall_4E9E90(nox_object_t* a1, nox_object_t* a2, float* a3);
-*/
-import "C"
 import (
-	"fmt"
-	"strings"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/libs/types"
-
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -28,98 +15,222 @@ var (
 )
 
 func init() {
-	server.RegisterObjectCollide("DefaultCollide", C.nox_objectCollideDefault, 0)
-	server.RegisterObjectCollide("MonsterCollide", C.nox_xxx_collideMonsterEventProc_4E83B0, 0)
-	server.RegisterObjectCollide("PlayerCollide", C.nox_xxx_collidePlayer_4E8460, 0)
-	server.RegisterObjectCollide("ProjectileCollide", C.nox_xxx_collideProjectileGeneric_4E87B0, 8)
-	server.RegisterObjectCollide("ProjectileSparkCollide", C.nox_xxx_collideProjectileSpark_4E8880, 8)
-	server.RegisterObjectCollide("DoorCollide", C.nox_xxx_collideDoor_4E8AC0, 0)
-	server.RegisterObjectCollide("PickupCollide", C.nox_xxx_collidePickup_4E8DF0, 0)
-	server.RegisterObjectCollide("ExitCollide", C.nox_xxx_collideExit_4E9090, 88)
-	server.RegisterObjectCollide("DamageCollide", C.nox_xxx_collideDamage_4E9430, 8)
-	server.RegisterObjectCollide("ManaDrainCollide", C.nox_xxx_collideManadrain_4E9490, 8)
-	server.RegisterObjectCollide("BombCollide", C.nox_xxx_collideBomb_4E96F0, 8)
-	server.RegisterObjectCollide("SparkExplosionCollide", C.nox_xxx_fireballCollide_4E9AC0, 1)
-	server.RegisterObjectCollide("ChestCollide", C.nox_xxx_collideChest_4E9C40, 0)
-	server.RegisterObjectCollide("WallReflectCollide", C.nox_xxx_collideSulphurShot2_4E9D80, 8)
-	server.RegisterObjectCollide("WallReflectSparkCollide", C.nox_xxx_collideWallReflectSpark_4EA200, 8)
-	server.RegisterObjectCollide("PixieCollide", C.nox_xxx_collidePixie_4EA080, 8)
-	server.RegisterObjectCollide("OwnCollide", C.sub_4EA2C0, 0)
-	server.RegisterObjectCollide("SparkCollide", C.nox_xxx_collideSpark_4EA300, 8)
-	server.RegisterObjectCollide("BarrelCollide", C.sub_4EAAA0, 0)
-	server.RegisterObjectCollide("AudioEventCollide", C.sub_4EAAD0, 4)
-	server.RegisterObjectCollide("TriggerCollide", C.nox_xxx_collideTrigger_54FCD0, 0)
-	server.RegisterObjectCollide("TeleportCollide", C.sub_4EACA0, 8)
-	server.RegisterObjectCollide("ElevatorCollide", C.nox_objectCollideDefault, 8)
-	server.RegisterObjectCollide("AwardSpellCollide", C.nox_xxx_collideSpellPedestal_4EAD20, 4)
-	server.RegisterObjectCollide("DieCollide", C.nox_xxx_collideDie_4E99B0, 0)
-	server.RegisterObjectCollide("GlyphCollide", C.nox_xxx_collideGlyph_4E9A00, 0)
-	server.RegisterObjectCollide("SpellProjectileCollide", C.nox_xxx_spellFlyCollide_4E9500, 0)
-	server.RegisterObjectCollide("BoomCollide", C.nox_xxx_collideBoom_4E9770, 0)
-	server.RegisterObjectCollide("SignCollide", C.nox_xxx_collideSign_4EAB40, 0)
-	server.RegisterObjectCollide("PentagramCollide", C.nox_xxx_collidePentagram_4EAB20, 0)
-	server.RegisterObjectCollide("SpiderSpitCollide", C.nox_xxx_collideWebbing_4EA380, 0)
-	server.RegisterObjectCollide("DeathBallCollide", C.nox_xxx_collideDeathBall_4E9E90, 0)
-	server.RegisterObjectCollide("DeathBallFragmentCollide", C.nox_xxx_collideDeathBallFragment_4E9FE0, 0)
-	server.RegisterObjectCollide("TelekinesisCollide", C.nox_objectCollideDefault, 0)
-	server.RegisterObjectCollide("FistCollide", C.nox_xxx_collideFist_4EADF0, 0)
-	server.RegisterObjectCollide("TeleportWakeCollide", C.nox_xxx_collideTeleportWake_4EAE30, 8)
-	server.RegisterObjectCollide("FlagCollide", C.sub_4EA400, 0)
-	server.RegisterObjectCollide("ChakramInMotionCollide", C.nox_xxx_collideChakram_4EAF00, 0)
-	server.RegisterObjectCollide("ArrowCollide", C.nox_xxx_collideArrow_4EB490, 8)
-	server.RegisterObjectCollide("MonsterArrowCollide", C.nox_xxx_collideMonsterArrow_4EB800, 8)
-	server.RegisterObjectCollide("BearTrapCollide", C.nox_xxx_collideBearTrap_4EB890, 0)
-	server.RegisterObjectCollide("PoisonGasTrapCollide", C.nox_xxx_collidePoisonGasTrap_4EB910, 0)
-	server.RegisterObjectCollide("TrapDoorCollide", C.nox_xxx_collideTrapDoor_4EAB60, 28)
-	server.RegisterObjectCollide("BallCollide", C.nox_xxx_collideBall_4EBA00, 0)
-	server.RegisterObjectCollide("HomeBaseCollide", C.nox_xxx_collideHomeBase_4EBB80, 0)
-	server.RegisterObjectCollide("CrownCollide", C.sub_4EBB50, 0)
-	server.RegisterObjectCollide("UndeadKillerCollide", C.nox_xxx_collideUndeadKiller_4EBD40, 4)
-	server.RegisterObjectCollide("YellowStarShotCollide", C.nox_xxx_collideSulphurShot_4E9E50, 8)
-	server.RegisterObjectCollide("MimicCollide", C.nox_xxx_collideMimic_4E83D0, 0)
-	server.RegisterObjectCollide("HarpoonCollide", C.nox_xxx_collideHarpoon_4EB6A0, 8)
-	server.RegisterObjectCollide("MonsterGeneratorCollide", C.nox_xxx_collideMonsterGen_4EBE10, 0)
-	server.RegisterObjectCollide("SoulGateCollide", C.sub_4EBE40, 4)
-	server.RegisterObjectCollide("AnkhCollide", C.nox_xxx_collideAnkhQuest_4EBF40, 0)
+	server.RegisterObjectCollideNative("DefaultCollide", collisionKey(collisionIdentityDefault), func(u *server.Object, a2, a3 uintptr) uint32 {
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("MonsterCollide", collisionKey(collisionIdentityMonster), func(u *server.Object, a2, a3 uintptr) uint32 {
+		return uint32(uintptr(stateMonsterCollision(u, objectFromWord(uint32(a2)))))
+	}, 0)
+	server.RegisterObjectCollideNative("PlayerCollide", collisionKey(collisionIdentityPlayer), func(u *server.Object, a2, a3 uintptr) uint32 {
+		statePlayerCollision(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("ProjectileCollide", collisionKey(collisionIdentityProjectile), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileGeneric(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("ProjectileSparkCollide", collisionKey(collisionIdentityProjectileSpark), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileGenericSpark(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("DoorCollide", collisionKey(collisionIdentityDoor), func(u *server.Object, a2, a3 uintptr) uint32 {
+		worldCollideDoor(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("PickupCollide", collisionKey(collisionIdentityPickup), func(u *server.Object, a2, a3 uintptr) uint32 {
+		return worldCollidePickup(u, objectFromWord(uint32(a2)))
+	}, 0)
+	server.RegisterObjectCollideNative("ExitCollide", collisionKey(collisionIdentityExit), func(u *server.Object, a2, a3 uintptr) uint32 {
+		worldCollideExit(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 88)
+	server.RegisterObjectCollideNative("DamageCollide", collisionKey(collisionIdentityDamage), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileDamageField(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("ManaDrainCollide", collisionKey(collisionIdentityManaDrain), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileManaDrain(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("BombCollide", collisionKey(collisionIdentityBomb), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileBomb(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("SparkExplosionCollide", collisionKey(collisionIdentitySparkExplosion), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileFireball(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 1)
+	server.RegisterObjectCollideNative("ChestCollide", collisionKey(collisionIdentityChest), func(u *server.Object, a2, a3 uintptr) uint32 {
+		worldCollideChest(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("WallReflectCollide", collisionKey(collisionIdentityWallReflect), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileSulphur(u, objectFromWord(uint32(a2)), (*types.Pointf)(unsafe.Pointer(a3)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("WallReflectSparkCollide", collisionKey(collisionIdentityWallReflectSpark), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileWallSpark(u, objectFromWord(uint32(a2)), (*types.Pointf)(unsafe.Pointer(a3)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("PixieCollide", collisionKey(collisionIdentityPixie), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectilePixie(u, objectFromWord(uint32(a2)), (*types.Pointf)(unsafe.Pointer(a3)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("OwnCollide", collisionKey(collisionIdentityOwn), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileSparkOwner(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("SparkCollide", collisionKey(collisionIdentitySpark), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileSpark(u, objectFromWord(uint32(a2)), (*types.Pointf)(unsafe.Pointer(a3)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("BarrelCollide", collisionKey(collisionIdentityBarrel), func(u *server.Object, a2, a3 uintptr) uint32 {
+		worldCollideBarrel(u)
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("AudioEventCollide", collisionKey(collisionIdentityAudioEvent), func(u *server.Object, a2, a3 uintptr) uint32 {
+		worldCollideAudio(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 4)
+	server.RegisterObjectCollideNative("TriggerCollide", collisionKey(collisionIdentityTrigger), func(u *server.Object, a2, a3 uintptr) uint32 {
+		motionTrigger(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("TeleportCollide", collisionKey(collisionIdentityTeleport), func(u *server.Object, a2, a3 uintptr) uint32 {
+		worldCollideTeleport(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("ElevatorCollide", collisionKey(collisionIdentityDefault), func(u *server.Object, a2, a3 uintptr) uint32 {
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("AwardSpellCollide", collisionKey(collisionIdentityAwardSpell), func(u *server.Object, a2, a3 uintptr) uint32 {
+		return worldCollideSpellAward(u, objectFromWord(uint32(a2)))
+	}, 4)
+	server.RegisterObjectCollideNative("DieCollide", collisionKey(collisionIdentityDie), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileDie(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("GlyphCollide", collisionKey(collisionIdentityGlyph), func(u *server.Object, a2, a3 uintptr) uint32 {
+		Nox_xxx_collideGlyph_4E9A00(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("SpellProjectileCollide", collisionKey(collisionIdentitySpellProjectile), func(u *server.Object, a2, a3 uintptr) uint32 {
+		worldCollideSpellProjectile(u, objectFromWord(uint32(a2)), (*types.Pointf)(unsafe.Pointer(a3)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("BoomCollide", collisionKey(collisionIdentityBoom), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileBoom(u, objectFromWord(uint32(a2)), (*types.Pointf)(unsafe.Pointer(a3)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("SignCollide", collisionKey(collisionIdentitySign), func(u *server.Object, a2, a3 uintptr) uint32 {
+		worldCollideSign(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("PentagramCollide", collisionKey(collisionIdentityPentagram), func(u *server.Object, a2, a3 uintptr) uint32 {
+		return worldCollidePentagram(u)
+	}, 0)
+	server.RegisterObjectCollideNative("SpiderSpitCollide", collisionKey(collisionIdentitySpiderSpit), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileWeb(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("DeathBallCollide", collisionKey(collisionIdentityDeathBall), func(u *server.Object, a2, a3 uintptr) uint32 {
+		Nox_xxx_collideDeathBall_4E9E90(u, objectFromWord(uint32(a2)), (*types.Pointf)(unsafe.Pointer(a3)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("DeathBallFragmentCollide", collisionKey(collisionIdentityDeathBallFragment), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileDeathFragment(u, objectFromWord(uint32(a2)), (*types.Pointf)(unsafe.Pointer(a3)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("TelekinesisCollide", collisionKey(collisionIdentityDefault), func(u *server.Object, a2, a3 uintptr) uint32 {
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("FistCollide", collisionKey(collisionIdentityFist), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileFist(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("TeleportWakeCollide", collisionKey(collisionIdentityTeleportWake), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileTeleportWake(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("FlagCollide", collisionKey(collisionIdentityFlag), func(u *server.Object, a2, a3 uintptr) uint32 {
+		objectiveFlagCollide(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("ChakramInMotionCollide", collisionKey(collisionIdentityChakramInMotion), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileChakram(u, objectFromWord(uint32(a2)), (*types.Pointf)(unsafe.Pointer(a3)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("ArrowCollide", collisionKey(collisionIdentityArrow), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileArrow(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("MonsterArrowCollide", collisionKey(collisionIdentityMonsterArrow), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileMonsterArrow(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("BearTrapCollide", collisionKey(collisionIdentityBearTrap), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileTrap(u, objectFromWord(uint32(a2)), false)
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("PoisonGasTrapCollide", collisionKey(collisionIdentityPoisonGasTrap), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileTrap(u, objectFromWord(uint32(a2)), true)
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("TrapDoorCollide", collisionKey(collisionIdentityTrapDoor), func(u *server.Object, a2, a3 uintptr) uint32 {
+		worldCollideTrap(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 28)
+	server.RegisterObjectCollideNative("BallCollide", collisionKey(collisionIdentityBall), func(u *server.Object, a2, a3 uintptr) uint32 {
+		objectiveBallCollide(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("HomeBaseCollide", collisionKey(collisionIdentityHomeBase), func(u *server.Object, a2, a3 uintptr) uint32 {
+		return uint32(int32(objectiveHomeBase(u, objectFromWord(uint32(a2)))))
+	}, 0)
+	server.RegisterObjectCollideNative("CrownCollide", collisionKey(collisionIdentityCrown), func(u *server.Object, a2, a3 uintptr) uint32 {
+		return objectiveCrownCollide(u, objectFromWord(uint32(a2)))
+	}, 0)
+	server.RegisterObjectCollideNative("UndeadKillerCollide", collisionKey(collisionIdentityUndeadKiller), func(u *server.Object, a2, a3 uintptr) uint32 {
+		worldCollideUndead(u, objectFromWord(uint32(a2)), int32(a3) != 0)
+		return 0
+	}, 4)
+	server.RegisterObjectCollideNative("YellowStarShotCollide", collisionKey(collisionIdentityYellowStarShot), func(u *server.Object, a2, a3 uintptr) uint32 {
+		projectileSulphurTrail(u, objectFromWord(uint32(a2)), (*types.Pointf)(unsafe.Pointer(a3)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("MimicCollide", collisionKey(collisionIdentityMimic), func(u *server.Object, a2, a3 uintptr) uint32 {
+		return uint32(uintptr(stateMimicCollision(u, objectFromWord(uint32(a2)))))
+	}, 0)
+	server.RegisterObjectCollideNative("HarpoonCollide", collisionKey(collisionIdentityHarpoon), func(u *server.Object, a2, a3 uintptr) uint32 {
+		Nox_xxx_collideHarpoon_4EB6A0(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 8)
+	server.RegisterObjectCollideNative("MonsterGeneratorCollide", collisionKey(collisionIdentityMonsterGenerator), func(u *server.Object, a2, a3 uintptr) uint32 {
+		worldCollideGenerator(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 0)
+	server.RegisterObjectCollideNative("SoulGateCollide", collisionKey(collisionIdentitySoulGate), func(u *server.Object, a2, a3 uintptr) uint32 {
+		worldCollideSoulGate(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 4)
+	server.RegisterObjectCollideNative("AnkhCollide", collisionKey(collisionIdentityAnkh), func(u *server.Object, a2, a3 uintptr) uint32 {
+		worldCollideAnkh(u, objectFromWord(uint32(a2)))
+		return 0
+	}, 0)
 
-	server.RegisterObjectCollideParse("ProjectileCollide", wrapObjectCollideParseC(C.sub_536D80))
-	server.RegisterObjectCollideParse("ProjectileSparkCollide", wrapObjectCollideParseC(C.sub_536D80))
-	server.RegisterObjectCollideParse("DamageCollide", wrapObjectCollideParseC(C.nox_xxx_collideDamageLoad_536E10))
-	server.RegisterObjectCollideParse("ManaDrainCollide", wrapObjectCollideParseC(C.sub_536E50))
-	server.RegisterObjectCollideParse("SparkExplosionCollide", wrapObjectCollideParseC(C.sub_536DE0))
-	server.RegisterObjectCollideParse("WallReflectCollide", wrapObjectCollideParseC(C.sub_536D80))
-	server.RegisterObjectCollideParse("WallReflectSparkCollide", wrapObjectCollideParseC(C.sub_536D80))
-	server.RegisterObjectCollideParse("PixieCollide", wrapObjectCollideParseC(C.sub_536D80))
-	server.RegisterObjectCollideParse("AudioEventCollide", wrapObjectCollideParseC(C.sub_536DA0))
-	server.RegisterObjectCollideParse("MonsterArrowCollide", wrapObjectCollideParseC(C.sub_536E80))
-	server.RegisterObjectCollideParse("YellowStarShotCollide", wrapObjectCollideParseC(C.sub_536D80))
+	server.RegisterObjectCollideParse("ProjectileCollide", resourceObjectParser("collide", "projectile"))
+	server.RegisterObjectCollideParse("ProjectileSparkCollide", resourceObjectParser("collide", "projectile"))
+	server.RegisterObjectCollideParse("DamageCollide", resourceObjectParser("collide", "damage"))
+	server.RegisterObjectCollideParse("ManaDrainCollide", resourceObjectParser("collide", "mana"))
+	server.RegisterObjectCollideParse("SparkExplosionCollide", resourceObjectParser("collide", "spark"))
+	server.RegisterObjectCollideParse("WallReflectCollide", resourceObjectParser("collide", "projectile"))
+	server.RegisterObjectCollideParse("WallReflectSparkCollide", resourceObjectParser("collide", "projectile"))
+	server.RegisterObjectCollideParse("PixieCollide", resourceObjectParser("collide", "projectile"))
+	server.RegisterObjectCollideParse("AudioEventCollide", resourceObjectParser("collide", "audio"))
+	server.RegisterObjectCollideParse("MonsterArrowCollide", resourceObjectParser("collide", "arrow"))
+	server.RegisterObjectCollideParse("YellowStarShotCollide", resourceObjectParser("collide", "projectile"))
 }
 
-func wrapObjectCollideParseC(ptr unsafe.Pointer) server.ObjectParseFunc {
-	return func(objt *server.ObjectType, args []string) error {
-		if Nox_call_objectType_parseCollide_go(ptr, strings.Join(args, " "), objt.CollideData) == 0 {
-			return fmt.Errorf("cannot parse collide data for %q", objt.ID())
-		}
-		return nil
-	}
-}
-func Nox_call_objectType_parseCollide_go(a1 unsafe.Pointer, a2 string, a3 unsafe.Pointer) int {
-	cstr := CString(a2)
-	defer StrFree(cstr)
-	return int(C.nox_call_objectType_parseCollide_go((*[0]byte)(a1), cstr, a3))
-}
-
-//export nox_xxx_collideDeathBall_4E9E90
-func nox_xxx_collideDeathBall_4E9E90(a1, a2 *nox_object_t, pos *C.float) {
-	Nox_xxx_collideDeathBall_4E9E90(asObjectS(a1), asObjectS(a2), (*types.Pointf)(unsafe.Pointer(pos)))
-}
-
-//export nox_xxx_castCounterSpell_52BBB0
 func nox_xxx_castCounterSpell_52BBB0(a1 int32, a2, a3, a4 *nox_object_t) {
 	Nox_xxx_castCounterSpell_52BBB0(spell.ID(a1), asObjectS(a2), asObjectS(a3), asObjectS(a4), nil, 0)
-}
-
-//export nox_xxx_changeOwner_52BE40
-func nox_xxx_changeOwner_52BE40(a1, a2 *nox_object_t) {
-	Nox_xxx_changeOwner_52BE40(asObjectS(a1), asObjectS(a2))
 }

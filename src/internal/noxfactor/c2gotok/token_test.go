@@ -67,7 +67,7 @@ int nox_common_readcfgfile(const char* path, int a2) {
 
 func TestTokens(t *testing.T) {
 	toks := Tokenize([]byte(testInput))
-	f, err := os.Create("tokens.txt")
+	f, err := os.Create(filepath.Join(t.TempDir(), "tokens.txt"))
 	require.NoError(t, err)
 	defer f.Close()
 	for _, t := range toks {
@@ -140,7 +140,7 @@ func TestTokensC2Go(t *testing.T) {
 	toks = C2Go(toks)
 	var buf bytes.Buffer
 	Print(&buf, toks)
-	err := os.WriteFile("tokens_c2go.txt", buf.Bytes(), 9644)
+	err := os.WriteFile(filepath.Join(t.TempDir(), "tokens_c2go.txt"), buf.Bytes(), 0644)
 	require.NoError(t, err)
 	require.Equal(t, testExpC2Go, buf.String())
 }

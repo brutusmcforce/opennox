@@ -364,8 +364,6 @@ func (c *Client) Sub469920(p image.Point) []uint32 {
 }
 
 func nox_xxx_setupSomeVideo_47FEF0() {
-	*memmap.PtrPtr(0x973F18, 7716) = legacy.Get_sub_480250()
-	*memmap.PtrPtr(0x973F18, 5248) = legacy.Get_sub_480220()
 	*memmap.PtrUint32(0x5D4594, 2598128) = 0
 	*memmap.PtrUint32(0x5D4594, 2598160) = 0
 	*memmap.PtrUint32(0x5D4594, 2598132) = 0
@@ -476,13 +474,7 @@ func (c *Client) freeTileBuf() {
 }
 
 func nox_xxx_tileSetDrawFn_481420() {
-	if nox_client_texturedFloors_154956 {
-		legacy.Set_func_587000_154940(legacy.Get_nox_xxx_tileDraw_4815E0())
-		legacy.Set_func_587000_154944(legacy.Get_nox_xxx_drawTexEdgesProbably_481900())
-	} else {
-		legacy.Set_func_587000_154940(legacy.Get_sub_481770())
-		legacy.Set_func_587000_154944(legacy.Get_nullsub_8())
-	}
+	legacy.SetTileDrawCallbacks(nox_client_texturedFloors_154956)
 	legacy.Set_dword_5d4594_1193188(1)
 }
 

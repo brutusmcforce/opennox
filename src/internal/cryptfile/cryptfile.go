@@ -73,12 +73,10 @@ func (f *CryptFile) ReadOnly() bool {
 }
 
 func (f *CryptFile) SetXOR(enable bool) {
-	f.sync()
 	f.xor = enable
 }
 
 func (f *CryptFile) Flush() int {
-	f.sync()
 	if f == nil {
 		return 0
 	}
@@ -87,7 +85,6 @@ func (f *CryptFile) Flush() int {
 }
 
 func (f *CryptFile) Close() error {
-	f.sync()
 	if f == nil || f.File == nil {
 		return nil
 	}
@@ -98,7 +95,6 @@ func (f *CryptFile) Close() error {
 }
 
 func (f *CryptFile) Seek(off int64, whence int) error {
-	f.sync()
 	return f.File.FileSeek(off, whence)
 }
 
@@ -130,7 +126,6 @@ func crcUpdate(crc uint32, p []byte) uint32 {
 }
 
 func (f *CryptFile) Read(p []byte) (int, error) {
-	f.sync()
 	if !f.readonly {
 		panic("invalid file mode")
 	}
@@ -151,7 +146,6 @@ func (f *CryptFile) Read(p []byte) (int, error) {
 }
 
 func (f *CryptFile) Write(p []byte) (int, error) {
-	f.sync()
 	if f.readonly {
 		panic("invalid file mode")
 	}
@@ -163,30 +157,6 @@ func (f *CryptFile) Write(p []byte) (int, error) {
 		return f.File.File.Write(v2)
 	}
 	return f.File.Write(p)
-}
-
-// WriteFields writes the concatenation of fields with the given sizes, in one write.
-// The checksum is updated field by field, which gives a different result than for the whole data at once
-// (crcUpdate inverts the value at the end), so it's the same as writing each field separately.
-func (f *CryptFile) WriteFields(p []byte, sizes []uint32) error {
-	f.sync()
-	if f.readonly {
-		panic("invalid file mode")
-	}
-	off := 0
-	for _, sz := range sizes {
-		f.crcAdd(p[off : off+int(sz)])
-		off += int(sz)
-	}
-	if f.xor {
-		v2 := make([]byte, len(p))
-		copy(v2, p)
-		cryptXor(126, v2)
-		_, err := f.File.File.Write(v2)
-		return err
-	}
-	_, err := f.File.Write(p)
-	return err
 }
 
 func (f *CryptFile) ReadWrite(p []byte) (int, error) {
@@ -330,7 +300,6 @@ func (f *CryptFile) ReadWriteU32(v uint32) (uint32, error) {
 }
 
 func (f *CryptFile) ReadMaybeAlign(p []byte) error {
-	f.sync()
 	if !f.readonly {
 		return nil
 	}
@@ -368,12 +337,10 @@ func (f *CryptFile) ReadWriteAlign() int {
 }
 
 func (f *CryptFile) WriteChecksumAt(off int64) error {
-	f.sync()
 	return f.File.WriteUint32At(f.crcSum, off)
 }
 
 func (f *CryptFile) SectionStart() {
-	f.sync()
 	if f.readonly {
 		return
 	}
@@ -397,7 +364,6 @@ func (f *CryptFile) SectionStart() {
 }
 
 func (f *CryptFile) SectionEnd() {
-	f.sync()
 	if f.readonly {
 		return
 	}

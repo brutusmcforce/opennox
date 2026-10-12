@@ -7,12 +7,14 @@ import (
 	"image/draw"
 	"image/png"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 func TestHeatMaps(t *testing.T) {
+	outDir := t.TempDir()
 	vars := memmap.Variables()
 	accs := findBlobAccesses(t, noxRoot)
 	for _, b := range memmap.Blobs() {
@@ -28,13 +30,13 @@ func TestHeatMaps(t *testing.T) {
 				baccs = append(baccs, a)
 			}
 		}
-		if err := drawBlobHeatMap(b, bvars, accs); err != nil {
+		if err := drawBlobHeatMap(outDir, b, bvars, accs); err != nil {
 			t.Fatal(err)
 		}
 	}
 }
 
-func drawBlobHeatMap(b memmap.Blob, vars []memmap.Variable, accs []blobAccess) error {
+func drawBlobHeatMap(outDir string, b memmap.Blob, vars []memmap.Variable, accs []blobAccess) error {
 	const memLayers = 3
 	var (
 		clMap   = image.NewUniform(color.RGBA{G: 128, A: 128})
@@ -73,7 +75,7 @@ func drawBlobHeatMap(b memmap.Blob, vars []memmap.Variable, accs []blobAccess) e
 		draw.Draw(img, image.Rect(x1, y1, x2, y2), cl, image.Point{}, draw.Over)
 	}
 
-	return writePNG(fmt.Sprintf("blob_0x%x.png", b.Addr), img)
+	return writePNG(filepath.Join(outDir, fmt.Sprintf("blob_0x%x.png", b.Addr)), img)
 }
 
 func writePNG(name string, img image.Image) error {

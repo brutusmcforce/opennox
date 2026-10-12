@@ -430,7 +430,6 @@ func runArgs(args []string, loopFunc func() error) (gerr error) {
 	noxServer.NetList.Init()
 	noxServer.NetXfer.Reset(common.MaxPlayers)
 	noxServer.NetXfer.OnReceive(xferDataCallback)
-	legacy.Sub_4134D0()
 	if v := noxClient.Strings().Lang(); v == 6 || v == 8 {
 		noxClient.r.SetBold(false)
 	}
@@ -527,7 +526,7 @@ func cleanup() {
 	legacy.Nox_xxx_tileFree_410FC0_free()
 	noxServer.Walls.Free()
 	nox_video_bagFree_42F4D0()
-	legacy.Sub_42EDC0()
+
 	noxClient.ctrl.Reset()
 	Nox_strman_free_410020()
 	noxServer.NetList.Free()

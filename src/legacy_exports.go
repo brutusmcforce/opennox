@@ -63,6 +63,7 @@ func init() {
 	legacy.Nox_xxx_mapGenMakeInfo_4D5DB0 = nox_xxx_mapGenMakeInfo_4D5DB0
 	legacy.Nox_common_checkMapFile = nox_common_checkMapFile
 	legacy.Nox_xxx_mapWriteSectionsMB_426E20 = nox_xxx_mapWriteSectionsMB_426E20
+	legacy.Nox_xxx_mapReadSection = nox_xxx_mapReadSection
 	legacy.NetworkLogPrint = networkLogPrint
 	legacy.ClientSetServerHost = clientSetServerHost
 	legacy.Nox_client_joinGame_438A90 = nox_client_joinGame_438A90
@@ -225,7 +226,7 @@ func init() {
 	legacy.Nox_xxx_bindevent_bindNameByTitle_42EA40 = nox_xxx_bindevent_bindNameByTitle_42EA40
 	legacy.Sub_4C3B70 = sub_4C3B70
 	legacy.Sub_4CBBF0 = sub_4CBBF0
-	legacy.Nox_input_reset_430140 = nox_input_reset_430140
+
 	legacy.Nox_xxx_playerDisconnByPlrID_4DEB00 = func(id ntype.PlayerInd) {
 		noxServer.PlayerDisconnectByIndCode4(id)
 	}
