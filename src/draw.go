@@ -47,6 +47,10 @@ type clientTileData struct {
 	noxTilesGpy    int
 	noxTileBuf     []uint16
 	noxTileBufFree func()
+	// noxTileDirty has a flag for each 46x46 cell of noxTileBuf that the game drew into since the last GPU upload.
+	// It's written by the C tile drawing code (see nox_video_tileBuf_mark).
+	noxTileDirty     []byte
+	noxTileDirtyFree func()
 	nox_arr_956A00 [worldViewMaxHeight + 150]int
 	nox_arr_957820 [worldViewMaxHeight + 150]tileMapXxx
 
@@ -427,9 +431,15 @@ func (c *Client) nox_xxx_tileInitBuf_430DB0(width, height int) {
 	legacy.Set_dword_5d4594_3798840(0)
 
 	sz := c.tiles.dword_5d4594_3798804 * (2 * common.GridStep) * c.tiles.dword_5d4594_3798816
+	c.freeTileBuf()
 	c.tiles.noxTileBuf, c.tiles.noxTileBufFree = alloc.Make([]uint16{}, sz/2)
 	legacy.Set_nox_video_tileBuf_ptr_3798796(unsafe.Pointer(&c.tiles.noxTileBuf[0]))
 	legacy.Set_nox_video_tileBuf_end_3798844(unsafe.Add(unsafe.Pointer(&c.tiles.noxTileBuf[0]), sz))
+	c.tiles.noxTileDirty, c.tiles.noxTileDirtyFree = alloc.Make([]byte{}, c.tiles.dword_5d4594_3798812*c.tiles.dword_5d4594_3798816)
+	for i := range c.tiles.noxTileDirty {
+		c.tiles.noxTileDirty[i] = 1 // the new buffer must be uploaded in full
+	}
+	legacy.Set_nox_video_tileBuf_dirty(unsafe.Pointer(&c.tiles.noxTileDirty[0]))
 
 	if c.tiles.lightsOutBuf == nil {
 		c.tiles.lightsOutBuf, _ = alloc.Make([]uint32{}, 6)
@@ -441,21 +451,28 @@ func (c *Client) nox_xxx_tileInitBuf_430DB0(width, height int) {
 
 // resizeTileBuf reallocates the floor tile buffer for a new size of the world view.
 func (c *Client) resizeTileBuf(sz image.Point) {
-	if c.tiles.noxTileBuf != nil {
-		c.tiles.noxTileBufFree()
-		c.tiles.noxTileBuf = nil
-		c.tiles.noxTileBufFree = nil
-	}
+	c.freeTileBuf()
 	c.nox_xxx_tileInitBuf_430DB0(sz.X, sz.Y)
 }
 
 func (c *Client) nox_video_freeFloorBuffer_430EC0() {
+	c.freeTileBuf()
+	c.sub_444C50()
+}
+
+// freeTileBuf frees the floor tile buffer and its dirty flags.
+func (c *Client) freeTileBuf() {
 	if c.tiles.noxTileBuf != nil {
 		c.tiles.noxTileBufFree()
 		c.tiles.noxTileBuf = nil
 		c.tiles.noxTileBufFree = nil
 	}
-	c.sub_444C50()
+	if c.tiles.noxTileDirty != nil {
+		legacy.Set_nox_video_tileBuf_dirty(nil)
+		c.tiles.noxTileDirtyFree()
+		c.tiles.noxTileDirty = nil
+		c.tiles.noxTileDirtyFree = nil
+	}
 }
 
 func nox_xxx_tileSetDrawFn_481420() {

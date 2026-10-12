@@ -12,6 +12,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,6 +36,9 @@ var (
 	e2eSlow     = os.Getenv("NOX_E2E_SLOW")
 	e2eOverride = os.Getenv("NOX_E2E_OVERRIDE") == "true"
 	e2eFailFast = os.Getenv("NOX_E2E_FAILFAST") != "false"
+	// e2eZoom forces the world zoom (e.g. 0.5), to measure performance with a larger world view.
+	// Screenshots won't match the references then.
+	e2eZoom, _ = strconv.ParseFloat(os.Getenv("NOX_E2E_ZOOM"), 64)
 )
 
 const e2eDefaultDelay = 15 * time.Millisecond
@@ -284,6 +288,7 @@ func e2eCaptureScreens() {
 	if len(e2e.screens) == 0 {
 		return
 	}
+	frameStats.harness() // comparing screenshots takes longer than drawing the frame
 	for _, name := range e2e.screens {
 		e2eCompareScreen(name, noxClient.r.CopyPixBuffer())
 	}
@@ -726,6 +731,8 @@ func e2eRun() {
 					e2e.slow = e2eDefaultDelay
 				}
 				e2eLog.Println("SCRIPT COMPLETE")
+				// the game continues with real input delays, which would distort the frame times
+				frameStats.finish()
 			}
 		}
 		return

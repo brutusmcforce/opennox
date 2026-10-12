@@ -769,6 +769,7 @@ extern void (*func_587000_154940)(int2*, uint32_t, uint32_t);
 extern int (*func_587000_154944)(int, int);
 extern void* nox_video_tileBuf_ptr_3798796;
 extern void* nox_video_tileBuf_end_3798844;
+extern uint8_t* nox_video_tileBuf_dirty;
 
 extern unsigned int dword_5d4594_1193188;
 extern unsigned int dword_5d4594_1305748;
@@ -1288,6 +1289,9 @@ func Set_nox_video_tileBuf_ptr_3798796(v unsafe.Pointer) {
 }
 func Set_nox_video_tileBuf_end_3798844(v unsafe.Pointer) {
 	C.nox_video_tileBuf_end_3798844 = v
+}
+func Set_nox_video_tileBuf_dirty(v unsafe.Pointer) {
+	C.nox_video_tileBuf_dirty = (*C.uint8_t)(v)
 }
 func Set_func_587000_154940(v unsafe.Pointer) {
 	C.func_587000_154940 = (*[0]byte)(v)

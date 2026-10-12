@@ -845,6 +845,8 @@ func (c *Client) gpuDrawFloor(vp *noxrender.Viewport, dp image.Point) {
 	p := &c.gpuFloor
 	p.Tiles = t.noxTileBuf
 	p.Pitch = t.dword_5d4594_3798804 / 2
+	p.Dirty = t.noxTileDirty
+	p.DirtyCols = t.dword_5d4594_3798812
 	p.Off = image.Point{
 		X: dp.X + int(legacy.Get_dword_5d4594_3798836()) - int(legacy.Get_dword_5d4594_3798820()),
 		Y: dp.Y + int(legacy.Get_dword_5d4594_3798840()) - int(legacy.Get_dword_5d4594_3798824()),

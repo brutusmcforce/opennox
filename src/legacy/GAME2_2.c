@@ -108,6 +108,64 @@ uint32_t nox_client_drawIsTick = 1;
 void* nox_video_tileBuf_ptr_3798796 = 0;
 void* nox_video_tileBuf_end_3798844 = 0;
 
+// nox_video_tileBuf_dirty marks the tile buffer cells (one per 46x46 floor tile) that were drawn into,
+// so the GPU renderer only uploads those. It's owned by Go (see nox_xxx_tileInitBuf_430DB0).
+uint8_t* nox_video_tileBuf_dirty = 0;
+
+// nox_video_tileBuf_mark marks the cells covered by n bytes written at addr in the tile buffer.
+static void nox_video_tileBuf_mark(uint32_t addr, int n) {
+	if (!nox_video_tileBuf_dirty || n <= 0) {
+		return;
+	}
+	const int cell = 46;
+	int pitch = dword_5d4594_3798804;
+	int cols = dword_5d4594_3798812;
+	int off = (int)(addr - (uint32_t)nox_video_tileBuf_ptr_3798796);
+	int size = (int)((uint32_t)nox_video_tileBuf_end_3798844 - (uint32_t)nox_video_tileBuf_ptr_3798796);
+	if (pitch <= 0 || off < 0 || off >= size) {
+		return;
+	}
+	if (n > size - off) {
+		n = size - off;
+	}
+	while (n > 0) {
+		int x = off % pitch;
+		int len = pitch - x;
+		if (len > n) {
+			len = n;
+		}
+		uint8_t* row = nox_video_tileBuf_dirty + (off / pitch / cell) * cols;
+		for (int c = x / (2 * cell); c <= (x + len - 1) / (2 * cell); c++) {
+			row[c] = 1;
+		}
+		off += len;
+		n -= len;
+	}
+}
+
+// nox_video_tileBuf_markTile marks a whole tile (46x46 pixels) drawn at dst by the unrolled tile writers.
+static void nox_video_tileBuf_markTile(uint32_t dst) {
+	for (int i = 0; i < 46; i++) {
+		nox_video_tileBuf_mark(dst + i * dword_5d4594_3798804, 2 * 46);
+	}
+}
+
+// The functions below and the unrolled writers (sub_4831C0, sub_484450) are the only writers of the tile buffer.
+static void* nox_video_tileBuf_memcpy(void* dst, const void* src, size_t n) {
+	nox_video_tileBuf_mark((uint32_t)dst, (int)n);
+	return memcpy(dst, src, n);
+}
+
+static int nox_video_tileBuf_fill(void* dst, int cl, int n) {
+	nox_video_tileBuf_mark((uint32_t)dst, n);
+	return sub_49D1C0(dst, cl, n);
+}
+
+static void nox_video_tileBuf_blit(unsigned int dst, uint8_t* src, int n) {
+	nox_video_tileBuf_mark(dst, n);
+	sub_476D70((uint32_t*)dst, (int*)src, (unsigned int)n);
+}
+
 //----- (00476080) --------------------------------------------------------
 int sub_476080(unsigned char* a1) {
 	int v1;     // esi
@@ -229,7 +287,7 @@ void* sub_476AE0(nox_draw_viewport_t* vp, nox_drawable* dr) {
 	}
 	result = nox_video_getImagePixdata_42FB30(v4);
 	if (result) {
-		v33 = sub_476D70;
+		v33 = nox_video_tileBuf_blit;
 		v5 = *(uint32_t*)result;
 		v6 = *((uint32_t*)result + 1);
 		v27 = *((uint32_t*)result + 1);
@@ -1719,26 +1777,26 @@ char nox_xxx_tileDraw_4815E0(uint32_t* a1, int a2) {
 				v7 = *getMemU32Ptr(0x973CE0, 192 + v6) << getMemByte(0x973F18, 7696);
 				v8 = *getMemU32Ptr(0x973CE0, 384 + v6) << getMemByte(0x973F18, 7696);
 				if (v2 + v7 + v8 < v5) {
-					memcpy((void*)(v7 + v2), v4, 4 * (v8 >> 2));
+					nox_video_tileBuf_memcpy((void*)(v7 + v2), v4, 4 * (v8 >> 2));
 					v11 = &v4[4 * (v8 >> 2)];
 					v10 = (char*)(v7 + v2 + 4 * (v8 >> 2));
 					v12 = v8;
 				} else {
 					v9 = v5 - v7 - v2;
 					if (v9 > 0) {
-						memcpy((void*)(v7 + v2), v4, v9);
-						memcpy(nox_video_tileBuf_ptr_3798796, &v14[v9], v8 - v9);
+						nox_video_tileBuf_memcpy((void*)(v7 + v2), v4, v9);
+						nox_video_tileBuf_memcpy(nox_video_tileBuf_ptr_3798796, &v14[v9], v8 - v9);
 						v5 = nox_video_tileBuf_end_3798844;
 						v2 += (uint32_t)nox_video_tileBuf_ptr_3798796 - (uint32_t)nox_video_tileBuf_end_3798844;
 						goto LABEL_13;
 					}
 					v2 += (uint32_t)nox_video_tileBuf_ptr_3798796 - v5;
-					memcpy((void*)(v7 + v2), v4, 4 * (v8 >> 2));
+					nox_video_tileBuf_memcpy((void*)(v7 + v2), v4, 4 * (v8 >> 2));
 					v11 = &v4[4 * (v8 >> 2)];
 					v10 = (char*)(v7 + v2 + 4 * (v8 >> 2));
 					v12 = v8;
 				}
-				memcpy(v10, v11, v12 & 3);
+				nox_video_tileBuf_memcpy(v10, v11, v12 & 3);
 				v5 = nox_video_tileBuf_end_3798844;
 			LABEL_13:
 				v2 += dword_5d4594_3798804;
@@ -1751,6 +1809,7 @@ char nox_xxx_tileDraw_4815E0(uint32_t* a1, int a2) {
 				v4 = v14;
 			}
 		} else {
+			nox_video_tileBuf_markTile(v2);
 			LOBYTE(v3) = sub_4831C0(v3, v2);
 		}
 	}
@@ -1784,6 +1843,7 @@ char* sub_481770(uint32_t* a1, int a2, unsigned short a3) {
 		v6 += (uint32_t)nox_video_tileBuf_ptr_3798796 - (uint32_t)nox_video_tileBuf_end_3798844;
 	}
 	if (v6 + *getMemU32Ptr(0x973CE0, 376) < nox_video_tileBuf_end_3798844) {
+		nox_video_tileBuf_markTile(v6);
 		result = (char*)sub_484450(cl, v6);
 	} else {
 		v7 = 0;
@@ -1792,18 +1852,18 @@ char* sub_481770(uint32_t* a1, int a2, unsigned short a3) {
 			v8 = *getMemU32Ptr(0x973CE0, 192 + v7) << v4;
 			v9 = *getMemU32Ptr(0x973CE0, 384 + v7) << v4;
 			if (v6 + v9 + v8 < v5) {
-				result = (char*)sub_49D1C0(v6 + v8, cl, v9);
+				result = (char*)nox_video_tileBuf_fill(v6 + v8, cl, v9);
 				v5 = nox_video_tileBuf_end_3798844;
 			} else {
 				v10 = v5 - v8 - v6;
 				if (v10 <= 0) {
 					v6 += (uint32_t)nox_video_tileBuf_ptr_3798796 - v5;
-					result = (char*)sub_49D1C0(v6 + v8, cl, v9);
+					result = (char*)nox_video_tileBuf_fill(v6 + v8, cl, v9);
 					v5 = nox_video_tileBuf_end_3798844;
 					v7 = v12;
 				} else {
-					sub_49D1C0(v6 + v8, cl, v5 - v8 - v6);
-					sub_49D1C0(nox_video_tileBuf_ptr_3798796, cl, v9 - v10);
+					nox_video_tileBuf_fill(v6 + v8, cl, v5 - v8 - v6);
+					nox_video_tileBuf_fill(nox_video_tileBuf_ptr_3798796, cl, v9 - v10);
 					v5 = nox_video_tileBuf_end_3798844;
 					v7 = v12;
 					result = (char*)((uint32_t)nox_video_tileBuf_ptr_3798796 - (uint32_t)nox_video_tileBuf_end_3798844);
@@ -1906,24 +1966,24 @@ char nox_xxx_drawTexEdgesProbably_481900(uint32_t* a1, uint32_t* a2) {
 									v18 = v29 << getMemByte(0x973F18, 7696);
 									v17 = v15;
 								} else {
-									memcpy(v15, v33, v12 - (uint32_t)v15);
+									nox_video_tileBuf_memcpy(v15, v33, v12 - (uint32_t)v15);
 									v17 = nox_video_tileBuf_ptr_3798796;
 									v18 = v16 - (v12 - (uint32_t)v15);
 									v19 = &v33[v12 - (uint32_t)v15];
 								}
-								memcpy(v17, v19, v18);
+								nox_video_tileBuf_memcpy(v17, v19, v18);
 								v12 = nox_video_tileBuf_end_3798844;
 								v13 = v31;
 								v33 += v16;
 								break;
 							case 3:
 								if ((unsigned int)&v15[v16] < v12) {
-									memcpy(v15, v14, v16);
+									nox_video_tileBuf_memcpy(v15, v14, v16);
 								} else {
 									v20 = v12 - (uint32_t)v15;
-									memcpy(v15, v14, v20);
+									nox_video_tileBuf_memcpy(v15, v14, v20);
 									v14 = v26;
-									memcpy(nox_video_tileBuf_ptr_3798796, &v26[v20], v16 - v20);
+									nox_video_tileBuf_memcpy(nox_video_tileBuf_ptr_3798796, &v26[v20], v16 - v20);
 								}
 								v12 = nox_video_tileBuf_end_3798844;
 								v13 = v31;

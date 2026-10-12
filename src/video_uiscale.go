@@ -315,6 +315,9 @@ func (c *Client) drawCursorOverlay() {
 	}
 	st.hasCursor = false
 	if st.overlay == nil || st.overlay.Size() != phys {
+		if st.overlay != nil {
+			c.gpu.Forget(st.overlay)
+		}
 		st.overlay = noximage.NewImage16(image.Rectangle{Max: phys})
 	}
 	ui := noxPixBuffer.img.Size()

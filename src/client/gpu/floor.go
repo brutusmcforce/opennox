@@ -18,6 +18,13 @@ type floorRenderer struct {
 	light uint32
 	lsize image.Point
 	verts []float32
+	// reused buffers for merging dirty cells (see uploadTiles)
+	open, next []cellRect
+}
+
+// cellRect is a rectangle of tile buffer cells: columns [c0, c1) and rows [r0, r1).
+type cellRect struct {
+	c0, c1, r0, r1 int
 }
 
 func (f *floorRenderer) init() error {
@@ -56,6 +63,68 @@ func uploadTex(tex uint32, cur *image.Point, sz image.Point, ifmt int32, fmt, ty
 	}
 }
 
+// uploadTiles updates the tile texture: in full if its size changed or there are no dirty flags,
+// otherwise only the cells that the game drew into since the last upload.
+func (f *floorRenderer) uploadTiles(p *noxrender.FloorParams, rows int) {
+	sz := image.Pt(p.Pitch, rows)
+	const cell = noxrender.TileCell
+	cols := p.DirtyCols
+	if f.tsize != sz || p.Dirty == nil || cols <= 0 || len(p.Dirty) < cols*((rows+cell-1)/cell) {
+		uploadTex(f.tiles, &f.tsize, sz, gl.R16UI, gl.RED_INTEGER, gl.UNSIGNED_SHORT, unsafe.Pointer(&p.Tiles[0]))
+		clear(p.Dirty)
+		return
+	}
+	gl.BindTexture(gl.TEXTURE_2D, f.tiles)
+	gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
+	gl.PixelStorei(gl.UNPACK_ROW_LENGTH, int32(p.Pitch))
+	upload := func(r cellRect) {
+		x, y := r.c0*cell, r.r0*cell
+		w, h := min((r.c1-r.c0)*cell, p.Pitch-x), min((r.r1-r.r0)*cell, rows-y)
+		gl.TexSubImage2D(gl.TEXTURE_2D, 0, int32(x), int32(y), int32(w), int32(h),
+			gl.RED_INTEGER, gl.UNSIGNED_SHORT, unsafe.Pointer(&p.Tiles[y*p.Pitch+x]))
+	}
+	// Runs of dirty cells in a row are merged with the same runs in the rows above,
+	// so a new column of tiles (when scrolling sideways) is a single upload. Each upload has a fixed cost.
+	open, next := f.open[:0], f.next[:0]
+	for cy := 0; cy*cell < rows; cy++ {
+		row := p.Dirty[cy*cols : (cy+1)*cols]
+		next = next[:0]
+		k := 0 // open runs are sorted by column, like the runs of this row
+		for c0 := 0; c0 < cols; c0++ {
+			if row[c0] == 0 {
+				continue
+			}
+			c1 := c0 + 1
+			for c1 < cols && row[c1] != 0 {
+				c1++
+			}
+			clear(row[c0:c1])
+			for k < len(open) && open[k].c0 < c0 {
+				upload(open[k])
+				k++
+			}
+			if k < len(open) && open[k].c0 == c0 && open[k].c1 == c1 {
+				r := open[k]
+				r.r1 = cy + 1
+				next = append(next, r)
+				k++
+			} else {
+				next = append(next, cellRect{c0: c0, c1: c1, r0: cy, r1: cy + 1})
+			}
+			c0 = c1
+		}
+		for ; k < len(open); k++ {
+			upload(open[k])
+		}
+		open, next = next, open
+	}
+	for _, r := range open {
+		upload(r)
+	}
+	f.open, f.next = open[:0], next[:0]
+	gl.PixelStorei(gl.UNPACK_ROW_LENGTH, 0)
+}
+
 // Floor draws floor tiles in given screen spans (rectangles).
 func (r *Renderer) Floor(p *noxrender.FloorParams, spans []image.Rectangle) {
 	if r.cur == nil || len(spans) == 0 || p.Pitch <= 0 || len(p.Tiles) < p.Pitch {
@@ -64,7 +133,7 @@ func (r *Renderer) Floor(p *noxrender.FloorParams, spans []image.Rectangle) {
 	f := &r.floor
 	rows := len(p.Tiles) / p.Pitch
 	r.flush()
-	uploadTex(f.tiles, &f.tsize, image.Pt(p.Pitch, rows), gl.R16UI, gl.RED_INTEGER, gl.UNSIGNED_SHORT, unsafe.Pointer(&p.Tiles[0]))
+	f.uploadTiles(p, rows)
 	if p.Lit && len(p.Light) >= 3*p.LightW*p.LightH && p.LightW > 0 && p.LightH > 0 {
 		uploadTex(f.light, &f.lsize, image.Pt(p.LightW, p.LightH), gl.RGB32F, gl.RGB, gl.FLOAT, unsafe.Pointer(&p.Light[0]))
 	}

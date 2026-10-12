@@ -47,6 +47,14 @@ func (c *Client) initGPU() error {
 		g.Filtering = c.Win.GetFiltering()
 		g.Present(img, view, win)
 		c.updateSysCursor()
+		switch {
+		case img == movieFrame:
+			frameStats.presented(frameMovie)
+		case nox_client_gui_flag_815132 != 0:
+			frameStats.presented(frameMenu)
+		default:
+			frameStats.presented(frameGame)
+		}
 		if img != nil && img != movieFrame && uiScaleState.world == nil {
 			// Menus are drawn at a low resolution and stretched to the window.
 			// Draw them at the window resolution instead, so that the text stays smooth.
@@ -108,6 +116,7 @@ func (c *Client) initSeat(sz image.Point) error {
 }
 
 func (c *Client) freeSeat() {
+	frameStats.finish()
 	if c.gpu != nil {
 		legacy.Nox_client_gpu_edgeDraw = nil
 		c.r.SetGPU(nil)

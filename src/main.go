@@ -515,6 +515,7 @@ func sub_4AA9C0() int {
 
 func cleanup() {
 	slog.Info("cleanup")
+	frameStats.finish()
 	writeConfigLegacy("nox.cfg")
 	nox_xxx_freeScreenParticles_4314D0()
 	sub_413960()

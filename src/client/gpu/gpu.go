@@ -10,12 +10,14 @@
 package gpu
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"image"
 	"image/color"
 	"log/slog"
 	"strings"
+	"sync"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 
@@ -102,6 +104,7 @@ type Renderer struct {
 	scratch *target                           // temporary target for Zoom
 	cur     *target
 	frame   uint64
+	upload  []uint32 // reused buffer for Upload
 
 	Gamma     float32
 	Filtering bool
@@ -605,21 +608,41 @@ func (r *Renderer) Upload(img *noximage.Image16) {
 	delete(r.phys, img)
 	t := r.targetFor(img)
 	sz := t.size
-	buf := make([]byte, 4*sz.X*sz.Y)
+	lut := rgbaLUT()
+	if n := sz.X * sz.Y; cap(r.upload) < n {
+		r.upload = make([]uint32, n)
+	}
+	buf := r.upload[:sz.X*sz.Y]
 	for y := 0; y < sz.Y; y++ {
 		// render targets have the bottom-left origin
-		row := img.Row(y)
-		dst := buf[4*sz.X*(sz.Y-1-y):]
-		for x, v := range row[:sz.X] {
-			c := noxcolor.RGBA5551(v).ColorNRGBA()
-			p := dst[4*x:]
-			p[0], p[1], p[2], p[3] = c.R, c.G, c.B, 0xff
+		row := img.Row(y)[:sz.X]
+		dst := buf[sz.X*(sz.Y-1-y):][:sz.X]
+		for x, v := range row {
+			dst[x] = lut[v]
 		}
 	}
-	gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
+	gl.PixelStorei(gl.UNPACK_ALIGNMENT, 4)
 	gl.BindTexture(gl.TEXTURE_2D, t.tex)
 	gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(sz.X), int32(sz.Y), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(buf))
 	r.restore()
+}
+
+var rgbaTable struct {
+	once sync.Once
+	lut  *[1 << 16]uint32
+}
+
+// rgbaLUT returns a table that converts RGBA5551 pixels to opaque RGBA8 (in memory order R, G, B, A).
+func rgbaLUT() *[1 << 16]uint32 {
+	rgbaTable.once.Do(func() {
+		lut := new([1 << 16]uint32)
+		for v := range lut {
+			c := noxcolor.RGBA5551(v).ColorNRGBA()
+			lut[v] = binary.LittleEndian.Uint32([]byte{c.R, c.G, c.B, 0xff})
+		}
+		rgbaTable.lut = lut
+	})
+	return rgbaTable.lut
 }
 
 // Zoom replaces the content of the render target associated with an image with a part of it

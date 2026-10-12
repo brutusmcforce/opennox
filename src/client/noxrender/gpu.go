@@ -44,6 +44,9 @@ type GlyphKey struct {
 	Frac fixed.Point26_6 // fractional part of the dot
 }
 
+// TileCell is the size of the cells in FloorParams.Dirty: one floor tile.
+const TileCell = 46
+
 // FloorParams describes floor tiles for drawing them on the GPU.
 //
 // Floor tiles are pre-rendered by the game into a circular tile buffer. For a screen position (x, y)
@@ -52,6 +55,10 @@ type FloorParams struct {
 	Tiles []uint16 // RGB555
 	Pitch int
 	Off   image.Point
+	// Dirty has a flag for each TileCell x TileCell cell of Tiles (DirtyCols per row) that changed since the last call.
+	// Only those cells are uploaded, and the flags are cleared. Nil means the whole buffer changed.
+	Dirty     []byte
+	DirtyCols int
 	// Lit enables lighting. Light is a grid of RGB light multipliers, stored row by row.
 	Lit      bool
 	Light    []float32

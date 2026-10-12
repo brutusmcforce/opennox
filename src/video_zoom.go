@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/brutusmcforce/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/env"
 	"github.com/brutusmcforce/opennox/libs/noximage"
 	"github.com/brutusmcforce/opennox/libs/platform"
 
@@ -116,6 +117,9 @@ func (c *Client) updateZoom() {
 	z := &c.zoom
 	if z.target <= 0 {
 		z.target = 1 // not set yet
+	}
+	if env.IsE2E() && e2eZoom > 0 {
+		z.target = e2eZoom
 	}
 	if lo := c.zoomMin(); z.target < lo {
 		z.target = lo
