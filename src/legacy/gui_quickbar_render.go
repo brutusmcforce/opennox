@@ -133,8 +133,8 @@ func quickbarDrawSpell(w *gui.Window, _ *gui.WindowData) int {
 			}
 		}
 	}
-	p := *memmap.PtrUint32(0x852978, 8)
-	buffed := p != 0 && *(*uint32)(unsafe.Pointer(uintptr(p) + 124))&(1<<29) != 0
+	p := LocalPlayerDrawable
+	buffed := p != nil && *(*uint32)(unsafe.Add(p.C(), 124))&(1<<29) != 0
 	if !bool(nox_xxx_spellIsEnabled_424B70(int(id))) || Nox_xxx_playerAnimCheck_4372B0() != 0 || buffed {
 		GetClient().R2().DrawRectFilledAlpha(pos.X, pos.Y, 30, 30)
 	} else if mana < cost && cost != 0 {

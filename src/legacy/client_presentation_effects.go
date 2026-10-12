@@ -77,7 +77,7 @@ func presentationChantTick() {
 	}
 }
 func presentationShields() []*client.Drawable {
-	return unsafe.Slice((**client.Drawable)(memmap.PtrOff(0x5D4594, 1217468)), 9)
+	return presentationShieldList[:]
 }
 func presentationShieldInit() bool {
 	for i, name := range []string{"ReflectiveShieldNW", "ReflectiveShieldN", "ReflectiveShieldNE", "ReflectiveShieldW", "", "ReflectiveShieldE", "ReflectiveShieldSW", "ReflectiveShieldS", "ReflectiveShieldSE"} {

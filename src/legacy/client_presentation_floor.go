@@ -8,7 +8,7 @@ import (
 	"unsafe"
 )
 
-func presentationLocal() *client.Drawable { return (*client.Drawable)(*memmap.PtrPtr(0x852978, 8)) }
+func presentationLocal() *client.Drawable { return LocalPlayerDrawable }
 func presentationWallY(wall *[8]byte) int32 {
 	y := 23 * int32(wall[6])
 	local := presentationLocal()

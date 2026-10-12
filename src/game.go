@@ -972,7 +972,7 @@ func (s *Server) nox_xxx_gameTick_4D2580_server_C() bool {
 }
 
 func nox_game_guiInit_473680() error {
-	*memmap.PtrPtr(0x5D4594, 1096420) = unsafe.Pointer(nox_xxx_gLoadImg("CursorBitmap").C())
+	nox_xxx_gLoadImg("CursorBitmap") // the result was stored in a variable nothing reads (0x5D4594+1096420)
 	if legacy.Sub_455C30() == 0 {
 		return errors.New("sub_455C30 failed")
 	}
@@ -1036,8 +1036,7 @@ func nox_game_guiInit_473680() error {
 		return errors.New("nox_xxx_cliPrepareGameplay1_460E60 failed")
 	}
 	vsz := videoGetWindowSize()
-	*memmap.PtrPtr(0x5D4594, 1096352) = unsafe.Pointer(guiCon.Init(vsz).C())
-	if memmap.Uint32(0x5D4594, 1096352) == 0 {
+	if guiCon.Init(vsz) == nil {
 		return errors.New("nox_gui_console_Create_450C70 failed")
 	}
 	if legacy.Sub_46A730() == nil {

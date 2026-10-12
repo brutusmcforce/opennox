@@ -4,7 +4,6 @@ import (
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 func interactionIconDraw(w *gui.Window, _ *gui.WindowData) int {
@@ -14,7 +13,6 @@ func interactionIconDraw(w *gui.Window, _ *gui.WindowData) int {
 }
 func interactionChatIconOpen() int {
 	img := Nox_xxx_gLoadImg("ChatIcon")
-	*memmap.PtrUint32(0x5D4594, 825748) = uint32(uintptr(img.C()))
 	w := GetClient().Cli().GUI.NewWindowRaw(nil, 136, int(nox_win_width)-50, int(nox_win_height)/2-50, 50, 50, nil)
 	interactionChatIcon = uint32(uintptr(w.C()))
 	w.DrawData().BgImageHnd = img.C()
@@ -42,7 +40,6 @@ func interactionObserverIconDraw(w *gui.Window, d *gui.WindowData) int {
 }
 func interactionObserverIconOpen() int {
 	img := Nox_xxx_gLoadImg("ObserverIcon")
-	*memmap.PtrUint32(0x5D4594, 1193716) = uint32(uintptr(img.C()))
 	w := GetClient().Cli().GUI.NewWindowRaw(nil, 136, int(nox_win_width)-50, int(nox_win_height)/2-100, 50, 50, nil)
 	interactionObserverIcon = uint32(uintptr(w.C()))
 	w.DrawData().BgImageHnd = img.C()

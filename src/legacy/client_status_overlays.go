@@ -4,7 +4,6 @@ import (
 	"fmt"
 	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/libs/strman"
-	"github.com/brutusmcforce/opennox/client"
 	flags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
@@ -73,7 +72,7 @@ func clientDebugOverlay() {
 		return alloc.GoString16(&dst[0])
 	}
 	r.DrawString(nil, store(browserNarrowText(alloc.GoString(sessionMapFilename()))), origin)
-	dr := (*client.Drawable)(unsafe.Pointer(uintptr(memmap.Uint32(0x852978, 8))))
+	dr := LocalPlayerDrawable
 	p := Get_dword_8531A0_2576()
 	if dr == nil || p == nil {
 		return

@@ -27,7 +27,7 @@ func objectRenderBeamAppend(packet unsafe.Pointer) int {
 }
 func objectRenderBeamReset() { dword_5d4594_1321800 = 0 }
 func objectRenderBeamDraw(vp *noxrender.Viewport) int {
-	if *memmap.PtrPtr(0x852978, 8) == nil {
+	if LocalPlayerDrawable == nil {
 		return 0
 	}
 	if dword_5d4594_1321800 == 0 {

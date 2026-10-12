@@ -23,7 +23,7 @@ func combatFeedInit() {
 			*p = uint32(GetClient().Cli().Things.IndByID(name))
 		}
 	}
-	*memmap.PtrPtr(0x5D4594, 1203828) = Nox_xxx_spellIcon_424A90(15)
+	combatFeedDefaultIcon = Nox_xxx_spellIcon_424A90(15)
 }
 func combatFeedAdd(raw unsafe.Pointer) {
 	p := unsafe.Slice((*byte)(raw), 11)
@@ -127,7 +127,7 @@ func combatFeedRow(row *[6]uint32) {
 		}
 	}
 	if handle == nil {
-		handle = *memmap.PtrPtr(0x5D4594, 1203828)
+		handle = combatFeedDefaultIcon
 	}
 	var off, sz image.Point
 	var img *noxrender.Image

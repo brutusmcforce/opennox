@@ -105,7 +105,7 @@ func teamUIPlayerTeam(code, id int) int {
 	}
 	d := (*gui.ScrollListBoxData)(w.ChildByID(10501).WidgetData)
 	items := unsafe.Slice(d.Items, int(d.Count))
-	items[i].Field_129 = **(**uint32)(memmap.PtrOff(0x85B3FC, 132+4*uintptr(palette)))
+	items[i].Field_129 = *ColorTable[palette]
 	return int(uintptr(unsafe.Pointer(d.Items)))
 }
 func teamUIPlayersRefresh() int {

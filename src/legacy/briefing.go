@@ -7,16 +7,17 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/server"
 )
 
 type briefingSlide struct {
-	Image    uint32
+	Image    noxrender.ImageHandle
 	Text     *uint16
 	Voice    *byte
 	Duration uint32
@@ -28,8 +29,15 @@ type briefingScore struct {
 	Total                             uint32
 }
 
-var _ = [1]struct{}{}[32-unsafe.Sizeof(briefingChapter{})]
-var _ = [1]struct{}{}[16-unsafe.Sizeof(briefingScore{})]
+var (
+	briefingChapters     [33]briefingChapter   // was 0x5D4594+831300
+	briefingScores       [6]briefingScore      // was 0x5D4594+832364
+	briefingCreditsImage noxrender.ImageHandle // was 0x5D4594+831264
+	briefingCreditsText  *uint16               // was 0x5D4594+831268
+	briefingCreditsVoice *byte                 // was 0x5D4594+831272
+	briefingImage        noxrender.ImageHandle // was 0x5D4594+832460
+	briefingCaption      *uint16               // was 0x5D4594+832464
+)
 
 func briefingString(id string) string {
 	s := GetServer().S().Strings().GetStringInFile(strman.ID(id), "GUIBrief.c")
@@ -43,15 +51,15 @@ func briefingString(id string) string {
 func briefingFormat(id string, args ...any) string {
 	return fmt.Sprintf(briefingString(id), args...)
 }
-func briefingLoadImage(name string) uint32 {
+func briefingLoadImage(name string) noxrender.ImageHandle {
 	im := Nox_xxx_gLoadImg(name)
 	if im == nil {
-		return 0
+		return nil
 	}
-	return uint32(uintptr(im.C()))
+	return im.C()
 }
 func briefingLoadChapters() *uint16 {
-	table := (*[33]briefingChapter)(memmap.PtrOff(0x5D4594, 831300))
+	table := &briefingChapters
 	for ch := 0; ch < 11; ch++ {
 		for class := 0; class < 3; class++ {
 			name := alloc.GoString(*(**byte)(memmap.PtrOff(0x587000, 122944+uintptr(4*class))))
@@ -76,11 +84,11 @@ func briefingLoadChapters() *uint16 {
 			}
 		}
 	}
-	*memmap.PtrUint32(0x5D4594, 831264) = briefingLoadImage("CreditsImage")
+	briefingCreditsImage = briefingLoadImage("CreditsImage")
 	v, _ := GetServer().S().Strings().GetVariantInFile("Nox:Credits", "GUIBrief.c")
 	text := alloc.InternCString16(v.Str)
-	*memmap.PtrPtr(0x5D4594, 831268) = unsafe.Pointer(text)
-	*memmap.PtrPtr(0x5D4594, 831272) = unsafe.Pointer(alloc.InternCString(v.Str2))
+	briefingCreditsText = text
+	briefingCreditsVoice = alloc.InternCString(v.Str2)
 	return text
 }
 func briefingSprites() []*uint32 {
@@ -124,19 +132,19 @@ func briefingCompare(a, b uint32) int {
 	}
 	return -1
 }
-func briefingSetImage(image uint32) uint32 {
-	if image == 0 {
+func briefingSetImage(image noxrender.ImageHandle) noxrender.ImageHandle {
+	if image == nil {
 		image = briefingLoadImage("WarriorChapterBegin8")
 	}
-	*memmap.PtrUint32(0x5D4594, 832460) = image
+	briefingImage = image
 	return image
 }
-func briefingSetCaption(text uint32) uint32 { *memmap.PtrUint32(0x5D4594, 832464) = text; return text }
-func briefingSetStage(stage uint32)         { *memmap.PtrUint32(0x5D4594, 832468) = stage }
-func briefingStage() uint32                 { return memmap.Uint32(0x5D4594, 832468) }
+func briefingSetCaption(text *uint16) *uint16 { briefingCaption = text; return text }
+func briefingSetStage(stage uint32)           { *memmap.PtrUint32(0x5D4594, 832468) = stage }
+func briefingStage() uint32                   { return memmap.Uint32(0x5D4594, 832468) }
 func briefingWinReport(data unsafe.Pointer) int {
 	b := unsafe.Slice((*byte)(data), 90)
-	rows := (*[6]briefingScore)(memmap.PtrOff(0x5D4594, 832364))
+	rows := &briefingScores
 	clear(rows[:])
 	*memmap.PtrUint32(0x5D4594, 832356) = uint32(binary.LittleEndian.Uint16(b[2:]))
 	*memmap.PtrUint32(0x5D4594, 831228) = uint32(binary.LittleEndian.Uint16(b[4:]))
@@ -178,13 +186,13 @@ func briefingSelection(data unsafe.Pointer, show int, instructions bool) int {
 	b := unsafe.Slice((*byte)(data), 69)
 	briefingSetImage(briefingLoadImage(alloc.GoString(&b[5])))
 	if name := alloc.GoString(&b[37]); name != "" {
-		briefingSetCaption(uint32(uintptr(unsafe.Pointer(alloc.InternCString16(briefingString(name))))))
+		briefingSetCaption(alloc.InternCString16(briefingString(name)))
 	} else {
 		off := uintptr(832544)
 		if instructions {
 			off = 832548
 		}
-		briefingSetCaption(uint32(uintptr(memmap.PtrOff(0x5D4594, off))))
+		briefingSetCaption((*uint16)(memmap.PtrOff(0x5D4594, off)))
 	}
 	briefingSetStage(uint32(binary.LittleEndian.Uint16(b[2:])))
 	mode := byte(2)

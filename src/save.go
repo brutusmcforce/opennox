@@ -352,18 +352,19 @@ func xferSet446520(i int, data []byte) {
 		xferFree446580(i) // a server may send the MOTD more than once
 		buf, _ := alloc.Make([]byte{}, len(data))
 		copy(buf, data)
-		*memmap.PtrPtr(0x5D4594, 826056+4*uintptr(i)) = unsafe.Pointer(&buf[0])
-		*memmap.PtrUint32(0x5D4594, 826048+4*uintptr(i)) = uint32(len(buf))
-		*memmap.PtrUint32(0x5D4594, 826064+4*uintptr(i)) = 1
+		r := &legacy.XferRecv[i]
+		r.Data = unsafe.Pointer(&buf[0])
+		r.Size = uint32(len(buf))
+		r.Ready = 1
 	}
 }
 
 func xferFree446580(i int) {
-	if memmap.Uint32(0x5D4594, 826056+4*uintptr(i)) != 0 {
-		alloc.FreePtr(*memmap.PtrPtr(0x5D4594, 826056+4*uintptr(i)))
-		*memmap.PtrUint32(0x5D4594, 826056+4*uintptr(i)) = 0
-		*memmap.PtrUint32(0x5D4594, 826048+4*uintptr(i)) = 0
-		*memmap.PtrUint32(0x5D4594, 826064+4*uintptr(i)) = 0
+	if r := &legacy.XferRecv[i]; r.Data != nil {
+		alloc.FreePtr(r.Data)
+		r.Data = nil
+		r.Size = 0
+		r.Ready = 0
 	}
 }
 

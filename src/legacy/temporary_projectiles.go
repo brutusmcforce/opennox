@@ -157,7 +157,7 @@ func temporaryAntiCandidate(t, u *server.Object) {
 	dist := y*y + x*x
 	if dist < float64(*memmap.PtrFloat32(0x5d4594, 2488672)) {
 		*memmap.PtrFloat32(0x5d4594, 2488672) = float32(dist)
-		*memmap.PtrPtr(0x5d4594, 2488668) = t.CObj()
+		temporaryAntiTarget = t
 	}
 }
 func temporaryAntiSpell(u *server.Object) {
@@ -174,10 +174,10 @@ func temporaryAntiSpell(u *server.Object) {
 		fps = uint32(core.TickRate())
 	}
 	if *target == nil && frame-u.Field34 > fps>>2 {
-		*memmap.PtrUint32(0x5d4594, 2488668) = 0
+		temporaryAntiTarget = nil
 		*memmap.PtrUint32(0x5d4594, 2488672) = 1287568416
 		core.Map.EachMissileInCircle(u.PosVec, 600, func(t *server.Object) bool { temporaryAntiCandidate(t, u); return true })
-		*target = (*server.Object)(*memmap.PtrPtr(0x5d4594, 2488668))
+		*target = temporaryAntiTarget
 		u.Field34 = core.Frame()
 	}
 	if t := *target; t != nil {

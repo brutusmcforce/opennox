@@ -42,4 +42,6 @@ var browserUI = struct {
 	connectionDeadline uint64
 	refreshDeadline    uint64
 	servers            *legacyListNode
+	joinButton         *gui.Window // was 0x5D4594+815008
+	popupWindow        *gui.Window // was 0x5D4594+815036
 }{listMode: 1, region: -1, sort: 6}

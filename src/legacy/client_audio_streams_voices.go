@@ -1,9 +1,7 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/legacy/timer"
 	"unsafe"
 )
 
@@ -38,7 +36,7 @@ func audioStreamVoiceInit(p *audioStreamVoice) unsafe.Pointer {
 	p.Flags = 0
 	p.Loops = 0
 	p.Priority = 0
-	p.GlobalTimers = (*timer.TimerGroup)(*memmap.PtrPtr(0x5D4594, 1193340))
+	p.GlobalTimers = AudioGlobalTimers
 	p.ExtraTimers = nil
 	p.Timers.Init()
 	p.Buffer = nil

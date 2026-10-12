@@ -85,7 +85,7 @@ func browserShow() int {
 	panel := root.ChildByID(10033)
 	browserUI.detailPanel = panel.C()
 	browserUI.filter = uint32(uintptr(sessionFilterOpen(root).C()))
-	*memmap.PtrUint32(0x5D4594, 815008) = uint32(uintptr(root.ChildByID(10001).C()))
+	browserUI.joinButton = root.ChildByID(10001)
 	for i, p := range []*uint32{&browserUI.playersColumn, &browserUI.modeColumn, &browserUI.mapColumn, &browserUI.pingColumn, &browserUI.statusColumn} {
 		*p = uint32(uintptr(root.ChildByID(uint(10038 + i)).C()))
 	}

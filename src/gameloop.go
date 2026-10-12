@@ -174,6 +174,10 @@ mainloop:
 				log.Println(err)
 				if again {
 					c.cmainLoop()
+				} else {
+					// The session could not be created; retrying would only repeat the failure
+					// and leak the partially initialized session each time.
+					mainloopStop()
 				}
 				continue mainloop
 			}
@@ -739,15 +743,15 @@ func sub_4703F0() {
 		noxClient.GUI.Focus(nil)
 		legacy.Get_dword_5d4594_1090048().Hide()
 		legacy.Get_dword_5d4594_1090100().Hide()
-		*(*uint32)(unsafe.Add(*memmap.PtrPtr(6112660, 1090052), 4)) &= 0xFFFFFFF7
-		*(*uint32)(unsafe.Add(*memmap.PtrPtr(6112660, 1090056), 4)) &= 0xFFFFFFF7
+		legacy.ScoreboardGroups[0].Flags &^= 0x8
+		legacy.ScoreboardGroups[1].Flags &^= 0x8
 	case 1, 2:
 		legacy.Get_dword_5d4594_1090048().ShowModal()
 		sub := legacy.Get_dword_5d4594_1090100()
 		sub.ShowModal()
 		sub.Show()
-		*(*uint32)(unsafe.Add(*memmap.PtrPtr(6112660, 1090052), 4)) |= 8
-		*(*uint32)(unsafe.Add(*memmap.PtrPtr(6112660, 1090056), 4)) |= 8
+		legacy.ScoreboardGroups[0].Flags |= 0x8
+		legacy.ScoreboardGroups[1].Flags |= 0x8
 		legacy.Set_dword_587000_145664(1)
 	case 3, 4, 5:
 		legacy.Set_dword_587000_145664(1)

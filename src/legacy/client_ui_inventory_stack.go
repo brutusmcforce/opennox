@@ -251,7 +251,7 @@ func sub_461A80(code int32) {
 			uiMeterRefreshPotions()
 		}
 		GetClient().Nox_xxx_spriteDelete_45A4B0(dr)
-		*memmap.PtrUint32(0x5D4594, 1049848) = 0
+		uiInventoryDraggedItem = nil
 		dword_5d4594_1049856 = 0
 		Nox_xxx_cursorResetDraggedItem_4776A0()
 	} else {

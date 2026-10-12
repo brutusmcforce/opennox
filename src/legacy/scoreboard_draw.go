@@ -109,7 +109,7 @@ func scoreboardDraw(w *gui.Window, draw *gui.WindowData) int {
 		} else if !scoreboardHidden(rw) {
 			rw.Hide()
 		}
-		scoreboardSetText((*gui.Window)(*memmap.PtrPtr(0x5D4594, 1090104)), title)
+		scoreboardSetText(scoreboardTitle, title)
 		scoreboardTimeHeading()
 		scoreboardLessonHeading()
 	}

@@ -147,25 +147,28 @@ func nox_xxx_sprite_45A480_drawable(dr *client.Drawable) {
 
 var _ = [1]struct{}{}[80-unsafe.Sizeof(client.DrawableFX{})]
 
+// drawableFXClass is the allocation class of client.DrawableFX. Was 0x5D4594+1203868.
+var drawableFXClass unsafe.Pointer
+
 func nox_xxx_allocArrayDrawableFX_495AB0() int32 {
 	cl := alloc.NewClassT("DrawableFX", client.DrawableFX{}, 128)
-	*memmap.PtrPtr(0x5D4594, 1203868) = cl.UPtr()
+	drawableFXClass = cl.UPtr()
 	if cl.Class == nil {
 		return 0
 	}
-	*memmap.PtrUint32(0x5D4594, 1203872) = 0
+	legacy.ResetCombatFX()
 	return 1
 }
 
 func sub_495AE0() {
-	aclass := alloc.AsClassT[client.DrawableFX](*memmap.PtrPtr(0x5D4594, 1203868))
+	aclass := alloc.AsClassT[client.DrawableFX](drawableFXClass)
 	aclass.Free()
-	*memmap.PtrPtr(0x5D4594, 1203868) = nil
-	*memmap.PtrUint32(0x5D4594, 1203872) = 0
+	drawableFXClass = nil
+	legacy.ResetCombatFX()
 }
 
 func sub_495F70(dr *client.Drawable) {
-	aclass := alloc.AsClassT[client.DrawableFX](*memmap.PtrPtr(0x5D4594, 1203868))
+	aclass := alloc.AsClassT[client.DrawableFX](drawableFXClass)
 	if dr != nil && !dr.HasFX(1) {
 		p := aclass.NewObject()
 		if p != nil {
@@ -301,7 +304,7 @@ func (c *Client) Nox_xxx_spriteDelete_45A4B0(dr *client.Drawable) int {
 
 func (c *Client) sub_495B00(dr *client.Drawable) {
 	var next *client.DrawableFX
-	aclass := alloc.AsClassT[client.DrawableFX](*memmap.PtrPtr(0x5D4594, 1203868))
+	aclass := alloc.AsClassT[client.DrawableFX](drawableFXClass)
 	for p := dr.Field_114; p != nil; p = next {
 		next = p.Next
 

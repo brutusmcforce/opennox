@@ -40,8 +40,8 @@ func briefingDrawTitle(data *gui.WindowData) int {
 	s := fmt.Sprintf("%s %d", briefingString("Noxworld.c:Stage"), int32(briefingStage()))
 	sz := r.GetStringSizeWrapped(font, s, 0)
 	r.DrawString(font, s, image.Pt(x-sz.X/2, y+3*(sz.Y-80)))
-	if p := *memmap.PtrPtr(0x5D4594, 832464); p != nil {
-		s = alloc.GoString16((*uint16)(p))
+	if p := briefingCaption; p != nil {
+		s = alloc.GoString16(p)
 		sz = r.GetStringSizeWrapped(font, s, 0)
 		r.DrawString(font, s, image.Pt(x-sz.X/2, y+3*(80-sz.Y)))
 	}
@@ -60,7 +60,7 @@ func briefingDrawStats(data *gui.WindowData) int {
 	r.DrawString(font, title, image.Pt(x-sz.X/2, height+y-240))
 	span := int(int32(memmap.Uint32(0x587000, 122968) - memmap.Uint32(0x587000, 122964)))
 	step := int(int32(float32(float64(height) * 1.5)))
-	rows := (*[6]briefingScore)(memmap.PtrOff(0x5D4594, 832364))
+	rows := &briefingScores
 	local, others, count := 0, 0, 0
 	for i, row := range rows {
 		if row.Player == nil {

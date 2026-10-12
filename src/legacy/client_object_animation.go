@@ -80,9 +80,9 @@ func objectGlyphDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	r := GetClient().R2()
 	d := r.Data()
 	alpha := byte(255)
-	local := *memmap.PtrUint32(0x852978, 8)
-	if noxflags.HasGame(noxflags.GameFlag(2)) && local != 0 && *effectWord(dr, 120)&0x40000000 == 0 {
-		player := (*client.Drawable)(unsafe.Pointer(uintptr(local)))
+	local := LocalPlayerDrawable
+	if noxflags.HasGame(noxflags.GameFlag(2)) && local != nil && *effectWord(dr, 120)&0x40000000 == 0 {
+		player := local
 		if player.HasEnchant(21) {
 			d.SetColorize17(1)
 			cl := noxcolor.RGBA5551(dword_8531A0_2572).ColorNRGBA()

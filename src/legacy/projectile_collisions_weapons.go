@@ -91,10 +91,10 @@ func projectileChakramCandidate(t *server.Object, pos *types.Pointf) {
 	if uint32(effectsTruncWord(float64(math.Float32frombits(uint32(t.ObjFlags)))))&0x8020 != 0 || t.HasEnchant(0) {
 		return
 	}
-	if uintptr(t.CObj()) == uintptr(memmap.Uint32(0x5d4594, 1567840)) || uintptr(t.CObj()) == uintptr(memmap.Uint32(0x5d4594, 1567932)) {
+	if t == projectileChakramOwner || uintptr(t.CObj()) == uintptr(memmap.Uint32(0x5d4594, 1567932)) {
 		return
 	}
-	u := objectFromWord(uint32(int32(memmap.Uint32(0x5d4594, 1567924))))
+	u := projectileChakramObj
 	if !GetServer().S().MapTraceVision(t, u) {
 		return
 	}
@@ -109,8 +109,8 @@ func projectileChakramCandidate(t *server.Object, pos *types.Pointf) {
 func projectileChakramSelect(u *server.Object) *server.Object {
 	dword_5d4594_1567928 = 0
 	*memmap.PtrUint32(0x5d4594, 1567932) = *equipmentWord(u.UpdateData, 12)
-	*memmap.PtrUint32(0x5d4594, 1567840) = uint32(uintptr(u.ObjOwner.CObj()))
-	*memmap.PtrUint32(0x5d4594, 1567924) = uint32(uintptr(u.CObj()))
+	projectileChakramOwner = u.ObjOwner
+	projectileChakramObj = u
 	*memmap.PtrUint32(0x5d4594, 1567836) = 1259902592
 	rect := types.Rectf{Min: types.Pointf{X: float32(float64(u.PosVec.X) - 400), Y: float32(float64(u.PosVec.Y) - 400)}, Max: types.Pointf{X: float32(float64(u.PosVec.X) + 400), Y: float32(float64(u.PosVec.Y) + 400)}}
 	GetServer().S().Map.EachObjInRect(rect, func(t *server.Object) bool { projectileChakramCandidate(t, &u.PosVec); return true })

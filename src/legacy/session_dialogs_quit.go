@@ -52,7 +52,7 @@ func sessionQuitToggle() {
 		Sub_413A00(0)
 		return
 	}
-	player := *memmap.PtrPtr(0x852978, 8)
+	player := LocalPlayerDrawable.C()
 	solo := noxflags.HasGame(noxflags.GameModeCoop)
 	if player != nil && solo {
 		state := *(*uint32)(unsafe.Add(player, 276))
@@ -117,7 +117,7 @@ func SessionQuitEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 			Nox_xxx_dialogMsgBoxCreate_449A10(nil, sessionQuitText("SelChar.c:LoadLabel"), sessionQuitText("GUIQuit.c:ReallyLoadMessage"), 56, func() { Sub_445B40() }, func() { Sub_413A00(0) })
 		}
 	case 9002:
-		p := *memmap.PtrPtr(0x852978, 8)
+		p := LocalPlayerDrawable.C()
 		if *(*uint32)(unsafe.Add(p, 120))&0x8000 == 0 {
 			sessionQuitToggle()
 			if noxflags.HasGame(noxflags.GameModeCoop) {

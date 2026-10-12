@@ -5,7 +5,6 @@ import (
 	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"image"
 	"math"
@@ -268,7 +267,7 @@ func uiListAppend(w *gui.Window, src uintptr, color int32) int {
 	row := &uiListRows(d)[int(int16(d.Field_11_1))]
 	row.Field_129 = w.DrawData().TextColorVal
 	if color >= 0 && color < 17 {
-		row.Field_129 = **(**uint32)(memmap.PtrOff(0x85B3FC, 132+uintptr(color)*4))
+		row.Field_129 = *ColorTable[color]
 	}
 	if src != 0 {
 		uiListCopy(row.Text[:], src, 255)

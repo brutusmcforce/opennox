@@ -15,7 +15,7 @@ import (
 var clientFadeObjects uint32 = 1
 
 func clientGameLocalDrawable() *client.Drawable {
-	return *(**client.Drawable)(memmap.PtrOff(0x852978, 8))
+	return LocalPlayerDrawable
 }
 func clientGameKeepDrawable(dr *client.Drawable) bool {
 	return dr == clientGameLocalDrawable() || dr.DrawFuncPtr == drawableDrawKey(drawKey_nox_thing_animate_draw) && dr.DrawData != nil && *(*uint32)(unsafe.Add(dr.DrawData, 12)) == 1

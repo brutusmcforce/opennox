@@ -2,7 +2,6 @@ package opennox
 
 import (
 	"github.com/brutusmcforce/opennox/client/noxrender"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
@@ -49,13 +48,5 @@ func nox_video_bagFree_42F4D0() {
 		alloc.FreePtr(p.C())
 	}
 	nox_images_arr1_787156 = nil
-	sub_47D150()
 	noxClient.r.Bag.Free()
-}
-
-func sub_47D150() {
-	if p := memmap.PtrPtr(0x5D4594, 1189588); *p != nil {
-		alloc.FreePtr(*p)
-		*p = nil
-	}
 }

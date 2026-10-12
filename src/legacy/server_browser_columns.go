@@ -113,7 +113,7 @@ func browserInfoPopup(point *[2]uint32, record unsafe.Pointer) {
 	browserUI.hasSelection = 1
 	*memmap.PtrUint16(0x5D4594, 814604) = *(*uint16)(unsafe.Add(record, 109))
 	if noxflags.HasEngine(noxflags.EngineNoRendering) {
-		uiWindowEnable(browserWindow(memmap.Uint32(0x5D4594, 815008)), 0)
+		uiWindowEnable(browserUI.joinButton, 0)
 	}
 }
 

@@ -44,7 +44,7 @@ func reliableTail() **reliableMessage {
 	return (**reliableMessage)(unsafe.Pointer(&dword_5d4594_1565516))
 }
 func reliableCapacity() *uint32      { return (*uint32)(unsafe.Pointer(&dword_5d4594_1565520)) }
-func reliablePool() *unsafe.Pointer  { return memmap.PtrPtr(0x5D4594, 1565508) }
+func reliablePool() *unsafe.Pointer  { return &reliablePoolPtr }
 func reliableSequences() *[32]uint16 { return (*[32]uint16)(memmap.PtrOff(0x5D4594, 1565524)) }
 func reliableRates() *[32]reliableRateState {
 	return (*[32]reliableRateState)(memmap.PtrOff(0x5D4594, 1565124))

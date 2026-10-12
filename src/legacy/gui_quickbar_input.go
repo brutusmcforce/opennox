@@ -8,8 +8,8 @@ import (
 )
 
 func quickbarCorpse() bool {
-	p := *memmap.PtrUint32(0x852978, 8)
-	return p != 0 && *(*byte)(unsafe.Pointer(uintptr(p) + 120))&2 != 0
+	p := LocalPlayerDrawable
+	return p != nil && *(*byte)(unsafe.Add(p.C(), 120))&2 != 0
 }
 
 func quickbarSlotEvent(w *gui.Window, event, arg uint32) int {

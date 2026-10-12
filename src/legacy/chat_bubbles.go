@@ -3,7 +3,6 @@ package legacy
 import (
 	"encoding/binary"
 	"github.com/brutusmcforce/opennox/client"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"unsafe"
 )
@@ -30,7 +29,7 @@ var _ [unsafe.Offsetof(chatBubble{}.Drawable) - 668]byte
 var _ [684 - unsafe.Offsetof(chatBubble{}.Next)]byte
 var _ [unsafe.Offsetof(chatBubble{}.Next) - 684]byte
 
-func chatBubbleHead() **chatBubble { return (**chatBubble)(memmap.PtrOff(0x5D4594, 1197368)) }
+func chatBubbleHead() **chatBubble { return &chatBubbleList }
 func chatBubbleLookup(code uint32) *chatBubble {
 	for b := *chatBubbleHead(); b != nil; b = b.Next {
 		if b.Code == code {

@@ -42,11 +42,11 @@ func scoreboardConstruct() *gui.Window {
 	data := gui.ScrollListBoxData{Count: 64, Line_height: uint16(fh + 1), Field_2: 1}
 	for side := 0; side < 2; side++ {
 		group := uiListNew(parent, 1088, side*total, 3*fh+1, total, height-2*(fh+1), &draw, &data)
-		*memmap.PtrPtr(0x5D4594, 1090052+uintptr(4*side)) = unsafe.Pointer(group)
+		ScoreboardGroups[side] = group
 		x := 0
 		for column, width := range widths {
 			w := uiListNew(group, 1088, x, 2*fh, int(width), height-2*(fh+1), &draw, &data)
-			*memmap.PtrPtr(0x5D4594, 1090060+uintptr(8*column+4*side)) = unsafe.Pointer(w)
+			scoreboardColumns[column][side] = w
 			x += int(width)
 		}
 		group.SetFunc94(scoreboardEmptyEvent)
@@ -62,7 +62,7 @@ func scoreboardConstruct() *gui.Window {
 	*scoreboardData.rank = makeText("yourrank", fh, scoreboardYellow())
 	*scoreboardData.limit = makeText("WindowDir:Empty", 2*fh, scoreboardWhite())
 	*scoreboardData.time = makeText("WindowDir:Empty", 3*fh, memmap.Uint32(0x85B3FC, 940))
-	*memmap.PtrPtr(0x5D4594, 1090104) = unsafe.Pointer(makeText("TeamPlayerRank", 0, scoreboardTitleColor()))
+	scoreboardTitle = makeText("TeamPlayerRank", 0, scoreboardTitleColor())
 	*scoreboardData.dirty = 1
 	return parent
 }

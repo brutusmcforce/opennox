@@ -84,7 +84,7 @@ func uiInventoryCurrentWeapon() *client.Drawable {
 	return uiInventoryDrawable(equipment[7])
 }
 func uiInventoryDragged() *client.Drawable {
-	return uiInventoryDrawable(memmap.Uint32(0x5D4594, 1049848))
+	return uiInventoryDraggedItem
 }
 func uiInventoryItem(code uint32) *client.Drawable {
 	if found := uiInventoryFindCode(code); found != nil {

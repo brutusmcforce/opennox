@@ -190,8 +190,8 @@ func uiAmountShow(title *uint16, x, y int, code, typ uint32, mods unsafe.Pointer
 	if mods != nil {
 		copy(unsafe.Slice((*byte)(unsafe.Add(dr.C(), 432)), 20), unsafe.Slice((*byte)(mods), 20))
 	}
-	*memmap.PtrPtr(0x5D4594, 1319160) = accept
-	*memmap.PtrPtr(0x5D4594, 1319100) = cancel
+	uiAmountAccept = accept
+	uiAmountCancelFunc = cancel
 	*memmap.PtrUint32(0x5D4594, 1319240) = typ
 	*memmap.PtrUint32(0x5D4594, 1319244) = code
 	dword_5d4594_1319248 = uint32(maximum)

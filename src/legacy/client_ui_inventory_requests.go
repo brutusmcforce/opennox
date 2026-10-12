@@ -3,9 +3,7 @@ package legacy
 import (
 	"encoding/binary"
 	"github.com/brutusmcforce/opennox/client"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/internal/netlist"
-	"unsafe"
 )
 
 func uiInventoryItemRequest(op byte, dr *client.Drawable) int {
@@ -51,5 +49,5 @@ func nox_xxx_clientKeyEquip_465C30(col, row int32) int32 {
 	return int32(uiInventoryPlace(uiInventoryDragged(), int(col), int(row)))
 }
 func uiInventorySetDragged(dr *client.Drawable) {
-	*memmap.PtrUint32(0x5D4594, 1049848) = uiInventoryPointer(unsafe.Pointer(dr))
+	uiInventoryDraggedItem = dr
 }

@@ -152,12 +152,12 @@ func briefingShow(chapter, begin int, mode byte) int {
 	child.SetDraw(briefingDrawWindow)
 	dword_5d4594_831220 = uint32(begin)
 	textData := (*gui.StaticTextData)(child.WidgetData)
-	setImage := func(v uint32) { w.DrawData().BgImageHnd = noxrender.ImageHandle(unsafe.Pointer(uintptr(v))) }
+	setImage := func(v noxrender.ImageHandle) { w.DrawData().BgImageHnd = v }
 	setText := func(p unsafe.Pointer) { child.Func94(gui.AsWindowEvent(16385, uintptr(p), 0)) }
 	music := uint32(0)
 	if chapter == 255 {
-		setImage(0)
-		setText(*memmap.PtrPtr(0x5D4594, 831268))
+		setImage(nil)
+		setText(unsafe.Pointer(briefingCreditsText))
 		child.Flags &^= 0x2000
 		var voice *byte
 		if s := Nox_xxx_GetEndgameDialog(); s != "" {
@@ -178,9 +178,9 @@ func briefingShow(chapter, begin int, mode byte) int {
 			setImage(briefingLoadImage("GauntletInstructionBackground"))
 		} else {
 			*memmap.PtrUint32(0x5D4594, 832472) = 2
-			setImage(memmap.Uint32(0x5D4594, 832460))
-			if caption := *memmap.PtrPtr(0x5D4594, 832464); caption != nil {
-				setText(caption)
+			setImage(briefingImage)
+			if caption := briefingCaption; caption != nil {
+				setText(unsafe.Pointer(caption))
 			}
 		}
 		Nox_client_resetScreenParticles_431510()
@@ -190,7 +190,7 @@ func briefingShow(chapter, begin int, mode byte) int {
 		dword_5d4594_831244 = 1
 		dword_5d4594_831224 = 0
 	} else {
-		row := &(*[33]briefingChapter)(memmap.PtrOff(0x5D4594, 831300))[class*11+chapter]
+		row := &briefingChapters[class*11+chapter]
 		slide := &row.Loss
 		if begin != 0 {
 			slide = &row.Begin

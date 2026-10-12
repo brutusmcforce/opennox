@@ -35,7 +35,7 @@ func characterShowClass() int {
 	for _, id := range []uint{601, 603, 602} {
 		w.ChildByID(id).SetDraw(func(w *gui.Window, _ *gui.WindowData) int { return characterClassDraw(w) })
 	}
-	*memmap.PtrUint32(0x5D4594, 1307728) = uint32(uintptr(w.ChildByID(610).C()))
+	characterAcceptButton = w.ChildByID(610)
 	*memmap.PtrUint32(0x5D4594, 1307740) = 0
 	Sub_4A19F0("OptsBack.wnd:Back")
 	quickbarClearSlots()

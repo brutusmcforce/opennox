@@ -5,14 +5,12 @@ import (
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 var sessionDisconnectRoot, sessionDisconnectIcon *gui.Window
 
 func sessionDisconnectOpen() int {
 	img := Nox_xxx_gLoadImg("DisconnectIcon")
-	*memmap.PtrPtr(0x5D4594, 1309752) = unsafe.Pointer(img.C())
 	width, height := int(nox_win_width), int(nox_win_height)
 	icon := GetClient().Cli().GUI.NewWindowRaw(nil, 136, width-50, height/2+3, 50, 50, nil)
 	sessionDisconnectIcon = icon

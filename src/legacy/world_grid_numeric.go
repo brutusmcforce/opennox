@@ -12,7 +12,7 @@ func worldAbsScratch(v float32) float64 {
 		bits |= 0x00400000
 	}
 	*memmap.PtrUint32(0x5D4594, 527672) = bits
-	*(*uint32)(*memmap.PtrPtr(0x587000, 55744)) &= 0x7fffffff
+	*memmap.PtrUint32(0x5D4594, 527672) &= 0x7fffffff
 	return float64(memmap.Float32(0x5D4594, 527672))
 }
 
@@ -20,8 +20,6 @@ func worldRoundScratch(v float32) uint32 {
 	if v < 0 {
 		return 0
 	}
-	// This is a raw ABI word, whose prior contents need not be a Go pointer.
-	*memmap.PtrUint32(0x5D4594, 527668) = uint32(uintptr(memmap.PtrOff(0x5D4594, 527676)))
 	*memmap.PtrFloat32(0x5D4594, 527676) = float32(float64(v) + 8388608)
 	result := memmap.Uint32(0x5D4594, 527676) & 0x7fffff
 	*memmap.PtrUint32(0x5D4594, 527680) = result

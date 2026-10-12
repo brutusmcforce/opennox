@@ -5,7 +5,6 @@ import (
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
 	"unsafe"
 )
@@ -54,8 +53,8 @@ func bookIconTooltip(w *gui.Window) int {
 	return 1
 }
 func bookIconEvents(w *gui.Window, event int, pos image.Point) int {
-	dr := memmap.Uint32(0x852978, 8)
-	if dr != 0 && *(*byte)(unsafe.Pointer(uintptr(dr) + 120))&2 != 0 {
+	dr := LocalPlayerDrawable
+	if dr != nil && *(*byte)(unsafe.Add(dr.C(), 120))&2 != 0 {
 		return 1
 	}
 	p, mode := *bookWord(1047516), *bookWord(1046868)

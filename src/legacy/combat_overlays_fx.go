@@ -21,7 +21,10 @@ type combatFX struct {
 var _ = [1]struct{}{}[80-unsafe.Sizeof(combatFX{})]
 var _ = [1]struct{}{}[64-unsafe.Offsetof(combatFX{}.Next)]
 
-func combatFXHead() **combatFX { return (**combatFX)(memmap.PtrOff(0x5D4594, 1203872)) }
+func combatFXHead() **combatFX { return &combatFXList }
+
+// ResetCombatFX forgets all combat effects (their memory is freed with the DrawableFX class).
+func ResetCombatFX() { combatFXList = nil }
 func combatFXAttach(p *combatFX, dr *client.Drawable) {
 	if p == nil || dr == nil {
 		return

@@ -97,7 +97,7 @@ func uiInventoryCapacity(typ, quantity int32) int32 {
 	return int32(count)
 }
 func uiInventoryAlterWeapon() {
-	playerDr := uiInventoryDrawable(memmap.Uint32(0x852978, 8))
+	playerDr := LocalPlayerDrawable
 	if playerDr == nil || GetClient().Cli().Cursor != 0 || quickbarAbilityAvailable(1) != 0 {
 		return
 	}

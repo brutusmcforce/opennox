@@ -67,7 +67,7 @@ func interactionConversationEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowE
 	case 3906:
 		interactionConversationCancel()
 	case 3907:
-		Dialogs.PlayFile(alloc.GoString(*(**byte)(memmap.PtrOff(0x5D4594, 1115312))), 100)
+		Dialogs.PlayFile(alloc.GoString(DialogVoice), 100)
 	case 3908:
 		interactionConversationChoice(1)
 	case 3909:

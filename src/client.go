@@ -12,7 +12,6 @@ import (
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy"
 	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
 )
@@ -163,11 +162,11 @@ func (c *Client) processInput() {
 }
 
 func (c *Client) setClientPlayerUnit(dr *client.Drawable) {
-	*memmap.PtrPtr(0x852978, 8) = dr.C()
+	legacy.LocalPlayerDrawable = dr
 }
 
 func (c *Client) ClientPlayerUnit() *client.Drawable {
-	return legacy.AsDrawableP(*memmap.PtrPtr(0x852978, 8))
+	return legacy.LocalPlayerDrawable
 }
 
 func (c *Client) Update() bool {

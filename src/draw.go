@@ -670,7 +670,7 @@ func (c *Client) drawCreatureFrontEffects(vp *noxrender.Viewport, dr *client.Dra
 			c.r.Data().SetColorize17(1)
 			sub433E40(nox_color_blue_2650684)
 		}
-		c.Nox_video_drawAnimatedImageOrCursorAt(legacy.AsImageRefP(*memmap.PtrPtr(0x5D4594, 1096456)), pos.Add(image.Point{X: -64, Y: -64}))
+		c.Nox_video_drawAnimatedImageOrCursorAt(legacy.ConfusedBirdiesAnim, pos.Add(image.Point{X: -64, Y: -64}))
 		c.r.Data().SetColorize17(0)
 	}
 	if dr.HasEnchant(server.ENCHANT_SLOWED) && !nox_xxx_checkGameFlagPause_413A50() && drawIsTick {
@@ -746,7 +746,7 @@ func (c *Client) drawCreatureFrontEffects(vp *noxrender.Viewport, dr *client.Dra
 		}
 		c.r.Data().SetAlphaEnabled(true)
 		c.r.Data().SetAlpha(0x80)
-		c.Nox_video_drawAnimatedImageOrCursorAt(legacy.AsImageRefP(*memmap.PtrPtr(0x5D4594, 1096460)), pos)
+		c.Nox_video_drawAnimatedImageOrCursorAt(legacy.SphericalShieldAnim, pos)
 		c.r.Data().SetAlphaEnabled(false)
 	}
 	if dr.HasEnchant(server.ENCHANT_REFLECTIVE_SHIELD) {

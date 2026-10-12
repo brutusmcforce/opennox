@@ -89,10 +89,10 @@ func monsterDodge(u *server.Object) bool {
 	return false
 }
 func monsterShieldThreat(u *server.Object) *server.Object {
-	*memmap.PtrUint32(0x5D4594, 2487956) = 0
+	monsterShieldThreatObj = nil
 	*memmap.PtrUint32(0x5D4594, 2487988) = 1315859240
 	GetServer().S().Map.EachMissileInCircle(u.PosVec, 100, func(t *server.Object) bool { monsterShieldCandidate(t, u); return true })
-	return (*server.Object)(unsafe.Pointer(uintptr(*memmap.PtrUint32(0x5D4594, 2487956))))
+	return monsterShieldThreatObj
 }
 func monsterShieldCandidate(t, u *server.Object) {
 	if !spatialTeamEligible(u, t) {
@@ -118,7 +118,7 @@ func monsterShieldCandidate(t, u *server.Object) {
 	distance := math.Sqrt(dy*dy + dx*dx)
 	dot := float64(t.VelVec.Y)/speed*-(float64(dy)/float64(distance)) + float64(nx)*-(float64(dx)/float64(distance))
 	if dot > .69999999 && GetServer().S().CanInteract(u, t, 0) && float64(float32(distance)) < float64(*memmap.PtrFloat32(0x5D4594, 2487988)) {
-		*memmap.PtrUint32(0x5D4594, 2487956) = uint32(uintptr(t.CObj()))
+		monsterShieldThreatObj = t
 		*memmap.PtrFloat32(0x5D4594, 2487988) = float32(distance)
 	}
 }

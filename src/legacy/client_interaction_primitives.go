@@ -119,7 +119,7 @@ func interactionHUDVisibility() {
 	}
 }
 func interactionPlayerAnimation() int {
-	dr := *(**client.Drawable)(memmap.PtrOff(0x852978, 8))
+	dr := LocalPlayerDrawable
 	return bool2int(dr == nil || dr.AnimInd == 1 || dr.AnimInd == 2 || dr.AnimInd == 51)
 }
 func interactionIsObserver() int {

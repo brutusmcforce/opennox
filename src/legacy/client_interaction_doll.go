@@ -71,9 +71,9 @@ func interactionDollDraw(origin image.Point) int16 {
 	pos := origin.Add(image.Pt(11, 15))
 	uiMeterSetColor(uint32(nox_color_black_2650656))
 	nox_client_drawRectFilledOpaque_49CE30(pos.X, pos.Y, 200, 200)
-	active := memmap.Uint32(0x852978, 8)
-	result := int16(active)
-	if active == 0 {
+	// The original returned the low bits of the local drawable pointer here; the result is not used.
+	var result int16
+	if LocalPlayerDrawable == nil {
 		return result
 	}
 	p := Get_dword_8531A0_2576()

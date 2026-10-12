@@ -29,7 +29,7 @@ func interactionHover(dr *client.Drawable, point image.Point) {
 	if memmap.Uint32(0x5D4594, 1096648) == 0 {
 		*memmap.PtrUint32(0x5D4594, 1096648) = uint32(GetClient().Cli().Things.IndByID("Polyp"))
 	}
-	player := *(**client.Drawable)(memmap.PtrOff(0x852978, 8))
+	player := LocalPlayerDrawable
 	if dr == player {
 		return
 	}
@@ -117,7 +117,7 @@ func interactionHover(dr *client.Drawable, point image.Point) {
 		*memmap.PtrUint32(0x5D4594, 1096628) = uint32(depth)
 		interactionHoverDrawable = dr.C()
 	}
-	if dr != *(**client.Drawable)(memmap.PtrOff(0x852978, 8)) && depth > int32(interactionHoverDepth) && glyphSelectionAllowed(dr) != 0 {
+	if dr != LocalPlayerDrawable && depth > int32(interactionHoverDepth) && glyphSelectionAllowed(dr) != 0 {
 		p := Get_dword_8531A0_2576()
 		if p != nil && p.PlayerClass() == 1 && dr.TypeIDVal == memmap.Uint32(0x5D4594, 1096632) {
 			if interactionUsableCursorDrawable == nil {

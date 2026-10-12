@@ -2,7 +2,6 @@ package legacy
 
 import (
 	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
 	"unsafe"
 )
@@ -75,7 +74,6 @@ func interactionKeyDestroy() {
 }
 func interactionVoteOpen() int {
 	img := Nox_xxx_gLoadImg("VoteInProgress")
-	*memmap.PtrUint32(0x5D4594, 1321220) = uint32(uintptr(img.C()))
 	w := GetClient().Cli().GUI.NewWindowRaw(nil, 136, int(nox_win_width)-50, int(nox_win_height)/2-100, 50, 50, nil)
 	interactionVoteIcon = uint32(uintptr(w.C()))
 	w.DrawData().BgImageHnd = img.C()

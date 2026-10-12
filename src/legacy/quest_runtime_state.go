@@ -33,7 +33,7 @@ func questRuntimeBookAllowed(id, first int) bool {
 	return noxflags.HasGame(noxflags.GameModeQuest) || id < first || id > first+3
 }
 func questRuntimeSettings() unsafe.Pointer {
-	if p := *(*unsafe.Pointer)(memmap.PtrOff(0x5D4594, 1556152)); p != nil {
+	if p := questSettings; p != nil {
 		return p
 	}
 	p := memmap.PtrOff(0x5D4594, 371516)

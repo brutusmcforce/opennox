@@ -13,7 +13,7 @@ import (
 )
 
 func objectRenderGhost(vp *noxrender.Viewport, dr *client.Drawable) byte {
-	local := (*client.Drawable)(*memmap.PtrPtr(0x852978, 8))
+	local := LocalPlayerDrawable
 	if local != nil && local.HasEnchant(21) {
 		return 255
 	}
@@ -29,11 +29,10 @@ func objectRenderGhost(vp *noxrender.Viewport, dr *client.Drawable) byte {
 	return byte(value)
 }
 func objectRenderShiny(vp *noxrender.Viewport, dr *client.Drawable) uint16 {
-	cache := memmap.PtrPtr(0x5D4594, 1321524)
-	if *cache == nil {
-		*cache = Nox_xxx_gLoadAnim("ShinySpot").C()
+	if objectRenderShinyAnim == nil {
+		objectRenderShinyAnim = Nox_xxx_gLoadAnim("ShinySpot")
 	}
-	ref := (*ImageRef)(*cache)
+	ref := objectRenderShinyAnim
 	anim := (*ImageRefAnim)(ref.Field_24)
 	count := uint32(anim.ImagesSz)
 	frame := gameFrame() + dr.NetCode32
@@ -115,9 +114,9 @@ func objectRenderDraw(vp *noxrender.Viewport, dr *client.Drawable, img noxrender
 	z := int(int16(dr.ZVal))
 	if z < 0 {
 		crop = -z
-		repeatBelow = int32(*effectMapped(1321512)) < 0 && *memmap.PtrPtr(0x5D4594, 1321516) == dr.C()
+		repeatBelow = int32(*effectMapped(1321512)) < 0 && objectRenderLastBelow == dr
 	}
-	*memmap.PtrPtr(0x5D4594, 1321516) = dr.C()
+	objectRenderLastBelow = dr
 	*effectMapped(1321512) = uint32(z)
 	r := GetClient().R2()
 	d := r.Data()
@@ -148,7 +147,7 @@ func objectRenderDraw(vp *noxrender.Viewport, dr *client.Drawable, img noxrender
 	} else if dr.ObjFlags&0x4000000 != 0 {
 		alpha(128)
 	}
-	local := (*client.Drawable)(*memmap.PtrPtr(0x852978, 8))
+	local := LocalPlayerDrawable
 	see := local != nil && local.HasEnchant(21)
 	if dr.HasEnchant(0) || targetObserver || ghost && see {
 		if pl := Get_dword_8531A0_2576(); pl != nil && pl.Field3680&1 != 0 {

@@ -210,7 +210,6 @@ var dword_5d4594_1567960 uint32 = 0
 var dword_5d4594_1567988 uint32 = 0
 var dword_5d4594_1568280 uint32 = 0
 var dword_5d4594_1568288 uint32 = 0
-var dword_5d4594_1568308 uint32 = 0
 var dword_5d4594_1568868 uint32 = 0
 var dword_5d4594_1569672 uint32 = 0
 var dword_5d4594_2386212 uint32 = 0

@@ -70,7 +70,7 @@ func combatHealthRemove(p *combatHealth) {
 func combatHealthDraw(v *noxrender.Viewport, dr *client.Drawable) {
 	seq := uint32(GetClient().GetInputSeq())
 	color := noxcolor.RGBA5551(nox_color_yellow_2589772)
-	if dr.C() == *memmap.PtrPtr(0x852978, 8) {
+	if dr == LocalPlayerDrawable {
 		color = noxcolor.RGBA5551(memmap.Uint32(0x85B3FC, 940))
 	}
 	r := GetClient().R2()

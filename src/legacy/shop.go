@@ -4,7 +4,6 @@ import (
 	"unsafe"
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
 )
@@ -26,7 +25,7 @@ var (
 func shopHead() *shopSession     { return (*shopSession)(unsafe.Pointer(uintptr(dword_5d4594_2386500))) }
 func shopSetHead(s *shopSession) { dword_5d4594_2386500 = uint32(uintptr(unsafe.Pointer(s))) }
 func shopCached() []*shopSession {
-	return unsafe.Slice((**shopSession)(memmap.PtrOff(0x5D4594, 2386364)), 32)
+	return shopCachedList[:]
 }
 func shopGold(u *server.Object) *uint32 { return (*uint32)(u.InitData) }
 func shopFreeItem(n *shopItem) {

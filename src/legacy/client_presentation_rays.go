@@ -3,16 +3,14 @@ package legacy
 import (
 	"encoding/binary"
 	"github.com/brutusmcforce/opennox/client"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
-	"unsafe"
 )
 
 func presentationRays() []*client.Drawable {
-	return unsafe.Slice((**client.Drawable)(memmap.PtrOff(0x5D4594, 1303924)), 96)
+	return presentationRayList[:]
 }
 func presentationTransientRays() []*client.Drawable {
-	return unsafe.Slice((**client.Drawable)(memmap.PtrOff(0x5D4594, 1303540)), 96)
+	return presentationTransientRayList[:]
 }
 func presentationRayAdd(event *[7]byte) {
 	if int32(*effectMapped(1304312)) >= 96 {

@@ -115,7 +115,7 @@ func spellEffectQuake(id int32, a, b, c *server.Object, record unsafe.Pointer, l
 }
 func spellEffectDoorLink(u *server.Object) {
 	if u.ObjClass&0x80 != 0 {
-		u.ObjOwner = (*server.Object)(unsafe.Pointer(uintptr(*memmap.PtrUint32(0x5d4594, 2487716))))
+		u.ObjOwner = spellDoorLinkSource
 		u.Field34 = GetServer().S().Frame() + 60*uint32(GetServer().S().TickRate())
 	}
 }
@@ -140,9 +140,9 @@ func spellEffectDoorPropagate(u, source *server.Object) {
 	x := int32(23 * *spellLifeWord(u.UpdateData, 16))
 	y := int32(23 * *spellLifeWord(u.UpdateData, 20))
 	rect := types.Rectf{Min: types.Ptf(float32(float64(x)-34), float32(float64(y)-34)), Max: types.Ptf(float32(float64(x)+34), float32(float64(y)+34))}
-	*memmap.PtrUint32(0x5d4594, 2487716) = uint32(uintptr(source.CObj()))
+	spellDoorLinkSource = source
 	GetServer().S().Map.EachObjInRect(rect, func(u *server.Object) bool { spellEffectDoorLink(u); return true })
-	*memmap.PtrUint32(0x5d4594, 2487716) = 0
+	spellDoorLinkSource = nil
 }
 func spellEffectLock(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
 	rect := types.Rectf{Min: types.Ptf(b.PosVec.X-150, b.PosVec.Y-150), Max: types.Ptf(b.PosVec.X+150, b.PosVec.Y+150)}

@@ -215,7 +215,6 @@ func (c *guiConsole) Resize(sz image.Point) {
 	c.root.Destroy()
 
 	c.Init(sz)
-	*memmap.PtrPtr(0x5D4594, 1096352) = unsafe.Pointer(c.root.C())
 	c.ReloadColors()
 	cur := (*gui.ScrollListBoxData)(c.scrollbox.WidgetData)
 	copy(unsafe.Slice(cur.Items, cur.Count), items)

@@ -378,7 +378,7 @@ func guiOpenNPCDialogRaw(title string, snd sound.ID, pic string, flags server.Di
 	legacy.Nox_xxx_wnd_46ABB0(root, 1)
 	root.ShowModal()
 	*memmap.PtrUint32(0x5D4594, 1123528) = uint32(snd)
-	legacy.Dialogs.PlayFile(alloc.GoString((*byte)(*memmap.PtrPtr(0x5D4594, 1115312))), 100)
+	legacy.Dialogs.PlayFile(alloc.GoString(legacy.DialogVoice), 100)
 	legacy.Set_dword_5d4594_1123520(1)
 }
 
@@ -386,7 +386,7 @@ func guiNPCDialogSetTextID(str strman.ID) {
 	c := noxClient
 	v, _ := c.Strings().GetVariantInFile(str, "GUIDlg.c")
 	text := v.Str
-	*memmap.PtrPtr(0x5D4594, 1115312) = unsafe.Pointer(alloc.InternCString(v.Str2))
+	legacy.DialogVoice = alloc.InternCString(v.Str2)
 	guiNPCDialogSetText(text)
 }
 

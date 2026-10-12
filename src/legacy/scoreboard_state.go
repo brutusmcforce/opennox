@@ -55,7 +55,7 @@ func scoreboardTeams() []scoreboardTeam {
 }
 func scoreboardCount(off uintptr) *byte { return memmap.PtrUint8(0x5D4594, off) }
 func scoreboardColumn(side, column int) *gui.Window {
-	return (*gui.Window)(*memmap.PtrPtr(0x5D4594, 1090060+uintptr(column*8+side*4)))
+	return scoreboardColumns[column][side]
 }
 
 func scoreboardHidden(w *gui.Window) bool { return w == nil || w.GetFlags().IsHidden() }

@@ -227,7 +227,7 @@ func characterClassEvent(_ *gui.Window, ev gui.WindowEvent) gui.WindowEventResp 
 	switch ev.EventCode() {
 	case 16389:
 		if id >= 601 && id <= 603 {
-			uiWindowEnable(bookWindow(memmap.Uint32(0x5D4594, 1307728)), 1)
+			uiWindowEnable(characterAcceptButton, 1)
 			cl := byte(id - 89)
 			*(*byte)(unsafe.Add(characterUI.classHost, 66)) = cl
 			key := alloc.GoString(*(**byte)(memmap.PtrOff(0x587000, 170208+4*uintptr(cl))))

@@ -56,7 +56,12 @@ func (s *Server) Listen(ctx context.Context, narg *netstr.Options) error {
 
 func (s *Server) StartServices(dedicated bool) error {
 	if err := s.startHTTP(); err != nil {
-		return err
+		if dedicated {
+			return err
+		}
+		// The HTTP API is optional for a local game. Its port is often taken by another running instance,
+		// which must not prevent the game from starting.
+		httpLog.Println("continuing without http api:", err)
 	}
 	if dedicated || s.Announce {
 		if err := s.startNAT(); err != nil {

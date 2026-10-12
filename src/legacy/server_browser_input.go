@@ -25,7 +25,7 @@ func browserMouseDraw(_ *gui.Window, _ *gui.WindowData) int {
 			GetClient().Cli().GUI.Focus(browserUI.world)
 		}
 	}
-	if browserUI.popup != 0 && !serverOptionsPointIn(browserWindow(memmap.Uint32(0x5D4594, 815036)), p) {
+	if browserUI.popup != 0 && !serverOptionsPointIn(browserUI.popupWindow, p) {
 		browserPopupClose()
 		GetClient().Cli().GUI.Focus(browserUI.world)
 	}

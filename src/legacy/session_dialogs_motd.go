@@ -133,7 +133,7 @@ func sessionMOTDShow() {
 		// The legacy child lookup with a nil parent (ID4100) never finds a window.
 		sessionMOTDRoot.Flags |= gui.StatusEnabled
 		sessionMOTDList.Flags |= gui.StatusEnabled
-		p := (*byte)(*memmap.PtrPtr(0x5D4594, 826060))
+		p := (*byte)(XferRecv[1].Data)
 		if p != nil {
 			text := alloc.GoString(p)
 			for {
@@ -153,5 +153,5 @@ func sessionMOTDShow() {
 		}
 		sessionMOTDRoot.ChildByID(4202).Focus()
 	}
-	*memmap.PtrUint32(0x5D4594, 826068) = 0
+	XferRecv[1].Ready = 0
 }

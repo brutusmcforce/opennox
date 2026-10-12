@@ -3,7 +3,6 @@ package legacy
 import (
 	"github.com/brutusmcforce/opennox/libs/player"
 	"github.com/brutusmcforce/opennox/client"
-	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 var glyphClientType, glyphItemType uint32
@@ -26,7 +25,7 @@ func glyphSelectionAllowed(dr *client.Drawable) int {
 
 func glyphItemAllowed(dr *client.Drawable) int {
 	typ := glyphType(&glyphItemType)
-	if dr == nil || memmap.Uint32(0x852978, 8) == 0 {
+	if dr == nil || LocalPlayerDrawable == nil {
 		return 0
 	}
 	pl := Get_dword_8531A0_2576()

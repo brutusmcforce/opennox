@@ -51,10 +51,10 @@ func clientAllPlayerColors() {
 	}
 }
 func clientAnimationCachesLoad() {
-	*memmap.PtrUint32(0x5D4594, 1096456) = uint32(uintptr(Nox_xxx_gLoadAnim("ConfusedBirdies").C()))
-	*memmap.PtrUint32(0x5D4594, 1096460) = uint32(uintptr(Nox_xxx_gLoadAnim("SphericalShieldAnim").C()))
+	ConfusedBirdiesAnim = Nox_xxx_gLoadAnim("ConfusedBirdies")
+	SphericalShieldAnim = Nox_xxx_gLoadAnim("SphericalShieldAnim")
 }
 func clientAnimationCachesClear() {
-	*memmap.PtrUint32(0x5D4594, 1096456) = 0
-	*memmap.PtrUint32(0x5D4594, 1096460) = 0
+	ConfusedBirdiesAnim = nil
+	SphericalShieldAnim = nil
 }

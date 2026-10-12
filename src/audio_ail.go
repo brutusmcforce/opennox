@@ -265,7 +265,7 @@ func sub_486F30() int {
 	nox_common_list_clear_425760(legacy.Get_dword_587000_155144())
 	nox_common_list_clear_425760(unsafe.Add(legacy.Get_dword_587000_155144(), 12))
 	*(*uint32)(unsafe.Add(legacy.Get_dword_587000_155144(), 24)) = 0
-	*memmap.PtrPtr(0x5D4594, 1193340) = unsafe.Add(legacy.Get_dword_587000_155144(), 32)
+	legacy.AudioGlobalTimers = (*timer.TimerGroup)(unsafe.Add(legacy.Get_dword_587000_155144(), 32))
 	(*timer.TimerGroup)(unsafe.Add(legacy.Get_dword_587000_155144(), 32)).Init()
 	dword_5d4594_1193336 = 1
 	return 0

@@ -63,7 +63,7 @@ func monsterMeleeCandidate(t, u *server.Object) {
 	nearest := memmap.PtrFloat32(0x5D4594, 2491572)
 	if gap < *nearest {
 		*nearest = gap
-		*memmap.PtrPtr(0x5D4594, 2491564) = t.CObj()
+		monsterMeleeTarget = t
 	}
 }
 func monsterPickMeleeTarget(u *server.Object, all uint32) *server.Object {
@@ -71,10 +71,10 @@ func monsterPickMeleeTarget(u *server.Object, all uint32) *server.Object {
 	radius := float64(d.MeleeAttackRange112) + float64(u.Shape.Circle.R) + float64(*memmap.PtrFloat32(0x587000, 287328))
 	rect := types.Rectf{Min: types.Pointf{X: float32(float64(u.PosVec.X) - radius), Y: float32(float64(u.PosVec.Y) - radius)}, Max: types.Pointf{X: float32(float64(u.PosVec.X) + radius), Y: float32(float64(u.PosVec.Y) + radius)}}
 	*memmap.PtrUint32(0x5D4594, 2491568) = all
-	*memmap.PtrPtr(0x5D4594, 2491564) = nil
+	monsterMeleeTarget = nil
 	*memmap.PtrFloat32(0x5D4594, 2491572) = d.MeleeAttackRange112
 	GetServer().S().Map.EachObjInRect(rect, func(t *server.Object) bool { monsterMeleeCandidate(t, u); return true })
-	return (*server.Object)(*memmap.PtrPtr(0x5D4594, 2491564))
+	return monsterMeleeTarget
 }
 func monsterMeleePoison(u, t *server.Object) bool {
 	d := u.UpdateDataMonster().MonsterDef

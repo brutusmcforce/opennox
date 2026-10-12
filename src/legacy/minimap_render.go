@@ -14,7 +14,7 @@ import (
 // Current object in the optional debug overlay traversal; cleared at its end.
 var minimapDebugIterator uint32
 
-func minimapLocalDrawable() *client.Drawable { return (*client.Drawable)(*memmap.PtrPtr(0x852978, 8)) }
+func minimapLocalDrawable() *client.Drawable { return LocalPlayerDrawable }
 func minimapLevel(dr *client.Drawable) int {
 	var p image.Point
 	if dr == minimapLocalDrawable() {

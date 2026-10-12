@@ -340,7 +340,9 @@ func (s *Server) getQuestFlag() int {
 func (s *Server) cmdStartSoloQuest() {
 	legacy.Set_nox_client_gui_flag_1556112(1)
 	nox_xxx_cliPlayMapIntro_44E0B0(1)
-	*memmap.PtrUint32(0x5D4594, 1556152) = uint32(bool2int(gameIsClosed()))
+	// The original stored this flag in the variable that holds the quest settings pointer
+	// (0x5D4594+1556152), which made a closed server crash on quest start. Nothing reads it.
+	legacy.QuestWasClosed = gameIsClosed()
 	serverSetClosed()
 	noxServer.setQuestFlag(30)
 }

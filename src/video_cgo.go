@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"unsafe"
 
 	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/libs/noximage"
@@ -329,23 +328,23 @@ func nox_xxx_loadDefColor_4A94A0() {
 	legacy.Set_nox_color_yellow_2589772(nox_color_yellow_2589772.Color32())
 	*memmap.PtrUint32(0x852978, 0) = nox_color_darkYellow.Color32()
 
-	*memmap.PtrPtr(0x85B3FC, 132) = unsafe.Pointer(legacy.Get_nox_color_black_2650656_ptr())
-	*memmap.PtrPtr(0x85B3FC, 136) = memmap.PtrOff(0x852978, 4)
-	*memmap.PtrPtr(0x85B3FC, 140) = memmap.PtrOff(0x85B3FC, 956)
-	*memmap.PtrPtr(0x85B3FC, 144) = memmap.PtrOff(0x5D4594, 2597996)
-	*memmap.PtrPtr(0x85B3FC, 148) = unsafe.Pointer(legacy.Get_nox_color_white_2523948_ptr())
-	*memmap.PtrPtr(0x85B3FC, 152) = unsafe.Pointer(legacy.Get_nox_color_violet_2598268_ptr())
-	*memmap.PtrPtr(0x85B3FC, 156) = memmap.PtrOff(0x85B3FC, 940)
-	*memmap.PtrPtr(0x85B3FC, 160) = unsafe.Pointer(legacy.Get_nox_color_red_2589776_ptr())
-	*memmap.PtrPtr(0x85B3FC, 164) = memmap.PtrOff(0x85B3FC, 984)
-	*memmap.PtrPtr(0x85B3FC, 168) = unsafe.Pointer(legacy.Get_dword_8531A0_2572_ptr())
-	*memmap.PtrPtr(0x85B3FC, 172) = unsafe.Pointer(legacy.Get_nox_color_green_2614268_ptr())
-	*memmap.PtrPtr(0x85B3FC, 176) = memmap.PtrOff(0x85B3FC, 944)
-	*memmap.PtrPtr(0x85B3FC, 180) = unsafe.Pointer(legacy.Get_nox_color_cyan_2649820_ptr())
-	*memmap.PtrPtr(0x85B3FC, 184) = unsafe.Pointer(legacy.Get_nox_color_blue_2650684_ptr())
-	*memmap.PtrPtr(0x85B3FC, 188) = unsafe.Pointer(legacy.Get_nox_color_orange_2614256_ptr())
-	*memmap.PtrPtr(0x85B3FC, 192) = unsafe.Pointer(legacy.Get_nox_color_yellow_2589772_ptr())
-	*memmap.PtrPtr(0x85B3FC, 196) = memmap.PtrOff(0x852978, 0)
+	legacy.ColorTable[0] = legacy.Get_nox_color_black_2650656_ptr()
+	legacy.ColorTable[1] = (*uint32)(memmap.PtrOff(0x852978, 4))
+	legacy.ColorTable[2] = (*uint32)(memmap.PtrOff(0x85B3FC, 956))
+	legacy.ColorTable[3] = (*uint32)(memmap.PtrOff(0x5D4594, 2597996))
+	legacy.ColorTable[4] = legacy.Get_nox_color_white_2523948_ptr()
+	legacy.ColorTable[5] = legacy.Get_nox_color_violet_2598268_ptr()
+	legacy.ColorTable[6] = (*uint32)(memmap.PtrOff(0x85B3FC, 940))
+	legacy.ColorTable[7] = legacy.Get_nox_color_red_2589776_ptr()
+	legacy.ColorTable[8] = (*uint32)(memmap.PtrOff(0x85B3FC, 984))
+	legacy.ColorTable[9] = legacy.Get_dword_8531A0_2572_ptr()
+	legacy.ColorTable[10] = legacy.Get_nox_color_green_2614268_ptr()
+	legacy.ColorTable[11] = (*uint32)(memmap.PtrOff(0x85B3FC, 944))
+	legacy.ColorTable[12] = legacy.Get_nox_color_cyan_2649820_ptr()
+	legacy.ColorTable[13] = legacy.Get_nox_color_blue_2650684_ptr()
+	legacy.ColorTable[14] = legacy.Get_nox_color_orange_2614256_ptr()
+	legacy.ColorTable[15] = legacy.Get_nox_color_yellow_2589772_ptr()
+	legacy.ColorTable[16] = (*uint32)(memmap.PtrOff(0x852978, 0))
 }
 
 func (c *Client) nox_video_initFloorBuffer_430BA0(sz image.Point) error {

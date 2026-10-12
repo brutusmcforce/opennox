@@ -67,7 +67,7 @@ func browserEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 		point := [2]uint32{uint32(p.X - 216), uint32(p.Y - 27)}
 		head := browserListHead()
 		if browserCount(&point, head) >= 2 {
-			*memmap.PtrUint32(0x5D4594, 815036) = uint32(uintptr(browserPopup(root, &point, head).C()))
+			browserUI.popupWindow = browserPopup(root, &point, head)
 		} else {
 			browserUI.selected = browserListID(int32(id - 10070))
 			point = [2]uint32{uint32(p.X), uint32(p.Y)}

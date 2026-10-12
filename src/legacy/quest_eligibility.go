@@ -149,18 +149,14 @@ func questEligibilityQuality(u *server.Object) bool {
 }
 func questEligibilityEffects(u *server.Object) bool {
 	mods := questEligibilityMods(u)
-	if dword_5d4594_1568308 == 0 {
+	if questEligibilityReplenish[0] == nil {
 		core := GetServer().S()
 		for i, name := range []string{"Replenishment1", "Replenishment2", "Replenishment3", "Replenishment4"} {
 			m := core.Modif.Nox_xxx_modifGetDescById413330(core.Modif.Nox_xxx_modifGetIdByName413290(name))
-			if i == 0 {
-				dword_5d4594_1568308 = uint32(uintptr(m.C()))
-			} else {
-				*memmap.PtrPtr(0x5d4594, 1568308+uintptr(i*4)) = m.C()
-			}
+			questEligibilityReplenish[i] = m.C()
 		}
 	}
-	special := [4]unsafe.Pointer{unsafe.Pointer(uintptr(uint32(dword_5d4594_1568308))), *memmap.PtrPtr(0x5d4594, 1568312), *memmap.PtrPtr(0x5d4594, 1568316), *memmap.PtrPtr(0x5d4594, 1568320)}
+	special := questEligibilityReplenish
 	mask, weapon := questEligibilityMask(u)
 	for slot := 2; slot < 4; slot++ {
 		m := mods[slot]
@@ -198,7 +194,7 @@ func questEligibilityModifiers(u *server.Object) bool {
 	return questEligibilityMaterial(u) && questEligibilityQuality(u) && questEligibilityEffects(u)
 }
 func questEligibilitySpecial(u *server.Object) bool {
-	cached := memmap.PtrPtr(0x5d4594, 1568324)
+	cached := &questEligibilitySpecialMod
 	if *cached == nil {
 		modif := &GetServer().S().Modif
 		*cached = modif.Nox_xxx_modifGetDescById413330(modif.Nox_xxx_modifGetIdByName413290("Replenishment1")).C()

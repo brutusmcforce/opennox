@@ -164,7 +164,7 @@ func uiShopClear() uint32 {
 	return uiInventoryPointer(memmap.PtrOff(0x5D4594, 1100036))
 }
 func uiShopCancelQuantity() {
-	cb := *(*unsafe.Pointer)(memmap.PtrOff(0x5D4594, 1319160))
+	cb := uiAmountAccept
 	if cb == uiAmountNativeKey(uiAmountShopBuy) || cb == uiAmountNativeKey(uiAmountShopSell) || cb == uiAmountNativeKey(uiAmountShopRepair) {
 		uiAmountCancel()
 	}
