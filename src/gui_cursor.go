@@ -3,9 +3,9 @@ package opennox
 import (
 	"image"
 
-	"github.com/opennox/opennox/v1/client/noxrender"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/ccall"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 )
 
 const cursorSize = 64

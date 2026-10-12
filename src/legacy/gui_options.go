@@ -13,9 +13,9 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/libs/strman"
 
-	"github.com/opennox/opennox/v1/client/gui"
+	"github.com/brutusmcforce/opennox/client/gui"
 )
 
 var (

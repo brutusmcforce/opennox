@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/opennox/opennox/v1/client/gui"
-	"github.com/opennox/opennox/v1/legacy"
+	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 // OpenNox-specific video options, shown in the advanced video options list (see gui_video_adv.go).
@@ -131,6 +131,21 @@ func (c *Client) applyUIScaleInGame() {
 	relayoutGUI(c, old, mode)
 }
 
+// relayoutShift returns how far to move a window along one axis when the GUI size changes from old to cur.
+// The window keeps its distance to what it's closest to: the start, the end or the center of the screen.
+func relayoutShift(off, sz, old, cur int) int {
+	toStart := abs(off)
+	toEnd := abs(old - (off + sz))
+	toCenter := abs(off + sz/2 - old/2)
+	switch {
+	case toCenter <= toStart && toCenter <= toEnd:
+		return (cur - old) / 2
+	case toStart <= toEnd:
+		return 0
+	}
+	return cur - old
+}
+
 // relayoutGUI moves top-level GUI windows after the GUI size changes from old to cur.
 //
 // The game places windows only once, when they are created, so they must be moved to where they would be placed
@@ -143,19 +158,6 @@ func (c *Client) applyUIScaleInGame() {
 func relayoutGUI(c *Client, old, cur image.Point) {
 	if cur == old {
 		return
-	}
-	// place returns how far to move a window along one axis, depending on what it's closest to
-	place := func(off, sz, old, cur int) int {
-		toStart := abs(off)
-		toEnd := abs(old - (off + sz))
-		toCenter := abs(off + sz/2 - old/2)
-		switch {
-		case toCenter <= toStart && toCenter <= toEnd:
-			return (cur - old) / 2
-		case toStart <= toEnd:
-			return 0
-		}
-		return cur - old
 	}
 	type item struct {
 		win  *gui.Window
@@ -233,10 +235,10 @@ func relayoutGUI(c *Client, old, cur image.Point) {
 		fromFile = fromFile && file.Size() == it.rect.Size()
 		b := bounds[find(i)]
 		if !fromFile || file.Min.X != it.rect.Min.X {
-			it.pos.X += place(b.Min.X, b.Dx(), old.X, cur.X)
+			it.pos.X += relayoutShift(b.Min.X, b.Dx(), old.X, cur.X)
 		}
 		if !fromFile || file.Min.Y != it.rect.Min.Y {
-			it.pos.Y += place(b.Min.Y, b.Dy(), old.Y, cur.Y)
+			it.pos.Y += relayoutShift(b.Min.Y, b.Dy(), old.Y, cur.Y)
 		}
 	}
 	// placeholder windows usually hold parts of another window at the same position, so they must move together

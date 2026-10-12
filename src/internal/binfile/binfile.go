@@ -7,9 +7,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/opennox/libs/ifs"
-	"github.com/opennox/libs/log"
-	crypt "github.com/opennox/noxcrypt"
+	"github.com/brutusmcforce/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/log"
+	crypt "github.com/brutusmcforce/opennox/noxcrypt"
 	"golang.org/x/crypto/blowfish"
 )
 

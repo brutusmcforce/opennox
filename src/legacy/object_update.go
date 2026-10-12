@@ -26,9 +26,9 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/opennox/libs/player"
+	"github.com/brutusmcforce/opennox/libs/player"
 
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

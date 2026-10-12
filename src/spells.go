@@ -4,19 +4,19 @@ import (
 	"errors"
 	"unsafe"
 
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/player"
-	"github.com/opennox/libs/spell"
-	"github.com/opennox/libs/things"
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/player"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/things"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	"github.com/opennox/opennox/v1/client/noxrender"
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/common/sound"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 type serverSpells struct {

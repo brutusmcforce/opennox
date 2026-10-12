@@ -3,12 +3,12 @@ package server
 import (
 	"unsafe"
 
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/spell"
-	"github.com/opennox/libs/things"
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/things"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 type DurSpell struct {

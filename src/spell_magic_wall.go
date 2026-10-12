@@ -4,17 +4,17 @@ import (
 	"image"
 	"unsafe"
 
-	"github.com/opennox/libs/common"
-	"github.com/opennox/libs/noxnet/netmsg"
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/spell"
-	"github.com/opennox/libs/wall"
+	"github.com/brutusmcforce/opennox/libs/common"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/wall"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/internal/cryptfile"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/server"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/internal/cryptfile"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 type spellWall struct {

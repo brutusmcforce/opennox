@@ -8,8 +8,8 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/opennox/lobby"
-	"github.com/opennox/xwis"
+	"github.com/brutusmcforce/opennox/lobby"
+	"github.com/brutusmcforce/opennox/xwis"
 )
 
 func init() {

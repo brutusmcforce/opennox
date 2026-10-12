@@ -4,9 +4,9 @@ import (
 	"image"
 	"sync/atomic"
 
-	"github.com/opennox/libs/client/seat"
-	"github.com/opennox/libs/log"
-	"github.com/opennox/libs/noximage"
+	"github.com/brutusmcforce/opennox/libs/client/seat"
+	"github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/noximage"
 )
 
 var (

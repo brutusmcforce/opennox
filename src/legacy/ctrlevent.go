@@ -25,10 +25,10 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/libs/client/keybind"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
 
-	"github.com/opennox/opennox/v1/client"
-	"github.com/opennox/opennox/v1/client/gui"
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/gui"
 )
 
 type CtrlEventHandler interface {

@@ -16,14 +16,14 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/opennox/libs/bag"
-	"github.com/opennox/libs/datapath"
-	"github.com/opennox/libs/log"
-	"github.com/opennox/libs/noximage/pcx"
-	"github.com/opennox/libs/things"
+	"github.com/brutusmcforce/opennox/libs/bag"
+	"github.com/brutusmcforce/opennox/libs/datapath"
+	"github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/noximage/pcx"
+	"github.com/brutusmcforce/opennox/libs/things"
 
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/legacy/common/alloc/handles"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc/handles"
 )
 
 var (

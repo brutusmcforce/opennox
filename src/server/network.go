@@ -8,20 +8,20 @@ import (
 	"math"
 	"net/netip"
 
-	"github.com/opennox/libs/noxnet"
-	"github.com/opennox/libs/noxnet/netmsg"
-	"github.com/opennox/libs/noxnet/netxfer"
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/player"
-	"github.com/opennox/libs/spell"
-	"github.com/opennox/libs/strman"
-	"github.com/opennox/libs/types"
-	"github.com/opennox/nat"
+	"github.com/brutusmcforce/opennox/libs/noxnet"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netxfer"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/player"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/nat"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/internal/netlist"
-	"github.com/opennox/opennox/v1/internal/netstr"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/internal/netlist"
+	"github.com/brutusmcforce/opennox/internal/netstr"
 )
 
 func (s *Server) GetOwnIP() string {

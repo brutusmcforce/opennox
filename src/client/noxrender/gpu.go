@@ -5,7 +5,7 @@ import (
 	"image"
 	"image/color"
 
-	"github.com/opennox/libs/noximage"
+	"github.com/brutusmcforce/opennox/libs/noximage"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )

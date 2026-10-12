@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/opennox/libs/script"
-	ns4 "github.com/opennox/noxscript/ns/v4"
+	"github.com/brutusmcforce/opennox/libs/script"
+	ns4 "github.com/brutusmcforce/opennox/noxscript/ns/v4"
 )
 
 func (s NoxScriptNS) OnFrame(fnc ns4.FrameFunc) {

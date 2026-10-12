@@ -3,14 +3,14 @@ package opennox
 import (
 	"unsafe"
 
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/player"
-	"github.com/opennox/libs/spell"
-	"github.com/opennox/libs/things"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/player"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/things"
 
-	"github.com/opennox/opennox/v1/common/sound"
-	"github.com/opennox/opennox/v1/legacy/common/ccall"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/legacy/common/ccall"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 type spellsDuration struct {

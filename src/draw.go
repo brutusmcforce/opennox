@@ -6,16 +6,16 @@ import (
 	"image/color"
 	"unsafe"
 
-	noxcolor "github.com/opennox/libs/color"
-	"github.com/opennox/libs/common"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"github.com/brutusmcforce/opennox/libs/common"
 
-	"github.com/opennox/opennox/v1/client"
-	"github.com/opennox/opennox/v1/client/noxrender"
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 const (
@@ -47,8 +47,8 @@ type clientTileData struct {
 	noxTilesGpy    int
 	noxTileBuf     []uint16
 	noxTileBufFree func()
-	nox_arr_956A00 [noxMaxHeight + 150]int
-	nox_arr_957820 [noxMaxHeight + 150]tileMapXxx
+	nox_arr_956A00 [worldViewMaxHeight + 150]int
+	nox_arr_957820 [worldViewMaxHeight + 150]tileMapXxx
 
 	dword_5d4594_3679320 int
 	dword_5d4594_3798156 int
@@ -437,6 +437,16 @@ func (c *Client) nox_xxx_tileInitBuf_430DB0(width, height int) {
 		c.tiles.lightsOutBuf[1] = 255
 		c.tiles.lightsOutBuf[2] = 255
 	}
+}
+
+// resizeTileBuf reallocates the floor tile buffer for a new size of the world view.
+func (c *Client) resizeTileBuf(sz image.Point) {
+	if c.tiles.noxTileBuf != nil {
+		c.tiles.noxTileBufFree()
+		c.tiles.noxTileBuf = nil
+		c.tiles.noxTileBufFree = nil
+	}
+	c.nox_xxx_tileInitBuf_430DB0(sz.X, sz.Y)
 }
 
 func (c *Client) nox_video_freeFloorBuffer_430EC0() {

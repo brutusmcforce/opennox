@@ -3,8 +3,8 @@ package opennox
 import (
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/internal/cryptfile"
-	"github.com/opennox/opennox/v1/legacy"
+	"github.com/brutusmcforce/opennox/internal/cryptfile"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 func sub_57C490_2(key string) {

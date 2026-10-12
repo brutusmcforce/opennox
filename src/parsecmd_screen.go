@@ -8,8 +8,8 @@ import (
 	"os"
 	"sync/atomic"
 
-	"github.com/opennox/libs/console"
-	"github.com/opennox/libs/datapath"
+	"github.com/brutusmcforce/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/datapath"
 )
 
 func init() {

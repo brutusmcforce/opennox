@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/opennox/libs/console"
-	"github.com/opennox/libs/datapath"
-	"github.com/opennox/libs/ifs"
-	"github.com/opennox/libs/maps"
+	"github.com/brutusmcforce/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/datapath"
+	"github.com/brutusmcforce/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/maps"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/legacy"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 var noxMapsIgnoreMode = false

@@ -12,8 +12,8 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/internal/netlist"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/internal/netlist"
 )
 
 var (

@@ -25,11 +25,11 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/libs/player"
-	"github.com/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/player"
+	"github.com/brutusmcforce/opennox/libs/spell"
 
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

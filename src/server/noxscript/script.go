@@ -3,9 +3,9 @@ package noxscript
 import (
 	"strconv"
 
-	"github.com/opennox/libs/player"
-	"github.com/opennox/noxscript/ns/asm"
-	"github.com/opennox/noxscript/ns/v4"
+	"github.com/brutusmcforce/opennox/libs/player"
+	"github.com/brutusmcforce/opennox/noxscript/ns/asm"
+	"github.com/brutusmcforce/opennox/noxscript/ns/v4"
 )
 
 func init() {

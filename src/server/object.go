@@ -9,18 +9,18 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/script"
-	"github.com/opennox/libs/strman"
-	"github.com/opennox/libs/types"
-	ns4 "github.com/opennox/noxscript/ns/v4"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/script"
+	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/libs/types"
+	ns4 "github.com/brutusmcforce/opennox/noxscript/ns/v4"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/common/sound"
-	"github.com/opennox/opennox/v1/common/unit/ai"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/legacy/common/ccall"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/common/unit/ai"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 )
 
 const (
@@ -1984,7 +1984,8 @@ func (obj *Object) SetColor(ind int, cl color.Color) {
 			obj.Nox_xxx_setNPCColor_4E4A90(byte(ind), &ccl)
 		}
 	} else if obj.Class().Has(object.ClassPlayer) {
-		panic("not implemented")
+		// player colors are only sent to clients when the player joins, so they cannot be changed in the game
+		obj.Server().Log.Warn("cannot change player color", "obj", obj.String(), "ind", ind)
 	}
 }
 

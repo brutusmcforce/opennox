@@ -26,8 +26,8 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/legacy/common/ccall"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/legacy/common/ccall"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

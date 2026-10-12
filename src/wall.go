@@ -6,17 +6,17 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/opennox/libs/noxnet/netmsg"
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/script"
-	"github.com/opennox/libs/types"
-	"github.com/opennox/libs/wall"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/script"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/wall"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/common/sound"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/server"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func sub_526CA0(a1 string) int {
@@ -282,8 +282,6 @@ LABEL_10:
 				v32 = int32(xi)
 			}
 			v7 = v25
-			who = who
-			rect = rect
 		}
 		yi++
 		v33 = int32(yi)
@@ -299,7 +297,6 @@ LABEL_10:
 		if v7 == 0 {
 			break
 		}
-		who = who
 	}
 	v7 = v25
 	return v7 > 0

@@ -19,9 +19,9 @@ import (
 	"io"
 	"unsafe"
 
-	"github.com/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/ifs"
 
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 // only works on 32bit

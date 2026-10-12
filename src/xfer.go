@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/spell"
 
-	"github.com/opennox/opennox/v1/internal/cryptfile"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/internal/cryptfile"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 type XferFunc func(obj *server.Object, a2 unsafe.Pointer) error

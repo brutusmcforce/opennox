@@ -8,13 +8,13 @@ import (
 	"io"
 	"os"
 
-	"github.com/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/log"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/server"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 const (

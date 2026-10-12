@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/opennox/lobby"
-	"github.com/opennox/xwis"
+	"github.com/brutusmcforce/opennox/lobby"
+	"github.com/brutusmcforce/opennox/xwis"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/log"
 )
 
 const (

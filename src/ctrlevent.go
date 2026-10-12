@@ -8,17 +8,17 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/opennox/libs/cfg"
-	"github.com/opennox/libs/client/keybind"
-	"github.com/opennox/libs/common"
-	"github.com/opennox/libs/player"
+	"github.com/brutusmcforce/opennox/libs/cfg"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
+	"github.com/brutusmcforce/opennox/libs/common"
+	"github.com/brutusmcforce/opennox/libs/player"
 
-	"github.com/opennox/opennox/v1/client/gui"
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/common/sound"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/client/gui"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (
@@ -272,11 +272,11 @@ func (c *CtrlEventHandler) nox_xxx_clientControl_42D6B0_A(a4 *CtrlEventBinding) 
 				c.nox_ctrlevent_action_42E780(player.CCCastSpell5, 0)
 			case keybind.EventSpellSet1, keybind.EventSpellSet2, keybind.EventSpellSet3, keybind.EventSpellSet4, keybind.EventSpellSet5:
 				legacy.Nox_xxx_clientUpdateButtonRow_45E110(int(k - keybind.EventSpellSet1))
-			case eventZoomIn, eventZoomOut:
+			case keybind.EventZoomIn, keybind.EventZoomOut:
 				// limit the zoom speed when the key is held
 				if inputKeyCheckTimeout(k, fps/10) {
 					inputSetKeyTimeout(k)
-					noxClient.zoomStep(k == eventZoomIn)
+					noxClient.zoomStep(k == keybind.EventZoomIn)
 				}
 			case keybind.EventMapZoomIn:
 				c.nox_ctrlevent_action_42E670(player.CCMapZoomIn, 0)

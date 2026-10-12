@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/opennox/opennox/v1/internal/cryptfile"
+	"github.com/brutusmcforce/opennox/internal/cryptfile"
 )
 
 type serverActivators struct {

@@ -3,9 +3,9 @@ package server
 import (
 	"math"
 
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
 )
 
 func (s *Server) PixieFindTarget(u *Object) *Object {

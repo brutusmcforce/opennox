@@ -4,11 +4,11 @@ import (
 	"image"
 	"unsafe"
 
-	"github.com/opennox/libs/client/keybind"
-	noxcolor "github.com/opennox/libs/color"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 
-	"github.com/opennox/opennox/v1/client/input"
-	"github.com/opennox/opennox/v1/client/noxrender"
+	"github.com/brutusmcforce/opennox/client/input"
+	"github.com/brutusmcforce/opennox/client/noxrender"
 )
 
 func NewCheckBoxImg(g *GUI, par *Window, id uint, px, py, w, h int, text string, bg, sel, dis *noxrender.Image) *Window {

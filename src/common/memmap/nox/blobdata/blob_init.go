@@ -1,7 +1,7 @@
 package blobdata
 
 import (
-	"github.com/opennox/opennox/v1/common/memmap"
+	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 func Init(p *Ptrs) {

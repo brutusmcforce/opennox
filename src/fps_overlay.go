@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/opennox/libs/console"
-	"github.com/opennox/libs/platform"
+	"github.com/brutusmcforce/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/platform"
 )
 
 const configVideoShowFPS = "video.show_fps"

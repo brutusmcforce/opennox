@@ -1,6 +1,6 @@
 package client
 
-import "github.com/opennox/opennox/v1/client/gui"
+import "github.com/brutusmcforce/opennox/client/gui"
 
 const (
 	StateMovies      = gui.StateID(10)

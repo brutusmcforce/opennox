@@ -19,7 +19,7 @@ extern unsigned int nox_client_gui_flag_1556112;
 extern unsigned int dword_5d4594_2650652;
 */
 import "C"
-import "github.com/opennox/opennox/v1/client/noxrender"
+import "github.com/brutusmcforce/opennox/client/noxrender"
 
 func Sub_43CEB0() {
 	C.sub_43CEB0()

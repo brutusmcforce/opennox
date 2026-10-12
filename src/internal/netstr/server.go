@@ -3,7 +3,7 @@ package netstr
 import (
 	"errors"
 
-	"github.com/opennox/libs/common"
+	"github.com/brutusmcforce/opennox/libs/common"
 )
 
 type Server struct {

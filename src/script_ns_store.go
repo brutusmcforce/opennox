@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/opennox/noxscript/ns/v4"
+	"github.com/brutusmcforce/opennox/noxscript/ns/v4"
 
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 type nsStorage struct {

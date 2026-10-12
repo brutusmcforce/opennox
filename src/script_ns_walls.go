@@ -3,10 +3,10 @@ package opennox
 import (
 	"image"
 
-	"github.com/opennox/libs/types"
-	"github.com/opennox/noxscript/ns/v4"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/noxscript/ns/v4"
 
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func (s noxScriptNS) NoWallSound(noSound bool) {

@@ -12,11 +12,11 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/opennox/libs/datapath"
-	"github.com/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/datapath"
+	"github.com/brutusmcforce/opennox/libs/ifs"
 
-	"github.com/opennox/opennox/v1/internal/binfile"
-	"github.com/opennox/opennox/v1/legacy/common/alloc/handles"
+	"github.com/brutusmcforce/opennox/internal/binfile"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc/handles"
 )
 
 var files struct {

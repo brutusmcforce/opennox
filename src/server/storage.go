@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/opennox/libs/datapath"
+	"github.com/brutusmcforce/opennox/libs/datapath"
 )
 
 func newStore(dir string) *storage {

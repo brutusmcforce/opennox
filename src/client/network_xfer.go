@@ -1,8 +1,8 @@
 package client
 
 import (
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func (c *Client) handleCBORXfer(ind ntype.PlayerInd, m server.NetXferExt) {

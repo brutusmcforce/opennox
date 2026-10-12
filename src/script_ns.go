@@ -5,12 +5,12 @@ import (
 	"path"
 	"strings"
 
-	"github.com/opennox/libs/common"
-	ns3vm "github.com/opennox/noxscript/ns/v3/vm"
-	ns4 "github.com/opennox/noxscript/ns/v4"
+	"github.com/brutusmcforce/opennox/libs/common"
+	ns3vm "github.com/brutusmcforce/opennox/noxscript/ns/v3/vm"
+	ns4 "github.com/brutusmcforce/opennox/noxscript/ns/v4"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/server"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

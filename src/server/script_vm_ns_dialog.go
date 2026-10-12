@@ -1,6 +1,6 @@
 package server
 
-import "github.com/opennox/noxscript/ns/v4"
+import "github.com/brutusmcforce/opennox/noxscript/ns/v4"
 
 func (s NoxScriptNS) SetDialog(cobj ns.Obj, typ ns.DialogType, start, end ns.Func) {
 	if cobj == nil {

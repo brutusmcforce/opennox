@@ -9,15 +9,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/opennox/libs/client/keybind"
-	"github.com/opennox/libs/datapath"
-	noxlog "github.com/opennox/libs/log"
-	"github.com/opennox/libs/maps"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
+	"github.com/brutusmcforce/opennox/libs/datapath"
+	noxlog "github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/maps"
 
-	"github.com/opennox/opennox/v1/client/gui"
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/common/sound"
+	"github.com/brutusmcforce/opennox/client/gui"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/sound"
 )
 
 type clientMapDownload struct {

@@ -3,7 +3,7 @@ package opennox
 import (
 	"net/http"
 
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func init() {

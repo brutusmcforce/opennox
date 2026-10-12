@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"net/netip"
 
-	"github.com/opennox/lobby"
+	"github.com/brutusmcforce/opennox/lobby"
 
-	"github.com/opennox/opennox/v1/internal/version"
+	"github.com/brutusmcforce/opennox/internal/version"
 )
 
 var (

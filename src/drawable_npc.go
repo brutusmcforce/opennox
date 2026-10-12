@@ -3,14 +3,14 @@ package opennox
 import (
 	"unsafe"
 
-	noxcolor "github.com/opennox/libs/color"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 
-	"github.com/opennox/opennox/v1/client"
-	"github.com/opennox/opennox/v1/client/noxrender"
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func init() {

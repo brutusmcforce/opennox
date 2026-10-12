@@ -25,15 +25,15 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/opennox/libs/log"
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/internal/cryptfile"
-	"github.com/opennox/opennox/v1/legacy/cnxz"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/legacy/common/ccall"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/internal/cryptfile"
+	"github.com/brutusmcforce/opennox/legacy/cnxz"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/legacy/common/ccall"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

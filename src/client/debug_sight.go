@@ -3,9 +3,9 @@ package client
 import (
 	"image"
 
-	noxcolor "github.com/opennox/libs/color"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 
-	"github.com/opennox/opennox/v1/client/noxrender"
+	"github.com/brutusmcforce/opennox/client/noxrender"
 )
 
 func (c *Client) DebugSightAdd() {

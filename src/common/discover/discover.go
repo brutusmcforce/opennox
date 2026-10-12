@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/opennox/lobby"
+	"github.com/brutusmcforce/opennox/lobby"
 	"golang.org/x/sync/errgroup"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
 )
 
 const (

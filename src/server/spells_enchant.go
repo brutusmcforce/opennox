@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 
-	"github.com/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/spell"
 )
 
 func ParseEnchant(name string) (EnchantID, bool) {

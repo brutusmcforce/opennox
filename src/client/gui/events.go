@@ -4,9 +4,9 @@ import (
 	"image"
 	"unsafe"
 
-	"github.com/opennox/libs/client/keybind"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
 
-	"github.com/opennox/opennox/v1/client/input"
+	"github.com/brutusmcforce/opennox/client/input"
 )
 
 func init() {

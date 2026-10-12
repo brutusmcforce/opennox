@@ -1,10 +1,10 @@
 package opennox
 
 import (
-	"github.com/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/object"
 
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func nox_xxx_warriorTreadLightly_5400B0(u *server.Object, dur int) {

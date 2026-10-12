@@ -3,11 +3,11 @@ package opennox
 import (
 	"unsafe"
 
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	"github.com/opennox/opennox/v1/common/sound"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func (s *Server) NetUpdateRemotePlrAudioEvents(obj *server.Object, v2 unsafe.Pointer, v18 int8) {

@@ -4,7 +4,7 @@ import (
 	"image"
 	"image/color"
 
-	"github.com/opennox/opennox/v1/client/noxrender"
+	"github.com/brutusmcforce/opennox/client/noxrender"
 )
 
 func (c *Client) drawProtectParticle(vp *noxrender.Viewport, part, tail image.Point, partCl, tailCl color.Color) { // nox_client_drawXxxProtectParticle_474DD0

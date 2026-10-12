@@ -8,13 +8,13 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/opennox/libs/log"
-	"github.com/opennox/libs/noxnet"
-	"github.com/opennox/libs/noxnet/netmsg"
-	"github.com/opennox/libs/platform"
+	"github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/noxnet"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/platform"
 
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/server/netlib"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/server/netlib"
 )
 
 const (

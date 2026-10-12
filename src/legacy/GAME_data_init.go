@@ -44,7 +44,7 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/common/memmap/nox/blobdata"
+	"github.com/brutusmcforce/opennox/common/memmap/nox/blobdata"
 )
 
 func InitBlobData() {

@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/opennox/noxscript/ns/asm"
+	"github.com/brutusmcforce/opennox/noxscript/ns/asm"
 
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/server/noxscript"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/server/noxscript"
 )
 
 func nox_script_shouldReadMoreXxx(fi asm.Builtin) bool {

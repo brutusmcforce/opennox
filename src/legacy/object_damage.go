@@ -7,7 +7,7 @@ package legacy
 int nox_xxx_soundPlayerDamageSound_5328B0(nox_object_t* a1, nox_object_t* a2);
 */
 import "C"
-import "github.com/opennox/opennox/v1/server"
+import "github.com/brutusmcforce/opennox/server"
 
 func init() {
 	server.RegisterObjectDamage("DefaultDamage", C.nox_xxx_damageDefaultProc_4E0B30)

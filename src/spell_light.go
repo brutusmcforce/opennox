@@ -1,9 +1,9 @@
 package opennox
 
 import (
-	"github.com/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/spell"
 
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func castLight(spellID spell.ID, _, a3, _ *server.Object, args *server.SpellAcceptArg, lvl int) int {

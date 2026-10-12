@@ -4,9 +4,9 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
 
-	"github.com/opennox/opennox/v1/common/ntype"
+	"github.com/brutusmcforce/opennox/common/ntype"
 )
 
 const (

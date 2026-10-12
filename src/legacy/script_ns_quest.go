@@ -6,9 +6,9 @@ void nox_xxx_comJournalEntryAdd_427500(nox_object_t* a1, char* a2, short a3);
 */
 import "C"
 import (
-	"github.com/opennox/noxscript/ns/v4"
+	"github.com/brutusmcforce/opennox/noxscript/ns/v4"
 
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func Nox_xxx_comJournalEntryAdd_427500(a1 *server.Object, msg ns.StringID, a3 ns.EntryType) {

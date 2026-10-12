@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/opennox/libs/console"
-	"github.com/opennox/libs/ifs"
-	"github.com/opennox/libs/noxnet"
-	"github.com/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/noxnet"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/internal/netstr"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/server"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/internal/netstr"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func (s *Server) onPacket(ind ntype.PlayerInd, data []byte) bool {

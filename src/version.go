@@ -4,7 +4,7 @@ package opennox
 import (
 	"fmt"
 
-	"github.com/opennox/opennox/v1/legacy"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 const (

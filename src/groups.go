@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/opennox/libs/common"
+	"github.com/brutusmcforce/opennox/libs/common"
 
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var _ = [1]struct{}{}[96-unsafe.Sizeof(server.MapGroup{})]

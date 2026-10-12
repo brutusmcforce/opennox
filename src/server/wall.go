@@ -9,12 +9,12 @@ import (
 	"sort"
 	"unsafe"
 
-	"github.com/opennox/libs/common"
-	"github.com/opennox/libs/types"
-	"github.com/opennox/libs/wall"
+	"github.com/brutusmcforce/opennox/libs/common"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/wall"
 
-	"github.com/opennox/opennox/v1/internal/binfile"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/internal/binfile"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 const (

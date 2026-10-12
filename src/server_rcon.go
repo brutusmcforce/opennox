@@ -19,11 +19,11 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/log"
 
-	"github.com/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/console"
 
-	"github.com/opennox/opennox/v1/internal/version"
+	"github.com/brutusmcforce/opennox/internal/version"
 )
 
 const (

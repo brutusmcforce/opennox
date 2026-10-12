@@ -7,20 +7,20 @@ import (
 	"image/color"
 	"unsafe"
 
-	noxcolor "github.com/opennox/libs/color"
-	"github.com/opennox/libs/noximage"
-	"github.com/opennox/libs/player"
-	"github.com/opennox/libs/spell"
-	"github.com/opennox/libs/strman"
-	"github.com/opennox/libs/types"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"github.com/brutusmcforce/opennox/libs/noximage"
+	"github.com/brutusmcforce/opennox/libs/player"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	"github.com/opennox/opennox/v1/client"
-	"github.com/opennox/opennox/v1/client/gui"
-	"github.com/opennox/opennox/v1/client/noxrender"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

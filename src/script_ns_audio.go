@@ -1,8 +1,8 @@
 package opennox
 
 import (
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/legacy"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 func (s noxScriptNS) Music(music int, volume int) {

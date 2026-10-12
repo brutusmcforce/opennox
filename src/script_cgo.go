@@ -1,7 +1,7 @@
 package opennox
 
 import (
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func (s *Server) Nox_script_event_playerLeave(pl *server.Player) {

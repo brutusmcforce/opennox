@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/libs/strman"
 
-	"github.com/opennox/opennox/v1/legacy/client/audio/ail"
-	"github.com/opennox/opennox/v1/legacy/timer"
+	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
+	"github.com/brutusmcforce/opennox/legacy/timer"
 )
 
 func NewDialog(

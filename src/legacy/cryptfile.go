@@ -9,8 +9,8 @@ import (
 	"os"
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/internal/binfile"
-	"github.com/opennox/opennox/v1/internal/cryptfile"
+	"github.com/brutusmcforce/opennox/internal/binfile"
+	"github.com/brutusmcforce/opennox/internal/cryptfile"
 )
 
 //export nox_crypt_IsReadOnly

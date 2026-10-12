@@ -12,10 +12,10 @@ import (
 	"os"
 	"unsafe"
 
-	noxcolor "github.com/opennox/libs/color"
-	"github.com/opennox/libs/log"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"github.com/brutusmcforce/opennox/libs/log"
 
-	"github.com/opennox/opennox/v1/client/gui"
+	"github.com/brutusmcforce/opennox/client/gui"
 )
 
 var (

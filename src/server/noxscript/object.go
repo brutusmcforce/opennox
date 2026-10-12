@@ -1,12 +1,12 @@
 package noxscript
 
 import (
-	"github.com/opennox/noxscript/ns/asm"
-	ns4 "github.com/opennox/noxscript/ns/v4"
-	"github.com/opennox/noxscript/ns/v4/audio"
-	"github.com/opennox/noxscript/ns/v4/class"
-	"github.com/opennox/noxscript/ns/v4/damage"
-	"github.com/opennox/noxscript/ns/v4/subclass"
+	"github.com/brutusmcforce/opennox/noxscript/ns/asm"
+	ns4 "github.com/brutusmcforce/opennox/noxscript/ns/v4"
+	"github.com/brutusmcforce/opennox/noxscript/ns/v4/audio"
+	"github.com/brutusmcforce/opennox/noxscript/ns/v4/class"
+	"github.com/brutusmcforce/opennox/noxscript/ns/v4/damage"
+	"github.com/brutusmcforce/opennox/noxscript/ns/v4/subclass"
 )
 
 func init() {

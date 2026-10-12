@@ -3,14 +3,14 @@ package server
 import (
 	"unsafe"
 
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/common/unit/ai"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/common/unit/ai"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 const aiMapIndexSize = WallGridSize

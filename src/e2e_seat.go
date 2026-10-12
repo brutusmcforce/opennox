@@ -3,7 +3,7 @@ package opennox
 import (
 	"image"
 
-	"github.com/opennox/libs/client/seat"
+	"github.com/brutusmcforce/opennox/libs/client/seat"
 )
 
 func e2eWrapSeat(s seat.Seat) seat.Seat {

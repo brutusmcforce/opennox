@@ -18,10 +18,10 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/legacy/client/audio/ail"
-	"github.com/opennox/opennox/v1/legacy/music"
-	"github.com/opennox/opennox/v1/legacy/timer"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
+	"github.com/brutusmcforce/opennox/legacy/music"
+	"github.com/brutusmcforce/opennox/legacy/timer"
 )
 
 var (

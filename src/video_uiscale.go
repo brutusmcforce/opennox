@@ -3,11 +3,11 @@ package opennox
 import (
 	"image"
 
-	"github.com/opennox/libs/noximage"
+	"github.com/brutusmcforce/opennox/libs/noximage"
 
-	"github.com/opennox/opennox/v1/client/noxrender"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 // UI scaling.
@@ -40,6 +40,10 @@ var uiScaleState struct {
 	}
 
 	worldReady bool // the world was drawn in this frame
+
+	viewSize image.Point // the world view size that the client state was set up for (see resizeWorldView)
+
+	overlay *noximage.Image16 // full resolution layer for the cursor, when the world buffer is larger than the screen
 
 	// cursor is drawn at full resolution, so that it is not scaled with the GUI
 	cursorPos image.Point // in GUI coordinates
@@ -175,25 +179,11 @@ func videoInitWorldBuffer(ui image.Point) {
 	videoAllocWorldBuffer(sz)
 }
 
-// videoNeedWorldBuffer creates or frees the world buffer when UI scaling is disabled.
-// In this case, the world buffer has the same size as the GUI buffer, and it is only needed for zooming.
-func videoNeedWorldBuffer(need bool) {
-	st := &uiScaleState
-	if st.worldSize != (image.Point{}) || st.inWorld || noxPixBuffer.img == nil || need == (st.world != nil) {
-		return
-	}
-	if need {
-		videoAllocWorldBuffer(noxPixBuffer.img.Size())
-	} else {
-		videoFreeWorldBuffer()
-	}
-}
-
 func videoAllocWorldBuffer(sz image.Point) {
 	uiScaleState.world = noximage.NewImage16(image.Rectangle{Max: sz})
 	if g := noxClient.gpu; g != nil && noxPixBuffer.img != nil {
 		// draw the GUI at the full resolution; it allows drawing smooth text
-		g.SetTargetSize(noxPixBuffer.img, sz)
+		g.SetTargetSize(noxPixBuffer.img, worldPhysSize())
 	}
 	uiScaleState.worldReady = false
 }
@@ -306,9 +296,46 @@ func (c *Client) presentScaled(draw func()) bool {
 		return false
 	}
 	c.composeUI()
+	c.drawCursorOverlay()
 	c.beginWorldDraw()
 	defer c.endWorldDraw()
 	draw()
 	c.copyPixBuffer()
 	return true
+}
+
+// drawCursorOverlay draws the deferred cursor at the screen resolution, if the world buffer is larger than the screen
+// (when zoomed out). Otherwise, the cursor is drawn directly into the world buffer (see drawDeferredCursor).
+func (c *Client) drawCursorOverlay() {
+	st := &uiScaleState
+	phys := worldPhysSize()
+	if !st.hasCursor || st.world == nil || st.world.Size() == phys || c.gpu == nil || phys.X <= 0 || phys.Y <= 0 {
+		return
+	}
+	st.hasCursor = false
+	if st.overlay == nil || st.overlay.Size() != phys {
+		st.overlay = noximage.NewImage16(image.Rectangle{Max: phys})
+	}
+	ui := noxPixBuffer.img.Size()
+	pos := image.Pt(st.cursorPos.X*phys.X/ui.X, st.cursorPos.Y*phys.Y/ui.Y)
+
+	d := c.r.Data()
+	saved := noxPixBuffer.img
+	clip, r1, r2, r3 := d.Clip(), d.ClipRect(), d.ClipRect2(), d.Rect3()
+	win := videoGetWindowSize()
+	c.setPixTarget(st.overlay)
+	videoSetWindowSize(phys)
+	d.SetClip(false)
+	d.SetClipRect(image.Rectangle{Max: phys})
+	d.SetClipRect2(image.Rectangle{Max: phys.Sub(image.Pt(1, 1))})
+	d.SetRect3(image.Rectangle{Max: phys})
+	c.gpu.ClearTransparent()
+	c.nox_video_cursorDrawImpl_477A30(pos)
+	c.setPixTarget(saved)
+	videoSetWindowSize(win)
+	d.SetClip(clip)
+	d.SetClipRect(r1)
+	d.SetClipRect2(r2)
+	d.SetRect3(r3)
+	c.gpu.Composite(st.world, st.overlay)
 }

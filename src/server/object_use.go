@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/spell"
 
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 func init() {

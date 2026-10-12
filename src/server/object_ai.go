@@ -3,11 +3,11 @@ package server
 import (
 	"math"
 
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/spell"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/unit/ai"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/unit/ai"
 )
 
 var aiActions = make(map[ai.ActionType]AIAction)

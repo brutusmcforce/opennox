@@ -10,16 +10,16 @@ import (
 	"github.com/spf13/viper"
 	"github.com/tawesoft/golib/v2/dialog"
 
-	"github.com/opennox/libs/client/seat/sdl"
-	"github.com/opennox/libs/env"
-	"github.com/opennox/libs/noximage"
+	"github.com/brutusmcforce/opennox/libs/client/seat/sdl"
+	"github.com/brutusmcforce/opennox/libs/env"
+	"github.com/brutusmcforce/opennox/libs/noximage"
 
-	"github.com/opennox/opennox/v1/client/gpu"
-	"github.com/opennox/opennox/v1/client/input"
-	"github.com/opennox/opennox/v1/client/noxrender"
-	"github.com/opennox/opennox/v1/client/render"
-	"github.com/opennox/opennox/v1/internal/version"
-	"github.com/opennox/opennox/v1/legacy"
+	"github.com/brutusmcforce/opennox/client/gpu"
+	"github.com/brutusmcforce/opennox/client/input"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/client/render"
+	"github.com/brutusmcforce/opennox/internal/version"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 func init() {

@@ -3,11 +3,11 @@ package opennox
 import (
 	"encoding/binary"
 
-	"github.com/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
 
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func nox_xxx_netServerCmd_440950(id byte, cmd string) {

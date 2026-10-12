@@ -3,10 +3,10 @@ package server
 import (
 	"strings"
 
-	"github.com/opennox/libs/noxnet/netmsg"
-	"github.com/opennox/libs/types"
-	ns4 "github.com/opennox/noxscript/ns/v4"
-	"github.com/opennox/noxscript/ns/v4/effect"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/types"
+	ns4 "github.com/brutusmcforce/opennox/noxscript/ns/v4"
+	"github.com/brutusmcforce/opennox/noxscript/ns/v4/effect"
 )
 
 var nsFxNames = make(map[string]netmsg.Op)

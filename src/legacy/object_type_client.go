@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/client"
-	"github.com/opennox/opennox/v1/internal/binfile"
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/internal/binfile"
 )
 
 func init() {

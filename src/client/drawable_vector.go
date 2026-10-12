@@ -3,7 +3,7 @@ package client
 import (
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/client/noxrender"
+	"github.com/brutusmcforce/opennox/client/noxrender"
 )
 
 type AnimKind uint32

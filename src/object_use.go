@@ -1,13 +1,13 @@
 package opennox
 
 import (
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/spell"
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	"github.com/opennox/opennox/v1/common/sound"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func nox_xxx_useConsume_53EE10(obj, item *server.Object) bool {

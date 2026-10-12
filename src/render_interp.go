@@ -8,13 +8,13 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/opennox/libs/env"
-	"github.com/opennox/libs/platform"
+	"github.com/brutusmcforce/opennox/libs/env"
+	"github.com/brutusmcforce/opennox/libs/platform"
 
-	"github.com/opennox/opennox/v1/client"
-	"github.com/opennox/opennox/v1/client/noxrender"
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/legacy"
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 // High refresh rate rendering.

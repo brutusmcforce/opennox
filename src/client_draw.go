@@ -8,15 +8,15 @@ import (
 	"math"
 	"sort"
 
-	"github.com/opennox/libs/common"
-	"github.com/opennox/libs/wall"
+	"github.com/brutusmcforce/opennox/libs/common"
+	"github.com/brutusmcforce/opennox/libs/wall"
 
-	"github.com/opennox/opennox/v1/client"
-	"github.com/opennox/opennox/v1/client/noxrender"
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func (c *Client) Nox_drawable_find(pt image.Point, r int) *client.Drawable {
@@ -938,7 +938,7 @@ func (c *Client) sub_4C5430(px int, py int) {
 }
 
 func (c *Client) sub_4C52E0(points []image.Point) {
-	c.tiles.nox_arr_956A00 = [noxMaxHeight + 150]int{}
+	c.tiles.nox_arr_956A00 = [worldViewMaxHeight + 150]int{}
 	c.tiles.dword_5d4594_3679320 = nox_win_height
 	c.tiles.dword_5d4594_3798156 = 0
 	for i := range points {

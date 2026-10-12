@@ -5,7 +5,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
 )
 
 const (

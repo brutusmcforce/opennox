@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/opennox/libs/platform"
-	"github.com/opennox/libs/prand"
+	"github.com/brutusmcforce/opennox/libs/platform"
+	"github.com/brutusmcforce/opennox/libs/prand"
 )
 
 type serverRandom struct {

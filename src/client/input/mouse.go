@@ -5,9 +5,9 @@ import (
 	"image"
 	"log/slog"
 
-	"github.com/opennox/libs/client/keybind"
-	"github.com/opennox/libs/client/seat"
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
+	"github.com/brutusmcforce/opennox/libs/client/seat"
+	"github.com/brutusmcforce/opennox/libs/types"
 )
 
 const (

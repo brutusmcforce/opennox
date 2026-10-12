@@ -5,10 +5,10 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/opennox/opennox/v1/client/noxrender"
+	"github.com/brutusmcforce/opennox/client/noxrender"
 
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/legacy"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 // configVideoSmoothFonts enables bundled outline fonts instead of the original bitmap fonts (see noxrender.SmoothFonts).

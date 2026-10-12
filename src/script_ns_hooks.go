@@ -1,9 +1,9 @@
 package opennox
 
 import (
-	ns4 "github.com/opennox/noxscript/ns/v4"
+	ns4 "github.com/brutusmcforce/opennox/noxscript/ns/v4"
 
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func (s noxScriptNS) OnChat(fnc ns4.ChatFunc) {

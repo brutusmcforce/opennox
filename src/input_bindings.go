@@ -1,74 +1,16 @@
 package opennox
 
 import (
-	"strings"
-
-	"github.com/opennox/libs/client/keybind"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
 )
-
-// OpenNox extensions to the key binding events. Unlike the ones in keybind package, they are handled only by OpenNox.
-const (
-	eventZoomIn = keybind.Event(0x100 + iota)
-	eventZoomOut
-)
-
-var extBindEvents = []keybind.BindEvent{
-	{Name: "ZoomIn", Event: eventZoomIn, Title: "Zoom Camera In"},
-	{Name: "ZoomOut", Event: eventZoomOut, Title: "Zoom Camera Out"},
-}
 
 // defaultExtBindings are OpenNox changes to the default key bindings from default.cfg.
 var defaultExtBindings = []struct {
 	key keybind.Key
 	ev  keybind.Event
 }{
-	{keybind.KeyMouseWheelUp, eventZoomIn},
-	{keybind.KeyMouseWheelDown, eventZoomOut},
-}
-
-// bindEvents is a list of all key binding events, including OpenNox extensions.
-type bindEvents struct {
-	base *keybind.Binding
-	list []keybind.BindEvent
-}
-
-func newBindEvents(base *keybind.Binding) *bindEvents {
-	b := &bindEvents{base: base}
-	b.list = append(b.list, base.Events()...)
-	b.list = append(b.list, extBindEvents...)
-	return b
-}
-
-// Events returns all events, except the empty one.
-func (b *bindEvents) Events() []keybind.BindEvent {
-	return b.list
-}
-
-func (b *bindEvents) EventByCode(ev keybind.Event) *keybind.BindEvent {
-	for i := range extBindEvents {
-		if e := &extBindEvents[i]; e.Event == ev {
-			return e
-		}
-	}
-	return b.base.EventByCode(ev)
-}
-
-func (b *bindEvents) EventByName(name string) *keybind.BindEvent {
-	for i := range extBindEvents {
-		if e := &extBindEvents[i]; e.Name == name {
-			return e
-		}
-	}
-	return b.base.EventByName(name)
-}
-
-func (b *bindEvents) EventByTitle(title string) *keybind.BindEvent {
-	for i := range extBindEvents {
-		if e := &extBindEvents[i]; strings.EqualFold(e.Title, title) {
-			return e
-		}
-	}
-	return b.base.EventByTitle(title)
+	{keybind.KeyMouseWheelUp, keybind.EventZoomIn},
+	{keybind.KeyMouseWheelDown, keybind.EventZoomOut},
 }
 
 // applyDefaultExtBindings applies OpenNox changes to the default key bindings.

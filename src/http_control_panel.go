@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	octl "github.com/szhublox/opennoxcontrol"
+	octl "github.com/brutusmcforce/opennox/opennoxcontrol"
 )
 
 func init() {

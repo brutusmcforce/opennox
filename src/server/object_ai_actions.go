@@ -1,9 +1,9 @@
 package server
 
 import (
-	"github.com/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/object"
 
-	"github.com/opennox/opennox/v1/common/unit/ai"
+	"github.com/brutusmcforce/opennox/common/unit/ai"
 )
 
 func init() {

@@ -3,15 +3,15 @@ package opennox
 import (
 	"time"
 
-	"github.com/opennox/libs/common"
-	"github.com/opennox/libs/log"
-	"github.com/opennox/libs/platform"
+	"github.com/brutusmcforce/opennox/libs/common"
+	"github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/platform"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/internal/netlist"
-	"github.com/opennox/opennox/v1/server"
-	"github.com/opennox/opennox/v1/server/netlib"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/internal/netlist"
+	"github.com/brutusmcforce/opennox/server"
+	"github.com/brutusmcforce/opennox/server/netlib"
 )
 
 var (

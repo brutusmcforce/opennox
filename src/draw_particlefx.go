@@ -6,14 +6,14 @@ import (
 	"math"
 	"unsafe"
 
-	noxcolor "github.com/opennox/libs/color"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 
-	"github.com/opennox/opennox/v1/client"
-	"github.com/opennox/opennox/v1/client/noxrender"
-	"github.com/opennox/opennox/v1/common/gsync"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/alloc/handles"
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/common/gsync"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc/handles"
 )
 
 const (
@@ -116,6 +116,7 @@ type particlefxType struct {
 
 func (pfx *partFXes) Init(r *NoxRender) {
 	pfx.r = r
+	legacy.Nox_client_particleFxDraw = pfx.drawParticle
 	pfx.rand.u16 = 0x1352
 	pfx.rand.u32 = 0x13527438
 	for i := range pfx.types {
@@ -144,6 +145,18 @@ func (pfx *partFXes) registerParticleFx(fnc func(t *particlefxType) bool, p *par
 		}
 	}
 	return 0
+}
+
+// drawParticle draws a particle that has a drawable (see loadParticle and nox_thing_particle_draw).
+func (pfx *partFXes) drawParticle(dr *client.Drawable) {
+	p := pfx.byHandle[unsafe.Pointer(uintptr(dr.UnionEffect().Field_108))]
+	if p == nil {
+		return
+	}
+	dr.PosVec = image.Pt(p.x16>>16, p.y16>>16)
+	if p.drawFunc != nil {
+		p.drawFunc(p)
+	}
 }
 
 func (pfx *partFXes) Draw() {
@@ -281,12 +294,16 @@ func partfxDraw(p *particleFx) {
 	}
 }
 
+// muldiv computes a*b/c with a 64 bit intermediate result, rounded to the nearest integer (as MulDiv in WinAPI).
 func muldiv(a, b, c int) int {
-	panic("TODO")
-}
-
-func cfshl(x, y int) int {
-	panic("TODO")
+	if c == 0 {
+		return -1
+	}
+	p, d := int64(a)*int64(b), int64(c)
+	if (p < 0) != (d < 0) {
+		return int((p - d/2) / d)
+	}
+	return int((p + d/2) / d)
 }
 
 func partfxUpdateDef(p *particleFx) bool {
@@ -388,7 +405,7 @@ func (p *particleFx) loadParticle(typ string) {
 	dr := c.Nox_xxx_spriteLoadAdd_45A360_drawable(id, image.Pt(p.x16>>16, p.y16>>16))
 	if dr != nil {
 		p.drawable12 = dr
-		dr.TypeIDVal = uint32(uintptr(p.C())) // TODO: unused?
+		dr.UnionEffect().Field_108 = uint32(uintptr(p.C())) // see drawParticle
 		c.Objs.TransparentDecay(dr, p.ticksTotal)
 		c.Objs.List34Add(dr)
 	}
@@ -535,9 +552,9 @@ func (fx *packetParticleFx) updatePos() {
 func (pfx *partFXes) randU16() uint16 {
 	v0 := pfx.rand.u16
 	for i := 0; i < 16; i++ {
-		v2 := cfshl(int(v0), 1)
+		carry := v0>>15 != 0 // the bit rotated out
 		v0 = rotl16(v0, 1)
-		if v2 != 0 {
+		if carry {
 			v0 ^= 0xA
 		}
 	}
@@ -548,9 +565,9 @@ func (pfx *partFXes) randU16() uint16 {
 func (pfx *partFXes) randI32(a1, a2 int) int {
 	v2 := pfx.rand.u32
 	for v3 := 32; v3 != 0; v3-- {
-		v4 := cfshl(int(v2), 1)
+		carry := v2>>31 != 0 // the bit rotated out
 		v2 = rotl(v2, 1)
-		if v4 != 0 {
+		if carry {
 			v2 ^= 0xA0A
 		}
 	}

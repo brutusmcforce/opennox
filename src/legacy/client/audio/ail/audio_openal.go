@@ -12,12 +12,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/timshannon/go-openal/openal"
+	"github.com/brutusmcforce/opennox/go-openal/openal"
 
-	"github.com/opennox/libs/env"
-	"github.com/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/env"
+	"github.com/brutusmcforce/opennox/libs/log"
 
-	"github.com/opennox/opennox/v1/legacy/common/alloc/handles"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc/handles"
 )
 
 var (

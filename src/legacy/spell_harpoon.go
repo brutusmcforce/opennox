@@ -5,7 +5,7 @@ package legacy
 #include "GAME5_2.h"
 */
 import "C"
-import "github.com/opennox/opennox/v1/server"
+import "github.com/brutusmcforce/opennox/server"
 
 var (
 	Nox_xxx_harpoonBreakForPlr_537520 func(u *server.Object)

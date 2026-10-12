@@ -7,7 +7,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/log"
 )
 
 func init() {

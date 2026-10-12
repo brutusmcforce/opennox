@@ -6,19 +6,19 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/opennox/libs/client/seat"
-	"github.com/opennox/libs/console"
-	noxlog "github.com/opennox/libs/log"
-	"github.com/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/libs/client/seat"
+	"github.com/brutusmcforce/opennox/libs/console"
+	noxlog "github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/strman"
 
-	"github.com/opennox/opennox/v1/client/gui"
-	"github.com/opennox/opennox/v1/client/input"
-	"github.com/opennox/opennox/v1/client/noxrender"
-	"github.com/opennox/opennox/v1/client/render"
-	"github.com/opennox/opennox/v1/common/gsync"
-	"github.com/opennox/opennox/v1/internal/netstr"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/client/input"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/client/render"
+	"github.com/brutusmcforce/opennox/common/gsync"
+	"github.com/brutusmcforce/opennox/internal/netstr"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

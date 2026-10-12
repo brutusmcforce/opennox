@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 
-	noxcolor "github.com/opennox/libs/color"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 )
 
 const spriteHeaderSize = 17

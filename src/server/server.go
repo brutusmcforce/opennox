@@ -8,20 +8,20 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/opennox/libs/common"
-	noxlog "github.com/opennox/libs/log"
-	"github.com/opennox/libs/noxnet/netxfer"
-	"github.com/opennox/libs/platform"
-	"github.com/opennox/libs/strman"
-	ns4 "github.com/opennox/noxscript/ns/v4"
+	"github.com/brutusmcforce/opennox/libs/common"
+	noxlog "github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netxfer"
+	"github.com/brutusmcforce/opennox/libs/platform"
+	"github.com/brutusmcforce/opennox/libs/strman"
+	ns4 "github.com/brutusmcforce/opennox/noxscript/ns/v4"
 
-	"github.com/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/console"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/gsync"
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/internal/netlist"
-	"github.com/opennox/opennox/v1/internal/netstr"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/gsync"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/internal/netlist"
+	"github.com/brutusmcforce/opennox/internal/netstr"
 )
 
 var (

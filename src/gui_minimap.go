@@ -1,8 +1,8 @@
 package opennox
 
 import (
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/common/sound"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/sound"
 )
 
 func sub_473670() int {

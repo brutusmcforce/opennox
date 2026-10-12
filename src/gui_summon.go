@@ -3,7 +3,7 @@ package opennox
 import (
 	"image"
 
-	"github.com/opennox/opennox/v1/client/gui"
+	"github.com/brutusmcforce/opennox/client/gui"
 )
 
 func sub_4C26F0(win *gui.Window) int {

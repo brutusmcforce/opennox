@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/opennox/libs/noxnet/discover"
-	"github.com/opennox/libs/noxnet/netmsg"
-	"github.com/opennox/lobby"
+	"github.com/brutusmcforce/opennox/libs/noxnet/discover"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/lobby"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
 )
 
 const (

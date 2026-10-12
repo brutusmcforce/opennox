@@ -1,10 +1,10 @@
 package opennox
 
 import (
-	"github.com/opennox/libs/noxnet/netmsg"
-	"github.com/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/spell"
 
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func castInvisibility(spellID spell.ID, _, _, _ *server.Object, args *server.SpellAcceptArg, lvl int) int {

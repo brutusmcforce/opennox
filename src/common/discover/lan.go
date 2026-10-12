@@ -7,7 +7,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/opennox/libs/common"
+	"github.com/brutusmcforce/opennox/libs/common"
 )
 
 const (

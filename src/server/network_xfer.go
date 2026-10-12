@@ -4,14 +4,14 @@ import (
 	"image/color"
 	"reflect"
 
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netxfer"
 	"github.com/fxamacker/cbor/v2"
-	"github.com/opennox/libs/noxnet/netmsg"
-	"github.com/opennox/libs/noxnet/netxfer"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/internal/netstr"
-	"github.com/opennox/opennox/v1/server/netlib"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/internal/netstr"
+	"github.com/brutusmcforce/opennox/server/netlib"
 )
 
 func init() {

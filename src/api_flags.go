@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
 )
 
 func init() {

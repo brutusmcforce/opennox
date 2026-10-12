@@ -15,7 +15,7 @@ void nox_xxx_unitAdjustHP_4EE460(nox_object_t* unit, int dv);
 */
 import "C"
 import (
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

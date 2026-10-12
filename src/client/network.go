@@ -3,16 +3,16 @@ package client
 import (
 	"errors"
 
-	"github.com/opennox/libs/noxnet"
-	"github.com/opennox/libs/noxnet/netmsg"
-	"github.com/opennox/libs/noxnet/netxfer"
-	"github.com/opennox/libs/player"
+	"github.com/brutusmcforce/opennox/libs/noxnet"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netxfer"
+	"github.com/brutusmcforce/opennox/libs/player"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/internal/netlist"
-	"github.com/opennox/opennox/v1/internal/netstr"
-	"github.com/opennox/opennox/v1/server"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/internal/netlist"
+	"github.com/brutusmcforce/opennox/internal/netstr"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (
@@ -129,7 +129,7 @@ func (c *Client) OnClientPacketOpSub(pli ntype.PlayerInd, op netmsg.Op, data []b
 		if err != nil {
 			return 0, false, err
 		}
-		c.Server.NetXfer.Handle(server.XferConn{c.Conn}, c.Server.FrameTS(), p.Msg)
+		c.Server.NetXfer.Handle(server.XferConn{Conn: c.Conn}, c.Server.FrameTS(), p.Msg)
 		return 1 + n, true, nil
 	}
 	return 0, false, nil

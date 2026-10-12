@@ -3,10 +3,10 @@ package opennox
 import (
 	"image/color"
 
-	"github.com/opennox/libs/env"
+	"github.com/brutusmcforce/opennox/libs/env"
 
-	"github.com/opennox/opennox/v1/client/noxrender"
-	"github.com/opennox/opennox/v1/legacy"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 func fadeDisableGameDraw() {

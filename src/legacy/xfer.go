@@ -13,8 +13,8 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/internal/cryptfile"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/internal/cryptfile"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

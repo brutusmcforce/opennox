@@ -56,14 +56,14 @@ import (
 	"image"
 	"unsafe"
 
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/spell"
-	"github.com/opennox/libs/strman"
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/server"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

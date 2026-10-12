@@ -1,10 +1,10 @@
 package opennox
 
 import (
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	"github.com/opennox/opennox/v1/legacy"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 func (s *Server) updateUnitsAAA() { // nox_xxx_updateUnits_51B100_A

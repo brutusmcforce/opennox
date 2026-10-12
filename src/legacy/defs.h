@@ -188,6 +188,7 @@ _Static_assert(sizeof(nox_shape) == 52, "wrong size of nox_shape structure!");
 
 typedef struct nox_thing nox_thing;
 typedef struct nox_drawable nox_drawable;
+void nox_client_particleFxDraw(nox_drawable* dr);
 
 typedef struct nox_thing {
 	char* name;                                 // 0, 0x0

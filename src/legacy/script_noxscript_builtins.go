@@ -32,10 +32,10 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/noxscript/ns/asm"
+	"github.com/brutusmcforce/opennox/noxscript/ns/asm"
 
-	"github.com/opennox/opennox/v1/legacy/common/ccall"
-	"github.com/opennox/opennox/v1/server/noxscript"
+	"github.com/brutusmcforce/opennox/legacy/common/ccall"
+	"github.com/brutusmcforce/opennox/server/noxscript"
 )
 
 var (

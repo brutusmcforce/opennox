@@ -5,7 +5,7 @@ package legacy
 #include "client__system__parsecmd.h"
 */
 import "C"
-import "github.com/opennox/opennox/v1/server"
+import "github.com/brutusmcforce/opennox/server"
 
 func Nox_xxx_serverHandleClientConsole_443E90(a1 *server.Player, a2 byte, cmd string) {
 	cstr, free := CWString(cmd)

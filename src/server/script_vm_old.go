@@ -9,15 +9,15 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/script"
-	"github.com/opennox/libs/types"
-	"github.com/opennox/noxscript/ns/asm"
-	ns4 "github.com/opennox/noxscript/ns/v4"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/script"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/noxscript/ns/asm"
+	ns4 "github.com/brutusmcforce/opennox/noxscript/ns/v4"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/internal/cryptfile"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/internal/cryptfile"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 type ScriptFunc struct {

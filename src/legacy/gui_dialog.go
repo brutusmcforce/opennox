@@ -10,8 +10,8 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/client/gui"
-	"github.com/opennox/opennox/v1/legacy/common/ccall"
+	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 )
 
 var (

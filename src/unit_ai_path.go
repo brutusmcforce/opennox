@@ -5,15 +5,15 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/opennox/libs/types"
-	"github.com/opennox/libs/wall"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/wall"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/common/unit/ai"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/server"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/common/unit/ai"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func (s *Server) nox_xxx_pathFind_50BA00(far bool, obj *server.Object, a3 *types.Pointf, a4 *types.Pointf, fnc func(obj *server.Object, x, y int) bool, a6 int32) {

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
 )
 
 func (ns *Conn) SendUnreliableMsg(msg netmsg.Message, flush bool) (int, error) {

@@ -6,7 +6,7 @@ import (
 	"io"
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 func LoadMemFile(path string, key int) (*MemFile, error) {

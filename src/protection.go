@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"unicode/utf16"
 
-	"github.com/opennox/opennox/v1/legacy"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 func protectInt(v int) uint32 { // nox_xxx_protectionCreateInt_56F400

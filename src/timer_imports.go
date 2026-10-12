@@ -1,7 +1,7 @@
 package opennox
 
 import (
-	"github.com/opennox/opennox/v1/legacy/timer"
+	"github.com/brutusmcforce/opennox/legacy/timer"
 )
 
 func init() {

@@ -6,12 +6,12 @@ import (
 	"unicode/utf16"
 	"unsafe"
 
-	noxcolor "github.com/opennox/libs/color"
-	"github.com/opennox/libs/strman"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"github.com/brutusmcforce/opennox/libs/strman"
 	"golang.org/x/image/font"
 
-	"github.com/opennox/opennox/v1/client/noxrender"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 func NewWindowData() (*WindowData, func()) {

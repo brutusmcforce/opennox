@@ -3,18 +3,18 @@ package opennox
 import (
 	"unsafe"
 
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/spell"
-	"github.com/opennox/libs/things"
-	ns4 "github.com/opennox/noxscript/ns/v4"
-	nab "github.com/opennox/noxscript/ns/v4/abil"
-	"github.com/opennox/noxscript/ns/v4/enchant"
-	nsp "github.com/opennox/noxscript/ns/v4/spell"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/things"
+	ns4 "github.com/brutusmcforce/opennox/noxscript/ns/v4"
+	nab "github.com/brutusmcforce/opennox/noxscript/ns/v4/abil"
+	"github.com/brutusmcforce/opennox/noxscript/ns/v4/enchant"
+	nsp "github.com/brutusmcforce/opennox/noxscript/ns/v4/spell"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/server"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func (s noxScriptNS) CastSpellLvl(name nsp.Spell, lvl int, source, target ns4.Positioner) {

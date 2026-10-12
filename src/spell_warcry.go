@@ -1,13 +1,13 @@
 package opennox
 
 import (
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/player"
-	"github.com/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/player"
+	"github.com/brutusmcforce/opennox/libs/spell"
 
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func nox_xxx_warriorWarcry_53FF40(u *server.Object) {

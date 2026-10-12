@@ -1,6 +1,6 @@
 package server
 
-import "github.com/opennox/libs/script"
+import "github.com/brutusmcforce/opennox/libs/script"
 
 type ScriptVMs struct {
 	Curmap   string

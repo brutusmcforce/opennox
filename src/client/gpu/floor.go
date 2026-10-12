@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 
-	"github.com/opennox/opennox/v1/client/noxrender"
+	"github.com/brutusmcforce/opennox/client/noxrender"
 )
 
 // floorRenderer draws floor tiles from the game's circular tile buffer.
@@ -27,7 +27,7 @@ func (f *floorRenderer) init() error {
 		return err
 	}
 	f.loc = make(map[string]int32)
-	for _, name := range []string{"uSize", "uTiles", "uLight", "uOff", "uPitch", "uLen", "uLightOff", "uStep", "uLightSize", "uLit"} {
+	for _, name := range []string{"uSize", "uPhys", "uTiles", "uLight", "uOff", "uPitch", "uLen", "uLightOff", "uStep", "uLightSize", "uLit"} {
 		f.loc[name] = gl.GetUniformLocation(f.prog, gl.Str(name+"\x00"))
 	}
 	gl.GenTextures(1, &f.tiles)
@@ -87,7 +87,9 @@ func (r *Renderer) Floor(p *noxrender.FloorParams, spans []image.Rectangle) {
 	gl.Viewport(0, 0, int32(t.size.X), int32(t.size.Y))
 	gl.UseProgram(f.prog)
 	gl.BindVertexArray(r.vao)
-	gl.Uniform2f(f.loc["uSize"], float32(t.size.X), float32(t.size.Y))
+	// spans are in logical coordinates, while the target may be larger or smaller (see SetTargetSize)
+	gl.Uniform2f(f.loc["uSize"], float32(t.log.X), float32(t.log.Y))
+	gl.Uniform2f(f.loc["uPhys"], float32(t.size.X), float32(t.size.Y))
 	gl.Uniform1i(f.loc["uTiles"], 0)
 	gl.Uniform1i(f.loc["uLight"], 1)
 	gl.Uniform2i(f.loc["uOff"], int32(p.Off.X), int32(p.Off.Y))
@@ -125,7 +127,8 @@ void main() {
 const floorFrag = `#version 330 core
 uniform usampler2D uTiles;
 uniform sampler2D uLight;
-uniform vec2 uSize;
+uniform vec2 uSize; // logical size of the target
+uniform vec2 uPhys; // physical size of the target
 uniform ivec2 uOff;
 uniform int uPitch;
 uniform int uLen;
@@ -135,8 +138,9 @@ uniform vec2 uLightSize;
 uniform int uLit;
 out vec4 oColor;
 void main() {
-	int x = int(gl_FragCoord.x);
-	int y = int(uSize.y - gl_FragCoord.y);
+	vec2 lp = vec2(gl_FragCoord.x, uPhys.y - gl_FragCoord.y) * uSize / uPhys;
+	int x = int(lp.x);
+	int y = int(lp.y);
 	int idx = uPitch * (y + uOff.y) + x + uOff.x;
 	idx = idx % uLen;
 	if (idx < 0) {

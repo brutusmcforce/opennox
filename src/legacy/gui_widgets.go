@@ -10,8 +10,8 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/client/gui"
-	"github.com/opennox/opennox/v1/client/noxrender"
+	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/client/noxrender"
 )
 
 var _ = [1]struct{}{}[524-unsafe.Sizeof(gui.ScrollListBoxItem{})]

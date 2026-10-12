@@ -22,11 +22,11 @@ import (
 	"image"
 	"unsafe"
 
-	noxcolor "github.com/opennox/libs/color"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 
-	"github.com/opennox/opennox/v1/client"
-	"github.com/opennox/opennox/v1/client/noxrender"
-	"github.com/opennox/opennox/v1/legacy/common/ccall"
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 )
 
 var (
@@ -384,6 +384,16 @@ func nox_video_drawCircleColored_4C3270(a1, a2, a3, a4 int) {
 //export nox_video_drawCircle_4B0B90
 func nox_video_drawCircle_4B0B90(a1, a2, a3 int) {
 	GetClient().R2().DrawCircle(a1, a2, a3, GetClient().R2().Data().Color2())
+}
+
+// Nox_client_particleFxDraw draws a particle effect associated with the drawable (see nox_thing_particle_draw).
+var Nox_client_particleFxDraw func(dr *client.Drawable)
+
+//export nox_client_particleFxDraw
+func nox_client_particleFxDraw(dr *nox_drawable) {
+	if Nox_client_particleFxDraw != nil {
+		Nox_client_particleFxDraw(asDrawable(dr))
+	}
 }
 
 // Nox_client_gpu_edgeDraw draws a lit wall sprite on the GPU. It returns false if GPU rendering is disabled.

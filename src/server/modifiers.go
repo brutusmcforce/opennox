@@ -7,16 +7,16 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/opennox/libs/datapath"
-	"github.com/opennox/libs/modifiers"
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/strman"
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/datapath"
+	"github.com/brutusmcforce/opennox/libs/modifiers"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/sound"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/legacy/common/ccall"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/legacy/common/ccall"
 )
 
 func init() {

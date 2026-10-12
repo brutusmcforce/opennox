@@ -4,73 +4,24 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
-	"sync"
 
-	"github.com/opennox/libs/common"
-	"github.com/opennox/libs/datapath"
-	"github.com/opennox/libs/env"
-	"github.com/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/datapath"
+	"github.com/brutusmcforce/opennox/libs/ifs"
 
-	"github.com/opennox/opennox/v1/legacy"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
-// User data.
-//
-// The original game writes saves and a few other files (ban list, etc) to the game directory.
-// OpenNox keeps them in a per-user directory instead, so that the game directory may stay read-only
-// (e.g. installed to Program Files on Windows), and multiple users don't share their saves.
+// User data, such as saves, is kept in a per-user directory (see datapath.User).
 // Existing files are copied from the game directory on the first start (see migrateUserData).
 
-var userData struct {
-	once sync.Once
-	dir  string
-}
-
 // userDataDir returns the directory for the user's game data.
-//
-// On Linux it's ~/.local/share/opennox (or $XDG_DATA_HOME/opennox), on Windows it's %AppData%\OpenNox.
 func userDataDir() string {
-	userData.once.Do(func() {
-		userData.dir = findUserDataDir()
-	})
-	return userData.dir
-}
-
-func findUserDataDir() string {
-	if env.IsE2E() {
-		// tests expect everything in the game directory
-		return datapath.Data()
-	}
-	if sdir := env.AppUserDir(); sdir != "" {
-		return sdir
-	}
-	if runtime.GOOS == "windows" {
-		if dir := configUserDir(); dir != "" {
-			return dir
-		}
-		return datapath.Data()
-	}
-	if dir := os.Getenv("XDG_DATA_HOME"); dir != "" {
-		return filepath.Join(dir, "opennox")
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return datapath.Data()
-	}
-	// Linux Snapcraft installation replaces HOME variable
-	if rhome := os.Getenv("SNAP_REAL_HOME"); rhome != "" {
-		home = rhome
-	}
-	return filepath.Join(home, ".local", "share", "opennox")
+	return datapath.User()
 }
 
 // savePath returns a path in the save directory.
 func savePath(path ...string) string {
-	args := make([]string, 0, 2+len(path))
-	args = append(args, userDataDir(), common.SaveDir)
-	args = append(args, path...)
-	return filepath.Join(args...)
+	return datapath.Save(path...)
 }
 
 // userFiles are files written by the game, other than saves. They are kept in the user data directory.
@@ -103,7 +54,7 @@ func migrateUserData() {
 	}
 	saves := savePath()
 	if _, err := os.Stat(saves); os.IsNotExist(err) {
-		if old := datapath.Save(); dirExists(old) {
+		if old := datapath.GameSave(); dirExists(old) {
 			configLog.Printf("copying saves from %q to %q", old, saves)
 			if err := copyDirTree(old, saves); err != nil {
 				configLog.Printf("cannot copy saves: %v", err)

@@ -53,7 +53,7 @@ import "C"
 import (
 	"context"
 
-	"github.com/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/console"
 )
 
 func CheatEquipAll(v bool) {

@@ -11,20 +11,20 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/opennox/libs/player"
+	"github.com/brutusmcforce/opennox/libs/player"
 	"github.com/spf13/viper"
 
-	"github.com/opennox/libs/client/keybind"
-	"github.com/opennox/libs/datapath"
-	"github.com/opennox/libs/ifs"
-	"github.com/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
+	"github.com/brutusmcforce/opennox/libs/datapath"
+	"github.com/brutusmcforce/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/log"
 
-	"github.com/opennox/opennox/v1/client/gui"
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/sound"
-	"github.com/opennox/opennox/v1/internal/netstr"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/client/gui"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/internal/netstr"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 var modifyWndPntr *gui.Window

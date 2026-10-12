@@ -17,8 +17,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opennox/libs/ifs"
-	"github.com/opennox/libs/noxtest"
+	"github.com/brutusmcforce/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/noxtest"
 	"github.com/shoenig/test/must"
 	"golang.org/x/exp/maps"
 )

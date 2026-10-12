@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/opennox/opennox/v1/internal/version"
+	"github.com/brutusmcforce/opennox/internal/version"
 )
 
 const defVersion = version.DefVersion

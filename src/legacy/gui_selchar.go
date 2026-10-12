@@ -26,7 +26,7 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

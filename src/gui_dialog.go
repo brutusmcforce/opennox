@@ -5,17 +5,17 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/opennox/libs/client/keybind"
-	"github.com/opennox/libs/noxfont"
-	"github.com/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
+	"github.com/brutusmcforce/opennox/libs/noxfont"
+	"github.com/brutusmcforce/opennox/libs/strman"
 
-	"github.com/opennox/opennox/v1/client/gui"
-	"github.com/opennox/opennox/v1/client/input"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/common/sound"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/client/input"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 const (

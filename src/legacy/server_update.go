@@ -10,7 +10,7 @@ void sub_537770(nox_object_t* a1);
 nox_object_t* nox_xxx_findObjectAtCursor_54AF40(nox_object_t* a1);
 */
 import "C"
-import "github.com/opennox/opennox/v1/server"
+import "github.com/brutusmcforce/opennox/server"
 
 func Nox_xxx_findObjectAtCursor_54AF40(a1 *server.Object) *server.Object {
 	return asObjectS(C.nox_xxx_findObjectAtCursor_54AF40(asObjectC(a1)))

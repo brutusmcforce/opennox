@@ -3,12 +3,12 @@ package opennox
 import (
 	"image"
 
-	noxcolor "github.com/opennox/libs/color"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 
-	"github.com/opennox/opennox/v1/client/gui"
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/internal/version"
-	"github.com/opennox/opennox/v1/legacy"
+	"github.com/brutusmcforce/opennox/client/gui"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/internal/version"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 var (

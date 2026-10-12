@@ -3,9 +3,9 @@ package opennox
 import (
 	"context"
 
-	"github.com/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/console"
 
-	"github.com/opennox/opennox/v1/common/sound"
+	"github.com/brutusmcforce/opennox/common/sound"
 )
 
 func init() {

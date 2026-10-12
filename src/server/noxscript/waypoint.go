@@ -1,6 +1,6 @@
 package noxscript
 
-import "github.com/opennox/noxscript/ns/asm"
+import "github.com/brutusmcforce/opennox/noxscript/ns/asm"
 
 func init() {
 	Register(asm.BuiltinWaypoint, nsGetWaypoint)

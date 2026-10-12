@@ -1,9 +1,9 @@
 package opennox
 
 import (
-	"github.com/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/libs/strman"
 
-	"github.com/opennox/opennox/v1/legacy"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 func (s noxScriptNS) Unused5e(id string) int {

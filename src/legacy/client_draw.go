@@ -29,9 +29,9 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/client"
-	"github.com/opennox/opennox/v1/client/noxrender"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func Nox_xxx_clientDrawAll_436100_draw_A() {

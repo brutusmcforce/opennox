@@ -13,9 +13,9 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

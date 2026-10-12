@@ -12,8 +12,8 @@ import "C"
 import (
 	"image"
 
-	"github.com/opennox/opennox/v1/client/gui"
-	"github.com/opennox/opennox/v1/common/memmap"
+	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 // RelayoutQuickBar updates positions that the quick bar keeps for the GUI size (see nox_xxx_quickBarCreate_45E190).

@@ -4,9 +4,9 @@ import (
 	"image"
 	"log/slog"
 
-	"github.com/opennox/libs/client/keybind"
-	"github.com/opennox/libs/client/seat"
-	noxlog "github.com/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
+	"github.com/brutusmcforce/opennox/libs/client/seat"
+	noxlog "github.com/brutusmcforce/opennox/libs/log"
 )
 
 type Sequencer interface {

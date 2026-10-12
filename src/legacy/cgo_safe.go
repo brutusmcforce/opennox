@@ -25,8 +25,8 @@ import (
 	"os"
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 const cgoSafe = true

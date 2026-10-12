@@ -3,9 +3,9 @@ package server
 import (
 	"strings"
 
-	"github.com/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/libs/strman"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
 )
 
 type weaponRecord struct {

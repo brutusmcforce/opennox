@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/opennox/opennox/v1/client"
+	"github.com/brutusmcforce/opennox/client"
 )
 
 var _ json.Marshaler = &client.Drawable{}

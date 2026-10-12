@@ -19,10 +19,10 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 
-	noxcolor "github.com/opennox/libs/color"
-	"github.com/opennox/libs/noximage"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"github.com/brutusmcforce/opennox/libs/noximage"
 
-	"github.com/opennox/opennox/v1/client/noxrender"
+	"github.com/brutusmcforce/opennox/client/noxrender"
 )
 
 var _ noxrender.GPU = (*Renderer)(nil)
@@ -66,11 +66,12 @@ type batchState struct {
 type Renderer struct {
 	log *slog.Logger
 
-	prog    uint32
-	locSize int32
-	locTex  int32
-	locMat  int32
-	locPal  int32
+	prog     uint32
+	locSize  int32
+	locTex   int32
+	locMat   int32
+	locPal   int32
+	locSharp int32
 
 	present        uint32
 	locPresTex     int32
@@ -130,6 +131,7 @@ func New(log *slog.Logger) (*Renderer, error) {
 	r.locTex = gl.GetUniformLocation(r.prog, gl.Str("uTex\x00"))
 	r.locMat = gl.GetUniformLocation(r.prog, gl.Str("uMat\x00"))
 	r.locPal = gl.GetUniformLocation(r.prog, gl.Str("uPal\x00"))
+	r.locSharp = gl.GetUniformLocation(r.prog, gl.Str("uSharp\x00"))
 
 	r.present, err = newProgram(presentVert, presentFrag)
 	if err != nil {
@@ -371,6 +373,12 @@ func (r *Renderer) flush() {
 	gl.Uniform2f(r.locSize, float32(t.log.X), float32(t.log.Y))
 	gl.Uniform1i(r.locTex, 0)
 	gl.Uniform1i(r.locMat, 1)
+	// sprites are scaled when the target is larger than the image (e.g. scaled GUI)
+	sharp := int32(0)
+	if t.size != t.log {
+		sharp = 1
+	}
+	gl.Uniform1i(r.locSharp, sharp)
 	if !r.palOK || r.pal != st.palette {
 		var pal [16 * 3]float32
 		for i, c := range st.palette {
@@ -781,14 +789,13 @@ flat in int vMode;
 uniform sampler2D uTex;
 uniform sampler2D uMat;
 uniform vec3 uPal[16];
+uniform bool uSharp; // use sharp bilinear filtering for scaled sprites
 out vec4 oColor;
-void main() {
-	vec4 t = texture(uTex, vUV);
-	if (vMode == 3) {
-		oColor = vCol;
-		return;
-	}
-	int m = int(texture(uMat, vUV).r * 255.0 + 0.5);
+
+// shade returns the premultiplied color of a texel.
+vec4 shade(ivec2 tc) {
+	vec4 t = texelFetch(uTex, tc, 0);
+	int m = int(texelFetch(uMat, tc, 0).r * 255.0 + 0.5);
 	vec3 c = t.rgb;
 	if (m > 0) {
 		c *= uPal[m - 1];
@@ -800,11 +807,37 @@ void main() {
 	}
 	if (vMode == 1) {
 		// additive
-		oColor = vec4(c * t.a, 0.0);
-		return;
+		return vec4(c * t.a, 0.0);
 	}
 	float a = t.a * vCol.a;
-	oColor = vec4(c * a, a);
+	return vec4(c * a, a);
+}
+
+void main() {
+	if (vMode == 3) {
+		oColor = vCol;
+		return;
+	}
+	vec2 p = vUV * vec2(textureSize(uTex, 0)); // in texels
+	if (!uSharp) {
+		oColor = shade(ivec2(floor(p)));
+		return;
+	}
+	// Sharp bilinear: with a non-integer scale, nearest filtering makes some texels larger than others.
+	// Instead, texels keep a solid center, and only a one pixel wide band at texel edges is interpolated.
+	vec2 s = 1.0 / max(fwidth(p), vec2(1e-6)); // output pixels per texel
+	vec2 tl = floor(p);
+	vec2 cd = p - tl - 0.5;
+	vec2 rr = max(0.5 - 0.5 / s, vec2(0.0));
+	vec2 q = tl + (cd - clamp(cd, -rr, rr)) * s; // bilinear sample position, relative to texel centers
+	vec2 qi = floor(q);
+	vec2 w = q - qi;
+	ivec2 i = ivec2(qi);
+	vec4 c00 = shade(i);
+	vec4 c10 = shade(i + ivec2(1, 0));
+	vec4 c01 = shade(i + ivec2(0, 1));
+	vec4 c11 = shade(i + ivec2(1, 1));
+	oColor = mix(mix(c00, c10, w.x), mix(c01, c11, w.x), w.y);
 }
 `
 

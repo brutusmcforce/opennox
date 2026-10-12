@@ -8,21 +8,21 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/opennox/libs/noxnet"
-	"github.com/opennox/libs/noxnet/netmsg"
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/spell"
-	"github.com/opennox/libs/things"
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/noxnet"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/things"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/common/sound"
-	"github.com/opennox/opennox/v1/internal/netlist"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/server"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/internal/netlist"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func nox_xxx_playerCameraUnlock_4E6040(cplayer *server.Object) {
@@ -625,7 +625,7 @@ func nox_xxx_playerDisconnFinish_4DE530(pli ntype.PlayerInd, a2 int8) {
 			}
 		}
 	}
-	s.NetXfer.CancelAll(server.XferConn{s.NetStr.ConnByPlayerInd(pli)})
+	s.NetXfer.CancelAll(server.XferConn{Conn: s.NetStr.ConnByPlayerInd(pli)})
 	legacy.Sub_4DE410(pli)
 	if pl != nil {
 		var buf [3]byte

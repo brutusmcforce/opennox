@@ -8,14 +8,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/opennox/libs/common"
-	"github.com/opennox/libs/console"
-	"github.com/opennox/libs/datapath"
-	"github.com/opennox/libs/ifs"
-	"github.com/opennox/libs/noxnet/netmsg"
-	"github.com/opennox/libs/platform"
+	"github.com/brutusmcforce/opennox/libs/common"
+	"github.com/brutusmcforce/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/datapath"
+	"github.com/brutusmcforce/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/platform"
 
-	"github.com/opennox/opennox/v1/common/ntype"
+	"github.com/brutusmcforce/opennox/common/ntype"
 )
 
 const (

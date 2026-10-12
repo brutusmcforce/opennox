@@ -4,12 +4,12 @@ import (
 	"image"
 	"math"
 
-	"github.com/opennox/libs/noxnet/netmsg"
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/spell"
 
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

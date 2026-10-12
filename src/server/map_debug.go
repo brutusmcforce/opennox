@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/internal/cryptfile"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/internal/cryptfile"
 )
 
 type serverMapDebug struct {

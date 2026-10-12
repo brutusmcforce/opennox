@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/opennox/opennox/v1/common/memmap"
+	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 func init() {

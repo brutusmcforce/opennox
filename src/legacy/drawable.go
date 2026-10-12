@@ -24,9 +24,9 @@ import (
 	"image"
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/client"
-	"github.com/opennox/opennox/v1/client/noxrender"
-	"github.com/opennox/opennox/v1/common/ntype"
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/common/ntype"
 )
 
 func asDrawable(p *nox_drawable) *client.Drawable {

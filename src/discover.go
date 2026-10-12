@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"time"
 
-	noxlog "github.com/opennox/libs/log"
-	"github.com/opennox/lobby"
+	noxlog "github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/lobby"
 
-	"github.com/opennox/opennox/v1/common/discover"
-	noxflags "github.com/opennox/opennox/v1/common/flags"
+	"github.com/brutusmcforce/opennox/common/discover"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
 )
 
 func init() {

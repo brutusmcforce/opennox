@@ -13,8 +13,8 @@ import "C"
 import (
 	"unsafe"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 var (

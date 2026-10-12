@@ -16,7 +16,7 @@ import (
 	"image"
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/client"
+	"github.com/brutusmcforce/opennox/client"
 )
 
 var (

@@ -23,9 +23,9 @@ import (
 	"runtime/debug"
 	"unsafe"
 
-	noxcolor "github.com/opennox/libs/color"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 
-	"github.com/opennox/opennox/v1/client/gui"
+	"github.com/brutusmcforce/opennox/client/gui"
 )
 
 type nox_window = C.nox_window

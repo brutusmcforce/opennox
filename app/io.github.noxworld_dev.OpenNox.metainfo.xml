@@ -45,7 +45,7 @@
         </screenshot>
     </screenshots>
     <url type="homepage">https://opennox.github.io/opennox-docs/</url>
-    <url type="bugtracker">https://github.com/opennox/opennox/issues</url>
+    <url type="bugtracker">https://github.com/brutusmcforce/opennox/issues</url>
     <content_rating type="oars-1.1"/>
     <releases>
         <release version="v1.9.0-alpha13" date="2024-01-27"/>

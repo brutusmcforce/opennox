@@ -7,14 +7,14 @@ import (
 	"image"
 	"image/color"
 
-	"github.com/opennox/libs/ifs"
-	"github.com/opennox/libs/noximage"
-	"github.com/opennox/libs/platform"
+	"github.com/brutusmcforce/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/noximage"
+	"github.com/brutusmcforce/opennox/libs/platform"
 
-	"github.com/opennox/opennox/v1/client/gui"
-	"github.com/opennox/opennox/v1/client/noxmovie"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/legacy"
+	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/client/noxmovie"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 func (c *Client) DrawGeneral(a1 bool) error {

@@ -3,14 +3,14 @@ package opennox
 import (
 	"context"
 
-	"github.com/opennox/libs/env"
-	"github.com/opennox/libs/log"
-	"github.com/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/libs/env"
+	"github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/strman"
 
-	"github.com/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/console"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/legacy"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/legacy"
 )
 
 var (

@@ -1,11 +1,11 @@
 package noxscript
 
 import (
-	"github.com/opennox/noxscript/ns/asm"
-	ns4 "github.com/opennox/noxscript/ns/v4"
-	"github.com/opennox/noxscript/ns/v4/damage"
-	"github.com/opennox/noxscript/ns/v4/enchant"
-	"github.com/opennox/noxscript/ns/v4/spell"
+	"github.com/brutusmcforce/opennox/noxscript/ns/asm"
+	ns4 "github.com/brutusmcforce/opennox/noxscript/ns/v4"
+	"github.com/brutusmcforce/opennox/noxscript/ns/v4/damage"
+	"github.com/brutusmcforce/opennox/noxscript/ns/v4/enchant"
+	"github.com/brutusmcforce/opennox/noxscript/ns/v4/spell"
 )
 
 func init() {

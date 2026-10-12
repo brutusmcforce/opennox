@@ -10,14 +10,14 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/opennox/libs/log"
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/player"
-	"github.com/opennox/libs/things"
+	"github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/player"
+	"github.com/brutusmcforce/opennox/libs/things"
 
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/sound"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 var (
@@ -232,24 +232,26 @@ func (s *serverObjTypes) ReadObjectType(thg *things.Thing) error {
 		typ.Speed = fv
 		typ.SpeedBase = fv
 	}
+	// The original thing.bin has a few names that are unknown or belong to a different field (e.g. SMALL_SPIDER in
+	// CLASS). The original game ignores them, so they are only logged in debug mode.
 	for _, c := range thg.Class {
 		v, err := object.ParseClass(string(c))
 		if err != nil {
-			log.Warn("cannot parse", "class", c, "err", err)
+			log.Debug("cannot parse", "class", c, "err", err)
 		}
 		typ.class |= v
 	}
 	for _, c := range thg.SubClass {
 		v, err := object.ParseSubClass(string(c))
 		if err != nil {
-			log.Warn("cannot parse", "subclass", c, "err", err)
+			log.Debug("cannot parse", "subclass", c, "err", err)
 		}
 		typ.subclass |= v
 	}
 	for _, c := range thg.Flags {
 		v, err := object.ParseFlag(string(c))
 		if err != nil {
-			log.Warn("cannot parse", "flag", c, "err", err)
+			log.Debug("cannot parse", "flag", c, "err", err)
 		}
 		typ.flags |= v
 	}
@@ -258,7 +260,7 @@ func (s *serverObjTypes) ReadObjectType(thg *things.Thing) error {
 		for _, c := range thg.Material {
 			v, err := object.ParseMaterial(string(c))
 			if err != nil {
-				log.Warn("cannot parse", "material", c, "err", err)
+				log.Debug("cannot parse", "material", c, "err", err)
 			}
 			typ.material |= v
 		}

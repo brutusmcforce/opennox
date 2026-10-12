@@ -6,8 +6,8 @@ package legacy
 import "C"
 
 import (
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/server"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

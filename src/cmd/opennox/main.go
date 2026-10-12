@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/opennox/opennox/v1"
+	"github.com/brutusmcforce/opennox"
 )
 
 func main() {

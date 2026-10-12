@@ -9,7 +9,7 @@ import (
 	"os"
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/internal/binfile"
+	"github.com/brutusmcforce/opennox/internal/binfile"
 )
 
 //export nox_binfile_open_408CC0

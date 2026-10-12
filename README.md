@@ -5,8 +5,8 @@
     <b>OpenNox</b> is an open-source community collaboration project extending the Nox engine. 
 </p>
 <p align="center">
-    <a href="https://github.com/opennox/opennox/actions"><img alt="OpenNox Build Status (dev)" src="https://github.com/opennox/opennox/actions/workflows/build-and-release.yml/badge.svg"></a>
-    <a href="https://www.gnu.org/licenses/gpl-3.0.en.html"><img alt="OpenNox license" src="https://img.shields.io/github/license/opennox/opennox?style=flat"></a>
+    <a href="https://github.com/brutusmcforce/opennox/actions"><img alt="OpenNox Build Status (dev)" src="https://github.com/brutusmcforce/opennox/actions/workflows/build-and-release.yml/badge.svg"></a>
+    <a href="https://www.gnu.org/licenses/gpl-3.0.en.html"><img alt="OpenNox license" src="https://img.shields.io/github/license/brutusmcforce/opennox?style=flat"></a>
     <br>
     <a href="https://www.patreon.com/opennox"><img alt="OpenNox on Patreon" src="https://img.shields.io/badge/patreon-Support%20us-blue?logo=patreon&logoColor=white&style=flat"></a>
     <a href="https://discord.gg/HgDUeXhAyW"><img alt="OpenNox on Discord" src="https://img.shields.io/badge/discord-OpenNox-blue?logo=discord&logoColor=white&style=flat"></a>
@@ -16,17 +16,17 @@
 ## Features
 
 OpenNox supports all vanilla Nox features. You should be able to complete the campaign and play online with OpenNox.
-If something doesn't work, please [open an issue](https://github.com/opennox/opennox/issues/new/choose).
+If something doesn't work, please [open an issue](https://github.com/brutusmcforce/opennox/issues/new/choose).
 
 For a list of new features see [this page](https://opennox.github.io/docs/opennox/features/index.html).
 
 ## Download OpenNox
 
-<a href="https://github.com/opennox/opennox/releases"><img alt="OpenNox releases" src="https://img.shields.io/github/downloads/opennox/opennox/total?style=flat&label=releases"></a>
+<a href="https://github.com/brutusmcforce/opennox/releases"><img alt="OpenNox releases" src="https://img.shields.io/github/downloads/brutusmcforce/opennox/total?style=flat&label=releases"></a>
 <a href="https://snapcraft.io/opennox"><img alt="OpenNox Snap package" src="https://img.shields.io/badge/snap-Install-green?logo=snapcraft&logoColor=white&style=flat"></a>
 
 ### Release
-All release builds are made from the `dev` branch. Recent OpenNox releases can be found [here](<https://github.com/opennox/opennox/releases>).
+All release builds are made from the `dev` branch. Recent OpenNox releases can be found [here](<https://github.com/brutusmcforce/opennox/releases>).
 
 Linux releases are also available in `stable` channel of our [Snap package](https://snapcraft.io/opennox).
 
@@ -56,7 +56,7 @@ Read [CONTRIBUTING](CONTRIBUTING.md)!
 
 ## Legal
 
-<a href="https://www.gnu.org/licenses/gpl-3.0.en.html"><img alt="OpenNox license" src="https://img.shields.io/github/license/opennox/opennox?style=flat"></a>
+<a href="https://www.gnu.org/licenses/gpl-3.0.en.html"><img alt="OpenNox license" src="https://img.shields.io/github/license/brutusmcforce/opennox?style=flat"></a>
 
 This project (OpenNox) is an unofficial community collaboration project for preservation, modding and compatibility purposes.
 This project has no direct affiliation with Electronic Arts Inc. and/or the "Nox" brand. "Nox" is an Electronic Arts Inc. brand. All Rights Reserved.

@@ -3,7 +3,7 @@ package client
 import (
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/internal/binfile"
+	"github.com/brutusmcforce/opennox/internal/binfile"
 )
 
 func init() {

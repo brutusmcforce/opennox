@@ -3,10 +3,10 @@ package server
 import (
 	"unsafe"
 
-	"github.com/opennox/libs/player"
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/player"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 var (

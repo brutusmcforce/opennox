@@ -1,6 +1,6 @@
 package server
 
-import noxcolor "github.com/opennox/libs/color"
+import noxcolor "github.com/brutusmcforce/opennox/libs/color"
 
 var (
 	nox_color_black_2650656  = noxcolor.RGB5551Color(0, 0, 0)

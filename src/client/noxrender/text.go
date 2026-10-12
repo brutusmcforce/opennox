@@ -9,14 +9,14 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/opennox/libs/datapath"
-	"github.com/opennox/libs/ifs"
-	"github.com/opennox/libs/noxfont"
+	"github.com/brutusmcforce/opennox/libs/datapath"
+	"github.com/brutusmcforce/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/noxfont"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/math/fixed"
 
-	"github.com/opennox/opennox/v1/legacy/common/alloc/handles"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc/handles"
 )
 
 type fontFile struct {

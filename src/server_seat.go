@@ -6,10 +6,10 @@ import (
 	"image"
 	"time"
 
-	"github.com/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/log"
 
-	"github.com/opennox/opennox/v1/client"
-	"github.com/opennox/opennox/v1/common/ntype"
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/common/ntype"
 )
 
 func (c *Client) initSeat(sz image.Point) error {

@@ -1,6 +1,6 @@
 package server
 
-import "github.com/opennox/noxscript/ns/v4"
+import "github.com/brutusmcforce/opennox/noxscript/ns/v4"
 
 func (s NoxScriptNS) ClearMessages(pl ns.Obj) {
 	if pl == nil {

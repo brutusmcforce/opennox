@@ -4,7 +4,7 @@ import (
 	"image"
 	"image/color"
 
-	noxcolor "github.com/opennox/libs/color"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 )
 
 func (r *NoxRender) DrawPixel(pos image.Point, cl color.Color) {

@@ -6,8 +6,8 @@ import (
 	"image"
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/internal/binfile"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/internal/binfile"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func (c *Client) ReadWalls(f *binfile.MemFile) error {

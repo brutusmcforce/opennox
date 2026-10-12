@@ -15,16 +15,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/ifs"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v2"
 
-	"github.com/opennox/libs/client/keybind"
-	"github.com/opennox/libs/client/seat"
-	"github.com/opennox/libs/log"
-	"github.com/opennox/libs/platform"
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
+	"github.com/brutusmcforce/opennox/libs/client/seat"
+	"github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/platform"
+	"github.com/brutusmcforce/opennox/libs/types"
 )
 
 var (

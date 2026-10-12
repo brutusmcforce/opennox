@@ -12,32 +12,32 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/opennox/lobby"
-	"github.com/opennox/xwis"
+	"github.com/brutusmcforce/opennox/lobby"
+	"github.com/brutusmcforce/opennox/xwis"
 
-	"github.com/opennox/libs/common"
-	"github.com/opennox/libs/console"
-	"github.com/opennox/libs/env"
-	"github.com/opennox/libs/ifs"
-	"github.com/opennox/libs/log"
-	"github.com/opennox/libs/noxnet/netxfer"
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/script"
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/common"
+	"github.com/brutusmcforce/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/env"
+	"github.com/brutusmcforce/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netxfer"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/script"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	"github.com/opennox/opennox/v1/client"
-	"github.com/opennox/opennox/v1/client/gui"
-	"github.com/opennox/opennox/v1/common/discover"
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/common/unit/ai"
-	"github.com/opennox/opennox/v1/internal/netlist"
-	"github.com/opennox/opennox/v1/internal/netstr"
-	"github.com/opennox/opennox/v1/internal/version"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/common/alloc"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/common/discover"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/common/unit/ai"
+	"github.com/brutusmcforce/opennox/internal/netlist"
+	"github.com/brutusmcforce/opennox/internal/netstr"
+	"github.com/brutusmcforce/opennox/internal/version"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (
@@ -547,6 +547,7 @@ func initGameSession435CC0() error {
 	c.nox_xxx_initSight_485F80()
 	wsz := videoWorldSize()
 	c.Sight.Init(wsz.X, wsz.Y)
+	uiScaleState.viewSize = wsz
 
 	c.InitDrawableLists()
 

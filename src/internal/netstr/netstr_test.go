@@ -3,12 +3,12 @@ package netstr
 import (
 	"testing"
 
-	"github.com/opennox/libs/log"
-	"github.com/opennox/libs/noxnet"
+	"github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/noxnet"
 	"github.com/stretchr/testify/require"
 
-	"github.com/opennox/opennox/v1/common/ntype"
-	"github.com/opennox/opennox/v1/server/netlib"
+	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/server/netlib"
 )
 
 func TestNetstr(t *testing.T) {

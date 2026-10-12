@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/opennox/libs/client/seat"
-	"github.com/opennox/libs/console"
-	"github.com/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/client/seat"
+	"github.com/brutusmcforce/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/log"
 	"github.com/spf13/viper"
 )
 

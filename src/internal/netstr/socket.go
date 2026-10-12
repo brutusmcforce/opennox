@@ -7,7 +7,7 @@ import (
 	"net/netip"
 	"syscall"
 
-	"github.com/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/log"
 )
 
 var DebugSockets = false

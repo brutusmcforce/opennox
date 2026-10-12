@@ -15,28 +15,28 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/opennox/libs/platform"
+	"github.com/brutusmcforce/opennox/libs/platform"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 
-	"github.com/opennox/libs/client/keybind"
-	"github.com/opennox/libs/common"
-	"github.com/opennox/libs/datapath"
-	"github.com/opennox/libs/env"
-	"github.com/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
+	"github.com/brutusmcforce/opennox/libs/common"
+	"github.com/brutusmcforce/opennox/libs/datapath"
+	"github.com/brutusmcforce/opennox/libs/env"
+	"github.com/brutusmcforce/opennox/libs/log"
 
-	"github.com/opennox/opennox/v1/client"
-	"github.com/opennox/opennox/v1/client/gui"
-	noxflags "github.com/opennox/opennox/v1/common/flags"
-	"github.com/opennox/opennox/v1/common/memmap"
-	"github.com/opennox/opennox/v1/common/serial"
-	"github.com/opennox/opennox/v1/common/sound"
-	"github.com/opennox/opennox/v1/internal/version"
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/legacy/client/audio/ail"
-	"github.com/opennox/opennox/v1/legacy/common/alloc/handles"
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/gui"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/serial"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/internal/version"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc/handles"
 )
 
 func init() {
@@ -364,7 +364,7 @@ func runArgs(args []string, loopFunc func() error) (gerr error) {
 	if err := nox_common_scanAllMaps_4D07F0(noxServer.Log); err != nil {
 		return fmt.Errorf("cannot find maps: %w", err)
 	}
-	keyBinding = newBindEvents(keybind.New(noxClient.Strings()))
+	keyBinding = keybind.New(noxClient.Strings())
 	nox_xxx_mapSetDataDefault_416500()
 	if err := nox_common_readcfgfile("nox.cfg", false); err != nil {
 		return fmt.Errorf("failed to load config file: %w", err)

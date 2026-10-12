@@ -4,7 +4,7 @@ import (
 	"image"
 	"math"
 
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/types"
 )
 
 func RoundDir(v int) Dir16 { // nox_xxx_math_roundDir, nox_xxx_math_roundDirI16

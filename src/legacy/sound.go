@@ -8,8 +8,8 @@ void nox_xxx_clientPlaySoundSpecial_452D80(int a1, int a2);
 */
 import "C"
 import (
-	"github.com/opennox/opennox/v1/common/sound"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var (

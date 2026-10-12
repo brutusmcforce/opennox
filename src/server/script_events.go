@@ -1,6 +1,6 @@
 package server
 
-import "github.com/opennox/libs/script"
+import "github.com/brutusmcforce/opennox/libs/script"
 
 type OnChatFunc func(t *Team, p *Player, obj *Object, msg string) string
 type OnPlayerJoinFunc func(p *Player) bool

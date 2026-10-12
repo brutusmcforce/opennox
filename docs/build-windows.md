@@ -29,7 +29,7 @@ It should print the version you installed.
 
 ### As a ZIP file
 
-Download [the latest source](https://github.com/opennox/opennox/archive/refs/heads/dev.zip) and extract it to some directory.
+Download [the latest source](https://github.com/brutusmcforce/opennox/archive/refs/heads/dev.zip) and extract it to some directory.
 
 We will assume the project is unpacked to `C:\Dev\opennox` for this guide. Prefer path without spaces and non-English characters.
 
@@ -42,7 +42,7 @@ We will assume the project is unpacked to `C:\Dev\opennox` for this guide. Prefe
    It's only used when sending changes to the project.
 3. Create a directory for projects, let's say `C:\Dev\`.
 4. Right click on empty space in the new folder, select "Git Clone...".
-5. Paste the project URL: `https://github.com/opennox/opennox.git`.
+5. Paste the project URL: `https://github.com/brutusmcforce/opennox.git`.
 6. Check the "Branch" box, write `dev` to the field.
 7. Click OK, wait for the project to download.
 

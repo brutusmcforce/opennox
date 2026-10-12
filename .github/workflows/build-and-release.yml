@@ -16,7 +16,7 @@ on:
       - dev
 
 env:
-  DOCKER_IMAGE_NAME: ghcr.io/opennox/opennox
+  DOCKER_IMAGE_NAME: ghcr.io/brutusmcforce/opennox
 
 jobs:
   hybrid_docker_mingw:

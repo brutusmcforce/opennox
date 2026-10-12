@@ -2301,8 +2301,10 @@ int nox_xxx_tileDrawImpl_4826A0(nox_draw_viewport_t* vp) {
 	}
 	v20 = dword_5d4594_3798812 + v25 - 1;
 	if (v20 >= 128) {
-		v20 = 127;
-		v25 = 127 - dword_5d4594_3798812;
+		// OpenNox: the original clamped it to 127, but nox_xxx_tileDrawMB_481C20_A only stops scrolling at 128,
+		// causing a full redraw on each frame near the map edge
+		v20 = 128;
+		v25 = 129 - dword_5d4594_3798812;
 	}
 	result = (v2 - 11) / 46 - 1;
 	if (result < 0) {
@@ -2310,8 +2312,9 @@ int nox_xxx_tileDrawImpl_4826A0(nox_draw_viewport_t* vp) {
 	}
 	v4 = dword_5d4594_3798816 + result;
 	if (*(int*)&dword_5d4594_3798816 + result >= 128) {
-		v4 = 127;
-		result = 127 - dword_5d4594_3798816;
+		// OpenNox: see above, nox_xxx_tileDrawMB_481C20_B stops scrolling at 128
+		v4 = 128;
+		result = 128 - dword_5d4594_3798816;
 	}
 	v5 = v25;
 	dword_5d4594_3798824 = 46 * result - 11;

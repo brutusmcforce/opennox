@@ -3,8 +3,8 @@ package client
 import (
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/client/noxrender"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var _ = [1]struct{}{}[40-unsafe.Sizeof(PlayerEquipAnimation{})]

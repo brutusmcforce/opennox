@@ -3,7 +3,7 @@ package netstr
 import (
 	"net/netip"
 
-	"github.com/opennox/opennox/v1/common/ntype"
+	"github.com/brutusmcforce/opennox/common/ntype"
 )
 
 func errHandle(e int) handle {

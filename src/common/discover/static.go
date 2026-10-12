@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/opennox/lobby"
+	"github.com/brutusmcforce/opennox/lobby"
 
-	"github.com/opennox/libs/common"
+	"github.com/brutusmcforce/opennox/libs/common"
 )
 
 const (

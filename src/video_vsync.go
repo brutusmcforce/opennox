@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/veandco/go-sdl2/sdl"
 
-	"github.com/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/console"
 )
 
 // Vertical synchronization.

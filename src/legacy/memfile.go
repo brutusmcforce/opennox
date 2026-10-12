@@ -7,7 +7,7 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/opennox/opennox/v1/internal/binfile"
+	"github.com/brutusmcforce/opennox/internal/binfile"
 )
 
 var _ = [1]struct{}{}[16-unsafe.Sizeof(binfile.MemFile{})]

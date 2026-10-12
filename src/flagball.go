@@ -1,6 +1,6 @@
 package opennox
 
-import "github.com/opennox/opennox/v1/common/memmap"
+import "github.com/brutusmcforce/opennox/common/memmap"
 
 func sub_4E8290(a1 byte, a2 uint16) int {
 	s := noxServer

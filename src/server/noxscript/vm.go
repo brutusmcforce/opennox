@@ -3,8 +3,8 @@ package noxscript
 import (
 	"image"
 
-	"github.com/opennox/libs/types"
-	"github.com/opennox/noxscript/ns/v4"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/noxscript/ns/v4"
 )
 
 type VM interface {

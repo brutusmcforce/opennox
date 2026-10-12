@@ -4,13 +4,13 @@ import (
 	"image"
 	"time"
 
-	"github.com/opennox/libs/console"
-	"github.com/opennox/libs/object"
-	"github.com/opennox/libs/script"
-	"github.com/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/console"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/script"
+	"github.com/brutusmcforce/opennox/libs/types"
 
-	"github.com/opennox/opennox/v1/legacy"
-	"github.com/opennox/opennox/v1/server"
+	"github.com/brutusmcforce/opennox/legacy"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 // TODO: This is only for old LUA compatibility.
@@ -102,7 +102,6 @@ func (obj scrObject) Guard() {
 
 func (obj scrObject) Destroy() {
 	panic("implement me")
-	obj.Delete()
 }
 
 func (obj scrObject) Say(text string, dur script.Duration) {
