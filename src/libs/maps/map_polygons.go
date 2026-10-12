@@ -189,7 +189,7 @@ func (sect *Polygons) Decode(r *binenc.Reader) error {
 	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	sect.Points = make([]PolygonPoint, 0, sz)
+	sect.Points = make([]PolygonPoint, 0, capHint(r, sz, 12))
 	for i := 0; i < int(sz); i++ {
 		var p PolygonPoint
 		if err := p.Decode(r); err != nil {
@@ -201,7 +201,7 @@ func (sect *Polygons) Decode(r *binenc.Reader) error {
 	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	sect.Polygons = make([]Polygon, 0, sz)
+	sect.Polygons = make([]Polygon, 0, capHint(r, sz, 11))
 	for i := 0; i < int(sz); i++ {
 		var p Polygon
 		if err := p.Decode(r, vers); err != nil {

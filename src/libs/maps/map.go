@@ -182,3 +182,9 @@ func (m *Map) GridBoundingBox() image.Rectangle {
 	// TODO: tiles
 	return r
 }
+
+// capHint limits a preallocation for n elements, each at least minSize bytes when encoded,
+// to what the remaining input could hold, so a corrupted count can't force a huge allocation.
+func capHint(r *binenc.Reader, n uint32, minSize int) int {
+	return int(min(uint64(n), uint64(r.Remaining()/minSize)))
+}

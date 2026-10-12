@@ -271,3 +271,12 @@ func (b *buffer) WriteAt(p []byte, off int64) (int, error) {
 	}
 	return n, nil
 }
+
+func TestHugeSectionCounts(t *testing.T) {
+	// a count near 2^32 used to be preallocated directly, killing the process with a fatal out-of-memory error
+	var w maps.Waypoints
+	must.Error(t, w.UnmarshalBinary([]byte{4, 0, 0xff, 0xff, 0xff, 0xff}))
+	var p maps.Polygons
+	must.Error(t, p.UnmarshalBinary([]byte{4, 0, 0xff, 0xff, 0xff, 0xff}))
+	must.Error(t, p.UnmarshalBinary([]byte{4, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xff}))
+}
