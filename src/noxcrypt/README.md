@@ -1,5 +1,5 @@
 # noxcrypt
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/opennox/noxcrypt.svg)](https://pkg.go.dev/github.com/noxworld-dev/noxcrypt)
-
 Go library to encrypt/decrypt Nox game files.
+
+Originally [github.com/opennox/noxcrypt](https://github.com/opennox/noxcrypt), now maintained here as part of OpenNox.

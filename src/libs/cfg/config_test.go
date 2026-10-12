@@ -154,7 +154,7 @@ func TestConfig(t *testing.T) {
 			}, file)
 
 			var buf bytes.Buffer
-			err = file.WriteTo(&buf)
+			_, err = file.WriteTo(&buf)
 			must.NoError(t, err)
 			exp := c.text
 			if c.exp != "" {
@@ -190,13 +190,13 @@ I+M = ToggleInventory
 	}, file)
 
 	var buf bytes.Buffer
-	err = file.WriteTo(&buf)
+	_, err = file.WriteTo(&buf)
 	must.NoError(t, err)
 	must.EqOp(t, conf, buf.String())
 
 	buf.Reset()
 	file.Sections[0].Set("ServerName", "Test")
-	err = file.WriteTo(&buf)
+	_, err = file.WriteTo(&buf)
 	must.NoError(t, err)
 	must.EqOp(t, `Version = 65537
 # comment

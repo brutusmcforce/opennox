@@ -562,7 +562,7 @@ func TestUnitActions(t *testing.T) {
 					c.name,
 				))
 				must.EqOp(t, c.st, obj1.st)
-				must.EqOp(t, types.Pointf{1, 2}, obj1.targ)
+				must.EqOp(t, types.Pointf{X: 1, Y: 2}, obj1.targ)
 			}
 
 			g.Exec(fmt.Sprintf(`
@@ -591,7 +591,7 @@ func TestUnitCast(t *testing.T) {
 `)
 	must.EqOp(t, spell.SPELL_BURN, v.spell.id)
 	must.EqOp(t, 3, v.spell.lvl)
-	must.EqOp(t, v.targ, types.Pointf{1, 2})
+	must.EqOp(t, v.targ, types.Pointf{X: 1, Y: 2})
 
 	g.Exec(`
 	if not v:Cast("CHARM", 2, v2) then
@@ -600,7 +600,7 @@ func TestUnitCast(t *testing.T) {
 `)
 	must.EqOp(t, spell.SPELL_CHARM, v.spell.id)
 	must.EqOp(t, 2, v.spell.lvl)
-	must.EqOp(t, v.targ, types.Pointf{4, 5})
+	must.EqOp(t, v.targ, types.Pointf{X: 4, Y: 5})
 
 	g.Exec(`
 	if not v:Cast("HASTE", 1, null) then

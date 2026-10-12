@@ -212,9 +212,9 @@ func (g *Game) ObjectTypeByID(id string) script.ObjectType {
 func (g *Game) ObjectByID(id string) script.Object {
 	switch id {
 	case "Frog":
-		return &Object{PosVal: types.Pointf{1, 2}, IDVal: id}
+		return &Object{PosVal: types.Pointf{X: 1, Y: 2}, IDVal: id}
 	case "Cookie":
-		return &Object{PosVal: types.Pointf{3, 4}, IDVal: id}
+		return &Object{PosVal: types.Pointf{X: 3, Y: 4}, IDVal: id}
 	}
 	return nil
 }

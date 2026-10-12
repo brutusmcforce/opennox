@@ -12,6 +12,7 @@ logs
 *.exe
 *.wasm
 src/**/*.png
+!src/libs/cmd/opennox-proxy/diagram.png
 src/*.dat
 src/*.dat.gz
 cmake-*

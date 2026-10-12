@@ -4,6 +4,8 @@ Web server that runs on :8080 to talk to the OpenNox v1.8+ server API using toke
 
 ## Building
 
+From this directory:
+
 ```
 go build ./cmd/opennox-control
 ```
@@ -18,3 +20,8 @@ This will start control panel on [127.0.0.1:8080](http://127.0.0.1:8080).
 If you want to allow external access, pass `-host=:8080` option instead.
 
 Make sure to adjust `-cmd=false` if needed. Since there's currently no authentication, anybody in the world could change the map when people are playing, if that flag is set to true.
+
+## Origin
+
+Originally [github.com/szhublox/opennoxcontrol](https://github.com/szhublox/opennoxcontrol), which has no license file.
+OpenNox serves this control panel from its built-in HTTP server (see `http_control_panel.go`).

@@ -83,8 +83,8 @@ func Parse(r io.Reader) (*File, error) {
 	return f, sc.Err()
 }
 
-func (f *File) WriteTo(w io.Writer) error {
-	bw := bufio.NewWriter(w)
+func (f *File) WriteTo(w io.Writer) (int64, error) {
+	var bw strings.Builder
 	for _, sect := range f.Sections {
 		for _, kv := range sect {
 			if kv.Comment != "" {
@@ -101,5 +101,6 @@ func (f *File) WriteTo(w io.Writer) error {
 		}
 		bw.WriteString("---\n")
 	}
-	return bw.Flush()
+	n, err := io.WriteString(w, bw.String())
+	return int64(n), err
 }

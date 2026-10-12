@@ -15,6 +15,8 @@ This tool helps debug networking problems by sitting between Nox/OpenNox clients
 
 ## How to run
 
+From the `libs` directory:
+
 ```shell
 go run ./cmd/opennox-proxy --server=<server-ip>:18590 --host=0.0.0.0:18600 --file=network.jsonl
 ```

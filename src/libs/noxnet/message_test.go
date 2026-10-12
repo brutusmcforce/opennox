@@ -243,7 +243,7 @@ func TestDecodePacket(t *testing.T) {
 		},
 		{
 			name: "xfer start motd",
-			packet: &netxfer.MsgXfer{&netxfer.MsgStart{
+			packet: &netxfer.MsgXfer{Msg: &netxfer.MsgStart{
 				Act:    1,
 				Unk1:   0,
 				Size:   376,
@@ -254,14 +254,14 @@ func TestDecodePacket(t *testing.T) {
 		},
 		{
 			name: "xfer accept",
-			packet: &netxfer.MsgXfer{&netxfer.MsgAccept{
+			packet: &netxfer.MsgXfer{Msg: &netxfer.MsgAccept{
 				RecvID: 0,
 				SendID: 0,
 			}},
 		},
 		{
 			name: "xfer data motd",
-			packet: &netxfer.MsgXfer{&netxfer.MsgData{
+			packet: &netxfer.MsgXfer{Msg: &netxfer.MsgData{
 				Token:  0,
 				RecvID: 0,
 				Chunk:  1,
@@ -270,7 +270,7 @@ func TestDecodePacket(t *testing.T) {
 		},
 		{
 			name: "xfer ack",
-			packet: &netxfer.MsgXfer{&netxfer.MsgAck{
+			packet: &netxfer.MsgXfer{Msg: &netxfer.MsgAck{
 				Token:  0,
 				RecvID: 0,
 				Chunk:  1,
@@ -278,7 +278,7 @@ func TestDecodePacket(t *testing.T) {
 		},
 		{
 			name: "xfer close",
-			packet: &netxfer.MsgXfer{&netxfer.MsgDone{
+			packet: &netxfer.MsgXfer{Msg: &netxfer.MsgDone{
 				RecvID: 0,
 			}},
 		},

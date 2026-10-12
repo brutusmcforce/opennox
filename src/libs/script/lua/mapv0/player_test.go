@@ -247,7 +247,7 @@ func TestPlayerUnitPos(t *testing.T) {
 
 	p.x, p.y = 3, 4
 `)
-	must.EqOp(t, types.Pointf{3, 4}, v.pos)
+	must.EqOp(t, types.Pointf{X: 3, Y: 4}, v.pos)
 }
 
 func TestPlayerPosArg(t *testing.T) {
@@ -260,7 +260,7 @@ func TestPlayerPosArg(t *testing.T) {
 	local v = Nox.Object("Unit2")
 	v:SetPos(p)
 `)
-	must.EqOp(t, types.Pointf{1, 2}, v2.pos)
+	must.EqOp(t, types.Pointf{X: 1, Y: 2}, v2.pos)
 }
 
 func TestPlayerObjArg(t *testing.T) {
@@ -274,5 +274,5 @@ func TestPlayerObjArg(t *testing.T) {
 	v:Follow(p)
 `)
 	must.EqOp(t, UnitFollow, v2.st)
-	must.EqOp(t, types.Pointf{1, 2}, v2.targ)
+	must.EqOp(t, types.Pointf{X: 1, Y: 2}, v2.targ)
 }

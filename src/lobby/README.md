@@ -1,7 +1,5 @@
 # Nox lobby server
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/opennox/lobby.svg)](https://pkg.go.dev/github.com/opennox/lobby)
-
 This project provides a Nox game lobby which exposes a simple HTTP API for both listing and registering Nox game servers.
 
 XWIS games will also appear in the list returned by the API, so the lobby is backward-compatible.
@@ -18,14 +16,15 @@ To get a list of games on the public lobby:
 curl 'http://nox.nwca.xyz:8088/api/v0/games/list'
 ```
 
-A Go client library for HTTP API is also available (see [docs](https://pkg.go.dev/github.com/opennox/lobby)).
+This package is also the Go client for the HTTP API; OpenNox uses it to list and register games.
 
 ## Running locally
 
-The simplest way to run the lobby server locally is via Docker:
+The simplest way to run the lobby server locally is via Docker. Build the image from the `src` directory:
 
 ```bash
-docker run -d --restart always --name nox-lobby -p 8080:80 ghcr.io/opennox/lobby
+docker build -f lobby/Dockerfile -t nox-lobby .
+docker run -d --restart always --name nox-lobby -p 8080:80 nox-lobby
 ```
 
 To get a list of games via local lobby:
@@ -33,3 +32,7 @@ To get a list of games via local lobby:
 ```bash
 curl 'http://127.0.0.1:8080/api/v0/games/list'
 ```
+
+## Origin
+
+Originally [github.com/opennox/lobby](https://github.com/opennox/lobby), now maintained here as part of OpenNox.

@@ -4,6 +4,8 @@ Tools for working with XWIS lobby servers. Tailored specifically for Nox.
 
 ## Installation
 
+From this directory:
+
 ```bash
 go install ./cmd/xwis
 ```
@@ -29,3 +31,7 @@ $ xwis register
 
 Hosting game: "My Server" on "mymap" (arena)
 ```
+
+## Origin
+
+Originally [github.com/opennox/xwis](https://github.com/opennox/xwis), now maintained here as part of OpenNox.

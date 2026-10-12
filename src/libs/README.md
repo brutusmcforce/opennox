@@ -1,7 +1,12 @@
 # OpenNox libraries
-[![Go Reference](https://pkg.go.dev/badge/github.com/opennox/libs.svg)](https://pkg.go.dev/github.com/opennox/libs)
 
-This repository contains OpenNox common libraries written from scratch in Go. For the OpenNox game engine, see the [main repository](https://github.com/opennox/opennox).
+Common OpenNox libraries written from scratch in Go: game file formats, networking, scripting and client helpers.
+
+They were developed as [github.com/opennox/libs](https://github.com/opennox/libs) and are now maintained here
+as part of the OpenNox module (`github.com/brutusmcforce/opennox/libs/...`).
+
+Map scripts still import these packages by their original paths (e.g. `github.com/opennox/libs/types`),
+see the `Symbols` maps in [script/eval](./script/eval).
 
 ## Legal
 

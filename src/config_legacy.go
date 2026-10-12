@@ -696,7 +696,8 @@ func writeConfigLegacy(path string) error {
 		return err
 	}
 	defer f.Close()
-	return cfile.WriteTo(f)
+	_, err = cfile.WriteTo(f)
+	return err
 }
 
 func writeConfigLegacyMain(sect *cfg.Section) {

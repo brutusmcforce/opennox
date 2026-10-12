@@ -105,12 +105,12 @@ func readSpriteHeader(r io.Reader, typ byte) (*ImageMeta, image.Point, error) {
 		return nil, image.Point{}, fmt.Errorf("invalid image size: %dx%d", width, height)
 	}
 	return &ImageMeta{
-			Type:  typ,
-			Point: offs,
-		}, image.Point{
-			X: width,
-			Y: height,
-		}, nil
+		Type:  typ,
+		Point: offs,
+	}, image.Point{
+		X: width,
+		Y: height,
+	}, nil
 }
 
 func readSprite(r io.Reader, typ byte) (*Image, error) {
