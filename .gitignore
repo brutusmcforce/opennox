@@ -38,7 +38,6 @@ gonox/
 gonoxh/
 
 src/opennox
-src/opennox-hd
+src/opennox-debug
 src/opennox-server
 
-snap/local

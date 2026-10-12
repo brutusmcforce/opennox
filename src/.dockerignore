@@ -5,6 +5,8 @@ tmp/
 .tmp/
 logs/
 *.dat
+# embedded into the binary
+!common/memmap/nox/blobdata/*.dat
 *.bin
 *.gz
 *.zip
@@ -19,4 +21,7 @@ logs/
 *.html
 *.csv
 /noxtools
-/opennox*
+# build outputs (not /opennox*: that would also match the opennoxcontrol package)
+/opennox
+/opennox-debug
+/opennox-server
