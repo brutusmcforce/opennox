@@ -1,3 +1,4 @@
+#include "nox_math.h"
 #include <math.h>
 #include <sys/stat.h>
 
@@ -4454,7 +4455,7 @@ long long sub_4AEE30() {
 	v1 = getMemAt(0x5D4594, 1309840);
 	do {
 		result =
-			(long long)(sin((double)(v0 + 192) * *getMemDoublePtr(0x581450, 9768) * *getMemDoublePtr(0x581450, 9760)) *
+			(long long)(nox_math_sin((double)(v0 + 192) * *getMemDoublePtr(0x581450, 9768) * *getMemDoublePtr(0x581450, 9760)) *
 						*(double*)&qword_581450_9552);
 		*(uint32_t*)v1 = result;
 		v1 += 4;

@@ -1,3 +1,4 @@
+#include "nox_math.h"
 #include <math.h>
 
 #include "GAME1.h"
@@ -342,7 +343,7 @@ int nox_xxx_math_509ED0(float2* a1) {
 	int result; // eax
 	float v2;   // [esp+0h] [ebp-4h]
 
-	v2 = (atan2(a1->field_4, a1->field_0) + 6.2831855) * 40.743664 + 0.5;
+	v2 = (nox_math_atan2(a1->field_4, a1->field_0) + 6.2831855) * 40.743664 + 0.5;
 	result = nox_float2int(v2);
 	if (result < 0) {
 		result += (unsigned int)(255 - result) >> 8 << 8;
@@ -2865,8 +2866,8 @@ signed int nox_xxx_updateSentryGlobe_510E60(int a1) {
 		v3 = *(float*)(a1 + 60);
 		a1a.field_0 = *(float*)(a1 + 56);
 		a1a.field_4 = v3;
-		a1a.field_8 = cos(*(float*)v2) * 600.0 + *(float*)(a1 + 56);
-		a1a.field_C = sin(*(float*)v2) * 600.0 + *(float*)(a1 + 60);
+		a1a.field_8 = nox_math_cos(*(float*)v2) * 600.0 + *(float*)(a1 + 56);
+		a1a.field_C = nox_math_sin(*(float*)v2) * 600.0 + *(float*)(a1 + 60);
 		if (nox_xxx_mapTraceRay_535250(&a1a, &a2, 0, 5)) {
 			v4 = a1a.field_C;
 			*(float*)(a1 + 156) = a1a.field_8;

@@ -1,3 +1,4 @@
+#include "nox_math.h"
 #include <math.h>
 
 #include "GAME1.h"
@@ -1441,14 +1442,14 @@ char nox_xxx_initSinCosTables_414C90() {
 		v4 = 0;
 		v1 = getMemAt(0x85B3FC, 12260);
 		do {
-			*(uint32_t*)v1 = (long long)(sin((double)v4 * 0.0015339808) * *getMemDoublePtr(0x581450, 7200));
+			*(uint32_t*)v1 = (long long)(nox_math_sin((double)v4 * 0.0015339808) * *getMemDoublePtr(0x581450, 7200));
 			v1 += 4;
 			++v4;
 		} while ((int)v1 < (int)getMemAt(0x85B3FC, 28644));
 		v5 = 0;
 		v2 = getMemAt(0x5D4594, 338472);
 		do {
-			v0 = (long long)(acos((double)v5 * 0.00024414062 - 1.0) * *getMemDoublePtr(0x581450, 7184));
+			v0 = (long long)(nox_math_acos((double)v5 * 0.00024414062 - 1.0) * *getMemDoublePtr(0x581450, 7184));
 			*(uint32_t*)v2 = v0;
 			v2 += 4;
 			++v5;

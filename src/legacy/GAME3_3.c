@@ -1,3 +1,4 @@
+#include "nox_math.h"
 #include <math.h>
 
 #include "GAME1.h"
@@ -6677,8 +6678,8 @@ float2* sub_4ED970(float a1, float2* a2, float2* a3) {
 	while (1) {
 		v6 = v11 + 1.8849558;
 		v11 = v6;
-		v10.field_8 = cos(v6) * a1 + v3->field_0;
-		v10.field_C = sin(v11) * a1 + v3->field_4;
+		v10.field_8 = nox_math_cos(v6) * a1 + v3->field_0;
+		v10.field_C = nox_math_sin(v11) * a1 + v3->field_4;
 		if (nox_xxx_mapTraceRay_535250(&v10, 0, 0, 1)) {
 			break;
 		}

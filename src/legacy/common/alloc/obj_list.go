@@ -9,6 +9,9 @@ type list struct {
 }
 
 func (l *list) Clear() {
+	for it := l.first; it != nil; it = it.next {
+		it.owner = nil
+	}
 	l.first = nil
 	l.last = nil
 	l.n = 0
@@ -34,7 +37,11 @@ func (l *list) AddFirst(obj *object) {
 	if l.Contains(obj) {
 		panic(fmt.Errorf("object already in the list: %p", obj))
 	}
+	if obj.owner != nil {
+		panic(fmt.Errorf("object is in another list: %p", obj))
+	}
 	l.n++
+	obj.owner = l
 	first := l.first
 	if first != nil {
 		first.prev = obj
@@ -51,7 +58,11 @@ func (l *list) AddLast(obj *object) {
 	if l.Contains(obj) {
 		panic(fmt.Errorf("object already in the list: %p", obj))
 	}
+	if obj.owner != nil {
+		panic(fmt.Errorf("object is in another list: %p", obj))
+	}
 	l.n++
+	obj.owner = l
 	last := l.last
 	if last != nil {
 		last.next = obj
@@ -64,13 +75,10 @@ func (l *list) AddLast(obj *object) {
 	}
 }
 
+// Contains reports whether the object is in the list. Objects remember their list, so it doesn't walk it:
+// the allocator checks this on every allocation and free.
 func (l *list) Contains(obj *object) bool {
-	for it := l.first; it != nil; it = it.next {
-		if it == obj {
-			return true
-		}
-	}
-	return false
+	return obj.owner == l
 }
 
 func (l *list) Remove(obj *object) {
@@ -94,6 +102,7 @@ func (l *list) remove(obj *object) {
 	}
 	obj.next = nil
 	obj.prev = nil
+	obj.owner = nil
 }
 
 func (l *list) PopFirst() *object {

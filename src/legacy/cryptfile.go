@@ -46,6 +46,7 @@ func nox_xxx_cryptClose_4269F0() {
 
 //export nox_xxx_mapgenGetSomeFile_426A60
 func nox_xxx_mapgenGetSomeFile_426A60() *C.FILE {
+	cryptWBufDrain() // the C code is going to use the file directly
 	return NewFileHandle(cryptfile.Global().File.File)
 }
 

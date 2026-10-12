@@ -11,6 +11,8 @@ import (
 	lpath "path"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/exp/slices"
@@ -148,6 +150,9 @@ func NewServer(log *slog.Logger, path string) *Server {
 		path: path,
 		mux:  httprouter.New(),
 	}
+	s.scan = func() (MapList, error) {
+		return Scan(s.log, s.path, nil)
+	}
 	s.mux.Handle("HEAD", "/api/v0/maps/", s.handleMapList)
 	s.mux.Handle("GET", "/api/v0/maps/", s.handleMapList)
 
@@ -157,10 +162,33 @@ func NewServer(log *slog.Logger, path string) *Server {
 	return s
 }
 
+// mapListTTL is how long the map list is cached: scanning reads every map in the folder,
+// and the list is served to anyone without authentication.
+const mapListTTL = 10 * time.Second
+
 type Server struct {
 	log  *slog.Logger
 	mux  *httprouter.Router
 	path string
+
+	scan   func() (MapList, error) // Scan of the path; replaced in tests
+	listMu sync.Mutex              // also makes concurrent requests wait for one scan
+	list   MapList
+	listAt time.Time
+}
+
+// mapList returns the list of maps, scanning the folder at most once per mapListTTL.
+func (s *Server) mapList() (MapList, error) {
+	s.listMu.Lock()
+	defer s.listMu.Unlock()
+	if s.list != nil && time.Since(s.listAt) < mapListTTL {
+		return s.list, nil
+	}
+	list, err := s.scan()
+	if len(list) != 0 || err == nil {
+		s.list, s.listAt = list, time.Now()
+	}
+	return list, err
 }
 
 func (s *Server) RegisterOnMux(mux *http.ServeMux) {
@@ -186,7 +214,7 @@ func (s *Server) handleMapList(w http.ResponseWriter, r *http.Request, p httprou
 	case "HEAD", "OPTIONS":
 		w.WriteHeader(http.StatusOK)
 	case "GET":
-		list, err := Scan(s.log, s.path, nil)
+		list, err := s.mapList()
 		if err != nil {
 			s.log.Error("error serving map list", "err", err)
 			if len(list) == 0 {

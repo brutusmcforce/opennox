@@ -81,6 +81,7 @@ func (al *Class) UPtr() unsafe.Pointer {
 type object struct {
 	al      *Class
 	expires time.Duration
+	owner   *list // the list the object is in, if any
 	next    *object
 	prev    *object
 	ptr     unsafe.Pointer

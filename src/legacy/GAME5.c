@@ -1,3 +1,4 @@
+#include "nox_math.h"
 #include <float.h>
 #include <math.h>
 #include <stdio.h>
@@ -6076,8 +6077,8 @@ int sub_54EF90(float a1, int a2, int a3, int a4) {
 	while (1) {
 		v9 = *(float*)&v13 + 1.8849558;
 		*(float*)&v13 = v9;
-		v12.field_8 = cos(v9) * a1 + *v4;
-		v12.field_C = sin(*(float*)&v13) * a1 + v4[1];
+		v12.field_8 = nox_math_cos(v9) * a1 + *v4;
+		v12.field_C = nox_math_sin(*(float*)&v13) * a1 + v4[1];
 		if (nox_xxx_mapTraceRay_535250(&v12, 0, 0, v6)) {
 			if (!sub_54EF00(&v12.field_8) && !nox_xxx_mapTileAllowTeleport_411A90((float2*)&v12.field_8)) {
 				break;

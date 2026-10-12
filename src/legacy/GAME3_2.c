@@ -1,3 +1,4 @@
+#include "nox_math.h"
 #include <math.h>
 
 #include "compat.h"
@@ -333,7 +334,7 @@ void sub_4CE8C0(int a1) {
 		if (v1) {
 			v2 = v1[4] - *(uint32_t*)(a1 + 16);
 			v4 = v1[3] - *(uint32_t*)(a1 + 12);
-			v3 = nox_double2float(acos((double)v4 / sqrt((double)(v4 * v4 + v2 * v2)))) * 57.295776;
+			v3 = nox_double2float(nox_math_acos((double)v4 / sqrt((double)(v4 * v4 + v2 * v2)))) * 57.295776;
 			if (v2 < 0) {
 				v3 = 360.0 - v3;
 			}
@@ -3202,7 +3203,7 @@ unsigned int sub_4D6540(int a1) {
 int sub_4D66E0(unsigned int a1, unsigned int a2, unsigned int a3, unsigned int a4) {
 	float v5; // [esp+4h] [ebp-10h]
 
-	v5 = nox_double2float(pow((double)a4, *(long double*)getMemAt(0x581450, 10088))) *
+	v5 = nox_double2float(nox_math_pow((double)a4, *(long double*)getMemAt(0x581450, 10088))) *
 		 ((double)a1 * 10.0 + (double)a2 * 35.0 + (double)a3 * 0.1);
 	return nox_float2int(v5);
 }

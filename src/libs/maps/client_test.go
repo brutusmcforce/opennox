@@ -71,3 +71,22 @@ func TestDownloadMapZipBomb(t *testing.T) {
 	err := cli.DownloadMap(context.Background(), dest, "bomb")
 	must.Error(t, err)
 }
+
+func TestMapListCached(t *testing.T) {
+	srv := NewServer(slog.Default(), t.TempDir())
+	scans := 0
+	srv.scan = func() (MapList, error) {
+		scans++
+		return MapList{{Filename: "estate"}}, nil
+	}
+	for range 3 {
+		w := httptest.NewRecorder()
+		srv.ServeHTTP(w, httptest.NewRequest("GET", "/api/v0/maps/", nil))
+		must.EqOp(t, http.StatusOK, w.Code)
+		must.StrContains(t, w.Body.String(), "estate")
+	}
+	must.EqOp(t, 1, scans)
+	srv.listAt = srv.listAt.Add(-mapListTTL) // expired
+	srv.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/api/v0/maps/", nil))
+	must.EqOp(t, 2, scans)
+}
