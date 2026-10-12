@@ -546,11 +546,7 @@ func nox_common_parsecfg_all(sect cfg.Section) error {
 			g_scaled_cfg = v
 			noxClient.setStretchIfNotSet(v != 0)
 		case "InputSensitivity":
-			v, err := strconv.ParseFloat(kv.Value, 32)
-			if err != nil {
-				return fmt.Errorf("cannot parse %s: %w", kv.Key, err)
-			}
-			noxClient.SetSensitivity(float32(v))
+			// removed: the system cursor is used, so the sensitivity is set by the system
 		default:
 			for _, ci := range configCycleIndexes {
 				if ci.Name == kv.Key {
@@ -714,7 +710,6 @@ func writeConfigLegacyMain(sect *cfg.Section) {
 	if legacyGamma2Set {
 		sect.Set("Gamma2", strconv.FormatFloat(legacyGamma2, 'g', -1, 32))
 	}
-	sect.Set("InputSensitivity", strconv.FormatFloat(float64(noxClient.GetSensitivity()), 'g', -1, 32))
 
 	v := 0
 	if legacy.Sub_453070() == 1 {

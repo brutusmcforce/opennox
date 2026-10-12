@@ -55,16 +55,6 @@ func (h *Handler) SeqDelay() int {
 	return int(h.nox_input_seq) - int(h.nox_input_seq_prev)
 }
 
-// GetSensitivity returns current mouse sensitivity setting.
-func (h *Handler) GetSensitivity() float32 {
-	return h.m.GetSensitivity()
-}
-
-// SetSensitivity sets mouse sensitivity.
-func (h *Handler) SetSensitivity(v float32) {
-	h.m.SetSensitivity(v)
-}
-
 // GetMousePos returns current mouse position in canvas coordinates.
 func (h *Handler) GetMousePos() image.Point {
 	if h.liveMouse {

@@ -203,6 +203,16 @@ func (c *Client) resizeWorldView(sz image.Point) {
 	vp.Screen = image.Rect(0, 0, sz.X-1, sz.Y-1)
 	vp.Size = sz
 	c.nox_draw_setCutSize(nox_video_getCutSize(), 0)
+	if vp.World.Max != (image.Point{}) {
+		// Keep the camera centered. The server only sends the camera position on ticks,
+		// and the line of sight is computed from the view center, so an off-center view
+		// would briefly reveal objects behind walls. The view center is stored in World.Max,
+		// see nox_xxx_cliUpdateCameraPos_435600.
+		prev := vp.World.Min
+		vp.World.Min = vp.World.Max.Sub(vp.Size.Div(2))
+		d := vp.World.Min.Sub(prev)
+		c.interp.shiftCamera(d)
+	}
 	if noxflags.HasGame(noxflags.GameHost) {
 		// the view may also be smaller now
 		if pl := noxServer.Players.ByInd(server.HostPlayerIndex); pl != nil {

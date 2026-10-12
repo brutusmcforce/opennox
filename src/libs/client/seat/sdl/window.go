@@ -10,7 +10,6 @@ import (
 
 	"github.com/brutusmcforce/opennox/libs/client/seat"
 	"github.com/brutusmcforce/opennox/libs/client/seat/opengl"
-	"github.com/brutusmcforce/opennox/libs/env"
 	noxlog "github.com/brutusmcforce/opennox/libs/log"
 )
 
@@ -73,7 +72,7 @@ type Window struct {
 	prevSz   image.Point
 	textInp  bool
 	mode     seat.ScreenMode
-	rel      bool
+	cursor   *cursor // system cursor set by the game, if any
 	mpos     image.Point
 	onResize []func(sz image.Point)
 	onInput  []func(ev seat.InputEvent)
@@ -152,15 +151,6 @@ func (win *Window) ResizeScreen(sz image.Point) {
 	win.prevSz = sz
 }
 
-func (win *Window) setRelative(rel bool) {
-	if win.rel == rel {
-		return
-	}
-	win.rel = rel
-	win.win.SetGrab(rel)
-	sdl.SetRelativeMouseMode(rel)
-}
-
 func (win *Window) SetScreenMode(mode seat.ScreenMode) {
 	if win.mode == mode {
 		return
@@ -181,29 +171,24 @@ func (win *Window) SetScreenMode(mode seat.ScreenMode) {
 		} else {
 			win.center()
 		}
-		if env.IsDevMode() || env.IsE2E() {
-			sdl.ShowCursor(sdl.ENABLE)
-		} else {
-			sdl.ShowCursor(sdl.DISABLE)
-		}
-		win.setRelative(false)
+		win.win.SetGrab(false)
 	case seat.Fullscreen:
 		win.win.SetResizable(false)
 		win.win.SetBordered(false)
 		win.setSize(win.ScreenMaxSize())
 		win.win.SetFullscreen(uint32(sdl.WINDOW_FULLSCREEN_DESKTOP))
-		sdl.ShowCursor(sdl.DISABLE)
-		win.setRelative(true)
+		// keep the cursor in the window, e.g. when there are multiple monitors
+		win.win.SetGrab(true)
 	case seat.Borderless:
 		win.win.SetFullscreen(0)
 		win.win.SetResizable(false)
 		win.win.SetBordered(true)
 		win.setSize(win.ScreenMaxSize())
 		win.center()
-		sdl.ShowCursor(sdl.DISABLE)
-		win.setRelative(false)
+		win.win.SetGrab(false)
 	}
 	win.mode = mode
+	win.updateCursor()
 }
 
 // SetGamma sets screen gamma parameter.

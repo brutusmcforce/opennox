@@ -49,7 +49,6 @@ type Client interface {
 	GetInputSeq() uint
 	ChangeMousePos(pos image.Point, abs bool)
 	SetMouseBounds(rect image.Rectangle)
-	SetSensitivity(v float32)
 	SetTextInput(enable bool)
 	GetTextEditBuf() string
 	NewGUIAdvOptsOn(par *gui.Window)

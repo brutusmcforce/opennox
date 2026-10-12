@@ -304,7 +304,7 @@ func NewNoxRender(cr *noxrender.NoxRender) *NoxRender {
 func (c *Client) Nox_video_drawAnimatedImageOrCursorAt(ref *legacy.ImageRef, pos image.Point) {
 	if fr := c.getCursorAnimFrame(ref, 0); fr != nil {
 		if c.flag3798728 {
-			c.r.noxDrawCursor(fr, pos)
+			c.drawCursorImage(fr, pos)
 		} else {
 			c.r.DrawImageAt(fr, pos)
 		}

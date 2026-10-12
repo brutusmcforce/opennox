@@ -41,7 +41,7 @@ func (c *Client) sub_4BE710(ref *legacy.ImageRef, pos image.Point, ind int) {
 	imgs := anim.Images()
 	img := c.r.Bag.AsImage(imgs[ind])
 	if c.flag3798728 {
-		c.r.noxDrawCursor(img, pos)
+		c.drawCursorImage(img, pos)
 	} else {
 		c.r.DrawImageAt(img, pos)
 	}

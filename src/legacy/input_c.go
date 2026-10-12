@@ -93,11 +93,6 @@ func nox_input_pollEvents_4453A0() int {
 	return 0
 }
 
-//export nox_input_setSensitivity
-func nox_input_setSensitivity(v C.float) {
-	GetClient().SetSensitivity(float32(v))
-}
-
 //export nox_input_enableTextEdit_5700CA
 func nox_input_enableTextEdit_5700CA() {
 	GetClient().SetTextInput(true)

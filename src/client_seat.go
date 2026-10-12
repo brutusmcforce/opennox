@@ -46,6 +46,7 @@ func (c *Client) initGPU() error {
 		g.Gamma = getGamma()
 		g.Filtering = c.Win.GetFiltering()
 		g.Present(img, view, win)
+		c.updateSysCursor()
 		if img != nil && img != movieFrame && uiScaleState.world == nil {
 			// Menus are drawn at a low resolution and stretched to the window.
 			// Draw them at the window resolution instead, so that the text stays smooth.
@@ -74,6 +75,8 @@ func (c *Client) initSeat(sz image.Point) error {
 		_ = c.Seat.Close()
 		return err
 	}
+
+	c.initSysCursor(c.Seat)
 
 	inp := input.New(c.Log, c.Seat, false, c.Strings().Lang())
 	c.Inp = inp
@@ -112,6 +115,7 @@ func (c *Client) freeSeat() {
 		c.gpu = nil
 	}
 	if c.Seat != nil {
+		c.freeSysCursor()
 		c.Seat.Close()
 		c.Seat = nil
 	}

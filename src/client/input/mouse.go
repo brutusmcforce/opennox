@@ -125,7 +125,6 @@ func newMouseHandler(log *slog.Logger, s Sequencer, chk bool) *mouseHandler {
 		log:   log,
 		seq:   s,
 		chk:   chk,
-		sens:  1.0,
 		queue: make(chan noxMouseEvent, mouseEventBufChan),
 	}
 	h.win.init(def)
@@ -139,8 +138,6 @@ type mouseHandler struct {
 	bounds image.Rectangle
 	win    window
 	pos    types.Pointf // float to make it cumulative for relative events
-
-	sens float32
 
 	distSlow bool // TODO: check what this does
 	distCnt  int
@@ -166,8 +163,7 @@ func (h *mouseHandler) OnMouseWheel(fnc func(dv int)) {
 
 func (h *mouseHandler) MouseMove(ev *seat.MouseMoveEvent) {
 	if ev.Relative {
-		dp := ev.Rel.Mul(h.sens)
-		h.pos = h.pos.Add(dp)
+		h.pos = h.pos.Add(ev.Rel)
 		h.pos = clampf(h.win.view, h.pos)
 	} else {
 		h.pos = types.Point2f(ev.Pos)
@@ -216,17 +212,6 @@ func (h *mouseHandler) MouseWheel(ev *seat.MouseWheelEvent) {
 		Pos:   h.win.toDrawSpace(h.pos.Point()),
 		Wheel: ev.Wheel,
 	})
-}
-
-func (h *mouseHandler) GetSensitivity() float32 {
-	return h.sens
-}
-
-func (h *mouseHandler) SetSensitivity(v float32) {
-	if v <= 0 {
-		v = 1
-	}
-	h.sens = v
 }
 
 func (h *mouseHandler) IsMousePressed(btn seat.MouseButton) bool {

@@ -167,10 +167,16 @@ func (win *Window) processMouseButtonEvent(ev *sdl.MouseButtonEvent) {
 }
 
 func (win *Window) processMotionEvent(ev *sdl.MouseMotionEvent) {
+	pos := image.Point{X: int(ev.X), Y: int(ev.Y)}
+	// mouse events are in window coordinates, which differ from pixels on high DPI screens
+	if ww, wh := win.win.GetSize(); ww > 0 && wh > 0 {
+		sz := win.ScreenSize()
+		pos.X = pos.X * sz.X / int(ww)
+		pos.Y = pos.Y * sz.Y / int(wh)
+	}
 	win.inputEvent(&seat.MouseMoveEvent{
-		Relative: win.rel,
-		Pos:      image.Point{X: int(ev.X), Y: int(ev.Y)},
-		Rel:      types.Pointf{X: float32(ev.XRel), Y: float32(ev.YRel)},
+		Pos: pos,
+		Rel: types.Pointf{X: float32(ev.XRel), Y: float32(ev.YRel)},
 	})
 }
 

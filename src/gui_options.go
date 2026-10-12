@@ -3,7 +3,6 @@ package opennox
 import (
 	"fmt"
 	"image"
-	"math"
 	"strings"
 	"unsafe"
 
@@ -146,13 +145,10 @@ func guiEnhanceOptions(root *gui.Window) {
 	for i := uint(0); i < 5; i++ { // 310-314
 		root.ChildByID(310 + i).Hide()
 	}
-	// add gamma and sensitivity sliders instead
+	// add a gamma slider instead
 	c.GUI.NewStaticText(root, 315, 112, 220, 140, 16, true, false, "Gamma")
 	NewHorizontalSlider(root, 316, 120, 236, 120, 16, 1, 100).
 		Func94(gui.AsWindowEvent(0x400A, uintptr(getGammaSlider()), 0))
-	c.GUI.NewStaticText(root, 317, 112, 258, 140, 16, true, false, "Sensitivity")
-	NewHorizontalSlider(root, 318, 120, 274, 120, 16, 1, 100).
-		Func94(gui.AsWindowEvent(0x400A, uintptr((math.Log10(float64(noxClient.GetSensitivity()))+1.0)*50), 0))
 }
 
 func sub_4A1A40(a1 int) {

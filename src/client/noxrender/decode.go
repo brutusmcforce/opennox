@@ -1,4 +1,4 @@
-package gpu
+package noxrender
 
 import (
 	"encoding/binary"
@@ -9,31 +9,31 @@ import (
 
 const spriteHeaderSize = 17
 
-// errEmptySprite is returned for sprites without any pixels. They are valid, but not drawn.
-var errEmptySprite = errors.New("empty sprite")
+// ErrEmptySprite is returned for sprites without any pixels. They are valid, but not drawn.
+var ErrEmptySprite = errors.New("empty sprite")
 
-// decodedSprite is a sprite decoded to RGBA (non-premultiplied) and a material index layer.
-type decodedSprite struct {
+// DecodedSprite is a sprite decoded to RGBA (non-premultiplied) and a material index layer.
+type DecodedSprite struct {
 	W, H int
 	RGBA []byte // 4 bytes per pixel
 	// Mat contains material index + 1 for indexed (op 4) pixels, or 0 for regular pixels.
 	Mat []byte
 }
 
-func decodeSprite(typ int, data []byte) (*decodedSprite, error) {
+func DecodeSprite(typ int, data []byte) (*DecodedSprite, error) {
 	if len(data) < spriteHeaderSize {
 		return nil, errors.New("sprite is too short")
 	}
 	w := int(binary.LittleEndian.Uint32(data[0:]))
 	h := int(binary.LittleEndian.Uint32(data[4:]))
 	if w == 0 || h == 0 {
-		return nil, errEmptySprite
+		return nil, ErrEmptySprite
 	}
 	if w < 0 || h < 0 || w > 8192 || h > 8192 {
 		return nil, errors.New("invalid sprite size")
 	}
 	data = data[spriteHeaderSize:]
-	d := &decodedSprite{
+	d := &DecodedSprite{
 		W: w, H: h,
 		RGBA: make([]byte, 4*w*h),
 		Mat:  make([]byte, w*h),
@@ -116,13 +116,13 @@ func decodeSprite(typ int, data []byte) (*decodedSprite, error) {
 	return d, nil
 }
 
-func (d *decodedSprite) setRGB555(i int, v uint16) {
+func (d *DecodedSprite) setRGB555(i int, v uint16) {
 	c := noxcolor.RGBA5551(v).ColorNRGBA()
 	p := d.RGBA[4*i:]
 	p[0], p[1], p[2], p[3] = c.R, c.G, c.B, 0xff
 }
 
-func (d *decodedSprite) setRGB565(i int, v uint16) {
+func (d *DecodedSprite) setRGB565(i int, v uint16) {
 	// additive particles: colors are added to the destination
 	p := d.RGBA[4*i:]
 	p[0] = byte(v>>8)&0xF8 | 7

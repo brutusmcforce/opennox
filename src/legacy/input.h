@@ -3,7 +3,6 @@
 
 #include "defs.h" // for nox_point
 
-void nox_input_setSensitivity(float v);
 
 int nox_input_pollEvents_4453A0();
 

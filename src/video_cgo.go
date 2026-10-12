@@ -402,13 +402,6 @@ func nox_video_initPixbufferData_4861D0(sz image.Point) {
 	noxClient.r.SetPixBuffer(noxPixBuffer.img)
 }
 
-func (r *NoxRender) noxDrawCursor(a1 *noxrender.Image, pos image.Point) int {
-	if dword_5d4594_1193672 && a1 != nil {
-		r.DrawImageAt(a1, pos)
-	}
-	return 1
-}
-
 func nox_draw_setCutSize_476700(cutPerc int, a2 int) {
 	noxClient.nox_draw_setCutSize(cutPerc, a2)
 }
@@ -706,7 +699,7 @@ func (c *Client) nox_client_drawCursorAndTooltips_477830() {
 	}
 	// the label is drawn first, the cursor image is drawn over it
 	c.drawCursorLabel(mpos)
-	if !c.deferCursorDraw(mpos) {
+	if c.hasSysCursor() || !c.deferCursorDraw(mpos) {
 		c.nox_video_cursorDrawImpl_477A30(mpos)
 	}
 	if str := alloc.GoString16((*uint16)(memmap.PtrOff(0x5D4594, 1096676))); str != "" && nox_client_showTooltips_80840 {

@@ -1,4 +1,4 @@
-package gpu
+package noxrender
 
 import (
 	"encoding/binary"
@@ -20,7 +20,7 @@ func TestDecodeSpriteRLE(t *testing.T) {
 	data = append(data, 0x01, 1)
 	data = append(data, 0x02, 1, 0x00, 0x7C)
 	data = append(data, 0x34, 2, 0x80, 0xFF)
-	d, err := decodeSprite(3, data)
+	d, err := DecodeSprite(3, data)
 	require.NoError(t, err)
 	require.Equal(t, 4, d.W)
 	require.Equal(t, 1, d.H)
@@ -34,12 +34,12 @@ func TestDecodeSpriteRLE(t *testing.T) {
 }
 
 func TestDecodeSpriteEmpty(t *testing.T) {
-	_, err := decodeSprite(3, spriteHeader(0, 0))
-	require.ErrorIs(t, err, errEmptySprite)
+	_, err := DecodeSprite(3, spriteHeader(0, 0))
+	require.ErrorIs(t, err, ErrEmptySprite)
 }
 
 func TestDecodeSpriteTruncated(t *testing.T) {
 	data := append(spriteHeader(4, 1), 0x02, 4, 0x00)
-	_, err := decodeSprite(3, data)
+	_, err := DecodeSprite(3, data)
 	require.Error(t, err)
 }

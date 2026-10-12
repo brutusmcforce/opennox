@@ -96,6 +96,7 @@ type Client struct {
 	pos1097204             image.Point
 	pos1097212             image.Point
 	flag3798728            bool
+	sysCursor              sysCursorState
 	val1096556             int
 	val1096560             int
 	savedHighResFloors     int

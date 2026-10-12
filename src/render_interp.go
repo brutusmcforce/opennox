@@ -130,6 +130,12 @@ func interpIsTeleport(a, b image.Point) bool {
 	return d.X*d.X+d.Y*d.Y > interpTeleportDist
 }
 
+// shiftCamera moves the camera positions remembered for interpolation, after the camera was moved by a given offset.
+func (r *renderInterp) shiftCamera(d image.Point) {
+	r.camPrev = r.camPrev.Add(d)
+	r.camCur = r.camCur.Add(d)
+}
+
 // onTick must be called on each game tick, right before drawing the world.
 func (c *Client) interpOnTick(vp *noxrender.Viewport) {
 	r := &c.interp

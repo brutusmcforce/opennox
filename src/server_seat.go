@@ -37,6 +37,8 @@ func (c *Client) drawAndPresent() {}
 
 type renderInterp struct{}
 
+func (r *renderInterp) shiftCamera(d image.Point) {}
+
 func (c *Client) waitAndRender(dt time.Duration) {
 	c.srv.LoopSleep(dt)
 }

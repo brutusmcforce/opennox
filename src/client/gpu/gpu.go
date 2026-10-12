@@ -453,9 +453,9 @@ func (r *Renderer) spriteRegion(img noxrender.Image16) (texRegion, bool) {
 	if _, ok := r.broken[img]; ok {
 		return texRegion{}, false
 	}
-	d, err := decodeSprite(img.Type()&0x3F, img.Pixdata())
+	d, err := noxrender.DecodeSprite(img.Type()&0x3F, img.Pixdata())
 	if err != nil {
-		if err != errEmptySprite {
+		if err != noxrender.ErrEmptySprite {
 			r.log.Warn("cannot decode sprite", "err", err, "type", img.Type()&0x3F, "size", len(img.Pixdata()))
 		}
 		r.broken[img] = struct{}{}

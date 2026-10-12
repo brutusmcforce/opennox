@@ -240,20 +240,6 @@ func (c *Client) SetTextInput(enable bool) {
 	c.Inp.SetTextInput(enable)
 }
 
-func (c *Client) GetSensitivity() float32 {
-	if c == nil || c.Inp == nil {
-		return 1
-	}
-	return c.Inp.GetSensitivity()
-}
-
-func (c *Client) SetSensitivity(v float32) {
-	if c == nil || c.Inp == nil {
-		return
-	}
-	c.Inp.SetSensitivity(v)
-}
-
 func (c *Client) GetMousePos() image.Point {
 	if c == nil || c.Inp == nil {
 		return image.Point{}
