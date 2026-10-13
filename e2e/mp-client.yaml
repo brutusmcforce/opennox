@@ -1,0 +1,81 @@
+# Multiplayer test, client side (run with scripts/e2e-multiplayer.sh together with mp-host.yaml).
+# Finds the host through NOX_E2E_SERVERS, joins as a new conjurer, leaves observation mode and fights the
+# host's player (action attack: aims at the nearest player it can see and attacks).
+steps:
+  - name: "Skip logo"
+    action: click
+    x: 100
+    y: 100
+    dt: 30
+  - name: "Multiplay"
+    action: click
+    x: 450
+    y: 266
+    dt: 3
+  - name: "Real-time pace for the network"
+    action: slow
+    dur: 33ms
+  - name: "Refresh list"
+    action: click
+    x: 180
+    y: 486
+    dt: 10
+  - name: "mpc-000"
+    action: screen
+    dt: 90
+  - name: "Pick the server"
+    action: click
+    x: 420
+    y: 94
+  - name: "mpc-001"
+    action: screen
+    dt: 30
+  - name: "Join"
+    action: click
+    x: 444
+    y: 254
+  - name: "mpc-002"
+    action: screen
+    dt: 30
+  - name: "Conjurer"
+    action: interact
+    x: 506
+    y: 205
+  - name: "Accept class"
+    action: click
+    x: 500
+    y: 658
+    dt: 1
+  - name: "mpc-003"
+    action: screen
+    dt: 8
+  - name: "Accept character"
+    action: click
+    x: 377
+    y: 601
+  - name: "mpc-004 Joined"
+    action: screen
+    dt: 60
+  - name: "Close the message of the day"
+    action: click
+    x: 464
+    y: 328
+  - name: "mpc-005"
+    action: screen
+    dt: 30
+  - name: "Enter the game"
+    action: click
+    x: 512
+    y: 300
+  - name: "mpc-006"
+    action: screen
+    dt: 60
+  - name: "Fight back"
+    action: attack
+    dt: 600
+  - name: "mpc-007 Fought"
+    action: screen
+  - name: "mpc-008"
+    action: screen
+    dt: 60
+  - action: quit

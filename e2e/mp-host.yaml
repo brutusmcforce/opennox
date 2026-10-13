@@ -1,0 +1,221 @@
+# Multiplayer test, host side (run with scripts/e2e-multiplayer.sh together with mp-client.yaml).
+# Hosts an arena game on BluDeath like host.yaml, then switches to real-time pace and keeps the game running
+# while the client joins. It brings the client next to its player (action gather, like the "tp" cheat) and both
+# fight; the players' health is logged before and after (action players). Screens are written for review, not compared: two processes don't share timing.
+steps:
+  - name: "Skip logo"
+    action: click
+    x: 100
+    y: 100
+    dt: 30
+  - name: "host-000 Main menu"
+    action: screen
+    dt: 3
+  - name: "Multiplay"
+    action: click
+    x: 450
+    y: 266
+  - name: "host-001 Server list"
+    action: screen
+    dt: 30
+  - name: "Host game"
+    action: click
+    x: 180
+    y: 102
+  - name: "host-002 Class"
+    action: screen
+    dt: 30
+  - name: "Conjurer"
+    action: interact
+    x: 506
+    y: 205
+  - name: "Accept class"
+    action: click
+    x: 500
+    y: 658
+    dt: 1
+  - name: "host-003 Class selected"
+    action: screen
+    dt: 8
+  - name: "Accept character"
+    action: click
+    x: 377
+    y: 601
+  - name: "host-004 Chat area"
+    action: screen
+    dt: 30
+  - name: "Close chat help"
+    action: click
+    x: 544
+    y: 460
+  - action: raw
+    ev: {type: key, pressed: true, key: 199}
+    dt: 30
+  - action: raw
+    ev: {type: key, key: 199}
+    dt: 2
+  - name: "host-005 Options closed"
+    action: screen
+    dt: 10
+  - action: raw
+    ev: {type: key, pressed: true, key: 199}
+    dt: 30
+  - action: raw
+    ev: {type: key, key: 199}
+    dt: 2
+  - name: "host-006 Server options"
+    action: screen
+    dt: 10
+  - name: "Advanced"
+    action: click
+    x: 950
+    y: 226
+  - name: "host-007 Rule files"
+    action: screen
+    dt: 15
+  - name: "Spells"
+    action: click
+    x: 460
+    y: 108
+  - name: "host-008 Spells"
+    action: screen
+    dt: 10
+  - name: "Weapons"
+    action: click
+    x: 460
+    y: 138
+  - name: "host-009 Weapons"
+    action: screen
+    dt: 10
+  - name: "Armor"
+    action: click
+    x: 460
+    y: 168
+  - name: "host-010 Armor"
+    action: screen
+    dt: 10
+  - name: "Done"
+    action: click
+    x: 477
+    y: 290
+  - name: "Server tab"
+    action: click
+    x: 910
+    y: 10
+    dt: 10
+  - name: "host-011 General"
+    action: screen
+    dt: 10
+  - name: "Server sub-tab 2"
+    action: click
+    x: 909
+    y: 36
+  - name: "host-012 Access"
+    action: screen
+    dt: 10
+  - name: "Server sub-tab 3"
+    action: click
+    x: 978
+    y: 36
+  - name: "host-013 Teams"
+    action: screen
+    dt: 10
+  - name: "Select Jack"
+    action: click
+    x: 832
+    y: 86
+  - name: "Assign"
+    action: click
+    x: 952
+    y: 134
+    dt: 5
+  - name: "host-014 Team assign"
+    action: screen
+    dt: 10
+  - name: "Game tab"
+    action: click
+    x: 850
+    y: 10
+    dt: 2
+  - name: "Go"
+    action: click
+    x: 818
+    y: 380
+    dt: 10
+  - name: "Real-time pace for the client"
+    action: slow
+    dur: 33ms
+  - name: "Health before"
+    action: players
+  - name: "Wait for the client to enter the game"
+    action: wait
+    dt: 300
+  - name: "mph-000 Before the fight"
+    action: screen
+  - name: "Round 1: bring the client here"
+    action: gather
+  - name: "Round 1: close in"
+    action: chase
+    dt: 30
+    x: 30
+  - name: "mph-001 Met the client"
+    action: screen
+  - name: "Round 1: fight"
+    action: attack
+    dt: 90
+  - name: "Round 2: bring the client here"
+    action: gather
+  - name: "Round 2: close in"
+    action: chase
+    dt: 30
+    x: 30
+  - name: "Round 2: fight"
+    action: attack
+    dt: 90
+  - name: "Round 3: bring the client here"
+    action: gather
+  - name: "Round 3: close in"
+    action: chase
+    dt: 30
+    x: 30
+  - name: "Round 3: fight"
+    action: attack
+    dt: 90
+  - name: "Round 4: bring the client here"
+    action: gather
+  - name: "Round 4: close in"
+    action: chase
+    dt: 30
+    x: 30
+  - name: "Round 4: fight"
+    action: attack
+    dt: 90
+  - name: "Round 5: bring the client here"
+    action: gather
+  - name: "Round 5: close in"
+    action: chase
+    dt: 30
+    x: 30
+  - name: "Round 5: fight"
+    action: attack
+    dt: 90
+  - name: "Round 6: bring the client here"
+    action: gather
+  - name: "Round 6: close in"
+    action: chase
+    dt: 30
+    x: 30
+  - name: "Round 6: fight"
+    action: attack
+    dt: 90
+  - name: "mph-002 Fight"
+    action: screen
+  - name: "Health after"
+    action: players
+  - name: "mph-003 After the fight"
+    action: screen
+    dt: 150
+  - name: "Wait for the client to leave"
+    action: wait
+    dt: 600
+  - action: quit
