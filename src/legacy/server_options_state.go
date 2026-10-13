@@ -95,4 +95,11 @@ func serverOptionsVisible(hidden int) int {
 // list head at 0x5D4594+1045956, with room for a 12-byte node only: the option texts follow at +12.
 var serverOptionsRules legacyListNode
 
-func serverOptionsListHead() unsafe.Pointer { return unsafe.Pointer(&serverOptionsRules) }
+// serverOptionsListHead returns the list head, initialized on first use: the options window clears it when it
+// opens, but a dedicated server writes the rules without ever opening it.
+func serverOptionsListHead() unsafe.Pointer {
+	if serverOptionsRules.next == nil {
+		listClear(&serverOptionsRules)
+	}
+	return unsafe.Pointer(&serverOptionsRules)
+}

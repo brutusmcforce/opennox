@@ -40,7 +40,7 @@ func mapGrowthDispatch(r *mapRoom, depth, halls, width int32, origin *mapRoom) u
 	return mapGrowthHall(r, depth, halls, width, origin)
 }
 func mapGrowthFrontiers() {
-	for r := populationRoom(*mapGrowthFrontier()); r != nil; r = populationRoom(r.Reserved64[5]) {
+	for r := populationRoom(*mapGrowthFrontier()); r != nil; r = populationRoom(r.GrowthNext) {
 		switch r.Kind {
 		case 1:
 			mapGrowthDispatch(r, 0, 0, 0, nil)
@@ -60,7 +60,7 @@ func mapGrowthInitial(cfg uint32) *mapRoom {
 			p := types.Ptf(0, float32(float64(int32(*populationWord(cfg, 68)))*32.526913-float64(r.Size.Y)+97.580734))
 			mapRoomSetPos(r, &p)
 			mapRoomAdd(r)
-			r.Reserved64[5] = *mapGrowthFrontier()
+			r.GrowthNext = *mapGrowthFrontier()
 			*mapGrowthFrontier() = mapRoomRaw(unsafe.Pointer(r))
 		}
 		return r
@@ -153,7 +153,7 @@ func mapGrowthInitial(cfg uint32) *mapRoom {
 	}
 	for i := mapRoomRandomInt(0, stride); i < int32(count); i += mapRoomRandomInt(1, stride) {
 		r := rooms[i]
-		r.Reserved64[5] = *mapGrowthFrontier()
+		r.GrowthNext = *mapGrowthFrontier()
 		*mapGrowthFrontier() = mapRoomRaw(unsafe.Pointer(r))
 	}
 	r := rooms[count-1]

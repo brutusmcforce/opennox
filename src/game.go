@@ -602,13 +602,7 @@ func initGameSession435CC0() error {
 	}
 	execConsoleCmdAuthed(ctx, "execrul autoexec.rul")
 	if isServer {
-		execServerCmd("set cycle on")
-		for _, cmd := range serverExec {
-			if len(cmd) == 0 {
-				continue
-			}
-			execServerCmd(cmd)
-		}
+		serverAutoexec()
 	}
 	legacy.Sub_4951C0()
 	legacy.Sub_465DE0(0)
@@ -695,6 +689,17 @@ func execConsoleCmdAuthed(ctx context.Context, cmd string) bool {
 		ctx = console.AsDedicated(ctx)
 	}
 	return noxConsole.Exec(ctx, cmd)
+}
+
+// serverAutoexec enables the map cycle and runs the -autoexec commands.
+func serverAutoexec() {
+	execServerCmd("set cycle on")
+	for _, cmd := range serverExec {
+		if len(cmd) == 0 {
+			continue
+		}
+		execServerCmd(cmd)
+	}
 }
 
 func execServerCmd(cmd string) {

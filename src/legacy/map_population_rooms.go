@@ -7,7 +7,7 @@ import (
 )
 
 func mapPopulationRoom(cfg, room uint32) {
-	for group := *populationWord(*populationWord(room, 372), 92); group != 0; group = *populationWord(group, 20) {
+	for group := *populationWord(mapRoomRaw(populationRoom(room).Decoration), 92); group != 0; group = *populationWord(group, 20) {
 		mapPopulationGroup(cfg, room, group)
 	}
 }

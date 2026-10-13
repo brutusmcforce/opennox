@@ -99,7 +99,7 @@ func mapPopulationExit(cfg uint32) uint32 {
 	if *populationWord(cfg, 472) == 0 {
 		return 1
 	}
-	for r := mapPopulationFarthest(); r != 0; r = *populationWord(r, 68) {
+	for r := mapPopulationFarthest(); r != 0; r = populationRoom(r).PopPrev {
 		if populationRoom(r).Kind != 1 {
 			continue
 		}
@@ -124,7 +124,7 @@ func mapPopulationFinish(cfg uint32) {
 			textFormatAll(0, (*uint16)(unsafe.Pointer(text)))
 		}
 	}
-	for p := mapPopulationStart(); p != 0; p = *populationWord(p, 64) {
+	for p := mapPopulationStart(); p != 0; p = populationRoom(p).PopNext {
 		mapPopulationProgress(157)
 		r := populationRoom(p)
 		if r.Decoration != nil && r.Flags&2 == 0 {

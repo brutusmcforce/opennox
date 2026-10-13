@@ -1,6 +1,7 @@
 package opennox
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"image/color"
@@ -227,6 +228,9 @@ func (s *Server) MainLoop() error {
 	if err := s.InitialMapLoad(); err != nil {
 		return err
 	}
+	// the client runs these in initGameSession435CC0, which a dedicated server skips
+	execConsoleCmdAuthed(context.Background(), "execrul autoexec.rul")
+	serverAutoexec()
 	legacy.Sub_43AA70()
 	s.mainloopInit()
 	for !mainloopStopError {

@@ -10,9 +10,9 @@ import (
 
 // Population records still cross the 32-bit C map-generator boundary. Keep
 // stored addresses as words, and use the existing room/object owners for them.
-func populationWord(p uint32, off int) *uint32 { return (*uint32)(unsafe.Add(mapRoomPointer(p), off)) }
+func populationWord(p uint32, off int) *uint32 { return rawAt[uint32](mapRoomPointer(p), off) }
 func populationFloat(p uint32, off int) *float32 {
-	return (*float32)(unsafe.Add(mapRoomPointer(p), off))
+	return rawAt[float32](mapRoomPointer(p), off)
 }
 func populationRoom(p uint32) *mapRoom         { return (*mapRoom)(mapRoomPointer(p)) }
 func populationObject(p uint32) *server.Object { return (*server.Object)(mapRoomPointer(p)) }

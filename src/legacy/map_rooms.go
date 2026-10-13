@@ -16,13 +16,17 @@ type mapRoom struct {
 	Pos, Size, Min, Max types.Pointf
 	Flags               uint32
 	Next, Prev          *mapRoom
-	Reserved64          [6]uint32
+	PopNext, PopPrev    uint32 // population order (pointer words), sorted by Distance
+	Reserved72          [3]uint32
+	GrowthNext          uint32 // growth frontier (pointer word)
 	Neighbors           [4][8]*mapRoom
 	Counts              [4]byte
 	Reserved220         uint32
 	Points              [16]types.Pointf
 	PointCount          byte
-	Reserved353         [11]byte
+	Reserved353         [3]byte
+	Distance            float32 // path distance from the start room
+	DistanceRatio       float32 // Distance relative to the farthest room
 	ThemeFlags          uint32
 	Exclusions          *mapRoomExclusion
 	Decoration          unsafe.Pointer
@@ -63,12 +67,12 @@ func mapRoomFloatWord(p unsafe.Pointer, off int) *float32 { return rawAt[float32
 // mapRoomRef reads a reference in a map generator record: the records keep the 32-bit layout of the original
 // game, so references are pointer words (see populationWord).
 func mapRoomRef(p unsafe.Pointer, off int) unsafe.Pointer {
-	return mapRoomPointer(*(*uint32)(unsafe.Add(p, off)))
+	return mapRoomPointer(*rawAt[uint32](p, off))
 }
 
 // setMapRoomRef writes a reference in a map generator record (see mapRoomRef).
 func setMapRoomRef(p unsafe.Pointer, off int, v unsafe.Pointer) {
-	*(*uint32)(unsafe.Add(p, off)) = mapRoomRaw(v)
+	*rawAt[uint32](p, off) = mapRoomRaw(v)
 }
 func mapRoomByte(p unsafe.Pointer, off int) *byte { return rawAt[byte](p, off) }
 

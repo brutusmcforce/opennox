@@ -68,9 +68,11 @@ func mapThemeFile(cfg, name uint32) uint32 {
 		return 0
 	}
 	f := mapRoomRaw(unsafe.Pointer(NewFileHandle(file.File)))
-	if err = file.SetKey(1); err != nil {
-		binfile.Log.Println(err)
-		return 0
+	if !mapThemeIsPlainText(file.File.File) {
+		if err = file.SetKey(1); err != nil {
+			binfile.Log.Println(err)
+			return 0
+		}
 	}
 	result := uint32(1)
 	for mapThemeNext(f) {
@@ -115,4 +117,21 @@ func mapThemeFile(cfg, name uint32) uint32 {
 		return 0
 	}
 	return 1
+}
+
+// mapThemeIsPlainText reports if a theme file is plain text. The game only reads encrypted themes, which no
+// released data includes; OpenNox also accepts plain text, so that themes can be written by hand. Encrypted data
+// is effectively random, so it never starts with 64 printable characters.
+func mapThemeIsPlainText(f *os.File) bool {
+	var buf [64]byte
+	n, _ := f.ReadAt(buf[:], 0)
+	if n == 0 {
+		return false
+	}
+	for _, c := range buf[:n] {
+		if (c < 0x20 || c > 0x7e) && c != '\t' && c != '\r' && c != '\n' {
+			return false
+		}
+	}
+	return true
 }
