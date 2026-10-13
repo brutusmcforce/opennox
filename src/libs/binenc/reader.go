@@ -163,8 +163,10 @@ func (r *Reader) ReadPointF32() (types.Pointf, bool) {
 	return v, true
 }
 
+// Align skips to the next 8-byte boundary, where the data starts at off in the aligned stream. It skips nothing if
+// the position is already aligned.
 func (r *Reader) Align(off int) bool {
-	_, ok := r.ReadNext(8 - (r.off+off)%8)
+	_, ok := r.ReadNext((8 - (r.off+off)%8) % 8)
 	return ok
 }
 
