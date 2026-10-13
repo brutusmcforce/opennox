@@ -131,7 +131,9 @@ func objectSummonDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	summon := layout.As[client.DrawableUnionSummon](unsafe.Pointer(&dr.Union)) // see drawableSummonStart
 	duration, child := uint32(summon.Duration), summon.Child
 	if age >= duration {
-		GetClient().Nox_xxx_spriteDelete_45A4B0(child)
+		if child != nil { // a summon effect that was not started by a summon (e.g. spawned by a script) has none
+			GetClient().Nox_xxx_spriteDelete_45A4B0(child)
+		}
 		GetClient().Nox_xxx_spriteDeleteStatic_45A4E0_drawable(dr)
 		return 0
 	}

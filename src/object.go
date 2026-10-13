@@ -100,6 +100,7 @@ func (s *Server) objectDeleteFinish(obj *server.Object) {
 	obj.SetOwner(nil)
 	s.Activators.ClearOnObject(obj)
 	legacy.Nox_xxx_decay_5116F0(obj)
+	legacy.MotionSentryForget(obj)
 	asObjectS(obj).dropAllItems()
 	s.ObjectDeleteLast(obj)
 	s.Objs.FreeObject(obj)

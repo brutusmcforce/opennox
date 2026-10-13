@@ -132,12 +132,17 @@ func temporaryMoonglow(u *server.Object) {
 func temporaryTelekinesis(u *server.Object) {
 	core := GetServer().S()
 	owner := u.ObjOwner
+	if owner == nil {
+		// without a caster (e.g. spawned by a script) there is nothing to move it
+		GetServer().DelayedDelete(u)
+		return
+	}
 	if owner.ObjFlags&0x8020 != 0 || core.Frame()-u.Field32 > 20*uint32(core.TickRate()) {
 		sound := core.Spells.DefByInd(127).GetAudio(2)
 		inventorySound(int(sound), u.ObjOwner, 0, 0)
 		GetServer().DelayedDelete(u)
 		Nox_xxx_spellBuffOff_4FF5B0(u.ObjOwner, 24)
-	} else {
+	} else if owner.ObjClass&4 != 0 { // only players have a cursor to follow
 		end := temporaryCursor(owner)
 		if core.MapTraceRayAt(owner.PosVec, end, nil, nil, 5) {
 			Nox_xxx_unitMove_4E7010(u, end)

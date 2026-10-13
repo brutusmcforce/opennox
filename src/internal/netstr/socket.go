@@ -68,6 +68,8 @@ func readFrom(debug bool, log *log.Logger, pc net.PacketConn, buf []byte) (int, 
 	return n, ap, nil
 }
 
+var errNoAddr = errors.New("no address")
+
 func WriteTo(pc net.PacketConn, buf []byte, addr netip.AddrPort) (int, error) {
 	return writeTo(DebugSockets, Log, pc, buf, addr)
 }
@@ -75,6 +77,10 @@ func WriteTo(pc net.PacketConn, buf []byte, addr netip.AddrPort) (int, error) {
 func writeTo(debug bool, log *log.Logger, pc net.PacketConn, buf []byte, addr netip.AddrPort) (int, error) {
 	if pc == nil {
 		return 0, errors.New("nil conn")
+	}
+	if !addr.IsValid() || addr.Port() == 0 {
+		// a connection without an address, e.g. of a player who already left: nothing to send to
+		return 0, errNoAddr
 	}
 	if debug {
 		log.Printf("send %s -> %s [%d]\n%x", pc.LocalAddr(), addr, len(buf), buf)

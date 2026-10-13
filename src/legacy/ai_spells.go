@@ -3,8 +3,6 @@ package legacy
 import (
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/common/layout"
-
 	flags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
@@ -89,8 +87,16 @@ func monsterCastRelated(u *server.Object) bool {
 	d := u.UpdateDataMonster()
 	return monsterSelectSpell(u, u, 0x80000000, &d.Field370_0, &d.Field370_2, &d.Field371, true)
 }
+
+// missileTarget returns the target of a homing missile: the second slot of its update data, both for spell
+// projectiles (SpellProjectileUpdateData.Field4) and pixies (PixieUpdateData.Target).
+func missileTarget(t *server.Object) *server.Object {
+	const off = unsafe.Offsetof(server.SpellProjectileUpdateData{}.Field4)
+	var _ = [1]struct{}{}[off-unsafe.Offsetof(server.PixieUpdateData{}.Target)] // same slot
+	return *(**server.Object)(unsafe.Add(t.UpdateData, off))
+}
 func monsterMagicMissile(t, u *server.Object) {
-	if t.Class()&1 != 0 && t.SubClass()&2 != 0 && *(**server.Object)(unsafe.Pointer(&layout.As[server.SpellProjectileUpdateData](t.UpdateData).Field4)) == u {
+	if t.Class()&1 != 0 && t.SubClass()&2 != 0 && t.UpdateData != nil && missileTarget(t) == u {
 		*memmap.PtrUint32(0x5D4594, 2489156) = 1
 	}
 }

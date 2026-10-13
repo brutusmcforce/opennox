@@ -219,7 +219,8 @@ func temporaryMagicMissile(u *server.Object) uint32 {
 	core := GetServer().S()
 	ud := u.UpdateDataMissile()
 	caster := ud.Owner
-	if caster.ObjFlags&0x20 != 0 || core.Frame()-u.Field32 > 3*uint32(core.TickRate()) {
+	// a missile without a caster (e.g. spawned by a script) ends like one whose caster is gone
+	if caster == nil || caster.ObjFlags&0x20 != 0 || core.Frame()-u.Field32 > 3*uint32(core.TickRate()) {
 		return u.CallCollideResult(0, 0)
 	}
 	target := &ud.Target

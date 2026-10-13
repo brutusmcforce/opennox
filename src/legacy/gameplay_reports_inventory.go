@@ -13,7 +13,7 @@ import (
 func gameplayReportModifiers(unit *server.Object) (out [4]byte, any bool) {
 	for i := range out {
 		out[i] = 255
-		if p := layout.As[server.ModifierInitData](unit.InitData).Modifiers[i]; p != nil {
+		if p := itemModifiers(unit)[i]; p != nil {
 			out[i] = byte(p.Ind4)
 			any = true
 		}

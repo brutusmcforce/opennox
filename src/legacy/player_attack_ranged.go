@@ -1,8 +1,6 @@
 package legacy
 
 import (
-	"unsafe"
-
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/types"
@@ -39,7 +37,7 @@ func attackProjectileVelocity(u, p *server.Object) {
 	p.Direction2 = u.Direction1
 }
 func attackShotEffects(u, it, p *server.Object) int {
-	for _, m := range unsafe.Slice((**server.ModifierEff)(it.InitData), 4)[2:] {
+	for _, m := range itemModifiers(it)[2:] {
 		if m == nil {
 			continue
 		}

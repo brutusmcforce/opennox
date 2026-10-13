@@ -136,7 +136,7 @@ func tradeOfferPacket(u, owner, item *server.Object, cost uint32) uint32 {
 		b[i] = 0xff
 	}
 	if uint32(item.ObjClass)&0x13001000 != 0 {
-		for i, m := range layout.As[server.ModifierInitData](item.InitData).Modifiers {
+		for i, m := range itemModifiers(item) {
 			if m != nil {
 				b[11+i] = byte(m.Ind4)
 			}

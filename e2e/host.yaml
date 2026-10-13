@@ -47,50 +47,35 @@ steps:
     action: click
     x: 544
     y: 460
-  - action: raw
-    ev: {type: key, pressed: true, key: 199}
-    dt: 30
-  - action: raw
-    ev: {type: key, key: 199}
-    dt: 2
-  - name: "host-005 Options closed"
+  - name: "host-005 Server options"
     action: screen
-    dt: 10
-  - action: raw
-    ev: {type: key, pressed: true, key: 199}
     dt: 30
-  - action: raw
-    ev: {type: key, key: 199}
-    dt: 2
-  - name: "host-006 Server options"
-    action: screen
-    dt: 10
   - name: "Advanced"
     action: click
     x: 950
     y: 226
-  - name: "host-007 Rule files"
+  - name: "host-006 Rule files"
     action: screen
     dt: 15
   - name: "Spells"
     action: click
     x: 460
     y: 108
-  - name: "host-008 Spells"
+  - name: "host-007 Spells"
     action: screen
     dt: 10
   - name: "Weapons"
     action: click
     x: 460
     y: 138
-  - name: "host-009 Weapons"
+  - name: "host-008 Weapons"
     action: screen
     dt: 10
   - name: "Armor"
     action: click
     x: 460
     y: 168
-  - name: "host-010 Armor"
+  - name: "host-009 Armor"
     action: screen
     dt: 10
   - name: "Done"
@@ -102,21 +87,21 @@ steps:
     x: 910
     y: 10
     dt: 10
-  - name: "host-011 General"
+  - name: "host-010 General"
     action: screen
     dt: 10
   - name: "Server sub-tab 2"
     action: click
     x: 909
     y: 36
-  - name: "host-012 Access"
+  - name: "host-011 Access"
     action: screen
     dt: 10
   - name: "Server sub-tab 3"
     action: click
     x: 978
     y: 36
-  - name: "host-013 Teams"
+  - name: "host-012 Teams"
     action: screen
     dt: 10
   - name: "Select Jack"
@@ -128,7 +113,7 @@ steps:
     x: 952
     y: 134
     dt: 5
-  - name: "host-014 Team assign"
+  - name: "host-013 Team assign"
     action: screen
     dt: 10
   - name: "Game tab"
@@ -141,16 +126,16 @@ steps:
     x: 818
     y: 380
     dt: 10
-  - name: "host-015 Loading"
+  - name: "host-014 Loading"
     action: screen
     dt: 30
-  - name: "host-016 Arena"
+  - name: "host-015 Arena"
     action: screen
     dt: 60
   - name: "Run around"
     action: run
     ang: 0.5
     dt: 40
-  - name: "host-017 Running"
+  - name: "host-016 Running"
     action: screen
   - action: quit

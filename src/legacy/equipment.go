@@ -66,7 +66,7 @@ func equipmentCheckStrength(u, it *server.Object) bool {
 // the return value even when it has no callback (or is nil).
 func equipmentEffects(it, u *server.Object, engage bool) int {
 	var result int
-	for _, m := range unsafe.Slice((**server.ModifierEff)(it.InitData), 4)[2:] {
+	for _, m := range itemModifiers(it)[2:] {
 		result = int(uintptr(unsafe.Pointer(m)))
 		if m != nil {
 			fn := m.Disengage116
@@ -89,7 +89,7 @@ func equipmentDefend(it *server.Object) float64 {
 		return 0
 	}
 	value := m.DamageCoeffOrArmor64
-	if effect := *(**server.ModifierEff)(it.InitData); effect != nil && effect.Defend76.Fnc != nil {
+	if effect := itemModifiers(it)[0]; effect != nil && effect.Defend76.Fnc != nil {
 		// The callback receives a writable float, never a pointer into a Go object.
 		p, free := alloc.New(float32(0))
 		defer free()

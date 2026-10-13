@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/color"
 	"log/slog"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -146,13 +147,23 @@ func runArgs(args []string, loopFunc func() error) (gerr error) {
 	}
 	if env.IsDevMode() || version.IsDev() || env.IsE2E() || *fPProf != "" {
 		go func() {
-			host := *fPProf
-			if host == "" {
-				host = "127.0.0.1:6060"
+			var (
+				l   net.Listener
+				err error
+			)
+			if host := *fPProf; host != "" {
+				l, err = net.Listen("tcp", host)
+			} else if l, err = net.Listen("tcp", "127.0.0.1:6060"); err != nil {
+				// the default port is taken by another instance (e.g. in a multiplayer test): use any free one
+				l, err = net.Listen("tcp", "127.0.0.1:0")
 			}
-			log.Printf("starting pprof server on %q", host)
-			if err := http.ListenAndServe(host, nil); err != nil {
+			if err != nil {
 				log.Printf("failed to start pprof: %v", err)
+				return
+			}
+			log.Printf("starting pprof server on %q", l.Addr().String())
+			if err := http.Serve(l, nil); err != nil {
+				log.Printf("pprof server: %v", err)
 			}
 		}()
 	}

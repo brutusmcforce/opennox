@@ -34,7 +34,7 @@ func attackPreEffects(t, u, it *server.Object, r *attackRecord) int {
 	if t.HasEnchant(23) || t.HasEnchant(27) {
 		return 1
 	}
-	for _, m := range unsafe.Slice((**server.ModifierEff)(it.InitData), 4)[2:] {
+	for _, m := range itemModifiers(it)[2:] {
 		if m != nil && m.AttackPreHit52.Fnc != nil {
 			server.CallModifierEffect5(m.AttackPreHit52.Fnc, m, it, u, t, unsafe.Pointer(r))
 		}
@@ -42,7 +42,7 @@ func attackPreEffects(t, u, it *server.Object, r *attackRecord) int {
 	return 0
 }
 func attackItemEffects(it, u *server.Object, r *attackRecord) int {
-	for _, m := range unsafe.Slice((**server.ModifierEff)(it.InitData), 4) {
+	for _, m := range itemModifiers(it) {
 		if m != nil && m.Attack40.Fnc != nil {
 			server.CallModifierEffect5(m.Attack40.Fnc, m, it, u, nil, unsafe.Pointer(r))
 		}

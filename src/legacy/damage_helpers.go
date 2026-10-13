@@ -43,7 +43,7 @@ func damageDefend(u, source, weapon *server.Object, damage *int32, kind int32) i
 		if it.ObjFlags&0x100 == 0 {
 			continue
 		}
-		for _, m := range unsafe.Slice((**server.ModifierEff)(it.InitData), 4)[2:] {
+		for _, m := range itemModifiers(it)[2:] {
 			if m != nil && m.Defend76.Fnc != nil {
 				data, free := alloc.New([2]int32{})
 				*data = [2]int32{*damage, kind}
@@ -57,7 +57,7 @@ func damageDefend(u, source, weapon *server.Object, damage *int32, kind int32) i
 	return result
 }
 func damagePre(u, source, weapon *server.Object, damage *int32) int32 {
-	for _, m := range unsafe.Slice((**server.ModifierEff)(weapon.InitData), 4) {
+	for _, m := range itemModifiers(weapon) {
 		if m != nil && m.AttackPreDmg64.Fnc != nil {
 			server.CallModifierEffect5(m.AttackPreDmg64.Fnc, m, weapon, source, u, unsafe.Pointer(damage))
 		}
@@ -122,7 +122,7 @@ func damageDurability(it, holder, source, weapon *server.Object, value float32, 
 		return
 	}
 	fraction := &it.UpdateDataWeaponArmor().Roundoff
-	if m := unsafe.Slice((**server.ModifierEff)(it.InitData), 4)[1]; m != nil && m.Defend76.Fnc != nil {
+	if m := itemModifiers(it)[1]; m != nil && m.Defend76.Fnc != nil {
 		data, free := alloc.New(float32(0))
 		*data = value
 		server.CallModifierEffect6(m.Defend76.Fnc, m, it, holder, weapon, source, unsafe.Pointer(data))

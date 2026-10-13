@@ -109,3 +109,14 @@ func motionDeactivate(u *server.Object) {
 		collisionRemoveActive(u)
 	}
 }
+
+// MotionSentryForget removes a deleted object from the sentry globe list. A globe normally unlinks itself in
+// its next update; one deleted before that would stay in the list and be read after its memory is reused.
+func MotionSentryForget(u *server.Object) {
+	for p := motionObject(motionSentryHead); p != nil; p = p.InvNextItem {
+		if p == u {
+			motionSentryRemove(u)
+			return
+		}
+	}
+}

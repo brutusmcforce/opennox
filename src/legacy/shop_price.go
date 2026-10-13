@@ -50,7 +50,7 @@ func shopPrice(mode int, s *shopSession, u *server.Object) int32 {
 		}
 	}
 	if class&0x13001000 != 0 {
-		for _, mod := range unsafe.Slice((**server.ModifierEff)(u.InitData), 4) {
+		for _, mod := range itemModifiers(u) {
 			if mod == nil {
 				continue
 			}
@@ -142,7 +142,7 @@ func shopStockMatches(u *server.Object, e *server.ShopStockEntry) int32 {
 	}
 	match := int32(1)
 	if uint32(u.ObjClass)&0x13001000 != 0 {
-		mods := unsafe.Slice((**server.ModifierEff)(u.InitData), 4)
+		mods := itemModifiers(u)
 		for i, mod := range mods {
 			if mod != e.Modifiers[i] {
 				match = 0

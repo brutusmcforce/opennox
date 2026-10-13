@@ -101,7 +101,7 @@ func questEligibilityItem(u *server.Object) bool {
 	return true
 }
 func questEligibilityMods(u *server.Object) []*server.ModifierEff {
-	return unsafe.Slice((**server.ModifierEff)(u.InitData), 4)
+	return itemModifiers(u)
 }
 func questEligibilityMask(u *server.Object) (uint32, bool) {
 	core := GetServer().S()

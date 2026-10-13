@@ -72,7 +72,7 @@ steps:
     dt: 60
   - name: "Fight back"
     action: attack
-    dt: 600
+    dt: 1200
   - name: "mpc-007 Fought"
     action: screen
   - name: "mpc-008"

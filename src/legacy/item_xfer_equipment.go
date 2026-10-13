@@ -20,7 +20,7 @@ func itemXferModifiers(r objectXferStream, u *server.Object) {
 		}
 		stateAttributes(u, &attrs)
 	} else {
-		for _, m := range (*[4]*server.ModifierEff)(u.InitData) {
+		for _, m := range itemModifiers(u) {
 			if m == nil {
 				r.byte(0)
 				continue

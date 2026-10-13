@@ -163,6 +163,10 @@ func generatorUpdate(u *server.Object) int8 {
 					n++
 				}
 			}
+			if n == 0 {
+				// nothing to spawn at this level (e.g. a generator created without a monster list)
+				return int8(result)
+			}
 			descriptor := sources[core.Rand.Logic.IntClamp(0, n-1)]
 			var p types.Pointf
 			result = uint32(generatorPick(u, &p, descriptor))

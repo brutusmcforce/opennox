@@ -178,7 +178,7 @@ func stateEqual(u, t *server.Object) bool {
 		return false
 	}
 	if u.ObjClass&0x13001000 != 0 {
-		if layout.As[server.ModifierInitData](u.InitData).Modifiers != layout.As[server.ModifierInitData](t.InitData).Modifiers {
+		if [4]*server.ModifierEff(itemModifiers(u)) != [4]*server.ModifierEff(itemModifiers(t)) {
 			return false
 		}
 	}

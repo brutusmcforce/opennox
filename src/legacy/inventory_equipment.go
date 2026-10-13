@@ -75,13 +75,13 @@ func inventoryAmmoPickup(u, it *server.Object, arg, equip int) int {
 	bits := uint32(nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(it)))
 	if u.ObjClass&4 != 0 && bits&0x82 != 0 {
 		data := it.UseDataAmmo()
-		mods := layout.As[server.ModifierInitData](it.InitData).Modifiers
+		mods := [4]*server.ModifierEff(itemModifiers(it))
 		for old := u.InvFirstItem; old != nil; old = old.InvNextItem {
 			if old.TypeInd != it.TypeInd || old.ObjClass&0x1000000 == 0 || uint32(nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(old)))&bits == 0 {
 				continue
 			}
 			prev := old.UseDataAmmo()
-			same := layout.As[server.ModifierInitData](old.InitData).Modifiers == mods
+			same := [4]*server.ModifierEff(itemModifiers(old)) == mods
 			if !same || prev.Infinite != 0 || int(data.MaxCharges)+int(prev.MaxCharges) > 250 {
 				continue
 			}
@@ -111,7 +111,7 @@ func inventoryOblivionPickup(u, it *server.Object, arg, equip int) int {
 	return rv
 }
 func inventoryPlain(it *server.Object) bool {
-	for _, v := range layout.As[server.ModifierInitData](it.InitData).Modifiers {
+	for _, v := range itemModifiers(it) {
 		if v != nil {
 			return false
 		}

@@ -285,6 +285,9 @@ func (c *Client) nox_xxx_clientDeleteSprite_476F10_drawable(dr *client.Drawable)
 }
 
 func (c *Client) Nox_xxx_spriteDelete_45A4B0(dr *client.Drawable) int {
+	if dr == nil {
+		return c.Objs.Count
+	}
 	c.sub_495B00(dr)
 	c.Objs.Alloc.FreeObjectFirst(dr)
 	c.Objs.Count--

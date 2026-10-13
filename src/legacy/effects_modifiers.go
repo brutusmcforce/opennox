@@ -18,7 +18,7 @@ func effectsInventory(u *server.Object, mask byte) int {
 		if it.ObjFlags&0x100 == 0 || it.ObjClass&0x13001000 == 0 {
 			continue
 		}
-		for _, m := range unsafe.Slice((**server.ModifierEff)(it.InitData), 4) {
+		for _, m := range itemModifiers(it) {
 			if m == nil {
 				continue
 			}
@@ -65,7 +65,7 @@ func effectsProtection(u *server.Object, fn unsafe.Pointer, buff int, key string
 	}
 	var sum float64
 	add := func(it *server.Object) {
-		for _, m := range unsafe.Slice((**server.ModifierEff)(it.InitData), 4) {
+		for _, m := range itemModifiers(it) {
 			if m != nil && m.Engage112 == fn {
 				sum += float64(m.EngageFloat120)
 			}
@@ -146,7 +146,7 @@ func effectsGripSearch(a, b, it, target *server.Object) int {
 	if it == nil || it.ObjClass&0x3001000 == 0 {
 		return 0
 	}
-	for _, m := range unsafe.Slice((**server.ModifierEff)(it.InitData), 4)[2:] {
+	for _, m := range itemModifiers(it)[2:] {
 		if m != nil && m.DefendCollide88.Fnc == modifierKey(modifierIDGripEffect) {
 			var v int32
 			effectsGrip(m, &v, false)
@@ -252,7 +252,7 @@ func effectsReadiness(it *server.Object) int32 {
 	if it == nil || it.ObjClass&0x13001000 == 0 {
 		return 0
 	}
-	for _, m := range unsafe.Slice((**server.ModifierEff)(it.InitData), 4)[2:] {
+	for _, m := range itemModifiers(it)[2:] {
 		if m != nil && m.Attack40.Fnc == modifierKey(modifierIDReadinessEffect) {
 			return m.Attack40.Val
 		}
@@ -266,7 +266,7 @@ func effectsRechargeRate(it *server.Object) int32 {
 	if it.ObjClass&0x1000 != 0 && it.ObjSubClass&0x4000000 != 0 {
 		return floatToInt32(float32(GetServer().S().Balance.Float("OblivionStaffRechargeRate")))
 	}
-	for _, m := range unsafe.Slice((**server.ModifierEff)(it.InitData), 4)[2:] {
+	for _, m := range itemModifiers(it)[2:] {
 		if m != nil && m.Attack40.Fnc == modifierKey(modifierIDReplenishmentEffect) {
 			return m.Attack40.Val
 		}
