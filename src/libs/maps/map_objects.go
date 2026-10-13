@@ -150,6 +150,14 @@ func (sect *Objects) ReadObjects(toc *ObjectsTOC, reg xfer.ObjectRegistry) ([]Xf
 		}
 		tmap[t.Ind] = t.Type
 	}
+	if reg == nil {
+		reg = xfer.DefaultRegistry
+	}
+	// child objects (inventories) refer to the TOC too
+	treg := &xfer.TOCRegistry{Base: reg, TOC: make(map[int]string, len(tmap))}
+	for ind, typ := range tmap {
+		treg.TOC[int(ind)] = typ
+	}
 	r := binenc.NewReader(sect.Data)
 	var out []Xfer
 	for {
@@ -173,16 +181,47 @@ func (sect *Objects) ReadObjects(toc *ObjectsTOC, reg xfer.ObjectRegistry) ([]Xf
 			return out, fmt.Errorf("object TOC entry is missing: %d", ind)
 		}
 		r2 := binenc.NewReader(data)
-		x, err := xfer.DecodeByObjectType(reg, typ, r2)
+		x, err := xfer.DecodeByObjectType(treg, typ, r2)
 		if err != nil {
-			return out, err
+			return out, fmt.Errorf("object %d (%s): %w", len(out), typ, err)
 		}
 		out = append(out, Xfer{
 			Type: typ,
 			Xfer: x,
 		})
 		if r2.Remaining() != 0 {
-			return out, fmt.Errorf("partial decoding of xfer %s(%T)", typ, x)
+			return out, fmt.Errorf("partial decoding of xfer %s(%T): %d bytes left", typ, x, r2.Remaining())
+		}
+		// the inventory follows as more records
+		if err := xfer.ReadChildren(treg, x, r, +2); err != nil {
+			return out, fmt.Errorf("object %d (%s): %w", len(out)-1, typ, err)
 		}
 	}
+}
+
+// ReadObjects decodes the map's objects, if the map was read with its sections kept as unknown sections (see
+// Reader.ReadSections). A nil registry uses the default one.
+func (m *Map) ReadObjects(reg xfer.ObjectRegistry) ([]Xfer, error) {
+	var (
+		toc  ObjectsTOC
+		objs Objects
+		ok   bool
+	)
+	for _, s := range m.Unknown {
+		switch s.Name {
+		case toc.MapSection():
+			if err := toc.UnmarshalBinary(s.Data); err != nil {
+				return nil, err
+			}
+		case objs.MapSection():
+			if err := objs.UnmarshalBinary(s.Data); err != nil {
+				return nil, err
+			}
+			ok = true
+		}
+	}
+	if !ok {
+		return nil, nil
+	}
+	return objs.ReadObjects(&toc, reg)
 }

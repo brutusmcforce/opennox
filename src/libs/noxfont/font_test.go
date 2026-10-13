@@ -18,10 +18,10 @@ import (
 func TestFonts(t *testing.T) {
 	path := noxtest.DataPath(t)
 	hashes := []string{
-		"cbd1d358dc83570f64184a4ac562af12",
-		"1539531c8ab5044fd73d89d8729e0e2f",
-		"cbd1d358dc83570f64184a4ac562af12",
-		"48ab55b27889f81a909b28be5fda5642",
+		"34f4189ac58fd184b9fb71fe6300dfaf",
+		"8e2d5ee796c8c48043ddd7e4e02194d3",
+		"34f4189ac58fd184b9fb71fe6300dfaf",
+		"d9dd152bdb61bd06e11c4089609fe730",
 	}
 	for i, name := range []string{
 		DefaultFile, LargeFile, SmallFile, NumbersFile,

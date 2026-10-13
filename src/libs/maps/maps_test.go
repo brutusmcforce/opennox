@@ -224,17 +224,37 @@ func TestMapWrite(t *testing.T) {
 			must.NoError(t, err)
 			t.Logf("map crc: 0x%x", rd.Map().CRC())
 
-			var got buffer
-			wr, err := maps.NewWriter(&got, rd.Header())
-			must.NoError(t, err)
-			err = wr.WriteRawSections(sect)
-			must.NoError(t, err)
-			err = wr.Close()
-			must.NoError(t, err)
-			if bexp, bgot := exp.Bytes(), got.Bytes(); !bytes.Equal(bexp, bgot) {
+			write := func(h maps.Header) []byte {
+				var got buffer
+				wr, err := maps.NewWriter(&got, h)
+				must.NoError(t, err)
+				err = wr.WriteRawSections(sect)
+				must.NoError(t, err)
+				err = wr.Close()
+				must.NoError(t, err)
+				return got.Bytes()
+			}
+
+			// keeping the map's CRC, the content written back is the same file
+			h := rd.Header()
+			h.CRC = rd.Map().CRC()
+			if bexp, bgot := exp.Bytes(), write(h); !bytes.Equal(bexp, bgot) {
 				must.Eq(t, decodeMapBytes(bexp), decodeMapBytes(bgot))
 				must.Eq(t, bexp, bgot)
 			}
+
+			// with a CRC the writer computes, only the CRC differs, and it reads back
+			bgot := write(rd.Header())
+			rd2, err := maps.NewReader(bytes.NewReader(bgot))
+			must.NoError(t, err)
+			must.NotEq(t, 0, rd2.Map().CRC())
+			sect2, err := rd2.ReadSectionsRaw()
+			must.NoError(t, err)
+			must.Eq(t, sect, sect2)
+			dexp, dgot := decodeMapBytes(exp.Bytes()), decodeMapBytes(bgot)
+			const crcOff = 8 // the CRC's block follows the magic's
+			must.Eq(t, dexp[:crcOff], dgot[:crcOff])
+			must.Eq(t, dexp[crcOff+4:], dgot[crcOff+4:])
 		})
 	}
 }

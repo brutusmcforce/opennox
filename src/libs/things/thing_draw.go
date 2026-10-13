@@ -185,6 +185,35 @@ type PlayerDraw struct {
 
 func (PlayerDraw) isDraw() {}
 
+// SlaveDraw shows the image the object's state selects (levers, switches).
+type SlaveDraw struct {
+	Imgs []ImageRef `json:"slave"`
+}
+
+func (SlaveDraw) isDraw() {}
+
+// BoulderDraw shows the image of the boulder's rolling.
+type BoulderDraw struct {
+	Imgs []ImageRef `json:"boulder"`
+}
+
+func (BoulderDraw) isDraw() {}
+
+// AnimState is an animation of AnimateStateDraw. Flags select the state it is for.
+type AnimState struct {
+	Flags uint32    `json:"flags"`
+	Name  string    `json:"name,omitempty"`
+	Sound string    `json:"sound,omitempty"`
+	Anim  Animation `json:"anim"`
+}
+
+// AnimateStateDraw has an animation for each state of the object (pits, for example).
+type AnimateStateDraw struct {
+	States []AnimState `json:"states"`
+}
+
+func (AnimateStateDraw) isDraw() {}
+
 type UnknownDraw struct {
 	Type string `json:"unknown"`
 }
@@ -526,10 +555,7 @@ func (f *Reader) readThingDraw() (Draw, error) {
 			return MonsterGeneratorDraw{Anims: anis}, nil
 		}
 	case "AnimateStateDraw":
-		if err := f.skipThingAnimStateDraw(); err != nil {
-			return nil, err // FIXME
-		}
-		return UnknownDraw{Type: dname}, nil
+		return f.readThingAnimStateDraw()
 	case "VectorAnimateDraw", "ReleasedSoulDraw":
 		if err := f.skipThingAnimVectorDraw(); err != nil {
 			return nil, err // FIXME
@@ -552,7 +578,16 @@ func (f *Reader) readThingDraw() (Draw, error) {
 			return nil, err
 		}
 		return d, nil
-	case "SlaveDraw", "BoulderDraw", "ArrowDraw", "WeakArrowDraw", "HarpoonDraw":
+	case "SlaveDraw", "BoulderDraw":
+		imgs, err := f.readImageRefs8()
+		if err != nil {
+			return nil, err
+		}
+		if dname == "SlaveDraw" {
+			return SlaveDraw{Imgs: imgs}, nil
+		}
+		return BoulderDraw{Imgs: imgs}, nil
+	case "ArrowDraw", "WeakArrowDraw", "HarpoonDraw":
 		if err := f.skipImageRefs8(); err != nil {
 			return nil, err // FIXME
 		}
@@ -562,4 +597,33 @@ func (f *Reader) readThingDraw() (Draw, error) {
 		}
 	}
 	return UnknownDraw{Type: dname}, nil
+}
+
+func (f *Reader) readThingAnimStateDraw() (AnimateStateDraw, error) {
+	var d AnimateStateDraw
+	for {
+		cmd, err := f.readSect()
+		if err != nil {
+			return d, err
+		}
+		if cmd == "END " {
+			return d, nil
+		}
+		var st AnimState
+		if st.Flags, err = f.readU32(); err != nil {
+			return d, err
+		}
+		if st.Name, err = f.readString8(); err != nil {
+			return d, err
+		}
+		if st.Sound, err = f.readString8(); err != nil {
+			return d, err
+		}
+		anim, err := f.readAnimation()
+		if err != nil {
+			return d, err
+		}
+		st.Anim = *anim
+		d.States = append(d.States, st)
+	}
 }

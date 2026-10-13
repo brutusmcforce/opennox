@@ -138,24 +138,6 @@ func (r *Reader) readString8() string {
 	return r.readStringFixed(int(n))
 }
 
-func (r *Reader) readAlignedString8() string {
-	if r.error() != nil {
-		return ""
-	}
-	if r.limited {
-		r.err = errors.New("trying to align a limited reader")
-		return ""
-	}
-	s := r.readString8()
-	if r.error() != nil {
-		return ""
-	}
-	if err := r.cr.Align(); err != nil {
-		r.err = err
-	}
-	return s
-}
-
 func (r *Reader) readHeader() error {
 	r.m = &Map{}
 	r.m.magic = r.readU32()
@@ -207,8 +189,31 @@ func (r *Reader) nextSection() (string, error) {
 		r.err = nil
 		r.r = r.cr
 	}
-	sect := r.readAlignedString8()
+	// The sections end with an empty name in a block of its own, or (in most official maps) with the end of the
+	// file. The padding of the last section's block reads as an empty name too.
+	atBlock := r.cr.Buffered()%crypt.Block == 0
+	n := r.readU8()
 	if err := r.error(); err != nil {
+		return "", err
+	}
+	if n == 0 && !atBlock {
+		if err := r.cr.Align(); err != nil {
+			return "", io.EOF
+		}
+		n = r.readU8()
+		if r.error() != nil {
+			return "", io.EOF
+		}
+	}
+	if n == 0 {
+		r.m.end = true
+		return "", io.EOF
+	}
+	sect := r.readStringFixed(int(n))
+	if err := r.error(); err != nil {
+		return "", err
+	}
+	if err := r.cr.Align(); err != nil {
 		return "", err
 	}
 	size := r.readU64()

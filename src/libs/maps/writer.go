@@ -13,6 +13,7 @@ type Writer struct {
 	cw     *crypt.Writer
 	crc    uint32
 	crcOff int64
+	end    bool
 }
 
 type WriterAt interface {
@@ -23,6 +24,12 @@ type WriterAt interface {
 type Header struct {
 	Magic uint32
 	Offs  image.Point
+	// CRC, if not zero, is stored instead of the checksum the writer computes. The game does not recompute it; it only
+	// compares the stored value of the server's map with the client's. Its own checksum depends on how the game split
+	// its writes, which cannot be reproduced, so set it (to Map.CRC) only to write a map's content back unchanged.
+	CRC uint32
+	// End is set if the sections end with an empty section name, as the game writes them (most official maps lack it).
+	End bool
 }
 
 func NewWriter(w WriterAt, h Header) (*Writer, error) {
@@ -30,7 +37,7 @@ func NewWriter(w WriterAt, h Header) (*Writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	wr := &Writer{cw: cw}
+	wr := &Writer{cw: cw, crc: h.CRC, end: h.End}
 	if err := wr.writeHeader(h); err != nil {
 		return nil, err
 	}
@@ -70,11 +77,24 @@ func (w *Writer) Flush() error {
 }
 
 func (w *Writer) Close() error {
+	if w.end {
+		// the game writes it in a block of its own
+		if err := w.cw.Flush(); err != nil {
+			return err
+		}
+		if err := w.cw.WriteU8(0); err != nil {
+			return err
+		}
+	}
 	if err := w.cw.Flush(); err != nil {
 		return err
 	}
 	if w.crcOff != 0 {
-		if err := w.cw.WriteU32At(w.cw.CRC(), w.crcOff); err != nil {
+		crc := w.crc
+		if crc == 0 {
+			crc = w.cw.CRC()
+		}
+		if err := w.cw.WriteU32At(crc, w.crcOff); err != nil {
 			return err
 		}
 	}

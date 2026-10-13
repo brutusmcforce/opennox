@@ -95,3 +95,65 @@ type KeyboardEvent struct {
 }
 
 func (e *KeyboardEvent) isInputEvent() {}
+
+// GamepadButton is a game controller button, in the layout of an Xbox controller (A is the bottom face button).
+type GamepadButton int
+
+const (
+	GamepadA = GamepadButton(iota)
+	GamepadB
+	GamepadX
+	GamepadY
+	GamepadBack
+	GamepadGuide
+	GamepadStart
+	GamepadLeftStick
+	GamepadRightStick
+	GamepadLeftShoulder
+	GamepadRightShoulder
+	GamepadDpadUp
+	GamepadDpadDown
+	GamepadDpadLeft
+	GamepadDpadRight
+)
+
+// GamepadAxis is a game controller stick axis or trigger.
+type GamepadAxis int
+
+const (
+	GamepadLeftX = GamepadAxis(iota)
+	GamepadLeftY
+	GamepadRightX
+	GamepadRightY
+	GamepadTriggerLeft
+	GamepadTriggerRight
+)
+
+var _ InputEvent = &GamepadButtonEvent{}
+
+type GamepadButtonEvent struct {
+	Button  GamepadButton
+	Pressed bool
+}
+
+func (e *GamepadButtonEvent) isInputEvent() {}
+
+var _ InputEvent = &GamepadAxisEvent{}
+
+// GamepadAxisEvent is a new position of a stick axis (-1 to 1; down and right are positive) or a trigger (0 to 1).
+type GamepadAxisEvent struct {
+	Axis  GamepadAxis
+	Value float32
+}
+
+func (e *GamepadAxisEvent) isInputEvent() {}
+
+var _ InputEvent = &GamepadDeviceEvent{}
+
+// GamepadDeviceEvent is sent when a game controller is connected or disconnected.
+type GamepadDeviceEvent struct {
+	Name      string
+	Connected bool
+}
+
+func (e *GamepadDeviceEvent) isInputEvent() {}

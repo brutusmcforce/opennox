@@ -64,12 +64,17 @@ type Image struct {
 	// Palette index value 0 indicates no material, meaning that color can be read from NRGBA directly.
 	// All other palette indexes are moved by +1, comparing to the ones passed expected by the engine.
 	Material *image.Paletted
+	// Cover is set for edge images (type 1): the pixels where the neighboring floor tile shows. The other opaque
+	// pixels are the edge's own, and the tile underneath shows through the transparent ones.
+	Cover *image.Alpha
 }
 
 func Decode(r io.Reader, typ byte) (*Image, error) {
 	switch typ {
 	case 0:
 		return readTile(r, typ)
+	case 1:
+		return readEdge(r, typ)
 	case 2, 7:
 		return readSprite2(r, typ)
 	case 3, 4, 5, 6, 8:
@@ -101,7 +106,8 @@ func readSpriteHeader(r io.Reader, typ byte) (*ImageMeta, image.Point, error) {
 	offsY := int(endiness.Uint32(b[12:]))
 	offs := image.Pt(offsX, offsY)
 	// one byte ignored
-	if width <= 0 || width > 1024 || height <= 0 || height > 1024 {
+	// empty images (0x0) exist: invisible walls use one
+	if width < 0 || width > 1024 || height < 0 || height > 1024 {
 		return nil, image.Point{}, fmt.Errorf("invalid image size: %dx%d", width, height)
 	}
 	return &ImageMeta{
@@ -286,6 +292,68 @@ func readTile(r io.Reader, typ byte) (*Image, error) {
 		}
 	}
 	return img, nil
+}
+
+// tileRow returns where row y of a floor tile (a diamond) starts and how many pixels it has.
+func tileRow(y int) (x, n int) {
+	if y >= tileSize/2 {
+		y = tileSize - 1 - y
+	}
+	return tileSize/2 - y, 2*y + 1
+}
+
+// readEdge reads an edge image: a mask the size of a floor tile that blends a neighboring tile into a tile. It is
+// stored as the first and the last row it covers, then each row as runs of: pixels to keep (1), pixels of its own (2)
+// and pixels of the neighboring tile (3).
+func readEdge(r io.Reader, typ byte) (*Image, error) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	if len(data) < 2 {
+		return nil, io.ErrUnexpectedEOF
+	}
+	first, last := int(data[0]), int(data[1])
+	data = data[2:]
+	if first > last || last >= tileSize {
+		return nil, fmt.Errorf("invalid edge rows: %d-%d", first, last)
+	}
+	rect := image.Rect(0, 0, tileSize, tileSize)
+	rgba := image.NewNRGBA(rect)
+	cover := image.NewAlpha(rect)
+	for y := first; y <= last; y++ {
+		x, count := tileRow(y)
+		for count > 0 {
+			if len(data) < 2 {
+				return nil, io.ErrUnexpectedEOF
+			}
+			op, n := data[0], int(data[1])
+			data = data[2:]
+			if n > count {
+				return nil, fmt.Errorf("edge run too long: %d > %d (row %d)", n, count, y)
+			}
+			switch op {
+			case 1:
+			case 2:
+				if len(data) < 2*n {
+					return nil, io.ErrUnexpectedEOF
+				}
+				for i := 0; i < n; i++ {
+					rgba.SetNRGBA(x+i, y, noxcolor.RGBA5551(binary.LittleEndian.Uint16(data[2*i:])).ColorNRGBA())
+				}
+				data = data[2*n:]
+			case 3:
+				for i := 0; i < n; i++ {
+					cover.SetAlpha(x+i, y, color.Alpha{A: 0xff})
+				}
+			default:
+				return nil, fmt.Errorf("invalid edge op: %d (row %d)", op, y)
+			}
+			x += n
+			count -= n
+		}
+	}
+	return &Image{Image: rgba, ImageMeta: ImageMeta{Type: typ}, Cover: cover}, nil
 }
 
 func asNRGBA(img image.Image) *image.NRGBA {

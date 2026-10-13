@@ -92,8 +92,9 @@ func (c *Client) disableSysCursor() {
 }
 
 // hasSysCursor checks if the system cursor is used instead of drawing the cursor.
+// While a game controller moves the cursor, the game draws it (the system cursor stays at the mouse position).
 func (c *Client) hasSysCursor() bool {
-	return c.sysCursor.scr != nil
+	return c.sysCursor.scr != nil && !c.gamepadCursor()
 }
 
 // drawCursorImage draws a cursor sprite at a given position, or records it for the system cursor.
@@ -137,6 +138,15 @@ func (c *Client) sysCursorScale() float64 {
 func (c *Client) updateSysCursor() {
 	st := &c.sysCursor
 	if st.scr == nil {
+		return
+	}
+	if c.gamepadCursor() {
+		// the game draws the cursor
+		if st.cur != nil {
+			st.cur = nil
+			st.scr.SetCursor(nil)
+		}
+		st.hasWant = false
 		return
 	}
 	var cur seat.Cursor

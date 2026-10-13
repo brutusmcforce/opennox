@@ -74,6 +74,7 @@ type Client struct {
 	srv                    *Server
 	r                      *NoxRender
 	ctrl                   *CtrlEventHandler
+	gamepad                *gamepadSeat
 	mapsend                clientMapDownload
 	guiAdv                 guiAdvOptions
 	guiFPS                 guiFPS

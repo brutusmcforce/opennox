@@ -67,6 +67,12 @@ func New(log *slog.Logger, title string, sz image.Point) (*Window, error) {
 		sdl.Quit()
 		return nil, err
 	}
+	// game controllers: SDL reports the connected ones as added devices; E2E tests inject their own events
+	if !env.IsE2E() {
+		if err := sdl.InitSubSystem(sdl.INIT_GAMECONTROLLER); err != nil {
+			log.Warn("game controllers are not available", "err", err)
+		}
+	}
 	return h, nil
 }
 
@@ -82,12 +88,14 @@ type Window struct {
 	mpos     image.Point
 	onResize []func(sz image.Point)
 	onInput  []func(ev seat.InputEvent)
+	pads     map[sdl.JoystickID]*sdl.GameController
 }
 
 func (win *Window) Close() error {
 	if win.win == nil {
 		return nil
 	}
+	win.closeGamepads()
 	win.gl.Close()
 	err := win.win.Destroy()
 	win.win = nil

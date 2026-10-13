@@ -85,6 +85,9 @@ func (c *Client) initSeat(sz image.Point) error {
 	}
 
 	c.initSysCursor(c.Seat)
+	// game controllers act as mouse and keyboard (after the system cursor, which needs the real seat)
+	c.gamepad = newGamepadSeat(c.Seat, c)
+	c.Seat = c.gamepad
 
 	inp := input.New(c.Log, c.Seat, false, c.Strings().Lang())
 	c.Inp = inp

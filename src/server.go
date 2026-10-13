@@ -1012,7 +1012,10 @@ func (s *Server) nox_xxx_mapReadSetFlags_4CF990() {
 	}
 	mapType := nox_xxx_mapGetTypeMB_4CFFA0(memmap.PtrOff(0x973F18, 2408))
 	vv := memmap.Int32(0x973F18, 3800)
-	if vv&1 != 0 {
+	// Generated maps allow both coop and quest (flags 3). Coop is the single player mode: a dedicated server
+	// has no local player for it (joining clients see a black screen), and a quest game should stay one.
+	preferQuest := vv >= 0 && vv&2 != 0 && (isDedicatedServer || noxflags.HasGame(noxflags.GameModeQuest))
+	if vv&1 != 0 && !preferQuest {
 		gameLog.Println("setting coop mode")
 		noxflags.UnsetGame(noxflags.GameModeMask)
 		s.createCoopTeam()

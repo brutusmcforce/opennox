@@ -750,18 +750,19 @@ func (c *Client) nox_xxx_cliLight16_469140(dr *client.Drawable) {
 			(yy<<16)/common.GridStep,
 		)
 		v19 := (rad << 16) / common.GridStep
-		v22 := sub_4C1C60(v19, 16*int(memmap.Uint32(0x85B3FC, 12260+4*uintptr(uint16(dr.LightDir+0x4000)>>4))))
-		v23 := sub_4C1C60(v19, 16*int(memmap.Uint32(0x85B3FC, 12260+4*uintptr(uint16(dr.LightDir)>>4))))
+		// the sine table is signed (see sight.go); unsigned, cones in half of the directions were wrong on 64-bit
+		v22 := sub_4C1C60(v19, 16*int(memmap.Int32(0x85B3FC, 12260+4*uintptr(uint16(dr.LightDir+0x4000)>>4))))
+		v23 := sub_4C1C60(v19, 16*int(memmap.Int32(0x85B3FC, 12260+4*uintptr(uint16(dr.LightDir)>>4))))
 
 		v22b := uint16(dr.LightDir) + uint16(dr.LightPenumbra)
 		a3 := a1.Add(image.Pt(v22, v23))
-		v44 := sub_4C1C60(v19, 16*int(memmap.Uint32(0x85B3FC, 12260+4*uintptr((v22b+0x4000)>>4))))
-		v24 := sub_4C1C60(v19, 16*int(memmap.Uint32(0x85B3FC, 12260+4*uintptr(v22b>>4))))
+		v44 := sub_4C1C60(v19, 16*int(memmap.Int32(0x85B3FC, 12260+4*uintptr((v22b+0x4000)>>4))))
+		v24 := sub_4C1C60(v19, 16*int(memmap.Int32(0x85B3FC, 12260+4*uintptr(v22b>>4))))
 
 		v22b = uint16(dr.LightDir) + uint16(dr.LightPenumbra)
 		a2 := a1.Add(image.Pt(v44, v24))
-		v45 := sub_4C1C60(v19, 16*int(memmap.Uint32(0x85B3FC, 12260+4*uintptr((v22b+0x4000)>>4))))
-		v25 := sub_4C1C60(v19, 16*int(memmap.Uint32(0x85B3FC, 12260+4*uintptr(v22b>>4))))
+		v45 := sub_4C1C60(v19, 16*int(memmap.Int32(0x85B3FC, 12260+4*uintptr((v22b+0x4000)>>4))))
+		v25 := sub_4C1C60(v19, 16*int(memmap.Int32(0x85B3FC, 12260+4*uintptr(v22b>>4))))
 
 		v42 := a1.Add(image.Pt(v45, v25))
 		c.sub_4696B0(a1, a2, a3, a4, intens, dr.LightColor)
@@ -1284,7 +1285,7 @@ func (c *Client) sub_4697C0(a1, a2 []int, a3 image.Point, a4 int, pcl noxrender.
 		if v13 < *v10 {
 			v16 := v8 * v8
 			for jj := v13; jj < *v10; jj++ {
-				v17 := sub_4C1C70(v12+v23, 66*int(memmap.Uint32(0x587000, 142312))*(v16+v14*v14)/v21+0x10000)
+				v17 := sub_4C1C70(v12+v23, int(66*int32(memmap.Uint32(0x587000, 142312))*int32(v16+v14*v14)/int32(v21))+0x10000) // 32-bit like the original
 				v12 = dword_587000_142316
 				if v17 > dword_587000_142316 {
 					c.sub_4695E0(jj, ii, pcl, 8*(v17-dword_587000_142316), false)

@@ -516,6 +516,14 @@ func (sc *e2eScenario) Load(path string) {
 				})
 			case "closed":
 				sc.Input(dt, "", seat.WindowClosed)
+			case "pad_button":
+				sc.Input(dt, "", &seat.GamepadButtonEvent{
+					Pressed: ev.Pressed, Button: ev.PadButton,
+				})
+			case "pad_axis":
+				sc.Input(dt, "", &seat.GamepadAxisEvent{
+					Axis: ev.PadAxis, Value: ev.Value,
+				})
 			default:
 				panic("unsupported type: " + ev.Type)
 			}
@@ -602,6 +610,10 @@ type e2eStepRaw struct {
 
 	Text string `yaml:"text,omitempty"`
 
+	PadButton seat.GamepadButton `yaml:"pad_button,omitempty"`
+	PadAxis   seat.GamepadAxis   `yaml:"pad_axis,omitempty"`
+	Value     float32            `yaml:"value,omitempty"`
+
 	SaveName string            `yaml:"savename,omitempty"`
 	Hashes   map[string]string `yaml:"hashes,omitempty"`
 }
@@ -658,6 +670,18 @@ func e2eSaveRecording() {
 				s.Event = &e2eStepRaw{
 					Type: "text_input",
 					Text: ev.Text,
+				}
+			case *seat.GamepadButtonEvent:
+				s.Event = &e2eStepRaw{
+					Type:      "pad_button",
+					Pressed:   ev.Pressed,
+					PadButton: ev.Button,
+				}
+			case *seat.GamepadAxisEvent:
+				s.Event = &e2eStepRaw{
+					Type:    "pad_axis",
+					PadAxis: ev.Axis,
+					Value:   ev.Value,
 				}
 			case seat.WindowEvent:
 				switch ev {

@@ -3,6 +3,7 @@ package xfer
 import (
 	"fmt"
 	"io"
+	"reflect"
 
 	"github.com/brutusmcforce/opennox/libs/binenc"
 	"github.com/brutusmcforce/opennox/libs/types"
@@ -40,20 +41,33 @@ func (x *ScriptHandler) DecodeXfer(_ ObjectRegistry, r *binenc.Reader) error {
 	return nil
 }
 
+// Object is the data common to all objects.
 type Object struct {
+	// Type is the object type name, if known (it is not a part of the data).
+	Type      string
 	Vers      uint16
 	Extent    uint32
-	ID        uint32
+	ID        uint32 // script ID
 	Pos       types.Pointf
-	Val5      byte
+	Val5      byte // 0 if only the extent, ID and position are stored
 	Flags     uint32
 	Name      string
 	Team      byte
-	SubN      byte
-	Owned     []uint32
-	Anim      uint32
+	SubN      byte     // number of inventory items
+	Owned     []uint32 // script IDs of owned objects
+	Anim      uint32   // extra status flags
 	Handler11 *ScriptHandler
 	DeadFrame int32
+}
+
+func (x *Object) xferObject() *Object { return x }
+
+// ObjectOf returns the data common to all objects of x, or nil if it has none.
+func ObjectOf(x Xfer) *Object {
+	if ox, ok := x.(interface{ xferObject() *Object }); ok {
+		return ox.xferObject()
+	}
+	return nil
 }
 
 func (x *Object) DecodeXfer(reg ObjectRegistry, gvers uint16, r *binenc.Reader) error {
@@ -140,96 +154,135 @@ func (x *Object) DecodeXfer(reg ObjectRegistry, gvers uint16, r *binenc.Reader) 
 	return nil
 }
 
+// decodeOld decodes the object data of the versions before 61.
 func (x *Object) decodeOld(gvers uint16, r *binenc.Reader) error {
-	var ok bool
-	x.Extent, ok = r.ReadU32()
-	if !ok {
-		return io.ErrUnexpectedEOF
-	}
-	x.Flags, ok = r.ReadU32()
-	if !ok {
-		return io.ErrUnexpectedEOF
-	}
+	rd := &reader{r: r}
+	x.Val5 = 1
+	x.Extent = rd.u32()
+	x.Flags = rd.u32()
 	if gvers < 40 || x.Vers < 4 {
-		posX, ok := r.ReadI32()
-		if !ok {
-			return io.ErrUnexpectedEOF
-		}
-		posY, ok := r.ReadI32()
-		if !ok {
-			return io.ErrUnexpectedEOF
-		}
-		x.Pos = types.Pointf{X: float32(posX), Y: float32(posY)}
+		px, py := rd.i32(), rd.i32()
+		x.Pos = types.Pointf{X: float32(px), Y: float32(py)}
 	} else {
-		posX, ok := r.ReadF32()
-		if !ok {
-			return io.ErrUnexpectedEOF
-		}
-		posY, ok := r.ReadF32()
-		if !ok {
-			return io.ErrUnexpectedEOF
-		}
-		x.Pos = types.Pointf{X: posX, Y: posY}
+		x.Pos = types.Pointf{X: rd.f32(), Y: rd.f32()}
 	}
 	if gvers >= 10 {
-		x.Name, ok = r.ReadString8()
-		if !ok {
-			return io.ErrUnexpectedEOF
-		}
+		x.Name = rd.str8()
 	}
 	if gvers >= 20 {
-		x.Team, ok = r.ReadU8()
-		if !ok {
-			return io.ErrUnexpectedEOF
-		}
+		x.Team = rd.u8()
 	}
 	if gvers >= 30 {
-		x.SubN, ok = r.ReadU8()
-		if !ok {
-			return io.ErrUnexpectedEOF
-		}
+		x.SubN = rd.u8()
 	}
 	if gvers < 40 {
+		return rd.err
+	}
+	x.ID = rd.u32()
+	if x.Vers >= 2 {
+		var n int
+		if x.Vers < 5 {
+			n = int(uint16(rd.u32()))
+		} else {
+			n = int(rd.u16())
+		}
+		if rd.err == nil {
+			x.Owned = make([]uint32, n)
+			for i := range x.Owned {
+				x.Owned[i] = rd.u32()
+			}
+		}
+	}
+	if x.Vers >= 3 {
+		x.Anim = rd.u32()
+	}
+	return rd.err
+}
+
+// ReadChildren reads the child objects of x (its inventory), which follow its data in a stream of object records,
+// into its Sub field, with their children. Each is a type (a name before version 60 of x, from it an index, see
+// TOCRegistry), then its data, with the length at the next 8-byte boundary. align is the offset of r's start from
+// an 8-byte boundary of the stream.
+func ReadChildren(reg ObjectRegistry, x Xfer, r *binenc.Reader, align int) error {
+	ox, ok := x.(objectXfer)
+	if !ok {
 		return nil
 	}
-	x.ID, ok = r.ReadU32()
-	if !ok {
-		return io.ErrUnexpectedEOF
+	n := int(ox.xferObject().SubN)
+	if n == 0 {
+		return nil
 	}
-	// FIXME
-	return fmt.Errorf("old object xfer format is not fully supported yet")
-}
-
-func xferReadSubOne(reg ObjectRegistry, gvers uint16, r *binenc.Reader) (Xfer, error) {
-	if gvers < 60 {
-		typ, ok := r.ReadString8()
-		if !ok {
-			return nil, io.ErrUnexpectedEOF
-		}
-		x, err := DecodeByObjectType(reg, typ, r)
-		return x, err
-	} else {
-		typ, ok := r.ReadU16()
-		if !ok {
-			return nil, io.ErrUnexpectedEOF
-		}
-		x, err := DecodeByObjectTypeID(reg, int(typ), r)
-		return x, err
+	rv := reflect.ValueOf(x).Elem()
+	vers := uint16(rv.FieldByName("Vers").Uint())
+	sub := rv.FieldByName("Sub")
+	if !sub.IsValid() {
+		return fmt.Errorf("xfer %T has no inventory", x)
 	}
-}
-
-func xferReadSub(reg ObjectRegistry, gvers uint16, sz int, r *binenc.Reader) ([]Xfer, error) {
-	var out []Xfer
-	for i := 0; i < sz; i++ {
-		x, err := xferReadSubOne(reg, gvers, r)
-		if x != nil {
-			out = append(out, x)
+	for i := 0; i < n; i++ {
+		var (
+			typ string
+			id  = -1
+		)
+		if vers < 60 {
+			name, ok := r.ReadString8()
+			if !ok {
+				return io.ErrUnexpectedEOF
+			}
+			typ = name
+		} else {
+			v, ok := r.ReadU16()
+			if !ok {
+				return io.ErrUnexpectedEOF
+			}
+			id = int(v)
+		}
+		data, err := readSized(r, align)
+		if err != nil {
+			return err
+		}
+		r2 := binenc.NewReader(data)
+		var c Xfer
+		if id >= 0 {
+			c, err = DecodeByObjectTypeID(reg, id, r2)
+		} else {
+			c, err = DecodeByObjectType(reg, typ, r2)
+		}
+		if err == nil && r2.Remaining() != 0 {
+			err = errPartial(c, r2)
 		}
 		if err != nil {
-			return out, err
+			return fmt.Errorf("inventory item %d: %w", i, err)
+		}
+		sub.Set(reflect.Append(sub, reflect.ValueOf(c)))
+		if err := ReadChildren(reg, c, r, align); err != nil {
+			return err
 		}
 	}
-	return out, nil
+	return nil
+}
+
+// readSized reads the length at the next 8-byte boundary and data of that length.
+func readSized(r *binenc.Reader, align int) ([]byte, error) {
+	if !r.Align(align) {
+		return nil, io.ErrUnexpectedEOF
+	}
+	sz, ok := r.ReadU64()
+	if !ok {
+		return nil, io.ErrUnexpectedEOF
+	}
+	data, ok := r.ReadNext(int(sz))
+	if !ok {
+		return nil, io.ErrUnexpectedEOF
+	}
+	return data, nil
+}
+
+func errPartial(x Xfer, r *binenc.Reader) error {
+	typ := ""
+	if ox, ok := x.(objectXfer); ok {
+		typ = ox.xferObject().Type
+	}
+	return fmt.Errorf("partial decoding of xfer %s(%T): %d bytes left", typ, x, r.Remaining())
 }
 
 type Default struct {
@@ -237,6 +290,8 @@ type Default struct {
 	Object Object
 	Sub    []Xfer
 }
+
+func (x *Default) xferObject() *Object { return &x.Object }
 
 func (*Default) XferType() Type {
 	return DefaultType
@@ -255,6 +310,5 @@ func (x *Default) DecodeXfer(reg ObjectRegistry, r *binenc.Reader) error {
 	if err != nil {
 		return err
 	}
-	x.Sub, err = xferReadSub(reg, x.Vers, int(x.Object.SubN), r)
 	return err
 }

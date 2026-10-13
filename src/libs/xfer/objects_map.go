@@ -3,6 +3,7 @@ package xfer
 // DefaultRegistry contains a list of all default Nox objects associated with their XFER decoder.
 // This allows decoding of XFER data without Nox game data present.
 var DefaultRegistry ObjectRegistry = &StaticRegistry{
+	Classes: defaultClasses,
 	ByType: map[string]Type{
 		"AbilityBook":                      "AbilityRewardXfer",
 		"AbilityIcons":                     DefaultType,

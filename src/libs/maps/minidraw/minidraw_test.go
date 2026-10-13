@@ -16,11 +16,11 @@ var casesMapDraw = []struct {
 	Name string
 	Hash string
 }{
-	{Name: "con01a", Hash: "11469d0c110930473dabf48ea4fc8f6f"},
-	{Name: "estate", Hash: "b7e908a904505702ddb624aaf464d4ca"},
-	{Name: "g_castle", Hash: "5a722f929db128f1ca954a100992762f"},
-	{Name: "g_mines", Hash: "9fe78e456bca7212354293f39d1178b4"},
-	{Name: "so_brin", Hash: "75e19ed8717a5bf5ab6c2eca49d4341e"},
+	{Name: "con01a", Hash: "311087a7b3a58dd60048586643f6a869"},
+	{Name: "estate", Hash: "747bb24e891dc4ba76d1baa0fe75ded6"},
+	{Name: "g_castle", Hash: "9c76e17c0ff224ea92b1ada92262210b"},
+	{Name: "g_mines", Hash: "2be98df6635a0932badc1a377754aaff"},
+	{Name: "so_brin", Hash: "14df1f4edf3305ab97a99d165739cf96"},
 }
 
 func TestDraw(t *testing.T) {

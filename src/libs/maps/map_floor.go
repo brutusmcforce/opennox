@@ -155,18 +155,19 @@ func (t *Tile) Decode(r *binenc.Reader) error {
 	return nil
 }
 
+// FloorPos is the position of a floor cell, which holds two tiles.
 type FloorPos struct {
 	X, Y uint16
 }
 
+// TilePair is a floor cell: up to two tiles, which the game draws 23 pixels apart.
 type TilePair struct {
-	Pos    FloorPos
-	F1, F2 byte
-	L, R   *Tile
+	Pos  FloorPos
+	L, R *Tile
 }
 
 func (p *TilePair) IsZero() bool {
-	return p.Pos == (FloorPos{}) && p.F1 == 0 && p.F2 == 0 && p.L == nil && p.R == nil
+	return p.Pos == (FloorPos{}) && p.L == nil && p.R == nil
 }
 
 func (p *TilePair) HasLeft() bool {
@@ -177,10 +178,12 @@ func (p *TilePair) HasRight() bool {
 	return p.R != nil
 }
 
+// LeftPos is the left tile's position on the tile grid (of 23 pixels, where tiles are drawn on every other point).
 func (p *TilePair) LeftPos() FloorPos {
 	return FloorPos{X: 2 * p.Pos.X, Y: 2 * p.Pos.Y}
 }
 
+// RightPos is the right tile's position on the tile grid; see LeftPos.
 func (p *TilePair) RightPos() FloorPos {
 	return FloorPos{X: 2*p.Pos.X + 1, Y: 2*p.Pos.Y - 1}
 }
@@ -196,16 +199,19 @@ func (p *TilePair) size() int {
 	return sz
 }
 
+// The game stores the cell position as a word of y | x<<8, with the high bit of each byte set if the cell has its
+// left (y) or right (x) tile. The right tile comes first.
+
 func (p *TilePair) MarshalBinary() ([]byte, error) {
 	if p.IsZero() {
 		return []byte{0xff, 0xff}, nil
 	}
 	data := make([]byte, p.size())
-	data[0] = byte(p.Pos.X) | p.F1
-	data[1] = byte(p.Pos.Y) | p.F2
+	data[0] = byte(p.Pos.Y) & 0x7f
+	data[1] = byte(p.Pos.X) & 0x7f
 	cur := data[2:]
 	if p.HasRight() {
-		data[0] |= 0x80
+		data[1] |= 0x80
 		tdata, err := p.R.MarshalBinary()
 		if err != nil {
 			return nil, err
@@ -214,7 +220,7 @@ func (p *TilePair) MarshalBinary() ([]byte, error) {
 		cur = cur[n:]
 	}
 	if p.HasLeft() {
-		data[1] |= 0x80
+		data[0] |= 0x80
 		tdata, err := p.L.MarshalBinary()
 		if err != nil {
 			return nil, err
@@ -226,11 +232,11 @@ func (p *TilePair) MarshalBinary() ([]byte, error) {
 }
 
 func (p *TilePair) Decode(r *binenc.Reader) error {
-	x, ok := r.ReadU8()
+	y, ok := r.ReadU8()
 	if !ok {
 		return io.ErrUnexpectedEOF
 	}
-	y, ok := r.ReadU8()
+	x, ok := r.ReadU8()
 	if !ok {
 		return io.ErrUnexpectedEOF
 	}
@@ -238,18 +244,14 @@ func (p *TilePair) Decode(r *binenc.Reader) error {
 	if x == 0xff && y == 0xff {
 		return nil
 	}
-	hasR := x&0x80 != 0
-	hasL := y&0x80 != 0
-	p.F1 = x & 0x3
-	p.F2 = y & 0x3
-	p.Pos = FloorPos{X: uint16(x & 0x7c), Y: uint16(y & 0x7c)}
-	if hasR {
+	p.Pos = FloorPos{X: uint16(x & 0x7f), Y: uint16(y & 0x7f)}
+	if x&0x80 != 0 {
 		p.R = new(Tile)
 		if err := p.R.Decode(r); err != nil {
 			return err
 		}
 	}
-	if hasL {
+	if y&0x80 != 0 {
 		p.L = new(Tile)
 		if err := p.L.Decode(r); err != nil {
 			return err

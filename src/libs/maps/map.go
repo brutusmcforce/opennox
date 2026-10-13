@@ -130,6 +130,7 @@ type Map struct {
 	crc      uint32
 	wallOffX uint32
 	wallOffY uint32
+	end      bool
 
 	Intro             *MapIntro
 	Ambient           *AmbientData
@@ -151,6 +152,7 @@ func (m *Map) Header() Header {
 			X: int(m.wallOffX),
 			Y: int(m.wallOffY),
 		},
+		End: m.end,
 	}
 }
 
@@ -164,22 +166,37 @@ func (m *Map) GridBoundingBox() image.Rectangle {
 	var r image.Rectangle
 	r.Min.X = -1
 	r.Min.Y = -1
-	for _, w := range m.Walls.Walls {
-		p := w.Pos
-		if r.Min.X == -1 || r.Min.X > int(p.X) {
-			r.Min.X = int(p.X)
+	add := func(x, y int) {
+		if r.Min.X == -1 || r.Min.X > x {
+			r.Min.X = x
 		}
-		if r.Min.Y == -1 || r.Min.Y > int(p.Y) {
-			r.Min.Y = int(p.Y)
+		if r.Min.Y == -1 || r.Min.Y > y {
+			r.Min.Y = y
 		}
-		if r.Max.X < int(p.X) {
-			r.Max.X = int(p.X)
+		if r.Max.X < x {
+			r.Max.X = x
 		}
-		if r.Max.Y < int(p.Y) {
-			r.Max.Y = int(p.Y)
+		if r.Max.Y < y {
+			r.Max.Y = y
 		}
 	}
-	// TODO: tiles
+	if m.Walls != nil {
+		for _, w := range m.Walls.Walls {
+			add(int(w.Pos.X), int(w.Pos.Y))
+		}
+	}
+	if m.Floor != nil {
+		for _, p := range m.Floor.Tiles {
+			if p.HasLeft() {
+				pos := p.LeftPos()
+				add(int(int16(pos.X)), int(int16(pos.Y)))
+			}
+			if p.HasRight() {
+				pos := p.RightPos()
+				add(int(int16(pos.X)), int(int16(pos.Y))) // -1 for the first row
+			}
+		}
+	}
 	return r
 }
 

@@ -62,18 +62,18 @@ func (win *Window) InputTick() {
 					"ev", ev.GetType(), "dev", ev.Which, "btn", ev.Button, "state", ev.State)
 			}
 			win.processGamepadButtonEvent(&ev)
-		case *sdl.ControllerDeviceEvent:
+		case sdl.ControllerDeviceEvent:
 			switch ev.GetType() {
 			case sdl.CONTROLLERDEVICEADDED:
 				if debugGpad {
 					win.log.Debug("SDL_CONTROLLERDEVICEADDED", "ev", ev.GetType(), "dev", ev.Which)
 				}
-				win.processGamepadDeviceEvent(ev)
+				win.processGamepadDeviceEvent(&ev)
 			case sdl.CONTROLLERDEVICEREMOVED:
 				if debugGpad {
 					win.log.Debug("SDL_CONTROLLERDEVICEREMOVED", "ev", ev.GetType(), "dev", ev.Which)
 				}
-				win.processGamepadDeviceEvent(ev)
+				win.processGamepadDeviceEvent(&ev)
 			case sdl.CONTROLLERDEVICEREMAPPED:
 				if debugGpad {
 					win.log.Debug("SDL_CONTROLLERDEVICEREMAPPED", "ev", ev.GetType())
@@ -186,14 +186,97 @@ func (win *Window) processWheelEvent(ev *sdl.MouseWheelEvent) {
 	})
 }
 
+var gamepadButtons = map[sdl.GameControllerButton]seat.GamepadButton{
+	sdl.CONTROLLER_BUTTON_A:             seat.GamepadA,
+	sdl.CONTROLLER_BUTTON_B:             seat.GamepadB,
+	sdl.CONTROLLER_BUTTON_X:             seat.GamepadX,
+	sdl.CONTROLLER_BUTTON_Y:             seat.GamepadY,
+	sdl.CONTROLLER_BUTTON_BACK:          seat.GamepadBack,
+	sdl.CONTROLLER_BUTTON_GUIDE:         seat.GamepadGuide,
+	sdl.CONTROLLER_BUTTON_START:         seat.GamepadStart,
+	sdl.CONTROLLER_BUTTON_LEFTSTICK:     seat.GamepadLeftStick,
+	sdl.CONTROLLER_BUTTON_RIGHTSTICK:    seat.GamepadRightStick,
+	sdl.CONTROLLER_BUTTON_LEFTSHOULDER:  seat.GamepadLeftShoulder,
+	sdl.CONTROLLER_BUTTON_RIGHTSHOULDER: seat.GamepadRightShoulder,
+	sdl.CONTROLLER_BUTTON_DPAD_UP:       seat.GamepadDpadUp,
+	sdl.CONTROLLER_BUTTON_DPAD_DOWN:     seat.GamepadDpadDown,
+	sdl.CONTROLLER_BUTTON_DPAD_LEFT:     seat.GamepadDpadLeft,
+	sdl.CONTROLLER_BUTTON_DPAD_RIGHT:    seat.GamepadDpadRight,
+}
+
+var gamepadAxes = map[sdl.GameControllerAxis]seat.GamepadAxis{
+	sdl.CONTROLLER_AXIS_LEFTX:        seat.GamepadLeftX,
+	sdl.CONTROLLER_AXIS_LEFTY:        seat.GamepadLeftY,
+	sdl.CONTROLLER_AXIS_RIGHTX:       seat.GamepadRightX,
+	sdl.CONTROLLER_AXIS_RIGHTY:       seat.GamepadRightY,
+	sdl.CONTROLLER_AXIS_TRIGGERLEFT:  seat.GamepadTriggerLeft,
+	sdl.CONTROLLER_AXIS_TRIGGERRIGHT: seat.GamepadTriggerRight,
+}
+
 func (win *Window) processGamepadButtonEvent(ev *sdl.ControllerButtonEvent) {
-	// TODO: handle gamepads (again)
+	b, ok := gamepadButtons[sdl.GameControllerButton(ev.Button)]
+	if !ok {
+		return
+	}
+	win.inputEvent(&seat.GamepadButtonEvent{
+		Button:  b,
+		Pressed: ev.State == sdl.PRESSED,
+	})
 }
 
 func (win *Window) processGamepadAxisEvent(ev *sdl.ControllerAxisEvent) {
-	// TODO: handle gamepads (again)
+	a, ok := gamepadAxes[sdl.GameControllerAxis(ev.Axis)]
+	if !ok {
+		return
+	}
+	v := float32(ev.Value) / 32767
+	v = max(-1, min(1, v))
+	win.inputEvent(&seat.GamepadAxisEvent{Axis: a, Value: v})
 }
 
 func (win *Window) processGamepadDeviceEvent(ev *sdl.ControllerDeviceEvent) {
-	// TODO: handle gamepads (again)
+	switch ev.Type {
+	case sdl.CONTROLLERDEVICEADDED:
+		// Which is the device index here
+		ind := int(ev.Which)
+		if !sdl.IsGameController(ind) {
+			return
+		}
+		ctrl := sdl.GameControllerOpen(ind)
+		if ctrl == nil {
+			win.log.Warn("cannot open game controller", "index", ind, "err", sdl.GetError())
+			return
+		}
+		id := ctrl.Joystick().InstanceID()
+		if _, ok := win.pads[id]; ok {
+			ctrl.Close()
+			return
+		}
+		if win.pads == nil {
+			win.pads = make(map[sdl.JoystickID]*sdl.GameController)
+		}
+		win.pads[id] = ctrl
+		name := ctrl.Name()
+		win.log.Info("game controller connected", "name", name)
+		win.inputEvent(&seat.GamepadDeviceEvent{Name: name, Connected: true})
+	case sdl.CONTROLLERDEVICEREMOVED:
+		// Which is the instance ID here
+		ctrl, ok := win.pads[ev.Which]
+		if !ok {
+			return
+		}
+		name := ctrl.Name()
+		ctrl.Close()
+		delete(win.pads, ev.Which)
+		win.log.Info("game controller disconnected", "name", name)
+		win.inputEvent(&seat.GamepadDeviceEvent{Name: name, Connected: false})
+	}
+}
+
+// closeGamepads closes all open game controllers.
+func (win *Window) closeGamepads() {
+	for id, ctrl := range win.pads {
+		ctrl.Close()
+		delete(win.pads, id)
+	}
 }

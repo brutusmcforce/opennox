@@ -25,6 +25,8 @@ type Armor struct {
 	Sub       []Xfer
 }
 
+func (x *Armor) xferObject() *Object { return &x.Object }
+
 func (*Armor) XferType() Type {
 	return "ArmorXfer"
 }
@@ -70,6 +72,5 @@ func (x *Armor) DecodeXfer(reg ObjectRegistry, r *binenc.Reader) error {
 			return io.ErrUnexpectedEOF
 		}
 	}
-	x.Sub, err = xferReadSub(reg, x.Vers, int(x.Object.SubN), r)
 	return err
 }

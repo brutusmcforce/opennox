@@ -436,6 +436,11 @@ func xferDataCallback40AF90(ind ntype.PlayerInd, data netxfer.Data) {
 }
 
 func nox_xxx_SavePlayerDataFromClient_41CD70(path string, data []byte) bool {
+	// a dedicated server may not have a save directory yet; without it quest players are kicked
+	if err := ifs.MkdirAll(filepath.Dir(path)); err != nil {
+		saveLog.Printf("SavePlayerDataFromClient: Can't create directory for %q: %v\n", path, err)
+		return false
+	}
 	f, err := binfile.BinfileOpen(path, binfile.WriteOnly)
 	if err != nil {
 		saveLog.Printf("SavePlayerDataFromClient: Can't open file %q: %v\n", path, err)

@@ -19,6 +19,8 @@ type Data struct {
 	Things []Thing `json:"things,omitempty"`
 	Spells []Spell `json:"spells,omitempty"`
 	Walls  []Wall  `json:"walls,omitempty"`
+	Floors []Floor `json:"floors,omitempty"`
+	Edges  []Edge  `json:"edges,omitempty"`
 }
 
 type Reader struct {
@@ -366,15 +368,17 @@ func (f *Reader) ReadAll() (*Data, error) {
 		}
 		switch sect {
 		case "FLOR":
-			// TODO
-			if err := f.skipFLOR(); err != nil {
+			fl, err := f.readFLOR()
+			if err != nil {
 				return &data, err
 			}
+			data.Floors = append(data.Floors, *fl)
 		case "EDGE":
-			// TODO
-			if err := f.skipEDGE(); err != nil {
+			e, err := f.readEDGE()
+			if err != nil {
 				return &data, err
 			}
+			data.Edges = append(data.Edges, *e)
 		case "WALL":
 			walls, err := f.readWALL()
 			if err != nil {
