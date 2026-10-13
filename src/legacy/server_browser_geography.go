@@ -2,12 +2,13 @@ package legacy
 
 import (
 	"encoding/binary"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"image"
 	"strings"
 	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 func browserMapPolygons() {

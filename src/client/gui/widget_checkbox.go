@@ -139,7 +139,7 @@ func checkboxDrawNoImg(win *Window, draw *WindowData) int {
 	backCl := draw.BackgroundColor()
 	pos := win.GlobalPos()
 	x, y := pos.X, pos.Y
-	if int32(*(*uint8)(unsafe.Add(unsafe.Pointer(win), 4)))&8 != 0 {
+	if int32(*(*uint8)(unsafe.Pointer(&win.Flags)))&8 != 0 {
 		if draw.Field0&2 != 0 {
 			borderCl = draw.HighlightColor()
 		}

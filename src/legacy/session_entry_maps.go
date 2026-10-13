@@ -49,8 +49,8 @@ func sessionSetMapPath(name *byte) *byte {
 	serverConfigUpdatedSet()
 	return sessionMapName()
 }
-func sessionMapFlags(record unsafe.Pointer) int32 {
-	return int32(Nox_mapToGameFlags(int(*(*int32)(unsafe.Add(record, 28)))))
+func sessionMapFlags(it *Nox_map_list_item) int32 {
+	return int32(Nox_mapToGameFlags(int(int32(it.Field_7))))
 }
 func sessionMapStateSet(value int32) int32 {
 	*memmap.PtrUint32(0x5D4594, 1523072) = uint32(value)

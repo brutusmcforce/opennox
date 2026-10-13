@@ -3,10 +3,12 @@ package legacy
 import (
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/internal/cryptfile"
+	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -16,13 +18,13 @@ func creatureXferMerchant(r objectXferStream, u *server.Object, v int) {
 	}
 	p := u.InitData
 	if v >= 50 {
-		r.raw(unsafe.Add(p, 1716), 4)
+		r.raw(unsafe.Pointer(&layout.As[server.ShopkeeperInitData](p).Field1716), 4)
 	}
 	if v >= 61 {
-		r.raw(unsafe.Add(p, 1720), 4)
+		r.raw(unsafe.Pointer(&layout.As[server.ShopkeeperInitData](p).Field1720), 4)
 	}
 	if v >= 48 {
-		creatureXferText(r, unsafe.Add(p, 1684))
+		creatureXferText(r, unsafe.Pointer(&layout.As[server.ShopkeeperInitData](p).ShopText))
 	}
 	count := byte(0)
 	if p != nil {
@@ -35,8 +37,9 @@ func creatureXferMerchant(r objectXferStream, u *server.Object, v int) {
 	if r.read() {
 		*(*byte)(p) = count
 	}
-	for i := 0; i < int(*(*byte)(p)); i++ {
-		entry := unsafe.Add(p, 4+28*i)
+	stock := layout.As[server.ShopkeeperInitData](p)
+	for i := 0; i < int(stock.StockCount); i++ {
+		entry := &stock.Stock[i]
 		if r.read() {
 			Nox_xxx_XFer_ReadShopItem_52A840(entry, v)
 		} else {
@@ -46,7 +49,7 @@ func creatureXferMerchant(r objectXferStream, u *server.Object, v int) {
 }
 func creatureXferColors(r objectXferStream, u *server.Object) {
 	for i := 0; i < 6; i++ {
-		p := unsafe.Add(u.UpdateData, 2076+3*i)
+		p := unsafe.Add(u.UpdateData, layoutServerMonsterUpdateData.Off(uintptr(2076+3*i)))
 		if r.read() {
 			var color server.Color3
 			r.raw(unsafe.Pointer(&color), 3)
@@ -66,8 +69,8 @@ func creatureXferMonster(u *server.Object) int {
 		return 0
 	}
 	p := u.UpdateData
-	at := func(off, n int) { r.raw(unsafe.Add(p, off), n) }
-	creatureXferHeader(r, u, v, false, u.Field189)
+	at := func(off, n int) { creatureXferRaw(r, layoutServerMonsterUpdateData, p, off, n) } // 386 offsets, as saved
+	creatureXferHeader(r, u, v, false, u.EditorData())
 	creatureXferStats(r, u, v, false)
 	if v >= 41 && creatureXferAction(u) == 0 {
 		return 0
@@ -110,7 +113,7 @@ func creatureXferMonster(u *server.Object) int {
 		}
 	}
 	if r.read() {
-		if *(*byte)(unsafe.Add(p, 1445)) != 0 && noxflags.HasGame(1) {
+		if *(*byte)(unsafe.Add(unsafe.Pointer(&layout.As[server.MonsterUpdateData](p).Field361), 1)) != 0 && noxflags.HasGame(1) {
 			u.HealthData.Max = 0
 			u.HealthData.Cur = 0
 		}
@@ -138,7 +141,7 @@ func creatureXferMonster(u *server.Object) int {
 					found = true
 				}
 			}
-			spells := unsafe.Slice((*uint32)(unsafe.Add(p, 2044)), 3)
+			spells := unsafe.Slice(&layout.As[server.MonsterUpdateData](p).Field511, 3)
 			count := 0
 			for _, id := range spells {
 				if id != 0 {
@@ -148,13 +151,12 @@ func creatureXferMonster(u *server.Object) int {
 			if !found && count != 0 {
 				glyph := GetServer().S().NewObjectByTypeID("Glyph")
 				if glyph != nil {
-					data := glyph.InitData
+					data := glyph.InitDataGlyph()
 					// Match the existing prefix copy even if the three source slots have gaps.
-					copy(unsafe.Slice((*uint32)(data), count), spells[:count])
-					*(*byte)(unsafe.Add(data, 20)) = byte(count)
-					*objectXferWord(data, 24) = 0
-					*(*float32)(unsafe.Add(data, 28)) = u.PosVec.X
-					*(*float32)(unsafe.Add(data, 32)) = u.PosVec.Y
+					copy(data.Spells[:count], spells[:count])
+					*(*byte)(unsafe.Pointer(&data.SpellsCnt)) = byte(count)
+					data.SpellArg.Obj = nil
+					data.SpellArg.Pos = u.PosVec
 				}
 				inventoryInsert(u, glyph, 1)
 			}
@@ -166,22 +168,22 @@ func creatureXferMonster(u *server.Object) int {
 
 func creatureXferNPC(u *server.Object) int {
 	r := objectXferStream{cryptfile.Global()}
-	p, scripts, saved := u.UpdateData, u.Field189, u.Field34
+	p, scripts, saved := u.UpdateData, u.EditorData(), u.Field34
 	v := int(int16(r.short(62)))
 	if v > 62 {
 		return 0
 	}
 	if r.read() {
 		def := Nox_xxx_monsterDefByTT_517560(int(u.TypeInd))
-		*(**server.MonsterDef)(unsafe.Add(p, 484)) = def
+		layout.As[server.MonsterUpdateData](p).MonsterDef = def
 		if def != nil {
-			*objectXferWord(p, 1440) = uint32(def.StatusFlags92)
+			*(*uint32)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](p).StatusFlags)) = uint32(def.StatusFlags92)
 		}
 	}
 	if objectXferCommon(u, v) == 0 {
 		return 0
 	}
-	at := func(off, n int) { r.raw(unsafe.Add(p, off), n) }
+	at := func(off, n int) { creatureXferRaw(r, layoutServerMonsterUpdateData, p, off, n) } // 386 offsets, as saved
 	creatureXferHeader(r, u, v, true, scripts)
 	creatureXferColors(r, u)
 	if r.read() && v == 31 {
@@ -222,7 +224,7 @@ func creatureXferNPC(u *server.Object) int {
 		r.raw(unsafe.Pointer(u.HealthData), 2)
 	}
 	if v >= 51 {
-		r.raw(unsafe.Add(u.CObj(), int(layoutServerObject.Off(28)) /* Experience */), 4)
+		r.raw(unsafe.Pointer(&u.Experience), 4)
 	}
 	if v >= 52 {
 		creatureXferVoice(u)
@@ -237,7 +239,7 @@ func creatureXferNPC(u *server.Object) int {
 		}
 	}
 	if r.read() {
-		if *(*byte)(unsafe.Add(p, 1445)) != 0 && noxflags.HasGame(1) && u.HealthData != nil {
+		if *(*byte)(unsafe.Add(unsafe.Pointer(&layout.As[server.MonsterUpdateData](p).Field361), 1)) != 0 && noxflags.HasGame(1) && u.HealthData != nil {
 			u.HealthData.Max = 0
 			u.HealthData.Cur = 0
 		}

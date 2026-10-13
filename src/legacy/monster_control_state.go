@@ -4,7 +4,6 @@ import (
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/unit/ai"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func monsterControlAnimation(u *server.Object) {
@@ -23,8 +22,8 @@ func monsterControlAnimation(u *server.Object) {
 	if p == nil {
 		return
 	}
-	frames := *(*byte)(unsafe.Add(p, 9))
-	delay := *(*byte)(unsafe.Add(p, 10))
+	frames := p.Frames
+	delay := p.Delay
 	ud.Field120_0 = frames
 	if frames == 0 {
 		ud.Field120_3 = 1
@@ -37,7 +36,7 @@ func monsterControlAnimation(u *server.Object) {
 	ud.Field120_2 = 0
 	ud.Field120_1++
 	if ud.Field120_1 >= frames {
-		if *(*uint32)(unsafe.Add(p, 12)) != 0 {
+		if p.Loop != 0 {
 			ud.Field120_1 = 0
 		} else {
 			ud.Field120_1 = frames - 1
@@ -47,8 +46,8 @@ func monsterControlAnimation(u *server.Object) {
 }
 func monsterControlRefresh(u *server.Object) int32 {
 	ud := u.UpdateDataMonster()
-	if target := motionObject(ud.Field304); target != nil && target.ObjFlags&0x8020 != 0 {
-		ud.Field304 = 0
+	if target := ud.Field304; target != nil && target.ObjFlags&0x8020 != 0 {
+		ud.Field304 = nil
 	}
 	if ud.AIStackInd < 0 {
 		return int32(ud.AIStackInd)

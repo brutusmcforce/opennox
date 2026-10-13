@@ -51,8 +51,9 @@ func bookAdd(kind, id int) {
 	}
 	*bookWord(1047520) = 1
 	bookPageComplete(kind == 4)
-	from := (*image.Point)(unsafe.Pointer(bookWord(1046844)))
+	from := new(image.Point)
 	bookIconPosition(from)
+	*bookWord(1046844), *bookWord(1046848) = uint32(from.X), uint32(from.Y) // the start position, as two words
 	*bookFloat(1046636) = float32(from.X)
 	*bookFloat(1046640) = float32(from.Y)
 	moving := bookWindow(*bookWord(1046956))
@@ -66,7 +67,7 @@ func bookAdd(kind, id int) {
 	*bookWord(1046676) = uint32(kind)
 	nox_client_setRenderGUI(1)
 	*bookWord(1046680) = 0
-	target := *(*image.Point)(unsafe.Pointer(bookWord(1046668)))
+	target := image.Pt(int(int32(*bookWord(1046668))), int(int32(*bookWord(1046672))))
 	effectCurveSegments([4]image.Point{*from, target, {X: 400, Y: -500}, {X: 350, Y: 400}}, 19, 0, func(a, b image.Point) { bookPath(a, b) })
 	*bookWord(1046628) = 0
 	bookVector[0] = *bookFloat(1046692) - *bookFloat(1046684)

@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/brutusmcforce/opennox/libs/ifs"
+	"io"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/internal/binfile"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"io"
-	"unsafe"
+	"github.com/brutusmcforce/opennox/libs/ifs"
 )
 
 func serverConfigFileLine(f *binfile.File) bool {

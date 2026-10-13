@@ -1,16 +1,17 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
-	"github.com/brutusmcforce/opennox/libs/strman"
-	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/client/noxrender"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"image"
 	"math"
 	"unicode/utf16"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"github.com/brutusmcforce/opennox/libs/strman"
 )
 
 func uiListData(w *gui.Window) *gui.ScrollListBoxData { return (*gui.ScrollListBoxData)(w.WidgetData) }
@@ -497,7 +498,10 @@ func uiListEvent(w *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 			uiListScroll(w, 0, true)
 		}
 	case 16404:
-		return ret(int(d.Field_12))
+		if d.Field_4 != 0 { // multi-select: the address of the selected indexes (ending with -1)
+			return gui.RawEventResp(uintptr(memmap.WordPtr(d.Field_12)))
+		}
+		return ret(int(int32(d.Field_12))) // the selected index, or -1
 	case 16406:
 		index := int(int32(a))
 		if index >= 0 && index < int(d.Count) {

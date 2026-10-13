@@ -2,12 +2,15 @@ package legacy
 
 import (
 	"encoding/binary"
-	"github.com/brutusmcforce/opennox/libs/types"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
+
+	"unsafe"
 
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func inventoryCache(off uintptr, name string) uint32 {
@@ -41,7 +44,7 @@ func inventoryDefaultDrop(u, it *server.Object, pos *types.Pointf) int {
 	GetServer().CreateObjectAt(it, nil, *pos)
 	if it.ObjClass&0x1000000 != 0 && nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(it)) == 4 {
 		for ammo := u.InvFirstItem; ammo != nil; ammo = ammo.InvNextItem {
-			if ammo.ObjClass&0x1000000 != 0 && nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(ammo)) == 2 && ammo.ObjFlags&0x100 == 0 && *(*byte)(unsafe.Add(ammo.UseData.Ptr, 2)) != 0 {
+			if ammo.ObjClass&0x1000000 != 0 && nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(ammo)) == 2 && ammo.ObjFlags&0x100 == 0 && ammo.UseDataAmmo().Infinite != 0 {
 				inventoryRemove(u, ammo)
 				GetServer().DelayedDelete(ammo)
 				break
@@ -53,7 +56,7 @@ func inventoryDefaultDrop(u, it *server.Object, pos *types.Pointf) int {
 		value := objectiveFlagID(it)
 		inventoryMessage(7, u, uint32(value))
 		playerStateMark(it, 1)
-		*(*uint32)(unsafe.Add(it.UpdateData, 8)) = GetServer().S().Frame()
+		it.UpdateDataFlag().DropFrame = GetServer().S().Frame()
 		matchRosterFlagState(byte(team), 2, byte(value), 0)
 	}
 	glyph := inventoryCache(1568252, "Glyph")
@@ -65,8 +68,8 @@ func inventoryDefaultDrop(u, it *server.Object, pos *types.Pointf) int {
 		inventorySound(821, it, 0, 0)
 	}
 	if it.ObjClass&2 != 0 {
-		*(*uint32)(unsafe.Add(it.UpdateData, 1360)) = 15
-		*(*uint32)(unsafe.Add(it.UpdateData, 1440)) |= 0x100
+		layout.As[server.MonsterUpdateData](it.UpdateData).AIAction340 = 15
+		*(*uint32)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](it.UpdateData).StatusFlags)) |= 0x100
 	}
 	if *memmap.PtrUint32(0x5D4594, 1568256) == 0 {
 		*memmap.PtrUint32(0x5D4594, 1568256) = uint32(GetServer().S().Types.IndByID("Torch"))
@@ -92,7 +95,7 @@ func inventoryGlyphDrop(u, it *server.Object, pos *types.Pointf) int {
 	if inventoryTrapDrop(u, it, pos) == 0 {
 		return 0
 	}
-	*(*types.Pointf)(unsafe.Add(it.InitData, 28)) = *pos
+	it.InitDataGlyph().SpellArg.Pos = *pos
 	dir := types.Pointf{X: u.PosVec.X - pos.X, Y: u.PosVec.Y - pos.Y}
 	angle := uint16(int32(geometryVectorAngle((*types.Pointf)(unsafe.Pointer(unsafe.Pointer(&dir))))))
 	it.Direction1, it.Direction2 = server.Dir16(angle), server.Dir16(angle)

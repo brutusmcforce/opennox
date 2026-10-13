@@ -1,9 +1,10 @@
 package legacy
 
 import (
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"unsafe"
 )
 
 var audioStreamsRoot *audioStreamSystem
@@ -14,8 +15,8 @@ func audioStreamRoot() *audioStreamSystem {
 	}
 	return audioStreamsRoot
 }
-func audioStreamDeviceNew(desc *audioStreamDescriptor) *audioStreamDevice {
-	p, _ := alloc.New(audioStreamDevice{})
+func audioStreamDeviceNew(desc *audioStreamDescriptor) *AudioStreamDevice {
+	p, _ := alloc.New(AudioStreamDevice{})
 	listInit(&p.Node)
 	p.References = 0
 	p.Descriptor = desc
@@ -25,7 +26,7 @@ func audioStreamDeviceNew(desc *audioStreamDescriptor) *audioStreamDevice {
 	audioStreamDeviceFree(p)
 	return nil
 }
-func audioStreamDeviceRegister(desc *audioStreamDescriptor) *audioStreamDevice {
+func audioStreamDeviceRegister(desc *audioStreamDescriptor) *AudioStreamDevice {
 	p := audioStreamDeviceNew(desc)
 	if p == nil {
 		return nil
@@ -37,37 +38,37 @@ func audioStreamDeviceRegister(desc *audioStreamDescriptor) *audioStreamDevice {
 	}
 	return p
 }
-func audioStreamDeviceFree(p *audioStreamDevice) {
+func audioStreamDeviceFree(p *AudioStreamDevice) {
 	AudioStreamCallbackVoid(p.Descriptor.Free, unsafe.Pointer(p))
 	p.Descriptor.InUse &^= 1
 	alloc.Free(p)
 }
-func audioStreamDeviceLink(p *audioStreamDevice)   { listAppend(&audioStreamRoot().Devices, &p.Node) }
-func audioStreamDeviceUnlink(p *audioStreamDevice) { listRemove(&p.Node) }
-func audioStreamDeviceDestroy(p *audioStreamDevice) {
+func audioStreamDeviceLink(p *AudioStreamDevice)   { listAppend(&audioStreamRoot().Devices, &p.Node) }
+func audioStreamDeviceUnlink(p *AudioStreamDevice) { listRemove(&p.Node) }
+func audioStreamDeviceDestroy(p *AudioStreamDevice) {
 	audioStreamDeviceUnlink(p)
 	audioStreamDeviceFree(p)
 	*memmap.PtrUint32(0x5D4594, 1193332) = 0
 }
-func audioStreamDeviceFirst(it **audioStreamDevice) *audioStreamDevice {
-	*it = (*audioStreamDevice)(unsafe.Pointer(listNext(&audioStreamRoot().Devices)))
+func audioStreamDeviceFirst(it **AudioStreamDevice) *AudioStreamDevice {
+	*it = (*AudioStreamDevice)(unsafe.Pointer(listNext(&audioStreamRoot().Devices)))
 	return *it
 }
-func audioStreamDeviceNext(it **audioStreamDevice) *audioStreamDevice {
+func audioStreamDeviceNext(it **AudioStreamDevice) *AudioStreamDevice {
 	if *it != nil {
-		*it = (*audioStreamDevice)(unsafe.Pointer(listNext(&(*it).Node)))
+		*it = (*AudioStreamDevice)(unsafe.Pointer(listNext(&(*it).Node)))
 	}
 	return *it
 }
 func audioStreamDeviceDestroyAll() {
 	for n := listNext(&audioStreamRoot().Devices); n != nil; {
 		next := listNext(n)
-		audioStreamDeviceDestroy((*audioStreamDevice)(unsafe.Pointer(n)))
+		audioStreamDeviceDestroy((*AudioStreamDevice)(unsafe.Pointer(n)))
 		n = next
 	}
 }
-func audioStreamDeviceSlot(index int32, device **audioStreamDevice, slot *int32) unsafe.Pointer {
-	var it *audioStreamDevice
+func audioStreamDeviceSlot(index int32, device **AudioStreamDevice, slot *int32) unsafe.Pointer {
+	var it *AudioStreamDevice
 	for p := audioStreamDeviceFirst(&it); p != nil; p = audioStreamDeviceNext(&it) {
 		if index < p.Slots {
 			*device = p
@@ -80,11 +81,11 @@ func audioStreamDeviceSlot(index int32, device **audioStreamDevice, slot *int32)
 	*slot = -1
 	return nil
 }
-func audioStreamContextAcquire(index int32, format *audioStreamFormat) *audioStreamContext {
+func audioStreamContextAcquire(index int32, format *AudioStreamFormat) *AudioStreamContext {
 	if index == -1 {
 		index = 0
 	}
-	var device *audioStreamDevice
+	var device *AudioStreamDevice
 	var slot int32
 	audioStreamDeviceSlot(index, &device, &slot)
 	if device == nil {
@@ -102,8 +103,8 @@ func audioStreamContextAcquire(index int32, format *audioStreamFormat) *audioStr
 	p.References++
 	return p
 }
-func audioStreamContextNew(device *audioStreamDevice, slot int32, format *audioStreamFormat) *audioStreamContext {
-	p, _ := alloc.New(audioStreamContext{})
+func audioStreamContextNew(device *AudioStreamDevice, slot int32, format *AudioStreamFormat) *AudioStreamContext {
+	p, _ := alloc.New(AudioStreamContext{})
 	listInit(&p.Node)
 	p.Slot = slot
 	p.Device = device
@@ -128,7 +129,7 @@ func audioStreamContextNew(device *audioStreamDevice, slot int32, format *audioS
 	audioStreamContextFree(p)
 	return nil
 }
-func audioStreamContextFree(p *audioStreamContext) {
+func audioStreamContextFree(p *AudioStreamContext) {
 	audioStreamVoiceDeleteKind(p, -1)
 	AudioStreamCallbackVoid(p.Device.Descriptor.ContextFree, unsafe.Pointer(p))
 	p.Device.Contexts[p.Slot] = nil
@@ -138,7 +139,7 @@ func audioStreamContextFree(p *audioStreamContext) {
 	}
 	alloc.Free(p)
 }
-func audioStreamContextLink(p *audioStreamContext) int32 {
+func audioStreamContextLink(p *AudioStreamContext) int32 {
 	root := audioStreamRoot()
 	root.Mutating++
 	listAppend(&root.Contexts, &p.Node)
@@ -149,7 +150,7 @@ func audioStreamContextLink(p *audioStreamContext) int32 {
 	}
 	return result
 }
-func audioStreamContextUnlink(p *audioStreamContext) uintptr {
+func audioStreamContextUnlink(p *AudioStreamContext) uintptr {
 	root := audioStreamRoot()
 	root.Mutating++
 	listRemove(&p.Node)
@@ -161,17 +162,17 @@ func audioStreamContextUnlink(p *audioStreamContext) uintptr {
 	}
 	return uintptr(uint32(result))
 }
-func audioStreamContextDestroy(p *audioStreamContext) {
+func audioStreamContextDestroy(p *AudioStreamContext) {
 	audioStreamContextUnlink(p)
 	audioStreamContextFree(p)
 }
-func audioStreamContextFirst(it **audioStreamContext) *audioStreamContext {
-	*it = (*audioStreamContext)(unsafe.Pointer(listNext(&audioStreamRoot().Contexts)))
+func audioStreamContextFirst(it **AudioStreamContext) *AudioStreamContext {
+	*it = (*AudioStreamContext)(unsafe.Pointer(listNext(&audioStreamRoot().Contexts)))
 	return *it
 }
-func audioStreamContextNext(it **audioStreamContext) *audioStreamContext {
+func audioStreamContextNext(it **AudioStreamContext) *AudioStreamContext {
 	if *it != nil {
-		*it = (*audioStreamContext)(unsafe.Pointer(listNext(&(*it).Node)))
+		*it = (*AudioStreamContext)(unsafe.Pointer(listNext(&(*it).Node)))
 	}
 	return *it
 }
@@ -180,7 +181,7 @@ func audioStreamContextDestroyAll() int32 {
 	root.Mutating++
 	for n := listNext(&root.Contexts); n != nil; {
 		next := listNext(n)
-		audioStreamContextDestroy((*audioStreamContext)(unsafe.Pointer(n)))
+		audioStreamContextDestroy((*AudioStreamContext)(unsafe.Pointer(n)))
 		n = next
 	}
 	result := root.Mutating - 1
@@ -190,11 +191,11 @@ func audioStreamContextDestroyAll() int32 {
 	}
 	return result
 }
-func audioStreamContextFormat(p *audioStreamContext, format *audioStreamFormat) *audioStreamContext {
+func audioStreamContextFormat(p *AudioStreamContext, format *AudioStreamFormat) *AudioStreamContext {
 	p.RequestedFormat = *format
 	return p
 }
-func audioStreamContextTick(p *audioStreamContext) int32 {
+func audioStreamContextTick(p *AudioStreamContext) int32 {
 	if p.Mutating != 0 {
 		return -2146304000
 	}
@@ -233,4 +234,29 @@ func audioStreamContextTick(p *audioStreamContext) int32 {
 	}
 	p.Timers.ClearUpdated()
 	return 0
+}
+
+// AudioStreamSystemReset clears the audio stream system (was sub_486F30).
+func AudioStreamSystemReset() {
+	root := audioStreamRoot()
+	listClear(&root.Devices)
+	listClear(&root.Contexts)
+	root.Mutating = 0
+	AudioGlobalTimers = &root.Timers
+	root.Timers.Init()
+}
+
+// AudioStreamSystemTick runs the tick callbacks of the audio stream contexts (was sub_486EF0).
+func AudioStreamSystemTick() {
+	root := audioStreamRoot()
+	if root.Mutating != 0 {
+		return
+	}
+	head := &root.Contexts
+	for it := head.next; it != head; it = it.next {
+		ctx := (*AudioStreamContext)(unsafe.Pointer(it))
+		if ctx.Flags&2 == 0 {
+			AudioStreamCallbackVoid(ctx.Tick, unsafe.Pointer(ctx))
+		}
+	}
 }

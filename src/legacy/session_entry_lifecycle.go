@@ -2,12 +2,13 @@ package legacy
 
 import (
 	"bytes"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func sessionResetPlayers() {
@@ -57,7 +58,7 @@ func sessionPlayerReady(index int32) {
 	if pl.Field3680&1 != 0 {
 		pl.Pos3632Vec = pl.PlayerUnit.PosVec
 		if noxflags.HasGame(512) {
-			controlLeaveObserver(pl.C())
+			controlLeaveObserver((*server.Player)(pl.C()))
 		}
 	}
 	GetServer().Nox_xxx_wall_4DF1E0(int(index))
@@ -82,14 +83,14 @@ func sessionPlayerIncoming(index int32) uint32 {
 	}
 	if noxflags.HasGame(4096) {
 		if index != 31 && pl.PlayerUnit != nil {
-			*equipmentWord(pl.PlayerUnit.UpdateData, 552) = 1
+			pl.PlayerUnit.UpdateDataPlayer().Field138 = 1
 		}
 		gameplayReportQuestStart(int(index))
 		if pl.PlayerUnit != nil {
 			questRuntimeReset(pl.PlayerUnit)
 		}
 	}
-	resetNetworkAliases((*[255]server.PlayerNetData)(unsafe.Add(pl.C(), 16)))
+	resetNetworkAliases(&pl.NetData16)
 	u := pl.PlayerUnit
 	dword_5d4594_2649712 |= uint32(uint32(1) << uint32(index&31))
 	pos := u.PosVec
@@ -136,7 +137,7 @@ func sessionPlayerIncoming(index int32) uint32 {
 	}
 	if noxflags.HasGame(4096) {
 		for unit := s.Players.FirstUnit(); unit != nil; unit = s.Players.NextUnit(unit) {
-			if *equipmentWord(controlPlayer(unit), 4792) == 1 {
+			if controlPlayer(unit).Field4792 == 1 {
 				gameplayReportQuestObject(int(index), unit)
 			}
 		}
@@ -156,18 +157,18 @@ func sessionPlayerDeparture(index int32) {
 			playerGroupRemoveMember(group, index)
 		}
 	}
-	data := pl.PlayerUnit.UpdateData
-	if shop := *(**shopSession)(unsafe.Add(data, 280)); shop != nil {
+	data := pl.PlayerUnit.UpdateDataPlayer()
+	if shop := (*shopSession)(unsafe.Pointer(data.Trade70)); shop != nil {
 		shopCancel(shop)
 	}
-	*(*unsafe.Pointer)(unsafe.Add(data, 280)) = nil
+	data.Trade70 = nil
 	shopPlayerCleanup(int(pl.PlayerInd))
 	Sub_4FF990(uint32(1) << uint32(pl.PlayerInd&31))
 	if sessionServerBuild || !noxflags.HasGame(2) {
 		pl.Active = 0
 	}
 	for _, word := range []int{1146, 1148, 1149, 1150, 1151, 1152, 1153, 1154, 1155, 1156, 1157, 1158, 1159, 1147, 1160, 1161} {
-		p := equipmentWord(pl.C(), 4*word)
+		p := &(*[16]uint32)(unsafe.Pointer(&pl.ProtUnitHPCur))[word-1146]
 		if deleteProtectionRecord(*p) {
 			*p = 0
 		}
@@ -178,10 +179,11 @@ func sessionPlayerDeparture(index int32) {
 	GetServer().DelayedDelete(pl.PlayerUnit)
 	pl.PlayerUnit = nil
 	for u := s.Players.FirstUnit(); u != nil; u = s.Players.NextUnit(u) {
-		for _, off := range []int{452, 484, 516} {
-			*controlByte(u.UpdateData, off+int(index)) = 0
-		}
-		*equipmentWord(u.UpdateData, 324+4*int(index)) = 0
+		ud := u.UpdateDataPlayer()
+		ud.QuestLevels[index] = 0
+		ud.SilverKeys[index] = 0
+		ud.GoldKeys[index] = 0
+		ud.Field81[index] = 0
 	}
 	if playerStateMultiple() != 0 {
 		if noxflags.HasGame(1024) && Nox_xxx_serverIsClosing_446180() == 0 && playerStateCompetitors() == 1 {
@@ -208,7 +210,7 @@ func sessionPlayerDeparture(index int32) {
 		GetServer().SwitchMap(alloc.GoString(worldQuestPending()))
 	} else {
 		for u := s.Players.FirstUnit(); u != nil; u = s.Players.NextUnit(u) {
-			if *equipmentWord(u.UpdateData, 312) != 0 {
+			if u.UpdateDataPlayer().Field78 != nil {
 				worldQuestCountdown()
 				break
 			}

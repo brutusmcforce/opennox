@@ -1,10 +1,11 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func spellEffectDirection(dir int16) types.Pointf {
@@ -23,7 +24,7 @@ func spellEffectBurn(id int32, a, b, c *server.Object, record unsafe.Pointer, le
 	}
 	pos := c.PosVec
 	if uint32(c.TypeInd) != typ {
-		pos = spellEffectPos(record, 4)
+		pos = (*server.SpellAcceptArg)(record).Pos
 		if !spellEffectPlacement(c.PosVec, pos) {
 			spellEffectInform(c)
 			return 0
@@ -34,7 +35,7 @@ func spellEffectBurn(id int32, a, b, c *server.Object, record unsafe.Pointer, le
 		motionDecaySet(u, floatToInt32(float32(spellEffectScalar("BurnDuration"))))
 		visibilityFXSpark(u.PosVec, 64)
 	}
-	spellEffectPosAudio(id, 0, spellEffectPos(record, 4))
+	spellEffectPosAudio(id, 0, (*server.SpellAcceptArg)(record).Pos)
 	return 1
 }
 func spellEffectFireball(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
@@ -44,7 +45,7 @@ func spellEffectFireball(id int32, a, b, c *server.Object, record unsafe.Pointer
 		return 1
 	}
 	dir := spellEffectDirection(int16(c.Direction1))
-	radius := float64(*temporaryFloat(c.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) * 2
+	radius := float64(c.Shape.Circle.R) * 2
 	// C stores the X position before adding inherited velocity; Y stays in x87.
 	x := float32(radius*float64(dir.X) + float64(c.PosVec.X))
 	y := radius*float64(dir.Y) + float64(c.PosVec.Y)
@@ -88,19 +89,19 @@ func spellEffectFist(id int32, a, b, c *server.Object, record unsafe.Pointer, le
 		resourcePriority(b, "ExecSpel.c:TooManyFists")
 		return 0
 	}
-	pos := spellEffectPos(record, 4)
+	pos := (*server.SpellAcceptArg)(record).Pos
 	if !spellEffectTrace(c.PosVec, pos, spellEffectPlacementFlags()) {
 		spellEffectInform(c)
 		return 0
 	}
 	if u := spellEffectNew(*memmap.PtrUint32(0x5d4594, 2487736+uintptr(level)*4)); u != nil {
-		*spellLifeWord(u.UpdateData, 0) = uint32(floatToInt32(float32(spellEffectTable("FistOfVengeanceDamage", level-1))))
+		u.UpdateDataDamage().Damage = uint32(floatToInt32(float32(spellEffectTable("FistOfVengeanceDamage", level-1))))
 		spellEffectCreate(u, c, pos)
 		u.Field5 |= 0x20
 		stateRaise(u, 255)
-		*temporaryFloat(u.CObj(), int(layoutServerObject.Off(108)) /* Field27 */) = float32(-spellEffectScalar("FistSpeed"))
+		u.Field27 = float32(-spellEffectScalar("FistSpeed"))
 		u.ObjFlags |= 0x800000
-		*spellLifeWord(u.CObj(), int(layoutServerObject.Off(116)) /* Field29 */) = 1091567616
+		u.Field29 = 1091567616
 		spellEffectAudio(id, 0, c)
 	}
 	return 1
@@ -134,18 +135,18 @@ func spellEffectCleansingFlame(id int32, a, b, c *server.Object, record unsafe.P
 		}
 		u.Direction1 = server.Dir16(s.Rand.Logic.IntClamp(0, 255))
 		dir := spellEffectDirection(int16(u.Direction1))
-		radius := float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) + float64(*temporaryFloat(c.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) + 4
+		radius := float64(u.Shape.Circle.R) + float64(c.Shape.Circle.R) + 4
 		pos := types.Ptf(float32(radius*float64(dir.X)+float64(c.PosVec.X)), float32(radius*float64(dir.Y)+float64(c.PosVec.Y)))
 		if spellEffectTrace(c.PosVec, pos, 65) {
 			spellEffectCreate(u, c, pos)
 			u.Direction2 = u.Direction1
 			u.VelVec = types.Ptf(dir.X*4, dir.Y*4)
 			u.Field34 = s.Frame() + uint32(s.Rand.Logic.IntClamp(int(3*s.TickRate()), int(6*s.TickRate())))
-			*(*types.Pointf)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(156)) /* Pos39.X */)) = c.PosVec
+			u.Pos39 = c.PosVec
 			u.Update = flameCleanseCallbackKey()
 			s.Objs.AddToUpdatable(u)
 			u.ObjClass |= 0x40000000
-			*temporaryFloat(u.CObj(), int(layoutServerObject.Off(112)) /* Float28 */) = 0
+			u.Float28 = 0
 			visibilityFXPrediction(u)
 		} else {
 			GetServer().DelayedDelete(u)
@@ -156,13 +157,13 @@ func spellEffectCleansingFlame(id int32, a, b, c *server.Object, record unsafe.P
 }
 func spellEffectMeteorShower(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
 	typ := stateType(2487800, "MeteorShower")
-	pos := spellEffectPos(record, 4)
+	pos := (*server.SpellAcceptArg)(record).Pos
 	if !spellEffectTrace(c.PosVec, pos, spellEffectPlacementFlags()) {
 		spellEffectInform(c)
 		return 0
 	}
 	if u := spellEffectNew(typ); u != nil {
-		*spellLifeWord(u.UpdateData, 0) = uint32(floatToInt32(float32(spellEffectTable("MeteorDamage", level-1))))
+		u.UpdateDataDamage().Damage = uint32(floatToInt32(float32(spellEffectTable("MeteorDamage", level-1))))
 		spellEffectCreate(u, b, pos)
 		spellEffectAudio(id, 0, b)
 	}
@@ -179,24 +180,24 @@ func spellEffectMeteor(id int32, a, b, c *server.Object, record unsafe.Pointer, 
 			return 0
 		}
 	}
-	pos := spellEffectPos(record, 4)
+	pos := (*server.SpellAcceptArg)(record).Pos
 	if !spellEffectTrace(c.PosVec, pos, spellEffectPlacementFlags()) {
 		spellEffectInform(c)
 		return 0
 	}
 	if u := spellEffectNew(typ); u != nil {
-		*spellLifeWord(u.UpdateData, 0) = uint32(floatToInt32(float32(spellEffectTable("MeteorDamage", level-1))))
+		u.UpdateDataDamage().Damage = uint32(floatToInt32(float32(spellEffectTable("MeteorDamage", level-1))))
 		spellEffectCreate(u, b, pos)
 		u.Field5 |= 0x20
 		stateRaise(u, 255)
-		*temporaryFloat(u.CObj(), int(layoutServerObject.Off(108)) /* Field27 */) = float32(-spellEffectScalar("MeteorSpeed"))
+		u.Field27 = float32(-spellEffectScalar("MeteorSpeed"))
 		spellEffectPosAudio(id, 0, pos)
 	}
 	return 1
 }
 func spellEffectToxicCloud(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
 	typ := stateType(2487808, "ToxicCloud")
-	pos := spellEffectPos(record, 4)
+	pos := (*server.SpellAcceptArg)(record).Pos
 	if !spellEffectPlacement(c.PosVec, pos) {
 		spellEffectInform(c)
 		return 0
@@ -204,14 +205,14 @@ func spellEffectToxicCloud(id int32, a, b, c *server.Object, record unsafe.Point
 	u := spellEffectNew(typ)
 	if u != nil {
 		spellEffectCreate(u, b, pos)
-		*spellLifeWord(u.UpdateData, 0) = uint32(floatToInt32(float32(spellEffectScalar("ToxicCloudLifetime") * float64(int32(GetServer().S().TickRate())))))
+		u.UpdateDataToxicCloud().Life = uint32(floatToInt32(float32(spellEffectScalar("ToxicCloudLifetime") * float64(int32(GetServer().S().TickRate())))))
 	}
 	spellEffectAudio(id, 0, u)
 	return 1
 }
 func spellEffectArachna(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
 	typ := stateType(2487812, "ArachnaphobiaFocus")
-	pos := spellEffectPos(record, 4)
+	pos := (*server.SpellAcceptArg)(record).Pos
 	if !spellEffectPlacement(c.PosVec, pos) {
 		spellEffectInform(c)
 		return 0

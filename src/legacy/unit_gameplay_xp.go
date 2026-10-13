@@ -1,11 +1,13 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/strman"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func unitExperienceNotice(u *server.Object, key, file string, amount float32) {
@@ -17,13 +19,13 @@ func unitExperienceLevel(u *server.Object) {
 		return
 	}
 	pl := u.UpdateDataPlayer().Player
-	level := (*byte)(unsafe.Add(unsafe.Pointer(pl), int(layoutServerPlayer.Off(3684)) /* Level */))
-	xp := *(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(28)) /* Experience */))
+	level := &pl.Level
+	xp := u.Experience
 	if !(GetServer().S().Balance.FloatInd("XPTable", int(int8(*level))+1) <= float64(xp)) {
 		return
 	}
 	*level++
-	addProtectionRecord(int32(*equipmentWord(unsafe.Pointer(pl), int(layoutServerPlayer.Off(4644)) /* ProtPlayerLevel */)), 1)
+	addProtectionRecord(int32(pl.ProtPlayerLevel), 1)
 	controlReadStats(u, 1)
 	if noxflags.HasGame(noxflags.GameModeCoop) {
 		runtimePauseStart(u, 0)
@@ -33,15 +35,15 @@ func unitExperienceLevel(u *server.Object) {
 	}
 }
 func unitGiveExperience(u *server.Object, amount float32) {
-	xp := (*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(28)) /* Experience */))
+	xp := &u.Experience
 	*xp = amount + *xp
-	updateProtectionFloat(int32(*equipmentWord(controlPlayer(u), 4604)), amount, true)
+	updateProtectionFloat(int32(layout.As[server.Player](unsafe.Pointer(controlPlayer(u))).ProtUnitExperience), amount, true)
 	gameplayReportExperience(u)
 	unitExperienceNotice(u, "health.c:gainpoints", "C:\\NoxPost\\src\\Server\\GameMech\\explevel.c", amount)
 	unitExperienceLevel(u)
 }
 func unitRewardExperience(u *server.Object, target float32) float64 {
-	xp := (*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(28)) /* Experience */))
+	xp := &u.Experience
 	before := *xp
 	if before >= target {
 		return 0
@@ -51,7 +53,7 @@ func unitRewardExperience(u *server.Object, target float32) float64 {
 	gain := float64(delta)*float64(*memmap.PtrFloat32(0x587000, 206148)) + 1
 	returned := float32(gain)
 	*xp = float32(gain + float64(before))
-	updateProtectionFloat(int32(*equipmentWord(controlPlayer(u), 4604)), returned, true)
+	updateProtectionFloat(int32(layout.As[server.Player](unsafe.Pointer(controlPlayer(u))).ProtUnitExperience), returned, true)
 	gameplayReportExperience(u)
 	unitExperienceLevel(u)
 	return float64(returned)
@@ -73,7 +75,7 @@ func unitMonsterReward(victim *server.Object) {
 			break
 		}
 	}
-	gain := unitRewardExperience(player, *(*float32)(unsafe.Add(victim.CObj(), int(layoutServerObject.Off(28)) /* Experience */)))
+	gain := unitRewardExperience(player, victim.Experience)
 	if gain > 0 {
 		unitExperienceNotice(player, "gainpoints", "C:\\NoxPost\\src\\Server\\Object\\health.c", float32(gain))
 	}

@@ -1,11 +1,12 @@
 package legacy
 
 import (
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"unsafe"
 )
 
 func serverPanelsResource(off uintptr) string {
@@ -20,7 +21,7 @@ func serverPanelsGeneralOpen(parent *gui.Window) int {
 		return 0
 	}
 	w := Nox_new_window_from_file(serverPanelsResource(173556), serverPanelsGeneralProc)
-	*serverPanelsWord(1309812) = uint32(serverOptionsPtr(w))
+	*serverPanelsWord(1309812) = memmap.PtrWord(w.C())
 	if w == nil {
 		return 0
 	}
@@ -34,7 +35,7 @@ func serverPanelsGeneralOpen(parent *gui.Window) int {
 	if noxflags.HasEngine(noxflags.EngineNoRendering) {
 		uiWindowEnable(w.ChildByID(10304), 0)
 	}
-	return int(serverOptionsPtr(w))
+	return int(memmap.PtrWord(w.C())) // stored as a pointer word
 }
 func serverPanelsGeneralRefresh() int {
 	w := serverPanelsWindow(1309812)
@@ -60,7 +61,7 @@ func serverPanelsGeneralRefresh() int {
 	if int32(serverConfigFlagsQuery(int32(0x2000))) != 0 {
 		w.ChildByID(10306).DrawData().Field0 |= 4
 	}
-	return int(serverOptionsPtr(w))
+	return int(memmap.PtrWord(w.C())) // stored as a pointer word
 }
 func serverPanelsGeneralProc(w *gui.Window, e gui.WindowEvent) gui.WindowEventResp {
 	a, b := e.EventArgsC()

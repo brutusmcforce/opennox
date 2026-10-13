@@ -1,13 +1,14 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/spell"
-	"github.com/brutusmcforce/opennox/libs/strman"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func bookAwardError(u *server.Object, key, file string) {
@@ -31,7 +32,7 @@ func bookReportSpell(u *server.Object, id, notify, auto int32) uint32 {
 		return memmap.PtrWord(u.CObj())
 	}
 	p := u.UpdateDataPlayer().Player
-	data := [4]byte{111, byte(id), byte(*equipmentWord(unsafe.Pointer(p), 3696+4*int(id))), byte(notify)}
+	data := [4]byte{111, byte(id), byte(p.SpellLvl[int(id)]), byte(notify)}
 	if auto != 0 {
 		data[3] |= 128
 	}
@@ -42,7 +43,7 @@ func bookReportAbility(u *server.Object, id, auto int32) uint32 {
 		return memmap.PtrWord(u.CObj())
 	}
 	p := u.UpdateDataPlayer().Player
-	data := [3]byte{205, byte(id), byte(*equipmentWord(unsafe.Pointer(p), 3696+4*int(id)))}
+	data := [3]byte{205, byte(id), byte(p.SpellLvl[int(id)])}
 	if auto != 0 {
 		data[2] |= 128
 	}

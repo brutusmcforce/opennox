@@ -1,13 +1,15 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func objectiveColor(header unsafe.Pointer) int32 {
@@ -29,20 +31,20 @@ func objectiveFlagID(u *server.Object) int32 {
 	if u.ObjClass&0x10000000 == 0 {
 		return 0
 	}
-	return objectiveColor(*(*unsafe.Pointer)(unsafe.Add(u.InitData, 4)))
+	return objectiveColor(unsafe.Pointer(u.InitDataModifier().Modifiers[1]))
 }
 func objectiveRememberOwner(u, t *server.Object) *server.Object {
 	if t != nil {
 		t = (*server.Object)(unsafe.Pointer(nox_xxx_findParentChainPlayer_4EC580(asObjectC(t))))
 	}
-	ud := u.UpdateData
+	ud := u.UpdateDataBall()
 	if t != nil && t.ObjClass&4 != 0 {
-		*temporaryRefWord(ud, 0) = t
-		*equipmentWord(ud, 4) = uint32(t.TeamVal.ID)
-		*equipmentWord(ud, 16) = GetServer().S().Frame()
+		ud.SetLastOwnerObj(t)
+		ud.LastTeam = uint32(t.TeamVal.ID)
+		ud.PossessFrame = GetServer().S().Frame()
 	} else {
-		*temporaryRefWord(ud, 0) = nil
-		*equipmentWord(ud, 4) = 0
+		ud.SetLastOwnerObj(nil)
+		ud.LastTeam = 0
 	}
 	return t
 }
@@ -65,8 +67,8 @@ func objectivePickupBuffs(u *server.Object) uint32 {
 	return out
 }
 func objectiveFlagUpdate(u *server.Object) int32 {
-	ud := u.UpdateData
-	stamp := *equipmentWord(ud, 8)
+	ud := u.UpdateDataFlag()
+	stamp := ud.DropFrame
 	if stamp == 0 {
 		return 0
 	}
@@ -74,17 +76,17 @@ func objectiveFlagUpdate(u *server.Object) int32 {
 	team := u.TeamVal.ID
 	core := GetServer().S()
 	out := int32(3 * core.TickRate())
-	if core.Frame()-*equipmentWord(ud, 8) > uint32(30*core.TickRate()) {
+	if core.Frame()-ud.DropFrame > uint32(30*core.TickRate()) {
 		inventorySound(305, u, 0, 0)
-		*equipmentWord(ud, 8) = 0
+		ud.DropFrame = 0
 		matchRosterFlagState(byte(team), 0, byte(color), 0)
-		Nox_xxx_unitMove_4E7010(u, *(*types.Pointf)(ud))
+		Nox_xxx_unitMove_4E7010(u, ud.Home)
 		out = int32(gameplayTextInformationAll(8, unsafe.Pointer(&color)))
 	}
 	return out
 }
 func objectiveFollow(u, owner *server.Object) {
-	radius := float64(*temporaryFloat(owner.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) + float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) + 10
+	radius := float64(owner.Shape.Circle.R) + float64(u.Shape.Circle.R) + 10
 	dx, dy := movementDirectionVector(int32(int16(owner.Direction1)))
 	end := types.Pointf{X: float32(radius*float64(dx) + float64(owner.PosVec.X)), Y: float32(radius*float64(dy) + float64(owner.PosVec.Y))}
 	if GetServer().S().MapTraceRayAt(owner.PosVec, end, nil, nil, 5) {
@@ -92,14 +94,14 @@ func objectiveFollow(u, owner *server.Object) {
 	}
 }
 func objectiveCrownUpdate(u *server.Object) {
-	ud := u.UpdateData
-	pending := *temporaryRefWord(ud, 4)
+	ud := u.UpdateDataCrown()
+	pending := ud.PendingObj()
 	if pending != nil && pending.ObjFlags&0x8020 == 0 {
 		inventoryCrownPickup(pending, u, 1)
 		return
 	}
-	if prior := *temporaryRefWord(ud, 0); prior != nil && prior.ObjFlags&0x20 != 0 {
-		*temporaryRefWord(ud, 0) = nil
+	if prior := ud.LastOwnerObj(); prior != nil && prior.ObjFlags&0x20 != 0 {
+		ud.LastOwner = 0
 	}
 	if owner := u.ObjOwner; owner != nil {
 		if owner.ObjFlags&0x8020 != 0 {
@@ -122,13 +124,13 @@ func objectiveClearBallTeam(u *server.Object) {
 }
 func objectiveBallUpdate(u *server.Object) {
 	core := GetServer().S()
-	ud := u.UpdateData
-	*equipmentWord(u.CObj(), int(layoutServerObject.Off(112)) /* Float28 */) = 1008981770
-	if prior := *temporaryRefWord(ud, 0); prior != nil && prior.ObjFlags&0x20 != 0 {
+	ud := u.UpdateDataBall()
+	*(*uint32)(unsafe.Pointer(&u.Float28)) = 1008981770
+	if prior := ud.LastOwnerObj(); prior != nil && prior.ObjFlags&0x20 != 0 {
 		objectiveClearBallTeam(u)
 	}
 	// The C tick API narrows to uint32 before subtraction from the uint64 stamp.
-	if uint64(uint32(PlatformTicks()))-*(*uint64)(unsafe.Add(ud, 8)) > 20000 {
+	if uint64(uint32(PlatformTicks()))-ud.ResetTicks > 20000 {
 		objectiveBallReset(u)
 		return
 	}
@@ -136,14 +138,14 @@ func objectiveBallUpdate(u *server.Object) {
 	if owner == nil {
 		u.ObjFlags &^= 0x40
 		x, y := float64(u.VelVec.X), float64(u.VelVec.Y)
-		if float64(*temporaryFloat(ud, 24)) > math.Sqrt(x*x+y*y) {
-			*temporaryRefWord(ud, 0) = nil
+		if float64(ud.ResetVel) > math.Sqrt(x*x+y*y) {
+			ud.SetLastOwnerObj(nil)
 		}
 		return
 	}
-	if owner != *temporaryRefWord(ud, 0) || core.Frame()-*equipmentWord(ud, 16) <= *equipmentWord(ud, 20) {
+	if owner != ud.LastOwnerObj() || core.Frame()-ud.PossessFrame <= ud.PossessDuration {
 		u.ObjFlags |= 0x40
-		*(*uint64)(unsafe.Add(ud, 8)) = uint64(uint32(PlatformTicks()))
+		ud.ResetTicks = uint64(uint32(PlatformTicks()))
 		owner = u.ObjOwner
 		if owner.ObjFlags&0x8020 != 0 {
 			core.ObjClearOwner(u)
@@ -154,7 +156,7 @@ func objectiveBallUpdate(u *server.Object) {
 		return
 	}
 	u.ObjFlags &^= 0x40
-	*equipmentWord(u.CObj(), int(layoutServerObject.Off(520)) /* Obj130 */) = 0
+	u.Obj130 = nil
 	dir := (int32(int16(owner.Direction1)) + int32(nox_common_randomInt_415FA0(-32, 32))) & 255
 	dx, dy := movementDirectionVector(dir)
 	origin := types.Pointf{X: float32(float64(u.PosVec.X) - float64(dx)*20), Y: float32(float64(u.PosVec.Y) - float64(dy)*20)}
@@ -195,10 +197,10 @@ func objectiveBallReset(old *server.Object) int {
 	if ball == nil {
 		return 0
 	}
-	ud := ball.UpdateData
-	*(*uint64)(unsafe.Add(ud, 8)) = uint64(uint32(PlatformTicks()))
-	*equipmentWord(ud, 20) = uint32(floatToInt32(float32(core.Balance.Float("FlagballPossDuration"))))
-	*temporaryFloat(ud, 24) = float32(core.Balance.Float("FlagballResetVel"))
+	ud := ball.UpdateDataBall()
+	ud.ResetTicks = uint64(uint32(PlatformTicks()))
+	ud.PossessDuration = uint32(floatToInt32(float32(core.Balance.Float("FlagballPossDuration"))))
+	ud.ResetVel = float32(core.Balance.Float("FlagballResetVel"))
 	playerStateMark(ball, 1)
 	GetServer().CreateObjectAt(ball, nil, types.Pointf{})
 	core.ObjClearOwner(ball)
@@ -210,7 +212,7 @@ func objectiveBallReset(old *server.Object) int {
 	}
 	if old != nil {
 		for pl := core.Players.FirstUnit(); pl != nil; pl = core.Players.NextUnit(pl) {
-			if *temporaryRefWord(unsafe.Pointer(pl.UpdateDataPlayer().Player), int(layoutServerPlayer.Off(3628)) /* CameraFollowObj */) == old {
+			if pl.UpdateDataPlayer().Player.CameraFollowObj == old {
 				nox_xxx_playerCameraUnlock_4E6040(asObjectC(pl))
 				nox_xxx_playerCameraFollow_4E6060(asObjectC(pl), asObjectC(ball))
 			}
@@ -239,12 +241,12 @@ func objectiveObelisk(u *server.Object) int32 {
 		idle = false
 		spent := false
 		if *energy >= 1 {
-			wand := *temporaryRefWord(pl.UpdateData, 104)
+			wand := *(**server.Object)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](pl.UpdateData).Field26))
 			rate := effectsRechargeRate(wand)
 			if noxflags.HasGame(8192) && !noxflags.HasGame(4096) {
 				rate = 1
 			}
-			if rate != 0 && wand != nil && wand.ObjClass&0x1000 != 0 && wand.ObjSubClass&0x47f0000 != 0 && int32(*equipmentWord(wand.UseData.Ptr, 112)) < 100 {
+			if rate != 0 && wand != nil && wand.ObjClass&0x1000 != 0 && wand.ObjSubClass&0x47f0000 != 0 && int32(wand.UseDataWand().Percent) < 100 {
 				if noxflags.HasGame(4096) {
 					if core.Frame()%uint32(core.TickRate()>>1) == 0 {
 						inventorySound(230, u, 0, 0)
@@ -254,8 +256,8 @@ func objectiveObelisk(u *server.Object) int32 {
 					*energy--
 				}
 				if effectsRecharge(wand, rate) != 0 {
-					data := unsafe.Slice((*byte)(wand.UseData.Ptr), 110)
-					gameplayReportCharges(int(uint8(ud.Player.PlayerInd)), wand, byte(data[108]), byte(data[109]))
+					data := wand.UseDataWand()
+					gameplayReportCharges(int(uint8(ud.Player.PlayerInd)), wand, data.Charges, data.MaxCharges)
 				}
 			}
 		}
@@ -263,7 +265,7 @@ func objectiveObelisk(u *server.Object) int32 {
 			amount := int16(1)
 			if noxflags.HasGame(4096) {
 				var value float32
-				switch *(*byte)(unsafe.Add(unsafe.Pointer(ud.Player), int(layoutServerPlayer.Off(2251)) /* info */)) {
+				switch ud.Player.InfoBytes[66] {
 				case 0:
 					value = core.Players.Mult.Warrior.Mana
 				case 1:

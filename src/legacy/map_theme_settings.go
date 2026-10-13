@@ -1,8 +1,9 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 func mapThemeAlgorithm(cfg, f uint32) uint32 {
@@ -52,7 +53,7 @@ func mapThemeExit(cfg, f uint32) uint32 {
 			if !mapThemeNext(f) {
 				return 0
 			}
-			mapThemeCopy(cfg+476, mapThemeText())
+			mapThemeCopyAt(cfg, 476, mapThemeText())
 		case "object":
 			if !mapThemeNext(f) {
 				return 0

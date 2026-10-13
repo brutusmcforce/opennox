@@ -2,6 +2,9 @@ package legacy
 
 import (
 	"encoding/binary"
+	"io"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/ntype"
@@ -9,8 +12,6 @@ import (
 	"github.com/brutusmcforce/opennox/internal/cryptfile"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"io"
-	"unsafe"
 )
 
 func playerFileServerSection(id uint32, u *server.Object, info unsafe.Pointer) (int, bool) {
@@ -66,7 +67,7 @@ func playerFileServerLoad(path string, ind int) int {
 			return 1
 		}
 		length, _ := r.cf.ReadAlignedU32()
-		ret, found := playerFileServerSection(id, u, unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(2185)) /* info */))
+		ret, found := playerFileServerSection(id, u, unsafe.Pointer(&p.InfoBytes))
 		if !found {
 			r.cf.Seek(int64(int32(length)), io.SeekCurrent)
 			continue

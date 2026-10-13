@@ -1,12 +1,13 @@
 package legacy
 
 import (
+	"strconv"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"strconv"
-	"unsafe"
 )
 
 var mapPolygonNext uint32 = 1
@@ -56,7 +57,7 @@ func mapPolygonGet(i uint32) *mapPolygon {
 }
 func mapPolygonIDs(p *mapPolygon) []uint32 { return unsafe.Slice(p.Vertices, int(p.Count)) }
 func mapPolygonRemapAdd(index, old uint32) *mapPolygonRemap {
-	p := (*mapPolygonRemap)(legacyCalloc(1, 12))
+	p := legacyNew[mapPolygonRemap]()
 	if p != nil {
 		p.Index = index
 		p.Old = old

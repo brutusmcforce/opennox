@@ -2,12 +2,13 @@ package legacy
 
 import (
 	"encoding/binary"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 // legacyRosterProtocolVersion preserves the unconditional NOX_HIGH_RES C flag
@@ -40,7 +41,7 @@ func matchRosterInventory(to int, pl *server.Player) {
 func matchRosterPlayerIDs(pl *server.Player) int {
 	s := GetServer().S()
 	for u := s.Players.FirstUnit(); u != nil; u = s.Players.NextUnit(u) {
-		if u.NetCode == pl.NetCodeVal || *equipmentWord(u.UpdateData, 260) == 0 {
+		if u.NetCode == pl.NetCodeVal || u.UpdateDataPlayer().IsCamping == 0 {
 			continue
 		}
 		code := uint16(s.GetUnitNetCode(u))

@@ -2,7 +2,8 @@ package opennox
 
 import (
 	"math"
-	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 
 	"github.com/brutusmcforce/opennox/libs/object"
 
@@ -158,8 +159,8 @@ func nox_xxx_monsterCreateFn_54C480(u *server.Object) {
 	legacy.Nox_xxx_monsterAutoSpells_54C0C0(u)
 	if u.SubClass().AsMonster().Has(object.MonsterShopkeeper) {
 		idata := u.InitData
-		*(*float32)(unsafe.Add(idata, 1716)) = 1.0
-		*(*float32)(unsafe.Add(idata, 1720)) = 0.33333
+		layout.As[server.ShopkeeperInitData](idata).Field1716 = 1.0
+		layout.As[server.ShopkeeperInitData](idata).Field1720 = 0.33333
 	}
 	if u.SubClass().AsMonster().Has(object.MonsterFemaleNPC) {
 		for i := range ud.Color {

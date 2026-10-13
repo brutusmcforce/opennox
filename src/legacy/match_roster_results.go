@@ -2,14 +2,14 @@ package legacy
 
 import (
 	"encoding/binary"
+	"math"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/internal/netlist"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"math"
-	"unsafe"
 )
 
 func matchRosterWinner(minimum bool) int {
@@ -176,7 +176,7 @@ func matchRosterCheckLimit() int {
 		GetServer().SwitchMap(alloc.GoString(worldQuestPending()))
 		gameplayTextPrivateAll(alloc.InternCString("chklimit.c:AutoExitToNextMap"))
 		for u := s.Players.FirstUnit(); u != nil; u = s.Players.NextUnit(u) {
-			if *equipmentWord(u.UpdateData, 312) == 0 && *equipmentWord(u.UpdateDataPlayer().Player.C(), int(layoutServerPlayer.Off(4792)) /* Field4792 */) == 1 {
+			if u.UpdateDataPlayer().Field78 == nil && u.UpdateDataPlayer().Player.Field4792 == 1 {
 				questRuntimeStageComplete(u)
 			}
 		}
@@ -194,8 +194,8 @@ func matchRosterCheckLimit() int {
 			if u.UpdateData != nil {
 				pl := u.UpdateDataPlayer().Player
 				b := []byte{154, 0, 0, 0, 0}
-				binary.LittleEndian.PutUint16(b[1:], matchRosterTimerCoordinate(*(*float32)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(3632)) /* Pos3632Vec.X */))))
-				binary.LittleEndian.PutUint16(b[3:], matchRosterTimerCoordinate(*(*float32)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(3636)) /* Pos3632Vec.Y */))))
+				binary.LittleEndian.PutUint16(b[1:], matchRosterTimerCoordinate(pl.Pos3632Vec.X))
+				binary.LittleEndian.PutUint16(b[3:], matchRosterTimerCoordinate(pl.Pos3632Vec.Y))
 				s.NetList.AddToMsgListCli(ntype.PlayerInd(pl.PlayerInd), netlist.Kind1, b)
 			}
 			s.Audio.EventObj(sound.ID(582), u, 2, u.NetCode)

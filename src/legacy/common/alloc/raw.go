@@ -5,6 +5,8 @@ import (
 	"os"
 	"sync"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 )
 
 // Retain up to 1 MiB per class, or two spans for the largest class (18 MiB total).
@@ -340,14 +342,21 @@ func rawResize(ptr unsafe.Pointer, size uintptr) (oldSize, capacity uintptr, ret
 }
 func RawRealloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
 	if ptr == nil {
-		return rawAllocate(size, 16)
+		p := rawAllocate(size, 16)
+		if layout.Checking {
+			layout.Track(p, size, nil, heapName())
+		}
+		return p
 	}
 	if size == 0 {
-		rawFree(ptr)
+		RawFree(ptr)
 		return nil
 	}
 	oldSize, capacity, retained := rawResize(ptr, size)
 	if retained {
+		if layout.Checking {
+			layout.Track(ptr, size, nil, heapName())
+		}
 		return ptr
 	}
 	next := rawAllocate(size, 16)
@@ -370,7 +379,10 @@ func RawRealloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
 		n = size
 	}
 	copy(unsafe.Slice((*byte)(next), n), unsafe.Slice((*byte)(ptr), n))
-	rawFree(ptr)
+	RawFree(ptr)
+	if layout.Checking {
+		layout.Track(next, size, nil, heapName())
+	}
 	return next
 }
 
@@ -380,6 +392,9 @@ func RawMalloc(size uintptr) unsafe.Pointer {
 	if p == nil {
 		os.Stderr.WriteString("runtime: C malloc failed\n")
 		os.Exit(2)
+	}
+	if layout.Checking {
+		layout.Track(p, size, nil, heapName())
 	}
 	return p
 }

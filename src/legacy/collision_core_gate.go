@@ -9,8 +9,8 @@ import (
 )
 
 func collisionGateCircle(gate, u *server.Object, mode int32) {
-	ud := gate.UpdateData
-	direction := int32(*(*int16)(unsafe.Add(ud, 40)))
+	ud := gate.UpdateDataDoor()
+	direction := int32(ud.Angle)
 	index := direction + 160
 	if index >= 256 {
 		index = direction - 96
@@ -32,7 +32,7 @@ func collisionGateCircle(gate, u *server.Object, mode int32) {
 	depth := float32(float64(u.Shape.Circle.R) - float64(distance))
 	geometryHit(u, gate, &normal)
 	s := GetServer().S()
-	*equipmentWord(ud, 44) = s.Frame()
+	ud.HitFrame = s.Frame()
 	if mode == 1 {
 		velocity := float32(-float64(normal.Y)*float64(u.VelVec.Y) - float64(normal.X)*float64(u.VelVec.X))
 		damp := math.Sqrt(float64(u.Mass) * float64(geometryWallForce()) * 4)
@@ -46,10 +46,10 @@ func collisionGateCircle(gate, u *server.Object, mode int32) {
 		u.ObjFlags &^= 0x8000000
 	}
 	geometryActivate(gate)
-	if !gate.TeamPtr().Has() || *equipmentWord(ud, 12) != *equipmentWord(ud, 4) || gate.TeamPtr().SameAs(u.TeamPtr()) {
-		if mode == 0 && *(*byte)(unsafe.Add(ud, 1)) == 0 && (gate.ObjOwner == nil || gate.ObjOwner == u) {
+	if !gate.TeamPtr().Has() || ud.Dir != ud.BaseDir || gate.TeamPtr().SameAs(u.TeamPtr()) {
+		if mode == 0 && ud.KeyType == 0 && (gate.ObjOwner == nil || gate.ObjOwner == u) {
 			torque := (float64(u.Shape.Circle.R) - float64(distance)) * float64(u.Mass)
-			angular := (*float32)(unsafe.Add(ud, 32))
+			angular := &ud.Torque
 			cross := float64(memmap.Int32(0x587000, uintptr(192088+8*index)))*(float64(u.NewPos.Y)-float64(gate.NewPos.Y)) - float64(memmap.Int32(0x587000, uintptr(192092+8*index)))*(float64(u.NewPos.X)-float64(gate.NewPos.X))
 			if cross <= 0 {
 				*angular = float32(torque + float64(*angular))

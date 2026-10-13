@@ -19,9 +19,6 @@ jobs:
       run:
         working-directory: src
     env:
-      # The game is a 32-bit build, so the libraries are tested as 386 (int is 32 bits there).
-      # Without cgo, 386 test binaries run directly on the 64-bit runner.
-      GOARCH: "386"
       CGO_ENABLED: "0"
     steps:
       - uses: actions/checkout@v4
@@ -44,3 +41,18 @@ jobs:
 
       - name: Test
         run: go test -short -timeout 10m $(cat "$RUNNER_TEMP/packages.txt")
+
+  lint64:
+    name: 64-bit layout lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: src/go.mod
+          cache-dependency-path: src/go.sum
+
+      # raw 386 offsets into moved struct fields and pointers kept in 32-bit integers; see the script
+      - name: Lint
+        run: scripts/ci/lint-64bit.sh

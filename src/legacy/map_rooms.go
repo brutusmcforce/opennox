@@ -1,10 +1,11 @@
 package legacy
 
 import (
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/platform"
 	"github.com/brutusmcforce/opennox/libs/types"
-	"unsafe"
 )
 
 // These records retain the 32-bit map-generation layout and address links.
@@ -56,16 +57,27 @@ func mapRoomGlobalWord(i int) *uint32 {
 }
 func mapRoomPointer(v uint32) unsafe.Pointer              { return memmap.WordPtr(v) }
 func mapRoomRaw(p unsafe.Pointer) uint32                  { return memmap.PtrWord(p) }
-func mapRoomWord(p unsafe.Pointer, off int) *int32        { return (*int32)(unsafe.Add(p, off)) }
-func mapRoomFloatWord(p unsafe.Pointer, off int) *float32 { return (*float32)(unsafe.Add(p, off)) }
-func mapRoomRef(p unsafe.Pointer, off int) *unsafe.Pointer {
-	return (*unsafe.Pointer)(unsafe.Add(p, off))
+func mapRoomWord(p unsafe.Pointer, off int) *int32        { return rawAt[int32](p, off) }
+func mapRoomFloatWord(p unsafe.Pointer, off int) *float32 { return rawAt[float32](p, off) }
+
+// mapRoomRef reads a reference in a map generator record: the records keep the 32-bit layout of the original
+// game, so references are pointer words (see populationWord).
+func mapRoomRef(p unsafe.Pointer, off int) unsafe.Pointer {
+	return mapRoomPointer(*(*uint32)(unsafe.Add(p, off)))
 }
-func mapRoomByte(p unsafe.Pointer, off int) *byte { return (*byte)(unsafe.Add(p, off)) }
+
+// setMapRoomRef writes a reference in a map generator record (see mapRoomRef).
+func setMapRoomRef(p unsafe.Pointer, off int, v unsafe.Pointer) {
+	*(*uint32)(unsafe.Add(p, off)) = mapRoomRaw(v)
+}
+func mapRoomByte(p unsafe.Pointer, off int) *byte { return rawAt[byte](p, off) }
 
 // Keep allocation and release in the same legacy profile-specific domain.
 func mapRoomCalloc(count uint32, size uintptr) unsafe.Pointer {
-	return legacyCalloc(uintptr(count), uintptr(size))
+	p := legacyCalloc(uintptr(count), uintptr(size))
+	// The map generator keeps these blocks as pointer words and indexes them with word arithmetic.
+	memmap.RegisterWordRegion(p, uintptr(count)*size)
+	return p
 }
 func mapRoomRelease(p unsafe.Pointer) { mapRoomBeforeRelease(p); legacyFree(p) }
 func mapRoomScratchAlloc() uint32 {
@@ -102,7 +114,7 @@ func mapRoomRemove(r *mapRoom) int32 {
 	return mapRoomVacate(r)
 }
 func mapRoomNew(w, h int32) *mapRoom {
-	r := (*mapRoom)(mapRoomCalloc(1, 376))
+	r := mapRoomAlloc[mapRoom]()
 	if r != nil {
 		r.Kind = 1
 		r.Width = w

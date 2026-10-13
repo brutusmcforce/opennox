@@ -1,11 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func spellEffectMovable(u *server.Object) uint32 {
@@ -56,10 +57,6 @@ func spellEffectForce(u *server.Object, ctx spellEffectForceContext) {
 	if u.ObjClass&1 == 0 {
 		collisionActivate(u)
 	}
-}
-func spellEffectPushUnit(u *server.Object, record unsafe.Pointer) {
-	ctx := spellEffectForceContext{pos: spellEffectPos(*controlPtr(record, 0), 0), radius: *temporaryFloat(record, 4), inner: *temporaryFloat(record, 8), power: *temporaryFloat(record, 12), source: spellEffectObject(record, 16), callback: *controlPtr(record, 20), arg: uintptr(*spellLifeWord(record, 24))}
-	spellEffectForce(u, ctx)
 }
 func spellEffectPushAround(pos types.Pointf, radius, inner, power float32, source *server.Object, callback unsafe.Pointer, arg uintptr) {
 	ctx := spellEffectForceContext{pos: pos, radius: radius, inner: inner, power: float32(float64(power) * 10), source: source, callback: callback, arg: arg}
@@ -129,7 +126,7 @@ func spellEffectDoorCandidate(u, source *server.Object) {
 	if d > 22500 || float64(d) >= float64(*memmap.PtrFloat32(0x5d4594, 2487704)) {
 		return
 	}
-	dir := *spellLifeWord(u.UpdateData, 12)
+	dir := u.UpdateDataDoor().Dir
 	pos := types.Ptf(float32(float64(*memmap.PtrInt32(0x587000, 196184+uintptr(dir)*8))*0.5+float64(u.PosVec.X)), float32(float64(*memmap.PtrInt32(0x587000, 196188+uintptr(dir)*8))*0.5+float64(u.PosVec.Y)))
 	if spellEffectTrace(source.PosVec, pos, 0) {
 		dword_5d4594_2487708 = memmap.PtrWord(u.CObj())
@@ -137,8 +134,8 @@ func spellEffectDoorCandidate(u, source *server.Object) {
 	}
 }
 func spellEffectDoorPropagate(u, source *server.Object) {
-	x := int32(23 * *spellLifeWord(u.UpdateData, 16))
-	y := int32(23 * *spellLifeWord(u.UpdateData, 20))
+	x := int32(23 * u.UpdateDataDoor().GridX)
+	y := int32(23 * u.UpdateDataDoor().GridY)
 	rect := types.Rectf{Min: types.Ptf(float32(float64(x)-34), float32(float64(y)-34)), Max: types.Ptf(float32(float64(x)+34), float32(float64(y)+34))}
 	spellDoorLinkSource = source
 	GetServer().S().Map.EachObjInRect(rect, func(u *server.Object) bool { spellEffectDoorLink(u); return true })

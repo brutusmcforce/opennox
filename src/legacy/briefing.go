@@ -119,7 +119,7 @@ func briefingInitSprites() *client.Drawable {
 			dr = GetClient().Nox_new_drawable_for_thing(GetClient().Cli().Things.IndByID(names[i]))
 			*p = memmap.PtrWord(dr.C())
 		}
-		*effectWord(dr, int(layoutClientDrawable.Off(120)) /* ObjFlags */) |= 0x1000000
+		*(*uint32)(unsafe.Pointer(&dr.ObjFlags)) |= 0x1000000
 	}
 	return dr
 }

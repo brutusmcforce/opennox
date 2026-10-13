@@ -4,10 +4,12 @@ import (
 	"encoding/binary"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -87,7 +89,7 @@ func tradeIntro(s *shopSession) uint32 {
 	b[0], b[1] = 0xc9, 13
 	binary.LittleEndian.PutUint16(b[2:], vendor.TypeInd)
 	tradeCopyWide(b[4:54], unitNPCName(vendor), 24)
-	copy(b[54:], alloc.GoString((*byte)(unsafe.Add(vendor.InitData, 1684))))
+	copy(b[54:], alloc.GoStringS(layout.As[server.ShopkeeperInitData](vendor.InitData).ShopText[:]))
 	return shopSend(player, b[:], 1)
 }
 func tradePeerIntro(u *server.Object, s *shopSession) uint32 {
@@ -134,9 +136,9 @@ func tradeOfferPacket(u, owner, item *server.Object, cost uint32) uint32 {
 		b[i] = 0xff
 	}
 	if uint32(item.ObjClass)&0x13001000 != 0 {
-		for i, p := range unsafe.Slice((*unsafe.Pointer)(item.InitData), 4) {
-			if p != nil {
-				b[11+i] = *(*byte)(unsafe.Add(p, 4))
+		for i, m := range layout.As[server.ModifierInitData](item.InitData).Modifiers {
+			if m != nil {
+				b[11+i] = byte(m.Ind4)
 			}
 		}
 	}
@@ -173,17 +175,16 @@ func tradeStockDecrement(item *server.Object, s *shopSession) {
 	if item == nil || s == nil {
 		return
 	}
-	data := shopVendor(s).InitData
+	data := layout.As[server.ShopkeeperInitData](shopVendor(s).InitData)
 	index := shopStockIndex(s, item)
 	if index < 0 {
 		return
 	}
-	count := int(*(*byte)(data))
-	entries := unsafe.Slice((*shopStockEntry)(unsafe.Add(data, 4)), count)
+	entries := data.Stock[:data.StockCount]
 	entries[index].Count--
 	if entries[index].Count == 0 {
 		copy(entries[index:], entries[index+1:])
-		*(*byte)(data)--
+		data.StockCount--
 	}
 }
 func tradeShortfall(u *server.Object, amount uint32) uint32 {

@@ -2,13 +2,14 @@ package legacy
 
 import (
 	"encoding/binary"
-	"github.com/brutusmcforce/opennox/libs/strman"
+	"image"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/internal/netlist"
-	"image"
-	"unsafe"
+	"github.com/brutusmcforce/opennox/libs/strman"
 )
 
 func summonWin(off uintptr) *gui.Window { return bookWindow(*summonWord(off)) }
@@ -72,7 +73,7 @@ func summonSetCommand(command uint32) int {
 	case 5:
 		normal, lit = 1321012, 1321008
 	default:
-		return int(command - 5)
+		return int(int32(command - 5))
 	}
 	w := summonWin(1321040)
 	if w == nil {
@@ -277,4 +278,4 @@ func summonRemove(code uint32, quiet bool) {
 	}
 }
 
-func summonCommandWord(w *gui.Window) *uint32 { return (*uint32)(unsafe.Add(w.C(), int(layoutGuiWindow.Off(32)) /* WidgetData */)) }
+func summonCommandWord(w *gui.Window) *uint32 { return &w.Value }

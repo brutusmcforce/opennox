@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
@@ -22,8 +24,8 @@ func shopRepairQuote(u *server.Object, s *shopSession, code uint32) uint32 {
 	}
 	charge := false
 	if item.ObjClass&0x1000 != 0 && item.ObjSubClass&0x47f0000 != 0 {
-		data := unsafe.Slice((*byte)(item.UseData.Ptr), 110)
-		charge = data[108] < data[109] && data[109] != 0
+		data := item.UseDataWand()
+		charge = data.Charges < data.MaxCharges && data.MaxCharges != 0
 	}
 	hp := item.HealthData
 	if (hp != nil && hp.Cur != hp.Max && hp.Max != 0) || charge {
@@ -54,9 +56,9 @@ func shopRepair(u *server.Object, s *shopSession, code uint32) uint32 {
 	ind := int32(uint8(u.UpdateDataPlayer().Player.PlayerInd))
 	gameplayReportItemHealth(int(ind), item)
 	if item.ObjClass&0x1000 != 0 && item.ObjSubClass&0x47f0000 != 0 {
-		data := unsafe.Slice((*byte)(item.UseData.Ptr), 110)
+		data := item.UseDataWand()
 		if effectsRecharge(item, 100) != 0 {
-			gameplayReportCharges(int(ind), item, byte(data[108]), byte(data[109]))
+			gameplayReportCharges(int(ind), item, data.Charges, data.MaxCharges)
 		}
 	}
 	gameplayReportPlayerStat(int(ind), u)
@@ -120,13 +122,13 @@ func shopLoad(s *shopSession) {
 		}
 		stage := uint32(Nox_game_getQuestStage_4E3CC0()) + 2
 		for _, category := range [...]uint32{8, 8, 8, 8, 16, 16, 16, 16, 1, 1, 1, 1, 1, 1, 4, 4, 4} {
-			*(*uint32)(marker.InitData) = category
+			marker.InitDataRewardMarker().Categories = category
 			if u := rewardMarker(marker, stage); u != nil {
 				shopAdd(s, u)
 			}
 		}
 		if core.Rand.Logic.Int(0, 100) > 90 {
-			*(*uint32)(marker.InitData) = 2
+			marker.InitDataRewardMarker().Categories = 2
 			if u := rewardMarker(marker, stage); u != nil {
 				shopAdd(s, u)
 			}
@@ -138,8 +140,9 @@ func shopLoad(s *shopSession) {
 	if data == nil {
 		return
 	}
-	for i := 0; i < int(*(*byte)(data)); i++ {
-		e := (*shopStockEntry)(unsafe.Add(data, 4+28*i))
+	stock := layout.As[server.ShopkeeperInitData](data)
+	for i := 0; i < int(stock.StockCount); i++ {
+		e := &stock.Stock[i]
 		for j := 0; j < int(e.Count); j++ {
 			u := asObjectS(nox_xxx_newObjectWithTypeInd_4E3450(int(int32(e.Type))))
 			if u == nil {
@@ -152,13 +155,13 @@ func shopLoad(s *shopSession) {
 				stateAttributes(u, &mods)
 			}
 			if u.Xfer == xferIdentityKey(xferIDSpellReward) {
-				*(*byte)(u.UseData.Ptr) = byte(e.Reward)
+				u.UseDataSpellReward().Spell = byte(e.Reward)
 			}
 			if u.Xfer == xferIdentityKey(xferIDAbilityReward) {
-				*(*byte)(u.UseData.Ptr) = byte(e.Reward)
+				u.UseDataAbilityReward().Ability = byte(e.Reward)
 			}
 			if u.Xfer == xferIdentityKey(xferIDFieldGuide) {
-				alloc.Strcpy(u.UseData.Ptr, unsafe.Pointer(nox_xxx_getUnitNameByThingType_4E3A80(int(int32(e.Reward)))))
+				alloc.Strcpy(unsafe.Pointer(&u.UseDataFieldGuide().CreatureBuf[0]), unsafe.Pointer(nox_xxx_getUnitNameByThingType_4E3A80(int(int32(e.Reward)))))
 			}
 			shopAdd(s, u)
 		}

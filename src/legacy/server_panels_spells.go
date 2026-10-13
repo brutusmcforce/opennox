@@ -1,25 +1,27 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/spell"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func serverPanelsSpellOpen(parent *gui.Window) int {
 	w := Nox_new_window_from_file("spelllst.wnd", serverPanelsSpellProc)
-	*serverPanelsWord(1045484) = uint32(serverOptionsPtr(w))
+	*serverPanelsWord(1045484) = memmap.PtrWord(w.C())
 	if w == nil {
 		return 0
 	}
 	w.SetDraw(serverPanelsBackground)
 	serverPanelsOwner(w, parent)
 	list, classes := w.ChildByID(1110), w.ChildByID(1112)
-	*serverPanelsWord(1045480) = uint32(serverOptionsPtr(list))
-	*serverPanelsWord(1045508) = uint32(serverOptionsPtr(classes))
+	*serverPanelsWord(1045480) = memmap.PtrWord(list.C())
+	*serverPanelsWord(1045508) = memmap.PtrWord(classes.C())
 	serverPanelsSpellLayout()
 	teamUIEvent(list, 16399, 0, 0)
 	teamUIEvent(classes, 16399, 0, 0)
@@ -66,7 +68,7 @@ func serverPanelsSpellOpen(parent *gui.Window) int {
 	if !noxflags.HasGame(1) || noxflags.HasGame(49152) {
 		serverPanelsEnable(w, 1115, 1133, 0)
 	}
-	return int(serverOptionsPtr(w))
+	return int(memmap.PtrWord(w.C())) // stored as a pointer word
 }
 func serverPanelsSpellLayout() *gui.Window {
 	list, classes := serverPanelsWindow(1045480), serverPanelsWindow(1045508)

@@ -107,7 +107,10 @@ func objectXferLight(u *server.Object) int {
 			}
 		}
 		if d != nil {
-			copy(light[:], unsafe.Slice((*byte)(unsafe.Add(d.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */)), len(light)))
+			// the saved record keeps the 386 layout of the drawable from LightFlags on
+			layoutClientDrawable.Runs(136, uintptr(len(light)), func(o386, o, n uintptr) {
+				copy(light[o386-136:], unsafe.Slice((*byte)(unsafe.Add(unsafe.Pointer(d), o)), n))
+			})
 		}
 	}
 	p := unsafe.Pointer(&light[0])
@@ -135,11 +138,11 @@ func objectXferLight(u *server.Object) int {
 		*objectXferWord(p, 128) = 0
 		light[138] = 128
 		if r.read() && (*(*float32)(unsafe.Add(p, 4)) > 63 || float64(int32(*objectXferWord(p, 12)))*memmap.Float64(0x581450, 9752) > memmap.Float64(0x581450, 9744)) {
-			particleLightIntensity(p, 63, false)
+			particleLightIntensityRaw(p, 63)
 		}
 	}
 	if r.read() && objectXferEditor() {
-		copy(unsafe.Slice((*byte)(unsafe.Add(u.Field189, 2432)), len(light)), light[:])
+		copy(u.EditorData().Light[:], light[:])
 	}
 	return objectXferFinish(r, u, v, saved)
 }

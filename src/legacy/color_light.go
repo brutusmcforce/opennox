@@ -11,7 +11,7 @@ import (
 
 // The animation stores the interpolation step in a byte, even for longer periods.
 func colorLightInterpolation(d *client.Drawable, kind int) (first, next int, step, period float64, ok bool) {
-	count := int(int8(*effectByte(d, 432+kind)))
+	count := int(int8((*client.DrawableUnionColorLight)(unsafe.Pointer(&d.Union)).Counts[kind]))
 	p := int(*effectShort(d, 258+2*kind))
 	if count <= 1 || p == 0 {
 		return
@@ -23,7 +23,7 @@ func colorLightInterpolation(d *client.Drawable, kind int) (first, next int, ste
 	idx := int64(pos)
 	first = int(int8(idx))
 	next = first + 1
-	if *effectByte(d, int(layoutClientDrawable.Off(176)) /* Field_44 */)&(1<<(2*kind)) != 0 {
+	if *(*byte)(unsafe.Pointer(&d.Field_44))&(1<<(2*kind)) != 0 {
 		if next >= count {
 			next = 0
 		}
@@ -51,7 +51,7 @@ func colorLightColor(d *client.Drawable) {
 		end := int(*effectByte(d, 178+3*b+i))
 		rgb[i] = int(int64(float64(end-start)/period*step + float64(start)))
 	}
-	particleLightColor(unsafe.Add(d.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), rgb[0], rgb[1], rgb[2])
+	particleLightColor(d, rgb[0], rgb[1], rgb[2])
 }
 func colorLightIntensity(d *client.Drawable) {
 	a, b, step, period, ok := colorLightInterpolation(d, 1)
@@ -61,10 +61,10 @@ func colorLightIntensity(d *client.Drawable) {
 	start := int(*effectByte(d, 226+a))
 	end := int(*effectByte(d, 226+b))
 	value := float32(step*(float64(end-start)/period) + float64(start))
-	particleLightIntensity(unsafe.Add(d.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), value, true)
+	particleLightIntensity(d, value, true)
 }
 func colorLightPenumbra(d *client.Drawable) int {
-	mode := *effectWord(d, int(layoutClientDrawable.Off(168)) /* Field_42 */)
+	mode := d.Field_42
 	if mode != 0 {
 		return int(mode)
 	}
@@ -75,13 +75,13 @@ func colorLightPenumbra(d *client.Drawable) int {
 	start := int(*effectByte(d, 242+a))
 	end := int(*effectByte(d, 242+b))
 	value := int(int64(step*(float64(end-start)/period) + float64(start)))
-	return int(particleLightAngle(unsafe.Add(d.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), value, true))
+	return int(particleLightAngle(d, value, true))
 }
 func colorLightTarget(d *client.Drawable) {
-	if *effectByte(d, int(layoutClientDrawable.Off(176)) /* Field_44 */)&0x40 == 0 {
+	if *(*byte)(unsafe.Pointer(&d.Field_44))&0x40 == 0 {
 		return
 	}
-	target := GetClient().Cli().Objs.ByNetCodeStatic(int(*effectWord(d, int(layoutClientDrawable.Off(264)) /* Field_66 */)))
+	target := GetClient().Cli().Objs.ByNetCodeStatic(int(d.Field_66))
 	if target == nil {
 		return
 	}
@@ -93,21 +93,21 @@ func colorLightTarget(d *client.Drawable) {
 	if dy < 0 {
 		angle = 360 - angle
 	}
-	particleLightAngle(unsafe.Add(d.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), int(effectsTruncWord(angle)), false)
+	particleLightAngle(d, int(effectsTruncWord(angle)), false)
 }
 func colorLightRotate(d *client.Drawable) {
-	if *effectWord(d, int(layoutClientDrawable.Off(168)) /* Field_42 */) == 0 {
+	if d.Field_42 == 0 {
 		return
 	}
-	flags := *effectShort(d, int(layoutClientDrawable.Off(176)) /* Field_44 */)
-	speed := int16(*effectShort(d, int(layoutClientDrawable.Off(270)) /* Field_67 */))
+	flags := *(*uint16)(unsafe.Pointer(&d.Field_44))
+	speed := int16(*(*uint16)(unsafe.Add(unsafe.Pointer(&d.Field_67), 2)))
 	if flags&0x80 == 0 || speed == 0 {
 		return
 	}
-	start := float64(*effectShort(d, int(layoutClientDrawable.Off(268)) /* Field_67 */))
+	start := float64(*(*uint16)(unsafe.Pointer(&d.Field_67)))
 	span := 360.0
 	if flags&0x100 != 0 {
-		span = float64(int(*effectShort(d, int(layoutClientDrawable.Off(272)) /* Field_68 */)) - int(*effectShort(d, int(layoutClientDrawable.Off(268)) /* Field_67 */)))
+		span = float64(int(*(*uint16)(unsafe.Pointer(&d.Field_68))) - int(*(*uint16)(unsafe.Pointer(&d.Field_67))))
 	}
 	if span == 0 {
 		return
@@ -126,10 +126,10 @@ func colorLightRotate(d *client.Drawable) {
 	} else if angle < 0 {
 		angle += 360
 	}
-	particleLightAngle(unsafe.Add(d.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), int(angle), false)
+	particleLightAngle(d, int(angle), false)
 }
 func colorLightUpdate(vp *noxrender.Viewport, d *client.Drawable) int {
-	if *effectByte(d, int(layoutClientDrawable.Off(432)) /* Union._ */) == 0 && *effectByte(d, int(layoutClientDrawable.Off(433)) /* Union._ */) == 0 && *effectByte(d, int(layoutClientDrawable.Off(434)) /* Union._ */) == 0 {
+	if (*client.DrawableUnionColorLight)(unsafe.Pointer(&d.Union)).Counts == [3]byte{} {
 		GetClient().Cli().Objs.List5Delete(d)
 		return 1
 	}

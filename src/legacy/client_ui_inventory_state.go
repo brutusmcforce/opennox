@@ -3,6 +3,10 @@ package legacy
 import (
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/server"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
@@ -49,7 +53,7 @@ func uiInventoryUsePotion(typ uint32) {
 
 func sub_467590() int {
 	if p := uiMeterPlayer(); p != nil {
-		return int(*(*int8)(unsafe.Add(p, 3684)))
+		return int(*(*int8)(unsafe.Pointer(&layout.As[server.Player](unsafe.Pointer(p)).Level)))
 	}
 	return 1
 }
@@ -58,14 +62,14 @@ func uiInventoryMode() int { return int(dword_5d4594_1049864) }
 func uiInventoryItemHealth(code int, current, maximum int16) int16 {
 	if found := uiInventoryFindCode(uint32(code)); found != nil {
 		dr := found.Cell.Drawable
-		*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */)) = uint16(current)
-		*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(294)) /* Field_73_2 */)) = uint16(maximum)
+		dr.Field_73_1 = uint16(current)
+		dr.Field_73_2 = uint16(maximum)
 		return int16(memmap.PtrWord(dr.C()))
 	}
 	dr := uiInventoryDragged()
 	if dr != nil && dr.NetCode32 == uint32(code) {
-		*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */)) = uint16(current)
-		*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(294)) /* Field_73_2 */)) = uint16(maximum)
+		dr.Field_73_1 = uint16(current)
+		dr.Field_73_2 = uint16(maximum)
 		return maximum
 	}
 	return int16(memmap.PtrWord(unsafe.Pointer(dr)))
@@ -91,8 +95,8 @@ func sub_467930(code, current, maximum int) unsafe.Pointer {
 	}
 	cell := found.Cell
 	dr := cell.Drawable
-	*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(448)) /* Union._ */)) = uint16(current)
-	*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(450)) /* Union._ */)) = uint16(maximum)
+	item := layout.As[client.DrawableUnionItem](unsafe.Pointer(&dr.Union))
+	item.Field_112_0, item.Field_112_2 = int16(current), int16(maximum) // charges
 	if cell.Equipped == 1 {
 		return unsafe.Pointer(uintptr(sub_470D90(current, maximum))) // an integer result, not a pointer
 	}

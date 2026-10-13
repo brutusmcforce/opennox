@@ -5,11 +5,11 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/spell"
-	"github.com/brutusmcforce/opennox/libs/types"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -99,7 +99,7 @@ func Nox_xxx_netOnPacketRecvServ_51BAD0_net_sdecode_switch(_ ntype.PlayerInd, da
 			return -1
 		}
 		// Preserve the shared layout and raw byte writes of the original alias table.
-		dst := unsafe.Slice((*byte)(unsafe.Add(player.C(), 16+8*int(data[1]))), 8)
+		dst := unsafe.Slice((*byte)(unsafe.Pointer(&player.NetData16[int(data[1])].Field0)), 8)
 		copy(dst, data[2:10])
 		return 10
 	case 224:

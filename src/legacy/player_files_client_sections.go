@@ -1,11 +1,12 @@
 package legacy
 
 import (
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func playerFileCopyString(dst unsafe.Pointer, s string) {
@@ -41,7 +42,7 @@ func playerFileGUI() int {
 		p := GetServer().S().Players.ByID(int(nox_player_netCode_85319C))
 		order := byte(4)
 		if p != nil {
-			order = *(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(3648)) /* SummonOrderAll */))
+			order = *(*byte)(unsafe.Pointer(&p.SummonOrderAll))
 		}
 		order = r.byte(order)
 		if r.read() && noxflags.HasGame(2048) {
@@ -68,7 +69,7 @@ func playerFileGame(u *server.Object) int {
 			GetServer().S().Objs.SetLastObjectScriptID(server.ObjectScriptID(id))
 		}
 	}
-	name := unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(4760)) /* SaveNameBuf */)
+	name := unsafe.Pointer(&p.SaveNameBuf)
 	if !r.read() {
 		playerFileCopyString(name, alloc.GoString(sessionMapName()))
 	}

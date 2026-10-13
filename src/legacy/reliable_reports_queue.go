@@ -132,9 +132,9 @@ func reliableEnqueue(to int, data []byte, related *server.Object, priority int, 
 		}
 		*reliableCapacity() = uint32(capacity)
 		if dynamic {
-			pool = alloc.NewDynamicClass("importantClass", 416, capacity)
+			pool = alloc.NewDynamicClass("importantClass", unsafe.Sizeof(reliableMessage{}), capacity)
 		} else {
-			pool = alloc.NewClass("importantClass", 416, capacity)
+			pool = alloc.NewClass("importantClass", unsafe.Sizeof(reliableMessage{}), capacity)
 		}
 		*reliablePool() = pool.UPtr()
 	}

@@ -1,16 +1,17 @@
 package legacy
 
 import (
+	"image"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"image"
-	"unsafe"
 )
 
 func bookInputBlocked() bool {
 	p := LocalPlayerDrawable
-	return p != nil && uiShopActive() == 0 && sub_47A260() == 0 && *(*byte)(unsafe.Add(p.C(), int(layoutClientDrawable.Off(120)) /* ObjFlags */))&2 != 0
+	return p != nil && uiShopActive() == 0 && sub_47A260() == 0 && *(*byte)(unsafe.Pointer(&p.ObjFlags))&2 != 0
 }
 func bookPageComplete(guide bool) int {
 	v := uint32(0)
@@ -189,12 +190,12 @@ func bookListEvents(w *gui.Window, event uint32, pos image.Point) int {
 		return 0
 	}
 	*bookWord(1046656) = uint32(nox_xxx_guiFontHeightMB_43F320(nil) + 2)
-	perColumn := int(141 / *bookWord(1046656) - 1)
+	perColumn := int(int32(141 / *bookWord(1046656) - 1))
 	origin := w.Off
 	switch event {
 	case 5:
 		p := LocalPlayerDrawable
-		if p != nil && *(*byte)(unsafe.Add(p.C(), int(layoutClientDrawable.Off(120)) /* ObjFlags */))&2 != 0 {
+		if p != nil && *(*byte)(unsafe.Pointer(&p.ObjFlags))&2 != 0 {
 			return 1
 		}
 		*bookWord(1047536) = uint32(pos.Y)

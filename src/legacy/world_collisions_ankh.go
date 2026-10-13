@@ -3,6 +3,8 @@ package legacy
 import (
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
@@ -38,11 +40,11 @@ func worldWideEqual(a, b unsafe.Pointer) bool {
 		}
 	}
 }
-func worldAnkhRemember(pl unsafe.Pointer, a *server.Object) {
+func worldAnkhRemember(pl *server.Player, a *server.Object) {
 	for i := 0; i < 5; i++ {
-		p := controlPtr(pl, 4796+4*i)
+		p := &pl.Ankhs[i]
 		if *p == nil {
-			*p = a.CObj()
+			*p = a
 			return
 		}
 	}
@@ -56,7 +58,7 @@ func worldAnkhAlreadyAwarded(b *server.Object) {
 	*worldCollideClock() = worldCollideTicks()
 }
 func worldCollideAnkh(a, b *server.Object) {
-	data := a.InitData
+	data := a.InitDataAnkh()
 	if b == nil || b.ObjClass&4 == 0 {
 		return
 	}
@@ -64,22 +66,22 @@ func worldCollideAnkh(a, b *server.Object) {
 	pl := controlPlayer(b)
 	seen := false
 	for i := 0; i < 5; i++ {
-		if *controlPtr(pl, 4796+4*i) == a.CObj() {
+		if pl.Ankhs[i] == a {
 			seen = true
 			break
 		}
 	}
 	core := GetServer().S()
 	for i := 0; i < 64; i++ {
-		record := unsafe.Add(data, 80*i)
-		if core.Frame()-*equipmentWord(record, 76) > 240*uint32(core.TickRate()) {
-			worldCopyWide(record, memmap.PtrOff(0x5D4594, 1568012))
-			*controlByte(record, 51) = memmap.Uint8(0x5D4594, 1568016)
-			*controlByte(record, 50) = 0
-			*equipmentWord(record, 76) = 0
+		record := &data.Records[i]
+		if core.Frame()-record.Frame > 240*uint32(core.TickRate()) {
+			worldCopyWide(unsafe.Pointer(&record.Name[0]), memmap.PtrOff(0x5D4594, 1568012))
+			record.Serial[0] = memmap.Uint8(0x5D4594, 1568016)
+			record.Class = 0
+			record.Frame = 0
 		}
-		if *controlByte(record, 50) == *controlByte(pl, 2251) && worldWideEqual(record, unsafe.Add(pl, 2185)) && alloc.GoString(controlByte(record, 51)) == alloc.GoString(controlByte(pl, 2112)) {
-			worldAnkhRemember(pl, a)
+		if record.Class == pl.InfoBytes[66] && worldWideEqual(unsafe.Pointer(&record.Name[0]), unsafe.Pointer(&pl.InfoBytes)) && alloc.GoString(&record.Serial[0]) == alloc.GoString(&pl.SerialBuf[0]) {
+			worldAnkhRemember((*server.Player)(unsafe.Pointer(pl)), a)
 			worldAnkhAlreadyAwarded(b)
 			return
 		}
@@ -89,7 +91,7 @@ func worldCollideAnkh(a, b *server.Object) {
 		return
 	}
 	limit := uint32(floatToInt32(float32(core.Balance.Float("MaxExtraLives"))))
-	if *equipmentWord(bd, 320) < limit {
+	if layout.As[server.PlayerUpdateData](bd).Field80 < limit {
 		if item := core.NewObjectByTypeID("AnkhTradable"); item != nil {
 			item.Pickup.Get()(b, item, 1, 0)
 		}
@@ -98,14 +100,14 @@ func worldCollideAnkh(a, b *server.Object) {
 		visibilityFXPoint(130, a.PosVec)
 		worldCollideMessage(b, "objcoll.c:AwardExtraLife")
 		// Re-read the player reference from the original update record after pickup.
-		pl = *controlPtr(bd, 276)
-		worldAnkhRemember(pl, a)
-		index := controlByte(data, 5120)
-		record := unsafe.Add(data, 80*int(*index))
-		worldCopyWide(record, unsafe.Add(pl, 2185))
-		*controlByte(record, 50) = *controlByte(pl, 2251)
-		worldCopyNarrow(unsafe.Add(record, 51), unsafe.Add(pl, 2112))
-		*equipmentWord(record, 76) = core.Frame()
+		pl = layout.As[server.PlayerUpdateData](bd).Player
+		worldAnkhRemember((*server.Player)(unsafe.Pointer(pl)), a)
+		index := &data.Next
+		record := &data.Records[*index]
+		worldCopyWide(unsafe.Pointer(&record.Name[0]), unsafe.Pointer(&pl.InfoBytes))
+		record.Class = pl.InfoBytes[66]
+		worldCopyNarrow(unsafe.Pointer(&record.Serial[0]), unsafe.Pointer(&pl.SerialBuf))
+		record.Frame = core.Frame()
 		*index += 1
 		if *index >= 64 {
 			*index = 0

@@ -1,12 +1,15 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/spell"
-	"github.com/brutusmcforce/opennox/libs/types"
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func spellLifeForbiddenObjective(id int32) bool {
@@ -90,7 +93,7 @@ func spellLifeCaptureAllowed(id int32, u *server.Object) int32 {
 	}
 	if spellLifeForbiddenObjective(id) && u.ObjClass&4 != 0 {
 		if controlFlags(32) {
-			if *controlByte(controlPlayer(u), 4)&1 != 0 {
+			if *(*byte)(unsafe.Pointer(&controlPlayer(u).WeaponEquip))&1 != 0 {
 				return 0
 			}
 		} else if controlFlags(64) {
@@ -118,7 +121,7 @@ func spellLifePhoneme(code int32, phon int8) int32 {
 		if p == nil {
 			return 0
 		}
-		female = *controlByte(unsafe.Pointer(p), int(layoutServerPlayer.Off(2252)) /* info */) != 0
+		female = p.InfoBytes[67] != 0
 	}
 	var sound int32
 	switch phon {
@@ -159,12 +162,12 @@ func spellLifeBroadcastPhoneme(u *server.Object, phon int8) int32 {
 }
 func spellLifeCreateFly(u, target *server.Object, id int32) *server.Object {
 	s := GetServer().S()
-	radius := float32(float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */))) + 4)
+	radius := float32(float64(u.Shape.Circle.R) + 4)
 	if target == nil {
 		var pos *types.Pointf
 		if u.ObjClass&4 != 0 {
 			pl := controlPlayer(u)
-			pos = &types.Pointf{X: float32(int32(*spellLifeWord(pl, 2284))), Y: float32(int32(*spellLifeWord(pl, 2288)))}
+			pos = &types.Pointf{X: float32(int32(pl.CursorVec.X)), Y: float32(int32(pl.CursorVec.Y))}
 		}
 		target = s.Nox_xxx_spellFlySearchTarget(pos, u, s.Spells.DefByInd(spell.ID(id)).Def.Flags, 600, 0, u)
 	}
@@ -182,19 +185,19 @@ func spellLifeCreateFly(u, target *server.Object, id int32) *server.Object {
 	if out == nil {
 		return nil
 	}
-	*spellLifeWord(out.UpdateData, 16) = uint32(spellLifePower(id, u))
+	layout.As[server.SpellProjectileUpdateData](out.UpdateData).Level16 = uint32(spellLifePower(id, u))
 	GetServer().CreateObjectAt(out, u, pos)
 	out.Direction1 = u.Direction1
 	out.Direction2 = u.Direction1
-	*controlPtr(out.UpdateData, 0) = u.CObj()
-	*controlPtr(out.UpdateData, 4) = target.CObj()
-	*controlPtr(out.UpdateData, 8) = u.CObj()
-	*spellLifeWord(out.UpdateData, 12) = uint32(id)
+	*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.SpellProjectileUpdateData](out.UpdateData).Field0)) = u.CObj()
+	*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.SpellProjectileUpdateData](out.UpdateData).Field4)) = target.CObj()
+	*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.SpellProjectileUpdateData](out.UpdateData).Field8)) = u.CObj()
+	layout.As[server.SpellProjectileUpdateData](out.UpdateData).Spell12 = uint32(id)
 	// Preserve the direction helper's side effects before velocity stores.
 	var indexed [2]int32
 	geometryIndexedDirection(int32(u.Direction1), &indexed)
-	out.VelVec.X = float32(float64(dx) * float64(*(*float32)(unsafe.Add(out.CObj(), int(layoutServerObject.Off(544)) /* SpeedCur */))))
-	out.VelVec.Y = float32(float64(dy) * float64(*(*float32)(unsafe.Add(out.CObj(), int(layoutServerObject.Off(544)) /* SpeedCur */))))
+	out.VelVec.X = float32(float64(dx) * float64(out.SpeedCur))
+	out.VelVec.Y = float32(float64(dy) * float64(out.SpeedCur))
 	out.VelVec.X = float32(float64(out.VelVec.X) + float64(u.VelVec.X))
 	out.VelVec.Y = float32(float64(out.VelVec.Y) + float64(u.VelVec.Y))
 	if spellLifeHasBuff(u, 21) {

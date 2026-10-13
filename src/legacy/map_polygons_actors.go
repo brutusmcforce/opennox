@@ -1,12 +1,14 @@
 package legacy
 
 import (
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func mapPolygonCall(cb *server.ScriptCallback, u *server.Object, event int) {
@@ -14,12 +16,12 @@ func mapPolygonCall(cb *server.ScriptCallback, u *server.Object, event int) {
 		GetServer().NoxScriptC().ScriptCallback(cb, u, nil, server.ScriptEventType(event))
 	}
 }
-func mapPolygonPlayerLeave(u *server.Object, pl unsafe.Pointer) {
-	cache := equipmentWord(pl, 3664)
+func mapPolygonPlayerLeave(u *server.Object, pl *server.Player) {
+	cache := &layout.As[server.Player](unsafe.Pointer(pl)).Field3664
 	if *cache != 0 && *cache != mapPolygonUnset {
 		mapPolygonCall(&mapPolygonAt(*cache).Leave, u, 27)
 		*cache = 0
-		*(*byte)(unsafe.Add(pl, 3668)) = 1
+		*(*byte)(unsafe.Pointer(&pl.Field3668)) = 1
 	}
 }
 func mapPolygonPlayer(u *server.Object) {
@@ -28,17 +30,17 @@ func mapPolygonPlayer(u *server.Object) {
 	}
 	player := u.UpdateDataPlayer().Player
 	pl := unsafe.Pointer(player)
-	cache := equipmentWord(pl, int(layoutServerPlayer.Off(3664)) /* field3664 */)
+	cache := &layout.As[server.Player](pl).Field3664
 	var p *mapPolygon
 	if player.PlayerInd == 31 {
-		index := *equipmentWord(pl, int(layoutServerPlayer.Off(3660)) /* field3660 */)
+		index := layout.As[server.Player](pl).Field3660
 		if index == 0 {
 			*cache = 0
-			mapPolygonPlayerLeave(u, pl)
+			mapPolygonPlayerLeave(u, (*server.Player)(pl))
 			return
 		}
 		if index == mapPolygonUnset {
-			mapPolygonPlayerLeave(u, pl)
+			mapPolygonPlayerLeave(u, (*server.Player)(pl))
 			return
 		}
 		p = mapPolygonAt(index)
@@ -50,7 +52,7 @@ func mapPolygonPlayer(u *server.Object) {
 		p = mapPolygonFind(&point, *cache, false)
 		if p == nil {
 			if *cache == 0 || *cache == mapPolygonUnset {
-				mapPolygonPlayerLeave(u, pl)
+				mapPolygonPlayerLeave(u, (*server.Player)(pl))
 				return
 			}
 			p = mapPolygonAt(*cache)
@@ -80,7 +82,7 @@ func mapPolygonPlayer(u *server.Object) {
 		mapPolygonCall(&p.Enter, u, 28)
 	}
 	*cache = p.ID
-	*(*byte)(unsafe.Add(pl, int(layoutServerPlayer.Off(3668)) /* field3668 */)) = p.Level
+	*(*byte)(unsafe.Pointer(&layout.As[server.Player](pl).Field3668)) = p.Level
 }
 func mapPolygonMonster(u *server.Object) {
 	if u == nil || uint32(u.ObjClass)&2 == 0 {
@@ -117,8 +119,8 @@ func mapPolygonMonster(u *server.Object) {
 }
 func mapPolygonActorInit(p unsafe.Pointer) unsafe.Pointer {
 	if p != nil {
-		*equipmentWord(p, 3660) = mapPolygonUnset
-		*equipmentWord(p, 3664) = mapPolygonUnset
+		layout.As[server.Player](p).Field3660 = mapPolygonUnset
+		layout.As[server.Player](p).Field3664 = mapPolygonUnset
 	}
 	return p
 }
@@ -133,7 +135,7 @@ func mapPolygonColor() {
 		return
 	}
 	pl := unsafe.Pointer(player)
-	cache := equipmentWord(pl, int(layoutServerPlayer.Off(3660)) /* field3660 */)
+	cache := &layout.As[server.Player](pl).Field3660
 	if mapPolygonNext > 1 {
 		if *cache != mapPolygonUnset && int32(point.X) == memmap.Int32(0x5D4594, 811364) && int32(point.Y) == memmap.Int32(0x5D4594, 811368) {
 			return
@@ -142,14 +144,14 @@ func mapPolygonColor() {
 		p := mapPolygonFind(&pt, *cache, false)
 		if p != nil {
 			if *cache != p.ID {
-				*(*byte)(unsafe.Add(pl, int(layoutServerPlayer.Off(3668)) /* field3668 */)) = p.Level
+				*(*byte)(unsafe.Pointer(&layout.As[server.Player](pl).Field3668)) = p.Level
 				*cache = p.ID
 				GetClient().R2().Data().SetLightColor(noxrender.RGB{R: int(p.Color[0]), G: int(p.Color[1]), B: int(p.Color[2])})
 			}
 			return
 		}
 	}
-	*(*byte)(unsafe.Add(pl, int(layoutServerPlayer.Off(3668)) /* field3668 */)) = 1
+	*(*byte)(unsafe.Pointer(&layout.As[server.Player](pl).Field3668)) = 1
 	*cache = 0
 	GetClient().R2().Data().SetLightColor(noxrender.RGB{R: int(memmap.Uint32(0x587000, 142296)), G: int(memmap.Uint32(0x587000, 142300)), B: int(memmap.Uint32(0x587000, 142304))})
 }

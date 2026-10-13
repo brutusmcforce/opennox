@@ -14,7 +14,7 @@ func mapRoomSelectDecoration(r *mapRoom, list unsafe.Pointer) unsafe.Pointer {
 			// Backdrops are created without a theme phase. Only unrestricted
 			// decorations match them; their weights must not depend on r's address.
 			weight = 0
-			for d := *mapRoomRef(list, 0); d != nil; d = *mapRoomRef(d, 220) {
+			for d := mapRoomRef(list, 0); d != nil; d = mapRoomRef(d, 220) {
 				if mapRoomDecorMatchesFlags(d, r) != 0 {
 					weight += *mapRoomWord(d, 72)
 				}
@@ -36,7 +36,7 @@ func mapRoomSelectDecoration(r *mapRoom, list unsafe.Pointer) unsafe.Pointer {
 			return nil
 		}
 		draw := mapRoomRandomInt(0, weight)
-		d := *mapRoomRef(list, 0)
+		d := mapRoomRef(list, 0)
 		if d == nil {
 			continue
 		}
@@ -47,7 +47,7 @@ func mapRoomSelectDecoration(r *mapRoom, list unsafe.Pointer) unsafe.Pointer {
 					break
 				}
 			}
-			d = *mapRoomRef(d, 220)
+			d = mapRoomRef(d, 220)
 		}
 		if d == nil {
 			continue
@@ -87,38 +87,38 @@ func mapRoomConsumeDecoration(list, d unsafe.Pointer) int8 {
 		}
 	}
 	var prev unsafe.Pointer
-	cur := *mapRoomRef(list, 0)
+	cur := mapRoomRef(list, 0)
 	for cur != nil {
 		if cur == d {
 			break
 		}
 		prev = cur
-		cur = *mapRoomRef(cur, 220)
+		cur = mapRoomRef(cur, 220)
 	}
 	if prev != nil {
-		cur = *mapRoomRef(d, 220)
-		*mapRoomRef(prev, 220) = cur
+		cur = mapRoomRef(d, 220)
+		setMapRoomRef(prev, 220, cur)
 	} else {
-		*mapRoomRef(list, 0) = *mapRoomRef(d, 220)
+		setMapRoomRef(list, 0, mapRoomRef(d, 220))
 	}
-	tail := *mapRoomRef(list, 0)
+	tail := mapRoomRef(list, 0)
 	if tail != nil {
-		for cur = *mapRoomRef(tail, 220); cur != nil; cur = *mapRoomRef(cur, 220) {
+		for cur = mapRoomRef(tail, 220); cur != nil; cur = mapRoomRef(cur, 220) {
 			tail = cur
 		}
-		*mapRoomRef(tail, 220) = d
+		setMapRoomRef(tail, 220, d)
 	} else {
-		*mapRoomRef(list, 0) = d
+		setMapRoomRef(list, 0, d)
 	}
-	*mapRoomRef(d, 220) = nil
+	setMapRoomRef(d, 220, nil)
 	*mapRoomByte(d, 66) = 1
 	return int8(mapRoomRaw(cur))
 }
 func mapRoomAssignRequiredDecorations(config unsafe.Pointer) uint32 {
 	lists := [2]unsafe.Pointer{unsafe.Add(config, 88), unsafe.Add(config, 120)}
 	for kind, list := range lists {
-		for d := *mapRoomRef(list, 0); d != nil; {
-			next := *mapRoomRef(d, 220)
+		for d := mapRoomRef(list, 0); d != nil; {
+			next := mapRoomRef(d, 220)
 			if *mapRoomByte(d, 67) != 0 && *mapRoomByte(d, 68) == 0 {
 				r := mapRoomHead()
 				for r != nil {

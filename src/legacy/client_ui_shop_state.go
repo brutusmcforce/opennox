@@ -7,6 +7,7 @@ import (
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 // The shop shares the trade cell layout, but Value is a unit price.
@@ -112,14 +113,14 @@ func uiShopAdd(typ, code, value uint32, health uint16, mods unsafe.Pointer) uint
 		if dr == nil {
 			return 0
 		}
-		*(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(120)) /* ObjFlags */)) |= 0x40000000
-		*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */)) = health
-		*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(294)) /* Field_73_2 */)) = health
+		*(*uint32)(unsafe.Pointer(&dr.ObjFlags)) |= 0x40000000
+		dr.Field_73_1 = health
+		dr.Field_73_2 = health
 		if uint32(dr.Class())&0x13001000 != 0 {
 			for i, id := range unsafe.Slice((*byte)(mods), 4) {
-				var p unsafe.Pointer
+				var p *server.ModifierEff
 				if id != 255 {
-					p = GetServer().S().Modif.Nox_xxx_modifGetDescById413330(int(id)).C()
+					p = GetServer().S().Modif.Nox_xxx_modifGetDescById413330(int(id))
 				}
 				*drawableModifier(dr, i) = p
 			}

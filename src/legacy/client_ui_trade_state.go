@@ -1,17 +1,18 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"encoding/binary"
 	"fmt"
 	"image"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/common/memmap"
+
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/internal/netlist"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/strman"
 )
 
 type uiTradeCell struct {
@@ -20,10 +21,6 @@ type uiTradeCell struct {
 	Codes    [32]uint32
 	Value    uint32
 }
-
-
-
-
 
 var uiTradeScanOrder = [4]int{0, 2, 1, 3}
 
@@ -72,7 +69,7 @@ func uiTradeStart(data unsafe.Pointer) int {
 	uiWindowEnable(w, 1)
 	uiTradeShow()
 	w.SetPos(image.Pt(198, 193))
-	uiTradeSetText(w.ChildByID(3702), (*uint16)(unsafe.Add(dword_8531A0_2576.C(), int(layoutServerPlayer.Off(4704)) /* NameFinal */)))
+	uiTradeSetText(w.ChildByID(3702), &dword_8531A0_2576.NameFinal[0])
 	uiTradeSetText(w.ChildByID(3703), uiTradeTextAt(1319844))
 	uiInventoryOpenWindow()
 	return 1
@@ -141,7 +138,7 @@ func uiTradePrepare() int {
 	if ret != 0 && dword_8531A0_2576 != nil {
 		uiTradeReset()
 		w := uiTradeWindow()
-		uiTradeSetText(w.ChildByID(3702), (*uint16)(unsafe.Add(dword_8531A0_2576.C(), int(layoutServerPlayer.Off(4704)) /* NameFinal */)))
+		uiTradeSetText(w.ChildByID(3702), &dword_8531A0_2576.NameFinal[0])
 		ret = uiTradeSetText(w.ChildByID(3703), uiTradeTextAt(1319844))
 	}
 	return ret
@@ -225,7 +222,7 @@ func uiTradeAdd(data unsafe.Pointer) uint32 {
 		c.Drawable = dr
 		if uint32(dr.Class())&0x13001000 != 0 {
 			for i, id := range b[11:15] {
-				*drawableModifier(dr, i) = GetServer().S().Modif.Nox_xxx_modifGetDescById413330(int(id)).C()
+				*drawableModifier(dr, i) = GetServer().S().Modif.Nox_xxx_modifGetDescById413330(int(id))
 			}
 		}
 		c.Count = 0

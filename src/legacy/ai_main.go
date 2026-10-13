@@ -2,15 +2,14 @@ package legacy
 
 import (
 	"math"
-	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/object"
-	"github.com/brutusmcforce/opennox/libs/types"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/common/unit/ai"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -139,7 +138,7 @@ func monsterMainAI(u *server.Object) {
 	set := Nox_xxx_monsterGetSoundSet_424300(u)
 	play := func(slot int) {
 		if set != nil {
-			id := *(*uint32)(unsafe.Add(set, slot*4))
+			id := set.Sound(slot)
 			core.Audio.EventObj(sound.ID(id), u, 0, 0)
 		}
 	}
@@ -194,8 +193,8 @@ func monsterMainAI(u *server.Object) {
 				if ud.StatusFlags&0x20 != 0 && ud.Field376 != 0 && !u.HasEnchant(29) && core.Frame() >= ud.Field371 && float64(ud.FleeRange)*.5 > float64(float32(dist)) {
 					// The retained spell engine passes this buffer back through Go.
 					// Keep it C-owned across that callback boundary.
-					args, freeArgs := alloc.New([3]uint32{})
-					*args = [3]uint32{memmap.PtrWord(u.CObj()), math.Float32bits(u.PosVec.X), math.Float32bits(u.PosVec.Y)}
+					args, freeArgs := alloc.New(server.SpellAcceptArg{})
+					args.Obj, args.Pos = u, u.PosVec
 					monsterCastSpell(4, u, args)
 					freeArgs()
 					ud.Field371 = core.Frame() + uint32(nox_common_randomInt_415FA0(int(ud.Field370_0), int(ud.Field370_2)))
@@ -282,9 +281,9 @@ func monsterMainAI(u *server.Object) {
 		}
 	}
 	if ud.StatusFlags&0x20000 != 0 {
-		data := (*server.PlayerUpdateData)(memmap.WordPtr(ud.Field545))
+		data := ud.BotPlayerData
 		p := data.Player
-		if *(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(2251)) /* info */)) == 0 && *(*uint32)(unsafe.Add(unsafe.Pointer(p), 4)) == 0 && byte(core.Frame())&15 == 0 {
+		if p.InfoBytes[66] == 0 && p.WeaponEquip == 0 && byte(core.Frame())&15 == 0 {
 			if t := lifecycleFoodSearch(u, 75, true); t != nil {
 				controlMorphToPlayer(u)
 				Nox_xxx_inventoryServPlace_4F36F0(u, t, 1, 1)

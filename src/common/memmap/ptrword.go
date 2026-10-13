@@ -2,8 +2,6 @@ package memmap
 
 import (
 	"fmt"
-	"os"
-	"runtime"
 	"sync"
 	"unsafe"
 )
@@ -15,6 +13,7 @@ import (
 //
 //   - 0 is nil;
 //   - a pointer into a blob is stored as its address in the original binary (below handleTag);
+//   - a pointer into a registered word region is stored as its pseudo address (see RegisterWordRegion);
 //   - any other pointer is stored as handleTag | index into a registry of such pointers.
 //
 // Code that reads a pointer word as a raw pointer gets an address that is not mapped (on Linux),
@@ -25,14 +24,6 @@ import (
 // its object alive, and the same address always gets the same word.
 
 const handleTag = 0xC0000000
-
-// encodeWords selects encoded pointer words. On 386 a pointer fits in 32 bits, so words are the plain
-// pointer values unless NOX_PTRWORDS is set; tests set it to find code that mixes words and raw pointers,
-// which only works on 386 and breaks on 64-bit platforms.
-var encodeWords = runtime.GOARCH != "386" || os.Getenv("NOX_PTRWORDS") != ""
-
-// EncodedWords reports if pointer words are encoded (see PtrWord).
-func EncodedWords() bool { return encodeWords }
 
 var handles struct {
 	sync.Mutex
@@ -45,11 +36,11 @@ func PtrWord(p unsafe.Pointer) uint32 {
 	if p == nil {
 		return 0
 	}
-	if !encodeWords {
-		return uint32(uintptr(p))
-	}
 	if b, off := BlobByPtr(p); b != nil {
 		return uint32(b.Addr + off)
+	}
+	if w, ok := regionWord(uintptr(p)); ok {
+		return w
 	}
 	h := &handles
 	h.Lock()
@@ -74,9 +65,6 @@ func WordPtr(w uint32) unsafe.Pointer {
 	if w == 0 {
 		return nil
 	}
-	if !encodeWords {
-		return unsafe.Pointer(uintptr(w))
-	}
 	if w&handleTag == handleTag {
 		h := &handles
 		h.Lock()
@@ -86,6 +74,9 @@ func WordPtr(w uint32) unsafe.Pointer {
 			panic(fmt.Errorf("memmap: invalid pointer handle 0x%X", w))
 		}
 		return unsafe.Pointer(h.list[i])
+	}
+	if w >= regionStart {
+		return regionPtr(w)
 	}
 	return Ptr(uintptr(w))
 }

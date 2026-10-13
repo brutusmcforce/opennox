@@ -1,11 +1,13 @@
 package legacy
 
 import (
+	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/strman"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 // Return values preserve the original ABI, including checksum and pointer bits.
@@ -107,8 +109,9 @@ func resourceHPHistory(u *server.Object) {
 	if u == nil || u.ObjClass&4 == 0 || u.HealthData == nil {
 		return
 	}
-	for i := range unsafe.Slice((*uint16)(unsafe.Add(u.UpdateData, 12)), 32) {
-		*(*uint16)(unsafe.Add(u.UpdateData, 12+i*2)) = u.HealthData.Cur
+	ud := layout.As[server.PlayerUpdateData](u.UpdateData)
+	for i := range ud.HealthPrev {
+		ud.HealthPrev[i] = u.HealthData.Cur
 	}
 	u.UpdateDataPlayer().Field19_0 = u.HealthData.Cur
 }

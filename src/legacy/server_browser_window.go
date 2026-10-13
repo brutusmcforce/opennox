@@ -1,11 +1,12 @@
 package legacy
 
 import (
+	"image"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"image"
-	"unsafe"
 )
 
 func browserWireList(list, slider, up, down *gui.Window, height int) {

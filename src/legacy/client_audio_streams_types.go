@@ -1,11 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/legacy/timer"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/legacy/timer"
 )
 
-type audioStreamFormat struct {
+type AudioStreamFormat struct {
 	Kind, Encoding, Rate, Channels, Width, ByteRate, Extra uint32
 }
 type audioStreamCatalog struct {
@@ -22,18 +23,25 @@ type audioStreamEntry struct {
 	Offset, Length, Rate, Flags, Extra uint32
 }
 
-// Data addresses are raw ABI words: copying or resetting them must not ask the
-// Go write barrier to interpret an opaque value as a managed pointer.
+// AudioStreamCatalog is the sound bag catalog (audio.idx/audio.bag), created by the main package.
+type AudioStreamCatalog = audioStreamCatalog
+
+// AudioStreamEntry is one sample of the sound bag catalog.
+type AudioStreamEntry = audioStreamEntry
+
+// Data fields are plain addresses into the audio cache blocks (alloc.Calloc memory, kept alive by the
+// allocator). They are uintptr, not pointer words, because the mixer advances them by byte counts;
+// as uintptr the Go write barrier never interprets them either.
 type audioStreamBuffer struct {
-	Data    uint32
+	Data    uintptr
 	Length  uint32
 	Chunks  legacyListNode
-	Format  *audioStreamFormat
+	Format  *AudioStreamFormat
 	Field24 uint32
 }
 type audioStreamChunk struct {
 	Node   legacyListNode
-	Data   uint32
+	Data   uintptr
 	Length uint32
 	Owner  *audioStreamBuffer
 }
@@ -50,7 +58,7 @@ type audioStreamCacheEntry struct {
 	Valid      uint32
 	Buffer     audioStreamBuffer
 	Cache      *audioStreamCache
-	Format     audioStreamFormat
+	Format     AudioStreamFormat
 }
 type audioStreamDescriptor struct {
 	Name                                 *byte
@@ -58,20 +66,20 @@ type audioStreamDescriptor struct {
 	Init, Free, ContextInit, ContextFree unsafe.Pointer
 	VoiceAPI                             *audioStreamVoiceAPI
 }
-type audioStreamDevice struct {
+type AudioStreamDevice struct {
 	Node       legacyListNode
 	Descriptor *audioStreamDescriptor
 	References int32
 	Slots      int32
-	Contexts   [16]*audioStreamContext
+	Contexts   [16]*AudioStreamContext
 }
-type audioStreamContext struct {
+type AudioStreamContext struct {
 	Node                                  legacyListNode
 	Flags, References                     uint32
-	Device                                *audioStreamDevice
+	Device                                *AudioStreamDevice
 	Slot                                  int32
 	Field28                               uint32
-	Format, RequestedFormat               audioStreamFormat
+	Format, RequestedFormat               AudioStreamFormat
 	Timers                                timer.TimerGroup
 	ParentTimers                          *timer.TimerGroup
 	Index                                 int32
@@ -98,7 +106,7 @@ type audioStreamVoice struct {
 	Priority                                int32
 	Flags                                   uint32
 	Loops                                   int32
-	Context                                 *audioStreamContext
+	Context                                 *AudioStreamContext
 	OnData, OnLoop, OnEnd, OnStop           unsafe.Pointer
 	Fields152                               [5]uint32
 	API                                     *audioStreamVoiceAPI
@@ -107,7 +115,7 @@ type audioStreamVoice struct {
 	DataCallback, LoopCallback, EndCallback unsafe.Pointer
 	Buffer                                  *audioStreamBuffer
 	Chunk                                   *audioStreamChunk
-	Data                                    uint32
+	Data                                    uintptr
 	Remaining, Length                       uint32
 	Field308                                uint32
 }

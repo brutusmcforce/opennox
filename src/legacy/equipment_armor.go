@@ -1,8 +1,10 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func equipmentArmorMask(it *server.Object) int {
@@ -34,13 +36,13 @@ func equipmentDequipArmor(u, it *server.Object, report, broadcast int) int {
 	}
 	ud := u.UpdateData
 	it.ObjFlags = flags &^ 0x10000100
-	*equipmentWord(equipmentPlayer(u), 0) &^= equipmentArmorBits(it)
+	equipmentPlayer(u).ArmorEquip &^= equipmentArmorBits(it)
 	equipmentDequipReports(u, it, report, broadcast)
 	equipmentRecalculate(u)
 	equipmentEffects(it, u, false)
 	// This is the original byte at object+48 (team linkage), not subclass+12.
-	if *(*byte)(unsafe.Add(it.CObj(), int(layoutServerObject.Off(48)) /* TeamVal.Field0 */))&2 != 0 {
-		state := *(*byte)(unsafe.Add(ud, 88))
+	if *(*byte)(unsafe.Pointer(&it.TeamVal.Field0))&2 != 0 {
+		state := *(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).State))
 		if state >= 15 && state <= 17 {
 			Nox_xxx_playerSetState_4FA020(u, 13)
 		}
@@ -99,7 +101,7 @@ func equipmentEquipArmor(u, it *server.Object, report, broadcast int) int {
 		equipmentDequipArmor(u, old, 1, 1)
 	}
 	it.ObjFlags |= 0x100
-	*equipmentWord(equipmentPlayer(u), 0) |= equipmentArmorBits(it)
+	equipmentPlayer(u).ArmorEquip |= equipmentArmorBits(it)
 	gameplayReportEquip(int(uint8(u.UpdateDataPlayer().Player.PlayerInd)), it, int(report))
 	if equipmentArmorMask(it) == 0 {
 		it.ObjFlags |= 0x10000000

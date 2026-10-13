@@ -542,7 +542,7 @@ func sub_4311B0() {
 	legacy.Dialogs.Sub_44D8C0()
 	legacy.Sub_451970()
 	if dword_5d4594_805980 != nil {
-		dword_5d4594_805980.Free()
+		freeAudioCatalog(dword_5d4594_805980)
 		dword_5d4594_805980 = nil
 	}
 	legacy.Set_dword_587000_81128(nil)

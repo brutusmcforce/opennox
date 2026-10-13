@@ -1,26 +1,30 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/legacy/timer"
 )
 
-// Counts are positive at every production owner; pool blocks retain their 4-byte free-list headers.
+// audioPoolHeader is the size of the free-list header of pool blocks (a pointer; 4 bytes in the original).
+const audioPoolHeader = unsafe.Sizeof(unsafe.Pointer(nil))
+
+// Counts are positive at every production owner; pool blocks retain their free-list headers.
 func audioStreamPoolNew(count, size int32) *unsafe.Pointer {
-	stride := uint32(size) + 4
-	p, _ := alloc.Calloc(1, uintptr(uint32(count)*stride+4))
+	stride := uintptr(size) + audioPoolHeader
+	p, _ := alloc.Calloc(1, uintptr(count)*stride+audioPoolHeader)
 	if p == nil {
 		return nil
 	}
 	head := (*unsafe.Pointer)(p)
-	*head = unsafe.Add(p, 4)
+	*head = unsafe.Add(p, audioPoolHeader)
 	for i := int32(0); i < count; i++ {
-		node := (*unsafe.Pointer)(unsafe.Add(p, 4+uintptr(uint32(i)*stride)))
+		node := (*unsafe.Pointer)(unsafe.Add(p, audioPoolHeader+uintptr(i)*stride))
 		if i+1 == count {
 			*node = nil
 		} else {
-			*node = unsafe.Add(unsafe.Pointer(node), uintptr(stride))
+			*node = unsafe.Add(unsafe.Pointer(node), stride)
 		}
 	}
 	return head
@@ -36,10 +40,10 @@ func audioStreamPoolPop(p *unsafe.Pointer) unsafe.Pointer {
 		return nil
 	}
 	*p = *(*unsafe.Pointer)(item)
-	return unsafe.Add(item, 4)
+	return unsafe.Add(item, audioPoolHeader)
 }
 func audioStreamPoolPush(p *unsafe.Pointer, item unsafe.Pointer) unsafe.Pointer {
-	node := unsafe.Add(item, -4)
+	node := unsafe.Add(item, -int(audioPoolHeader))
 	*(*unsafe.Pointer)(node) = *p
 	*p = node
 	return node
@@ -60,7 +64,7 @@ func audioStreamBufferAppend(p *audioStreamBuffer, c *audioStreamChunk) uint32 {
 func audioStreamBufferFirst(p *audioStreamBuffer) *audioStreamChunk {
 	return (*audioStreamChunk)(unsafe.Pointer(listNext(&p.Chunks)))
 }
-func audioStreamChunkInit(p *audioStreamChunk, data uint32, length uint32) *audioStreamChunk {
+func audioStreamChunkInit(p *audioStreamChunk, data uintptr, length uint32) *audioStreamChunk {
 	p.Length = length
 	p.Data = data
 	listInit(&p.Node)
@@ -68,7 +72,7 @@ func audioStreamChunkInit(p *audioStreamChunk, data uint32, length uint32) *audi
 	return p
 }
 func audioStreamChunkClear(p *audioStreamChunk) *audioStreamChunk { p.Owner = nil; return p }
-func audioStreamByteRate(p *audioStreamFormat) uint32 {
+func audioStreamByteRate(p *AudioStreamFormat) uint32 {
 	result := int32(p.Rate * p.Channels * p.Width)
 	if p.Encoding == 1 {
 		result >>= 2
@@ -79,7 +83,7 @@ func audioStreamByteRate(p *audioStreamFormat) uint32 {
 func audioStreamCatalogEntry(p *audioStreamCatalog, index int32) *audioStreamEntry {
 	return (*audioStreamEntry)(unsafe.Add(unsafe.Pointer(p.Entries), uintptr(uint32(index)*36)))
 }
-func audioStreamReadFormat(p *audioStreamCatalog, index int32, out *audioStreamFormat) uint32 {
+func audioStreamReadFormat(p *audioStreamCatalog, index int32, out *AudioStreamFormat) uint32 {
 	e := audioStreamCatalogEntry(p, index)
 	out.Kind = 4
 	out.Rate = e.Rate
@@ -94,15 +98,16 @@ func audioStreamReadFormat(p *audioStreamCatalog, index int32, out *audioStreamF
 	}
 	return out.Width
 }
-func audioStreamScaleVolume(p unsafe.Pointer, percent uint32) uint32 {
-	return percent * (*(*uint32)(unsafe.Add(p, 36)) >> 16) / 100
+func audioStreamScaleVolume(g *timer.TimerGroup, percent uint32) uint32 {
+	return percent * (g.Timers[1].Current >> 16) / 100
 }
 func audioStreamCacheNew(cat *audioStreamCatalog, budget, entries, payload int32) *audioStreamCache {
 	p, _ := alloc.New(audioStreamCache{})
 	p.Catalog = cat
 	p.Payload = payload
-	p.Blocks = audioStreamPoolNew(budget/(payload+24), payload+24)
-	p.Entries = audioStreamPoolNew(entries, 84)
+	header := int32(unsafe.Sizeof(audioStreamChunk{})) // the chunk data follows the header
+	p.Blocks = audioStreamPoolNew(budget/(payload+header), payload+header)
+	p.Entries = audioStreamPoolNew(entries, int32(unsafe.Sizeof(audioStreamCacheEntry{})))
 	listClear(&p.List)
 	if p.Blocks != nil && p.Entries != nil {
 		return p
@@ -202,9 +207,9 @@ func audioStreamCacheLoad(p *audioStreamCache, index int32) *audioStreamCacheEnt
 			audioStreamCacheDrop(e)
 			return nil
 		}
-		audioStreamChunkInit(c, memmap.PtrWord(unsafe.Add(unsafe.Pointer(c), 24)), uint32(n))
+		audioStreamChunkInit(c, uintptr(unsafe.Add(unsafe.Pointer(c), unsafe.Sizeof(*c))), uint32(n)) // the data follows the header
 		audioStreamBufferAppend(&e.Buffer, c)
-		got := audioStreamRead(p.Catalog, memmap.WordPtr(c.Data), n)
+		got := audioStreamRead(p.Catalog, unsafe.Pointer(c.Data), n)
 		if got != n {
 			audioStreamCacheDrop(e)
 			return nil

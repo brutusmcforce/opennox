@@ -19,8 +19,11 @@ func mapThemeLower(s string) string {
 	return string(b)
 }
 func mapThemeByte(p uint32, off int) *byte { return (*byte)(unsafe.Add(mapRoomPointer(p), off)) }
-func mapThemeCopy(p uint32, s string) {
-	b := unsafe.Slice(mapThemeByte(p, 0), len(s)+1)
+func mapThemeCopy(p uint32, s string)      { mapThemeCopyAt(p, 0, s) }
+
+// mapThemeCopyAt copies s as a C string to offset off of the record at pointer word p.
+func mapThemeCopyAt(p uint32, off int, s string) {
+	b := unsafe.Slice(mapThemeByte(p, off), len(s)+1)
 	copy(b, s)
 	b[len(s)] = 0
 }
@@ -141,7 +144,7 @@ func mapThemeCondition(f uint32, out *uint32) uint32 {
 	if class >= 0 {
 		*out = 0
 		for p := GetServer().S().Players.First(); p != nil; p = GetServer().S().Players.Next(p) {
-			if int(*(*byte)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(2251)) /* info */))) == class {
+			if int(p.InfoBytes[66]) == class {
 				*out = 1
 				break
 			}

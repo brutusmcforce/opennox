@@ -3,8 +3,10 @@ package legacy
 import (
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -31,10 +33,10 @@ func creatureXferSpellName(r objectXferStream, p *uint32) {
 }
 func creatureXferSpellTable(r objectXferStream, p unsafe.Pointer, version int) {
 	if version < 34 {
-		r.raw(unsafe.Add(p, 1488), 548)
+		creatureXferRaw(r, layoutServerMonsterUpdateData, p, 1488, 548)
 		return
 	}
-	table := unsafe.Slice((*uint32)(unsafe.Add(p, 1488)), 137)
+	table := unsafe.Slice(&layout.As[server.MonsterUpdateData](p).Field372, 137)
 	if r.read() {
 		clear(table)
 		count := int32(r.word(0))
@@ -46,7 +48,7 @@ func creatureXferSpellTable(r objectXferStream, p unsafe.Pointer, version int) {
 			if id < 0 {
 				id = 0
 			}
-			r.raw(unsafe.Add(p, 1488+4*int(id)), 4)
+			r.raw(unsafe.Pointer(&table[id]), 4)
 		}
 	} else {
 		count := uint32(0)
@@ -63,42 +65,38 @@ func creatureXferSpellTable(r objectXferStream, p unsafe.Pointer, version int) {
 			name := spell.ID(id).String()
 			n := r.byte(byte(len(name)))
 			r.cf.ReadWrite([]byte(name[:int(n)]))
-			r.raw(unsafe.Add(p, 1488+4*id), 4)
+			r.raw(unsafe.Pointer(&table[id]), 4)
 		}
 	}
 }
-func creatureXferHeader(r objectXferStream, u *server.Object, v int, npc bool, scriptBase unsafe.Pointer) {
+func creatureXferHeader(r objectXferStream, u *server.Object, v int, npc bool, names *server.ObjectEditorData) {
 	var direction [2]uint32
 	if !r.read() {
 		geometryIndexedDirection(int32(int16(u.Direction1)), (*[2]int32)(unsafe.Pointer(unsafe.Pointer(&direction[0]))))
 	}
 	r.raw(unsafe.Pointer(&direction[0]), 8)
-	script := func(off, nameOff int) {
-		p := unsafe.Add(u.UpdateData, off)
+	script := func(off, slot int) {
+		p := unsafe.Add(u.UpdateData, layoutServerMonsterUpdateData.Off(uintptr(off)))
 		if !npc && v < 3 {
 			objectXferLegacyScript(p)
 			return
 		}
-		var name unsafe.Pointer
-		if scriptBase != nil {
-			name = unsafe.Add(scriptBase, nameOff)
-		}
-		objectXferScript(p, name)
+		objectXferScript(p, names.ScriptName(slot))
 	}
-	script(1232, 640)
-	script(1264, 896)
-	r.raw(unsafe.Add(u.UpdateData, 1220), 2)
-	script(1224, 768)
+	script(1232, server.ScriptNameEnemySighted)
+	script(1264, server.ScriptNameDeath)
+	r.raw(unsafe.Pointer(&layout.As[server.MonsterUpdateData](u.UpdateData).Field305), 2)
+	script(1224, server.ScriptNameLookingForEnemy)
 	extra, last := 31, 52
 	if npc {
 		extra, last = 32, 50
 	}
 	if v >= extra {
-		for _, pair := range [][2]int{{1240, 1024}, {1248, 1152}, {1256, 1280}, {1272, 1408}, {1280, 1536}, {1288, 1664}} {
+		for _, pair := range [][2]int{{1240, server.ScriptNameChangeFocus}, {1248, server.ScriptNameIsHit}, {1256, server.ScriptNameRetreat}, {1272, server.ScriptNameCollision}, {1280, server.ScriptNameEnemyHeard}, {1288, server.ScriptNameEndOfWaypoint}} {
 			script(pair[0], pair[1])
 		}
 		if v >= last {
-			script(1296, 1792)
+			script(1296, server.ScriptNameLostEnemy)
 		}
 	}
 	if r.read() {
@@ -113,8 +111,10 @@ func creatureXferHeader(r objectXferStream, u *server.Object, v int, npc bool, s
 
 func creatureXferStats(r objectXferStream, u *server.Object, v int, npc bool) {
 	p := u.UpdateData
-	at := func(off, n int) { r.raw(unsafe.Add(p, off), n) }
-	word := func(off int) *uint32 { return (*uint32)(unsafe.Add(p, off)) }
+	at := func(off, n int) { creatureXferRaw(r, layoutServerMonsterUpdateData, p, off, n) } // 386 offsets, as saved
+	word := func(off int) *uint32 {
+		return (*uint32)(unsafe.Add(p, layoutServerMonsterUpdateData.Off(uintptr(off))))
+	}
 	start, statusWide, timingWide, actionNamed, more := 31, 51, 46, 34, 33
 	if npc {
 		start, statusWide, timingWide, actionNamed, more = 32, 49, 47, 35, 34
@@ -149,12 +149,12 @@ func creatureXferStats(r objectXferStream, u *server.Object, v int, npc bool) {
 	if v < actionNamed {
 		at(1360, 4)
 	}
-	creatureXferText(r, unsafe.Add(p, 1364))
+	creatureXferText(r, unsafe.Pointer(&layout.As[server.MonsterUpdateData](p).Field341))
 	creatureXferSpellTable(r, p, v)
 	for _, off := range []int{1448, 1456, 1464, 1472, 1480} {
 		if v < timingWide {
-			*(*uint16)(unsafe.Add(p, off)) = uint16(r.byte(0))
-			*(*uint16)(unsafe.Add(p, off+2)) = uint16(r.byte(0))
+			*(*uint16)(unsafe.Add(p, layoutServerMonsterUpdateData.Off(uintptr(off)))) = uint16(r.byte(0))
+			*(*uint16)(unsafe.Add(p, layoutServerMonsterUpdateData.Off(uintptr(off+2)))) = uint16(r.byte(0))
 		} else {
 			at(off, 2)
 			at(off+2, 2)
@@ -174,7 +174,7 @@ func creatureXferStats(r objectXferStream, u *server.Object, v int, npc bool) {
 		}
 		at(1320, 4)
 		if v < 42 && r.short(0) == 0 {
-			*(*byte)(unsafe.Add(p, 1445)) = 1
+			*(*byte)(unsafe.Add(unsafe.Pointer(&layout.As[server.MonsterUpdateData](p).Field361), 1)) = 1
 		}
 		for _, off := range []int{2044, 2048, 2052} {
 			if npc || v >= 53 {

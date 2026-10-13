@@ -1,5 +1,9 @@
 package legacy
 
-import "unsafe"
+import (
+	"unsafe"
 
-func mapRoomBeforeRelease(unsafe.Pointer) {}
+	"github.com/brutusmcforce/opennox/common/memmap"
+)
+
+func mapRoomBeforeRelease(p unsafe.Pointer) { memmap.UnregisterWordRegion(p) }

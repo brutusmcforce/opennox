@@ -1,9 +1,10 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/spell"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/spell"
 )
 
 func serverPanelsByte(p *byte, mask byte, on int) *byte {

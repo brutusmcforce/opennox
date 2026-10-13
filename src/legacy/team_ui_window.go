@@ -1,13 +1,14 @@
 package legacy
 
 import (
+	"image"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"image"
-	"unsafe"
 )
 
 func teamUIPlayersConstruct(parent *gui.Window) int {
@@ -56,7 +57,7 @@ func teamUIPlayersConstruct(parent *gui.Window) int {
 	if noxflags.HasGame(128) {
 		teamUIEvent(w.ChildByID(10504), 16385, uintptr(unsafe.Pointer(alloc.InternCString16(teamUIText("Title1")))), ^uintptr(0))
 	}
-	return int(uintptr(w.C()))
+	return int(memmap.PtrWord(w.C())) // stored as a pointer word
 }
 func teamUISettingsLocked() bool {
 	return int8(*(*byte)(unsafe.Add(unsafe.Pointer(teamUISettings()), 53))) < 0
@@ -78,7 +79,7 @@ func teamUIPlayersDraw(w *gui.Window, d *gui.WindowData) int {
 		enabled := 0
 		if teamUIEvent(teams, 16404, 0, 0) >= 0 {
 			selected := teamUIEvent(root.ChildByID(10501), 16404, 0, 0)
-			if *(*int32)(unsafe.Pointer(uintptr(selected))) >= 0 {
+			if *(*int32)(unsafe.Pointer(uintptr(selected))) >= 0 { // multi-select: the selected indexes
 				enabled = 1
 			}
 		}

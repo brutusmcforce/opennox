@@ -3,10 +3,12 @@ package legacy
 import (
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -16,7 +18,7 @@ func orchestrationRoundFlags() {
 	s := GetServer().S()
 	count := s.Players.Count()
 	for team := s.Teams.First(); team != nil; team = s.Teams.Next(team) {
-		flag := controlObject(team.C(), 76)
+		flag := (*server.Object)(team.Field_76)
 		if flag.InvHolder != nil || teamRuntimeCount(team) == 0 {
 			continue
 		}
@@ -41,21 +43,21 @@ func orchestrationTransitionPlayers() {
 		if u == nil {
 			continue
 		}
-		if session := *(**shopSession)(unsafe.Add(u.UpdateData, 280)); session != nil {
+		if session := layout.As[server.PlayerUpdateData](u.UpdateData).Trade70; session != nil {
 			shopCancel(session)
 		}
-		*controlPtr(u.UpdateData, 280) = nil
+		*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](u.UpdateData).Trade70)) = nil
 		s.Players.Control.Player(int(pl.PlayerInd)).Reset()
 		if noxflags.HasGame(4096) {
-			*equipmentWord(pl.C(), int(layoutServerPlayer.Off(4680)) /* field4680 */) = *equipmentWord(pl.C(), int(layoutServerPlayer.Off(4676)) /* field4676 */)
-			*equipmentWord(pl.C(), int(layoutServerPlayer.Off(4676)) /* field4676 */) = 0
+			pl.Field4680 = pl.Field4676
+			pl.Field4676 = 0
 		}
 		if !Nox_xxx_playerSetState_4FA020(u, 13) || !noxflags.HasGame(512) {
-			*equipmentWord(pl.C(), int(layoutServerPlayer.Off(4700)) /* Field4700 */) = 0
+			pl.Field4700 = 0
 			controlDefaultItems(u, int32(bool2int(!Nox_xxx_gameIsSwitchToSolo_4DB240())), int32(uint32(sessionMapState())>>1&1))
 		}
 		if pl.Field3680&0x20 != 0 {
-			controlLeaveObserver(pl.C())
+			controlLeaveObserver((*server.Player)(pl.C()))
 			Nox_xxx_playerCameraUnlock_4E6040(u)
 		}
 		u.Field34 = s.Frame()
@@ -85,45 +87,47 @@ func orchestrationRestore(arg int32) {
 				data := u.UpdateData
 				switch {
 				case u.ObjClass&2 != 0:
-					for i := 0; i < int(*controlByte(data, 1129)); i++ {
-						p := equipmentWord(data, 1132+4*i)
-						ref := objectLookupByScriptID(*p)
-						*(*unsafe.Pointer)(unsafe.Pointer(p)) = ref.CObj() // the seen slots hold object pointers
+					// The loaded data holds script IDs in place of object pointers (see creatureXferAction).
+					md := layout.As[server.MonsterUpdateData](data)
+					scriptID := func(p **server.Object) uint32 { return *(*uint32)(unsafe.Pointer(p)) }
+					for i := 0; i < int(md.Field282_1); i++ {
+						ref := objectLookupByScriptID(scriptID(&md.Field283[i]))
+						md.Field283[i] = ref // the seen slots hold object pointers
 						if ref == nil {
-							*controlByte(data, 1129) = 0
+							md.Field282_1 = 0
 						}
 					}
-					*controlPtr(data, 1196) = objectLookupByScriptID(*equipmentWord(data, 1196)).CObj()
+					md.CurrentEnemy = objectLookupByScriptID(scriptID(&md.CurrentEnemy))
 					if int32(u.ObjFlags) >= 0 {
 						creatureXferPostload(u)
 					}
-					for _, off := range []int{392, 1200} {
-						ref := objectLookupByScriptID(*equipmentWord(data, off))
-						*equipmentWord(data, off) = 0
+					for _, p := range []*uint32{&md.Field98, &md.Field300} {
+						ref := objectLookupByScriptID(*p)
+						*p = 0
 						if ref != nil {
-							*equipmentWord(data, off) = ref.NetCode
+							*p = ref.NetCode
 						}
 					}
-					*controlPtr(data, 1216) = objectLookupByScriptID(*equipmentWord(data, 1216)).CObj()
-					for i := 0; i < int(*controlByte(data, 2172)); i++ {
-						p := equipmentWord(data, 2140+4*i)
+					md.Field304 = objectLookupByScriptID(scriptID(&md.Field304))
+					for i := 0; i < int(md.Field543_0); i++ {
+						p := &md.Field535[i]
 						ref := objectLookupByScriptID(*p)
 						if ref != nil {
 							*p = ref.NetCode
 						} else {
-							*controlByte(data, 2172) = 0
+							md.Field543_0 = 0
 						}
 					}
 				case u.ObjClass&0x4000 != 0:
-					if *equipmentWord(data, 16) != 0 {
+					if layout.As[server.ElevatorUpdateData](data).Field_4 != 0 {
 						u.NeedSync()
 					}
 				case u.ObjClass&0x8000 != 0:
-					if target := controlObject(data, 4); target != nil && *equipmentWord(target.UpdateData, 16) != 0 {
+					if target := layout.As[server.ElevatorShaftUpdateData](data).Partner; target != nil && layout.As[server.ElevatorUpdateData](target.UpdateData).Field_4 != 0 {
 						u.NeedSync()
 					}
 				case u.ObjClass&0x80 != 0:
-					if *equipmentWord(data, 12) != *equipmentWord(data, 4) {
+					if dd := u.UpdateDataDoor(); dd.Dir != dd.BaseDir {
 						s.Objs.AddToUpdatable(u)
 					}
 				}
@@ -162,7 +166,7 @@ func orchestrationRestore(arg int32) {
 		if u.ObjClass&2 == 0 {
 			continue
 		}
-		if *controlByte(u.UpdateData, 1440)&0x80 != 0 {
+		if *(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](u.UpdateData).StatusFlags))&0x80 != 0 {
 			gameplayReportAcquireCreature(int(pl.PlayerInd), u)
 		} else if u.ObjSubClass&0x80 != 0 {
 			gameplayReportMonitor(int(pl.PlayerInd), u)
@@ -203,18 +207,15 @@ func orchestrationDropFlags() {
 	}
 }
 func orchestrationResetPlayer(u *server.Object) uint32 {
-	data := u.UpdateData
-	pl := u.UpdateDataPlayer().Player
-	for _, off := range []int{116, 120, 124, 128, 308} {
-		*equipmentWord(data, off) = 0
-	}
-	for off := 4796; off < 4816; off += 4 {
-		*equipmentWord(pl.C(), off) = 0
-	}
+	data := u.UpdateDataPlayer()
+	pl := data.Player
+	data.Field29 = [4]*server.Object{}
+	data.Field77 = nil
+	pl.Ankhs = [5]*server.Object{}
 	if !noxflags.HasGame(2048) {
-		*controlByte(data, 244) = byte(controlGlyphCount(u))
+		*(*byte)(unsafe.Pointer(&data.CurTraps)) = byte(controlGlyphCount(u))
 	}
-	*equipmentWord(data, 264) = 0
+	data.Field66 = 0
 	u.Obj130 = nil
 	return memmap.PtrWord(mapPolygonActorInit(pl.C()))
 }
@@ -236,7 +237,7 @@ func orchestrationRewards() {
 	for u := s.Objs.List; u != nil; {
 		next := u.ObjNext
 		if marker(u) {
-			if *controlByte(u.InitData, 216)&0x80 != 0 {
+			if u.InitDataRewardMarker().Flags&0x80 != 0 {
 				if item := rewardMarker(u, stage); item != nil {
 					GetServer().CreateObjectAt(item, nil, u.PosVec)
 					if bow(item) {
@@ -275,17 +276,18 @@ func orchestrationRewards() {
 func orchestrationWalls() {
 	s := GetServer().S()
 	scan := false
-	for node := Get_dword_5d4594_251560(); node != nil; node = *controlPtr(node, 0) {
-		phase, progress, flags := controlByte(node, 21), controlByte(node, 22), *controlByte(node, 20)
-		timer := equipmentWord(node, 24)
+	for node := Get_dword_5d4594_251560(); node != nil; node = worldSecretNext(node) {
+		sw := server.AsSecretWallData(node)
+		phase, progress, flags := &sw.State, &sw.Progress, sw.Flags
+		timer := &sw.Timer
 		audio := func(open bool) {
-			wall := (*server.Wall)(*controlPtr(node, 12))
+			wall := worldSecretWall(node)
 			def := s.Walls.DefByInd(int(wall.Tile1))
 			name := def.CloseSound()
 			if open {
 				name = def.OpenSound()
 			}
-			x, y := int32(*equipmentWord(node, 4))*23+11, int32(*equipmentWord(node, 8))*23+11
+			x, y := int32(sw.GridX)*23+11, int32(sw.GridY)*23+11
 			s.Audio.EventPos(sound.ByName(name), types.Pointf{X: float32(x), Y: float32(y)}, 0, 0)
 		}
 		switch *phase {
@@ -302,7 +304,7 @@ func orchestrationWalls() {
 			*progress--
 			if *progress == 0 {
 				*phase = 1
-				*timer = uint32(s.TickRate()) * *equipmentWord(node, 16)
+				*timer = uint32(s.TickRate()) * sw.OpenDelay
 			}
 			scan = true
 		case 3:
@@ -318,13 +320,13 @@ func orchestrationWalls() {
 			*progress++
 			if *progress == 23 {
 				*phase = 3
-				*timer = uint32(s.TickRate()) * *equipmentWord(node, 16)
+				*timer = uint32(s.TickRate()) * sw.OpenDelay
 			}
 			scan = true
 		}
 		// Unknown phases deliberately preserve the previous wall's scan state.
 		if scan {
-			x, y := float64(int32(*equipmentWord(node, 4)*23))+11.5, float64(int32(*equipmentWord(node, 8)*23))+11.5
+			x, y := float64(int32(sw.GridX*23))+11.5, float64(int32(sw.GridY*23))+11.5
 			rect := types.Rectf{Min: types.Pointf{X: float32(x - 42.5), Y: float32(y - 42.5)}, Max: types.Pointf{X: float32(x + 42.5), Y: float32(y + 42.5)}}
 			s.Map.EachObjInRect(rect, func(u *server.Object) bool { collisionActivate(u); return true })
 		}

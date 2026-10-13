@@ -1,11 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func spawnPolicyDistance(a, b *server.Object) float64 {
@@ -13,8 +14,8 @@ func spawnPolicyDistance(a, b *server.Object) float64 {
 }
 func spawnPolicyView(p *server.Object) types.Rectf {
 	info := p.UpdateDataPlayer().Player
-	w := float64(*(*uint16)(unsafe.Add(unsafe.Pointer(info), 10)))
-	h := float64(*(*uint16)(unsafe.Add(unsafe.Pointer(info), 12)))
+	w := float64(info.Field10)
+	h := float64(info.Field12)
 	x, y := float64(p.PosVec.X), float64(p.PosVec.Y)
 	return types.Rectf{Min: types.Pointf{X: float32(x - w - 100), Y: float32(y - h - 100)}, Max: types.Pointf{X: float32(w + x + 100), Y: float32(h + y + 100)}}
 }
@@ -22,7 +23,7 @@ func spawnPolicyContains(r types.Rectf, p types.Pointf) bool {
 	return p.X >= r.Min.X && p.X <= r.Max.X && p.Y >= r.Min.Y && p.Y <= r.Max.Y
 }
 func spawnPolicyJoined(p *server.Object) uint32 {
-	return *(*uint32)(unsafe.Add(unsafe.Pointer(p.UpdateDataPlayer().Player), int(layoutServerPlayer.Off(4792)) /* Field4792 */))
+	return p.UpdateDataPlayer().Player.Field4792
 }
 func spawnPolicyFarCull() {
 	core := GetServer().S()
@@ -30,7 +31,7 @@ func spawnPolicyFarCull() {
 		next := n.Next
 		far := true
 		for p := core.Players.FirstUnit(); p != nil; p = core.Players.NextUnit(p) {
-			if spawnPolicyJoined(p) == 1 && *(*uint32)(unsafe.Add(p.UpdateData, 312)) == 0 && spawnPolicyDistance(p, n.Object) < 700 {
+			if spawnPolicyJoined(p) == 1 && p.UpdateDataPlayer().Field78 == nil && spawnPolicyDistance(p, n.Object) < 700 {
 				far = false
 			}
 		}

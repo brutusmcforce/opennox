@@ -5,11 +5,11 @@ import (
 	"image"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/internal/netlist"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/strman"
 )
 
 func uiShopString(id string) string {
@@ -90,7 +90,7 @@ func uiShopMouse(w *gui.Window, event int, a, b uintptr) int {
 			if event == 20 {
 				off = 1098588
 			}
-			uiShopWindow().Func94(gui.AsWindowEvent(16391, uintptr(*uiShopWord(off)), 0))
+			uiShopWindow().Func94(gui.AsWindowEvent(16391, uintptr(unsafe.Pointer(uiInventoryWindowValue(*uiShopWord(off)))), 0)) // the up/down button window
 		}
 	default:
 		return 0
@@ -118,7 +118,7 @@ func uiShopHover(p image.Point) int {
 }
 func uiShopMods(dr *client.Drawable) unsafe.Pointer {
 	if uint32(dr.Class())&0x13001000 != 0 {
-		return unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)
+		return unsafe.Pointer(&dr.Union)
 	}
 	return nil
 }

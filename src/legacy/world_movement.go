@@ -1,11 +1,12 @@
 package legacy
 
 import (
+	"math"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
-	"math"
-	"unsafe"
 )
 
 func worldElevatorSound(u *server.Object, up bool) {
@@ -36,14 +37,14 @@ func worldElevatorSound(u *server.Object, up bool) {
 	}
 }
 func worldPlatformContains(platform, target *server.Object) bool {
-	return collisionContains(&platform.PosVec, (*[11]float32)(unsafe.Add(platform.CObj(), int(layoutServerObject.Off(172)) /* Shape.Kind */)), &target.PosVec)
+	return collisionContains(&platform.PosVec, (*[11]float32)(unsafe.Pointer(&platform.Shape)), &target.PosVec)
 }
 func worldShaftCandidate(t, u *server.Object) {
 	if !worldPlatformContains(u, t) {
 		return
 	}
-	partner := *temporaryRefWord(u.UpdateData, 4)
-	height := equipmentWord(partner.UpdateData, 16)
+	partner := u.UpdateDataElevatorShaft().Partner
+	height := &partner.UpdateDataElevator().Field_4
 	delta := float32(float64(t.ZVal) + 64 - float64(int32(*height)))
 	if float64(worldAbsScratch(float32(delta))) < 10 {
 		Nox_xxx_unitMove_4E7010(t, partner.PosVec)
@@ -54,22 +55,22 @@ func worldElevatorCandidate(t, u *server.Object) {
 	if !worldPlatformContains(u, t) {
 		return
 	}
-	ud := u.UpdateData
-	partner := *temporaryRefWord(ud, 4)
+	ud := u.UpdateDataElevator()
+	partner := ud.Partner
 	if partner == nil {
 		return
 	}
-	delta := float32(float64(t.ZVal) - float64(int32(*equipmentWord(ud, 16))))
+	delta := float32(float64(t.ZVal) - float64(int32(ud.Field_4)))
 	if !(float64(worldAbsScratch(float32(delta))) < 10) {
 		return
 	}
 	tooBig := false
 	switch t.Shape.Kind {
 	case server.ShapeKindBox:
-		tooBig = *temporaryFloat(partner.CObj(), int(layoutServerObject.Off(184)) /* Shape.Box.W */) < *temporaryFloat(t.CObj(), int(layoutServerObject.Off(184)) /* Shape.Box.W */) || *temporaryFloat(partner.CObj(), int(layoutServerObject.Off(188)) /* Shape.Box.H */) < *temporaryFloat(t.CObj(), int(layoutServerObject.Off(188)) /* Shape.Box.H */)
+		tooBig = partner.Shape.Box.W < t.Shape.Box.W || partner.Shape.Box.H < t.Shape.Box.H
 	case server.ShapeKindCircle:
-		diameter := float64(*temporaryFloat(t.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) * 2
-		tooBig = diameter > float64(*temporaryFloat(partner.CObj(), int(layoutServerObject.Off(184)) /* Shape.Box.W */)) || diameter > float64(*temporaryFloat(partner.CObj(), int(layoutServerObject.Off(188)) /* Shape.Box.H */))
+		diameter := float64(t.Shape.Circle.R) * 2
+		tooBig = diameter > float64(partner.Shape.Box.W) || diameter > float64(partner.Shape.Box.H)
 	}
 	if tooBig {
 		t.ObjFlags &^= 0x100000
@@ -77,21 +78,21 @@ func worldElevatorCandidate(t, u *server.Object) {
 		return
 	}
 	// Reload the partner and height after retained calls, as the original does.
-	Nox_xxx_unitMove_4E7010(t, (*temporaryRefWord(ud, 4)).PosVec)
-	Nox_xxx_unitRaise_4E46F0(t, float32(int32(*equipmentWord(ud, 16)-64)))
+	Nox_xxx_unitMove_4E7010(t, ud.Partner.PosVec)
+	Nox_xxx_unitRaise_4E46F0(t, float32(int32(ud.Field_4-64)))
 }
 func worldShaft(u *server.Object) byte {
-	ud := u.UpdateData
-	partner := *temporaryRefWord(ud, 4)
+	ud := u.UpdateDataElevatorShaft()
+	partner := ud.Partner
 	if partner == nil {
 		return 0
 	}
 	collisionActivate(u)
-	other := (*temporaryRefWord(ud, 4)).UpdateData
-	state := (*byte)(unsafe.Add(other, 12))
-	prior := (*byte)(unsafe.Add(ud, 12))
+	other := ud.Partner.UpdateDataElevator()
+	state := &other.Field_3
+	prior := &ud.State
 	if *state == 1 {
-		if *equipmentWord(other, 16) <= 32 {
+		if other.Field_4 <= 32 {
 			GetServer().S().Map.EachObjInCircle(u.PosVec, 64, func(t *server.Object) bool { worldShaftCandidate(t, u); return true })
 		}
 		if *prior != *state {
@@ -105,12 +106,12 @@ func worldShaft(u *server.Object) byte {
 }
 func worldElevator(u *server.Object) {
 	core := GetServer().S()
-	ud := u.UpdateData
-	state := (*byte)(unsafe.Add(ud, 12))
-	height := equipmentWord(ud, 16)
+	ud := u.UpdateDataElevator()
+	state := &ud.Field_3
+	height := &ud.Field_4
 	sync := func() {
 		u.NeedSync()
-		if partner := *temporaryRefWord(ud, 4); partner != nil {
+		if partner := ud.Partner; partner != nil {
 			partner.NeedSync()
 		}
 	}
@@ -154,7 +155,7 @@ func worldElevator(u *server.Object) {
 }
 func worldTeleportCandidate(t *server.Object, pos *types.Pointf, visible bool) {
 	// This legacy filter converts the float interpretation of the class word.
-	if uint32(effectsTruncWord(float64(*temporaryFloat(t.CObj(), int(layoutServerObject.Off(8)) /* ObjClass */))))&0x420000 != 0 {
+	if uint32(effectsTruncWord(float64(*(*float32)(unsafe.Pointer(&t.ObjClass)))))&0x420000 != 0 {
 		return
 	}
 	if visible {
@@ -168,18 +169,18 @@ func worldTeleportCandidate(t *server.Object, pos *types.Pointf, visible bool) {
 	}
 }
 func worldTeleportArea(u, destination *server.Object, visible bool) {
-	r := float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */))
+	r := float64(u.Shape.Circle.R)
 	x, y := float64(u.PosVec.X), float64(u.PosVec.Y)
 	rect := types.Rectf{Min: types.Ptf(float32(x-r), float32(y-r)), Max: types.Ptf(float32(x+r), float32(y+r))}
 	GetServer().S().Map.EachObjInRect(rect, func(t *server.Object) bool { worldTeleportCandidate(t, &destination.PosVec, visible); return true })
 }
 func worldTeleport(u *server.Object) uint32 {
-	ud := u.UpdateData
-	state := (*byte)(ud)
-	speed := (*byte)(unsafe.Add(ud, 8))
-	counter := (*byte)(unsafe.Add(ud, 9))
-	anim := (*byte)(unsafe.Add(ud, 20))
-	active := equipmentWord(ud, 4)
+	ud := u.UpdateDataTransporter()
+	state := &ud.State
+	speed := &ud.Speed
+	counter := &ud.Counter
+	anim := &ud.Anim
+	active := &ud.Active
 	if *state != 0 {
 		if *state <= 2 {
 			if *counter == *speed {
@@ -219,7 +220,7 @@ func worldTeleport(u *server.Object) uint32 {
 					return result
 				}
 			} else if *anim == 8 {
-				destination := *temporaryRefWord(ud, 12)
+				destination := ud.Destination
 				result = memmap.PtrWord(destination.CObj())
 				if destination != nil {
 					worldTeleportArea(u, destination, true)
@@ -229,37 +230,38 @@ func worldTeleport(u *server.Object) uint32 {
 			}
 		}
 	} else if *active != 0 {
-		destination := *temporaryRefWord(ud, 12)
+		destination := ud.Destination
 		result = memmap.PtrWord(destination.CObj())
 		if destination != nil && u.ObjFlags&0x1000000 != 0 {
-			other := destination.UpdateData
+			other := destination.UpdateDataTransporter()
 			*state = 1
 			*speed = 0
 			*counter = 0
 			u.Field34 = GetServer().S().Frame()
-			*(*byte)(other) = 2
-			*(*byte)(unsafe.Add(other, 8)) = 0
-			*(*byte)(unsafe.Add(other, 9)) = 0
+			other.State = 2
+			other.Speed = 0
+			other.Counter = 0
 			result = GetServer().S().Frame()
-			(*temporaryRefWord(ud, 12)).Field34 = GetServer().S().Frame()
+			ud.Destination.Field34 = GetServer().S().Frame()
 		}
 	}
 	*active = 0
 	return result
 }
 func worldInvisibleTeleport(u *server.Object) uint32 {
-	ud := u.UpdateData
-	if *equipmentWord(ud, 4) != 0 {
-		destination := *temporaryRefWord(ud, 12)
+	ud := u.UpdateDataTransporter()
+	if ud.Active != 0 {
+		destination := ud.Destination
 		if destination != nil && u.ObjFlags&0x1000000 != 0 {
 			worldTeleportArea(u, destination, false)
 		}
 	}
-	*equipmentWord(ud, 4) = 0
+	ud.Active = 0
 	return memmap.PtrWord(u.CObj())
 }
 func worldPush(u *server.Object) {
-	spellEffectPushAround(u.PosVec, *temporaryFloat(u.UpdateData, 0), 0, *temporaryFloat(u.UpdateData, 8), nil, nil, 0)
+	ud := u.UpdateDataPush()
+	spellEffectPushAround(u.PosVec, ud.Radius, 0, ud.Power, nil, nil, 0)
 }
 func worldIndexedDirection(u *server.Object) (int32, int32) {
 	var out [2]int32
@@ -267,7 +269,7 @@ func worldIndexedDirection(u *server.Object) (int32, int32) {
 	return int32(out[0]), int32(out[1])
 }
 func worldBlowCandidate(t, u *server.Object) {
-	if byte(effectsTruncWord(float64(*temporaryFloat(t.CObj(), int(layoutServerObject.Off(16)) /* ObjFlags */))))&0x20 != 0 || uint32(effectsTruncWord(float64(*temporaryFloat(t.CObj(), int(layoutServerObject.Off(8)) /* ObjClass */))))&0x400000 != 0 {
+	if byte(effectsTruncWord(float64(*(*float32)(unsafe.Pointer(&t.ObjFlags)))))&0x20 != 0 || uint32(effectsTruncWord(float64(*(*float32)(unsafe.Pointer(&t.ObjClass)))))&0x400000 != 0 {
 		return
 	}
 	x := float32(float64(t.PosVec.X) - float64(u.PosVec.X))

@@ -1,8 +1,10 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/client"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/common/layout"
 )
 
 func uiInventoryEquipmentSlot(dr *client.Drawable) int {
@@ -159,9 +161,9 @@ func sub_462040(code int32) {
 	if slot == 0 {
 		dword_5d4594_1062488 = uint32(dr.NetCode32)
 	}
-	charge := int16(*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(448)) /* Union._ */)))
-	if charge >= 0 {
-		sub_470D90(int(charge), int(*(*int16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(450)) /* Union._ */))))
+	item := layout.As[client.DrawableUnionItem](unsafe.Pointer(&dr.Union))
+	if charge := item.Field_112_0; charge >= 0 {
+		sub_470D90(int(charge), int(item.Field_112_2))
 	}
 	if dword_5d4594_1062496 != 0 {
 		if next := uiInventoryFindCode(uint32(dword_5d4594_1062496)); next != nil {

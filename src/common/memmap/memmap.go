@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"sync/atomic"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 )
 
 const ptrSize = unsafe.Sizeof(unsafe.Pointer(nil))
@@ -113,6 +115,9 @@ func RegisterBlobData(addr uintptr, name string, data []byte) {
 		Initial: make([]byte, len(data)),
 	}
 	copy(b.Initial, data)
+	if len(data) != 0 {
+		layout.Track(unsafe.Pointer(&data[0]), uintptr(len(data)), nil, name)
+	}
 	for i, b2 := range blobs {
 		if b.Addr == b2.Addr {
 			blobs[i] = b
@@ -251,10 +256,6 @@ func PtrSize(addr, size uintptr) unsafe.Pointer {
 // PtrSizeOff is similar to PtrOff, but also specifies the size of the access.
 func PtrSizeOff(addr, off, size uintptr) unsafe.Pointer {
 	return PtrOff(addr, off)
-}
-
-func PtrPtr(base, off uintptr) *unsafe.Pointer {
-	return (*unsafe.Pointer)(PtrSizeOff(base, off, ptrSize))
 }
 
 func PtrT[T comparable](base, off uintptr) *T {

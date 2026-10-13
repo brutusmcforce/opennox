@@ -1,17 +1,18 @@
 package legacy
 
 import (
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/ntype"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func stateRemoveSpawned(u *server.Object) {
 	if u.ObjClass&4 != 0 {
-		pl := *(*unsafe.Pointer)(unsafe.Add(u.UpdateData, 276))
-		switch *(*byte)(unsafe.Add(pl, 2251)) {
+		pl := layout.As[server.PlayerUpdateData](u.UpdateData).Player
+		switch pl.InfoBytes[66] {
 		case 1:
 			controlRemoveGlyphs(u)
 		case 2:
@@ -59,11 +60,11 @@ func stateRememberAttacker(u, t *server.Object) {
 	if u == nil || t == nil || u == t || u.ObjClass&4 == 0 || t.ObjClass&4 == 0 {
 		return
 	}
-	from := *(*unsafe.Pointer)(unsafe.Add(u.UpdateData, 276))
-	to := *(*unsafe.Pointer)(unsafe.Add(t.UpdateData, 276))
-	*equipmentWord(to, 3604) = uint32(*(*byte)(unsafe.Add(from, 2064)))
-	*equipmentWord(to, 3608) = GetServer().S().Frame()
-	*equipmentWord(to, 3600) = 1
+	from := layout.As[server.PlayerUpdateData](u.UpdateData).Player
+	to := layout.As[server.PlayerUpdateData](t.UpdateData).Player
+	to.Field3604 = uint32(from.PlayerInd)
+	to.Field3608 = GetServer().S().Frame()
+	to.Field3600 = 1
 }
 func stateFreeze(u *server.Object, force int32) int8 {
 	result := int8(u.ObjFlags)
@@ -81,7 +82,7 @@ func stateFreeze(u *server.Object, force int32) int8 {
 		stateRaise(u, 0)
 		sub_50B510()
 		for it := u.Field129; it != nil; it = it.Field128 {
-			if it.ObjClass&2 != 0 && *equipmentWord(it.UpdateData, 1440)&0x80 != 0 {
+			if it.ObjClass&2 != 0 && *(*uint32)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](it.UpdateData).StatusFlags))&0x80 != 0 {
 				stateFreeze(it, force)
 			}
 		}
@@ -111,7 +112,7 @@ func stateUnfreeze(u *server.Object, force int32) int8 {
 		for it := u.Field129; it != nil; it = it.Field128 {
 			if it.ObjClass&2 != 0 {
 				result = int8(memmap.PtrWord(it.UpdateData))
-				if *equipmentWord(it.UpdateData, 1440)&0x80 != 0 {
+				if *(*uint32)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](it.UpdateData).StatusFlags))&0x80 != 0 {
 					result = stateUnfreeze(it, force)
 				}
 			}
@@ -133,8 +134,8 @@ func statePet(u, t *server.Object) {
 		return
 	}
 	t.ObjSubClass |= 0x80
-	pl := *(*unsafe.Pointer)(unsafe.Add(u.UpdateData, 276))
-	ind := int32(*(*byte)(unsafe.Add(pl, 2064)))
+	pl := u.UpdateDataPlayer().Player
+	ind := int32(pl.PlayerInd)
 	gameplayReportMonitor(int(ind), t)
 	nox_xxx_netMarkMinimapObject_417190(int(ind), asObjectC(t), 1)
 	nox_xxx_unitSetOwner_4EC290(asObjectC(u), asObjectC(t))
@@ -145,8 +146,8 @@ func stateRemoveMonitors(u, t *server.Object) {
 		return
 	}
 	t.ObjSubClass &^= 0x80
-	pl := *(*unsafe.Pointer)(unsafe.Add(ud, 276))
-	ind := int32(*(*byte)(unsafe.Add(pl, 2064)))
+	pl := layout.As[server.PlayerUpdateData](ud).Player
+	ind := int32(pl.PlayerInd)
 	gameplayReportUnmonitor(int(ind), t)
 	nox_xxx_netUnmarkMinimapObj_417300(int(ind), asObjectC(t), 1)
 	nox_xxx_unitClearOwner_4EC300(asObjectC(t))
@@ -177,20 +178,17 @@ func stateEqual(u, t *server.Object) bool {
 		return false
 	}
 	if u.ObjClass&0x13001000 != 0 {
-		a, b := unsafe.Slice((*uint32)(u.InitData), 4), unsafe.Slice((*uint32)(t.InitData), 4)
-		for i, v := range a {
-			if v != b[i] {
-				return false
-			}
+		if layout.As[server.ModifierInitData](u.InitData).Modifiers != layout.As[server.ModifierInitData](t.InitData).Modifiers {
+			return false
 		}
 	}
 	if u.ObjClass&0x100 == 0 {
 		return true
 	}
 	if u.ObjSubClass&1 != 0 || u.ObjSubClass&2 == 0 {
-		return *(*byte)(u.UseData.Ptr) == *(*byte)(t.UseData.Ptr)
+		return bookRewardIndex(u) == bookRewardIndex(t)
 	}
-	return alloc.GoString((*byte)(u.UseData.Ptr)) == alloc.GoString((*byte)(t.UseData.Ptr))
+	return u.UseDataFieldGuide().Creature() == t.UseDataFieldGuide().Creature()
 }
 func statePostCreate(u *server.Object) {
 	u.Field35 = 0
@@ -230,7 +228,7 @@ func statePlayerVisibility(ind int32) {
 func stateResetPixie(u *server.Object) int32 {
 	typ := stateType(1567728, "Pixie")
 	if u != nil && uint32(u.TypeInd) == typ {
-		*equipmentWord(u.UpdateData, 4) = 0
+		u.UpdateDataPixie().Target = nil
 		return int32(memmap.PtrWord(u.UpdateData))
 	}
 	return int32(typ)

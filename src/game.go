@@ -12,6 +12,8 @@ import (
 	"strings"
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	"github.com/brutusmcforce/opennox/lobby"
 	"github.com/brutusmcforce/opennox/xwis"
 
@@ -921,10 +923,10 @@ func (s *Server) nox_xxx_gameTick_4D2580_server_D() {
 	v28 := sub_4DB1C0()
 	if dead || !savedone {
 		if v28 != nil && !savedone {
-			asObjectS(u).SetPos(legacy.AsPointf(unsafe.Pointer(*(*uintptr)(unsafe.Add(v28, 700)) + 80)))
+			asObjectS(u).SetPos((*server.Object)(v28).CollideDataExit().Dest)
 		}
 	} else if v28 != nil {
-		v30 := alloc.GoString(*(**byte)(unsafe.Add(v28, 700)))
+		v30 := alloc.GoString(&layout.As[server.Object](v28).CollideDataExit().MapName[0])
 		v31, err := nox_client_checkSaveMapExistsTmp(v30)
 		if err == nil && v31 != "" {
 			nox_xxx_gameSetSwitchSolo_4DB220(1)
@@ -1162,7 +1164,7 @@ func (s *Server) nox_xxx_mapExitAndCheckNext_4D1860_server() error {
 		if noxflags.HasGame(noxflags.GameModeChat) && s.Teams.Count() != 0 {
 			if !noxflags.HasGamePlay(noxflags.GameplayFlag2) && !noxflags.HasGame(noxflags.GameFlag16) {
 				if t := k.Team(); t != nil {
-					v61 = s.RandomReachablePointAround(50.0, legacy.AsPointf(unsafe.Add(t.Field_72, 56)))
+					v61 = s.RandomReachablePointAround(50.0, (*server.Object)(t.Field_72).PosVec)
 				}
 			}
 		}
@@ -1241,12 +1243,12 @@ func (s *Server) nox_xxx_mapExitAndCheckNext_4D1860_server() error {
 			if sub := strings.Fields(val); len(sub) >= 3 {
 				v34, _ := strconv.Atoi(sub[0])
 				if v35 := s.Objs.GetObjectByInd(v34); v35 != nil {
-					v36 := unsafe.Slice((*float32)(v35.UpdateData), 3)
+					v36 := v35.UpdateDataSentryGlobe()
 					v38, _ := strconv.ParseFloat(sub[1], 64)
-					v36[0] = float32(v38 * memmap.Float64(0x581450, 10008))
-					v36[1] = v36[0]
+					v36.Angle = float32(v38 * memmap.Float64(0x581450, 10008))
+					v36.BaseAngle = v36.Angle
 					v40, _ := strconv.ParseFloat(sub[2], 64)
-					v36[2] = float32(v40 * memmap.Float64(0x581450, 10000) / float64(s.TickRate()))
+					v36.Speed = float32(v40 * memmap.Float64(0x581450, 10000) / float64(s.TickRate()))
 				}
 			}
 		}
@@ -1287,8 +1289,8 @@ func (s *Server) nox_xxx_mapExitAndCheckNext_4D1860_server() error {
 					np.ClearActionStack()
 					np.Obj130 = nil
 					ud.CurrentEnemy = nil
-					ud.Field304 = 0
-					*(*byte)(unsafe.Add(unsafe.Pointer(ud), int(layoutServerMonsterUpdateData.Off(1129)) /* Field282_1 */)) = 0
+					ud.Field304 = nil
+					ud.Field282_1 = 0
 					ud.Field0 = 0xDEADFACE
 					p := m.Pos()
 					np.MonsterPushAction(ai.ACTION_ESCORT, p.X, p.Y, m)

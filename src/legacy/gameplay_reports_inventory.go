@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
 )
@@ -11,8 +13,8 @@ import (
 func gameplayReportModifiers(unit *server.Object) (out [4]byte, any bool) {
 	for i := range out {
 		out[i] = 255
-		if p := *controlPtr(unit.InitData, 4*i); p != nil {
-			out[i] = *controlByte(p, 4)
+		if p := layout.As[server.ModifierInitData](unit.InitData).Modifiers[i]; p != nil {
+			out[i] = byte(p.Ind4)
 			any = true
 		}
 	}
@@ -111,13 +113,13 @@ func gameplayReportTeamBase(to int, unit *server.Object) int {
 }
 func gameplayReportNPC(to int, unit *server.Object) int {
 	code := uint16(unit.NetCode)
-	if *controlByte(unit.CObj(), int(layoutServerObject.Off(540)) /* Poison540 */) != 0 {
+	if unit.Poison540 != 0 {
 		code |= 0x8000
 	}
 	b := make([]byte, 21)
 	b[0] = 105
 	binary.LittleEndian.PutUint16(b[1:], code)
-	copy(b[3:], unsafe.Slice((*byte)(unsafe.Add(unit.UpdateData, 2076)), 18))
+	copy(b[3:], unsafe.Slice(&layout.As[server.MonsterUpdateData](unit.UpdateData).Color[0].R, 18))
 	result := gameplayReportSend(to, b, true, 1)
 	for it := unit.InvFirstItem; it != nil; it = it.InvNextItem {
 		if uint32(it.ObjFlags)&0x100 != 0 {

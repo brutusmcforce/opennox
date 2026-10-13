@@ -1,22 +1,23 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func inventoryShapeRadius(u *server.Object) float64 {
-	shape := *(*uint32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(172)) /* Shape.Kind */))
+	shape := *(*uint32)(unsafe.Pointer(&u.Shape.Kind))
 	if shape == 2 {
-		return float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)))
+		return float64(u.Shape.Circle.R)
 	}
 	if shape != 3 {
 		return 0
 	}
-	w, h := float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(184)) /* Shape.Box.W */))), float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(188)) /* Shape.Box.H */)))
+	w, h := float64(u.Shape.Box.W), float64(u.Shape.Box.H)
 	if w <= h {
 		return h * 0.5
 	}
@@ -69,7 +70,7 @@ func inventoryForceDrop(u, it *server.Object) int {
 func inventoryDropAll(u *server.Object) uint32 {
 	var radius float32
 	for it := u.InvFirstItem; it != nil; it = it.InvNextItem {
-		r := *(*float32)(unsafe.Add(it.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */))
+		r := it.Shape.Circle.R
 		if inventoryDropEligible(u, it) && float64(r) > float64(radius) {
 			radius = r
 		}

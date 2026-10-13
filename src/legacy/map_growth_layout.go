@@ -3,8 +3,8 @@ package legacy
 import (
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
 )
 
 // Dimensions are compared as unsigned words by the original branch selector.
@@ -72,7 +72,7 @@ func mapGrowthInitial(cfg uint32) *mapRoom {
 	for side := 0; side < 4; side++ {
 		kind := int32(*memmap.PtrUint32(0x587000, 197924+uintptr(4*side)))
 		for step := 0; step < 10; step++ {
-			r := (*mapRoom)(mapRoomCalloc(1, 376))
+			r := mapRoomAlloc[mapRoom]()
 			rooms[count] = r
 			if r == nil {
 				return nil
@@ -130,7 +130,7 @@ func mapGrowthInitial(cfg uint32) *mapRoom {
 	previous = anchor
 	pos = types.Ptf(anchor.Pos.X, anchor.Size.Y+anchor.Pos.Y)
 	for i := 0; i < 8; i++ {
-		r := (*mapRoom)(mapRoomCalloc(1, 376))
+		r := mapRoomAlloc[mapRoom]()
 		rooms[count] = r
 		if r == nil {
 			return nil

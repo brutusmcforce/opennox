@@ -1136,7 +1136,7 @@ func (s *NoxScriptVM) ScriptCallbackRaw(b *ScriptCallback, caller, trigger *Obje
 }
 
 func (s *NoxScriptVM) Nox_script_objCallbackName_508CB0(obj *Object, event int) (string, bool) {
-	sd := obj.Field189
+	sd := obj.EditorData()
 	if sd == nil {
 		return "", false
 	}
@@ -1144,7 +1144,7 @@ func (s *NoxScriptVM) Nox_script_objCallbackName_508CB0(obj *Object, event int) 
 	switch event {
 	case 14:
 		if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-			return alloc.GoString((*byte)(sd)), true
+			return alloc.GoString((*byte)(sd.ScriptName(ScriptNamePickup))), true
 		}
 		return funcs[obj.ScriptPickup.Func].Name(), true
 	}
@@ -1153,23 +1153,23 @@ func (s *NoxScriptVM) Nox_script_objCallbackName_508CB0(obj *Object, event int) 
 	default:
 		return "", false
 	case cl.Has(object.ClassTrigger):
-		ud := unsafe.Slice((*uint32)(obj.UpdateData), 9)
+		ud := obj.UpdateDataTrigger()
 		switch event {
 		case 0:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 512))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameTriggerCollide))), true
 			}
-			return funcs[ud[4]].Name(), true
+			return funcs[ud.ScriptCollide.Func].Name(), true
 		case 1:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 256))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameTriggerActivate))), true
 			}
-			return funcs[ud[6]].Name(), true
+			return funcs[ud.ScriptActivate.Func].Name(), true
 		case 2:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 384))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameTriggerDeactivate))), true
 			}
-			return funcs[ud[8]].Name(), true
+			return funcs[ud.ScriptDeactivate.Func].Name(), true
 		}
 		return "", false
 	case cl.Has(object.ClassMonster):
@@ -1177,52 +1177,52 @@ func (s *NoxScriptVM) Nox_script_objCallbackName_508CB0(obj *Object, event int) 
 		switch ns4.ObjectEvent(event) {
 		case ns4.EventEnemySighted:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 640))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameEnemySighted))), true
 			}
 			return funcs[ud.ScriptEnemySighted.Func].Name(), true
 		case ns4.EventLookingForEnemy:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 768))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameLookingForEnemy))), true
 			}
 			return funcs[ud.ScriptLookingForEnemy.Func].Name(), true
 		case ns4.EventDeath:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 896))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameDeath))), true
 			}
 			return funcs[ud.ScriptDeath.Func].Name(), true
 		case ns4.EventChangeFocus:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 1024))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameChangeFocus))), true
 			}
 			return funcs[ud.ScriptChangeFocus.Func].Name(), true
 		case ns4.EventIsHit:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 1152))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameIsHit))), true
 			}
 			return funcs[ud.ScriptIsHit.Func].Name(), true
 		case ns4.EventRetreat:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 1280))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameRetreat))), true
 			}
 			return funcs[ud.ScriptRetreat.Func].Name(), true
 		case ns4.EventCollision:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 1408))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameCollision))), true
 			}
 			return funcs[ud.ScriptCollision.Func].Name(), true
 		case ns4.EventEnemyHeard:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 1536))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameEnemyHeard))), true
 			}
 			return funcs[ud.ScriptHearEnemy.Func].Name(), true
 		case ns4.EventEndOfWaypoint:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 1664))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameEndOfWaypoint))), true
 			}
 			return funcs[ud.ScriptEndOfWaypoint.Func].Name(), true
 		case ns4.EventLostEnemy:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 1792))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameLostEnemy))), true
 			}
 			return funcs[ud.ScriptLostEnemy.Func].Name(), true
 		}
@@ -1231,10 +1231,9 @@ func (s *NoxScriptVM) Nox_script_objCallbackName_508CB0(obj *Object, event int) 
 		switch event {
 		case 12:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 128))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameHole))), true
 			}
-			cd := obj.CollideData
-			ind := *(*uint32)(unsafe.Add(cd, 4))
+			ind := uint32(obj.CollideDataHole().Script.Func)
 			return funcs[ind].Name(), true
 		}
 		return "", false
@@ -1243,22 +1242,22 @@ func (s *NoxScriptVM) Nox_script_objCallbackName_508CB0(obj *Object, event int) 
 		switch event {
 		case 15:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 1920))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameGen52))), true
 			}
 			return funcs[ud.FuncInd52].Name(), true
 		case 16:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 2048))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameGen60))), true
 			}
 			return funcs[ud.FuncInd60].Name(), true
 		case 17:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 2304))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameGen68))), true
 			}
 			return funcs[ud.FuncInd68].Name(), true
 		case 18:
 			if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-				return alloc.GoString((*byte)(unsafe.Add(sd, 2176))), true
+				return alloc.GoString((*byte)(sd.ScriptName(ScriptNameGen76))), true
 			}
 			return funcs[ud.FuncInd76].Name(), true
 		}

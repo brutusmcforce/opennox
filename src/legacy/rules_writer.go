@@ -34,7 +34,7 @@ func ruleWrite(name string, st *server.Settings2, list *legacyListNode) byte {
 	if list != nil {
 		for p := list.next; p != list; p = p.next {
 			var narrow []byte
-			for _, c := range unsafe.Slice((*uint16)(unsafe.Add(unsafe.Pointer(p), 12)), 256) {
+			for _, c := range (*ruleRejected)(unsafe.Pointer(p)).Line {
 				if c == 0 {
 					break
 				}

@@ -1,11 +1,11 @@
 package legacy
 
 import (
-	"unsafe"
+	"math"
 
-	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -46,10 +46,10 @@ func questProgressSpawnBoss(pos types.Pointf, hecubah bool) {
 	if u == nil {
 		return
 	}
-	d := u.UpdateData
+	d := u.UpdateDataMonster()
 	var hp int32
-	if def := *controlPtr(d, 484); def != nil {
-		hp = int32(*equipmentWord(def, 72))
+	if def := d.MonsterDef; def != nil {
+		hp = int32(def.HealthQuest72)
 	} else {
 		hp = int32(s.Types.ByInd(int(u.TypeInd)).Health().Max)
 	}
@@ -67,17 +67,21 @@ func questProgressSpawnBoss(pos types.Pointf, hecubah bool) {
 	if u.HealthData.Max == 0 {
 		u.HealthData.Max = 1
 	}
-	for _, entry := range [][2]uint32{{411, 0x10000000}, {423, 0x10000000}, {340, 4}, {326, 1062501089}, {410, 0x8000000}, {444, 0x20000000}, {415, 0x40000000}} {
-		*equipmentWord(d, int(4*entry[0])) = entry[1]
-	}
+	d.Field411 = 0x10000000
+	d.Field423 = 0x10000000
+	d.AIAction340 = 4
+	d.Aggression = math.Float32frombits(1062501089)
+	d.Field410 = 0x8000000
+	d.Field444 = 0x20000000
+	d.Field415 = 0x40000000
 	rewards := 1
-	*equipmentWord(d, 510*4) = 1
+	d.Field510 = 1
 	if hecubah {
 		rewards = 4
-		*equipmentWord(d, 510*4) = 3
-		*equipmentWord(d, 388*4) = 0x40000000
+		d.Field510 = 3
+		d.Field388 = 0x40000000
 		s.Balance.Float("HecubahQuestSkill")
-		*equipmentWord(d, 330*4) = 1062836634
+		d.Field330 = math.Float32frombits(1062836634)
 	}
 	GetServer().CreateObjectAt(u, nil, pos)
 	if marker := s.NewObjectByTypeID("RewardMarker"); marker != nil {
@@ -107,15 +111,15 @@ func questProgressPrepare(level int) {
 			hecubahMarkers++
 		}
 		if u.ObjClass&0x20000 != 0 {
-			d := u.UpdateData
-			if template := *(**server.Object)(unsafe.Add(d, 16*level)); template != nil {
-				rate := *controlByte(d, 83+level)
+			d := u.UpdateDataMonsterGen()
+			if template := d.Field0[4*level]; template != nil {
+				rate := d.Field83[level]
 				keys := [4]string{"GeneratorMaxActiveCreaturesHigh", "GeneratorMaxActiveCreaturesNormal", "GeneratorMaxActiveCreaturesLow", "GeneratorMaxActiveCreaturesSingular"}
 				if rate < 4 {
-					*controlByte(d, 87) = byte(int64(s.Balance.Float(keys[rate])))
+					d.Max = byte(int64(s.Balance.Float(keys[rate])))
 				}
 				if questRuntimeStage() >= hardcore && rate != 3 {
-					*controlByte(d, 87) *= 2
+					d.Max *= 2
 				}
 				if ind := questProgressGeneratorType(template); ind != 0 {
 					u.TypeInd = uint16(ind)
@@ -127,7 +131,7 @@ func questProgressPrepare(level int) {
 		u = next
 	}
 	if exits > 1 {
-		chosen := s.Rand.Logic.IntClamp(0, int(exits-1))
+		chosen := s.Rand.Logic.IntClamp(0, int(int32(exits-1)))
 		index := 0
 		for u := s.Objs.First(); u != nil; {
 			next := u.Next()

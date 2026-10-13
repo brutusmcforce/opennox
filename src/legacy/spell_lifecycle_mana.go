@@ -1,15 +1,17 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/spell"
-	"github.com/brutusmcforce/opennox/libs/types"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
-func spellLifeWord(p unsafe.Pointer, off int) *uint32 { return (*uint32)(unsafe.Add(p, off)) }
+func spellLifeWord(p unsafe.Pointer, off int) *uint32 { return rawAt[uint32](p, off) }
 func spellLifeManaCost(u *server.Object, id, mode int32) int32 {
 	if id >= 75 && id <= 114 {
 		return spellEffectSummonCost(id, u)
@@ -45,8 +47,8 @@ func spellLifeSpendMana(u *server.Object, id, mode int32) int32 {
 		resourceSubMana(u, cost)
 		return cost
 	}
-	*controlHalf(u.UpdateData, 80) = uint16(GetServer().S().Spells.ManaCost(spell.ID(id), 1))
-	*controlHalf(u.UpdateData, 82) = uint16(GetServer().S().TickRate())
+	layout.As[server.PlayerUpdateData](u.UpdateData).Field20_0 = uint16(GetServer().S().Spells.ManaCost(spell.ID(id), 1))
+	layout.As[server.PlayerUpdateData](u.UpdateData).Field20_1 = uint16(GetServer().S().TickRate())
 	return -1
 }
 func spellLifeRefundMana(u *server.Object, amount int16) uint16 { return resourceAddMana(u, amount) }
@@ -56,7 +58,7 @@ func spellLifeCheckClass(u *server.Object, id int32) int32 {
 		return 10
 	}
 	if u.ObjClass&4 != 0 {
-		return playerSpellClassCheck(int32(*controlByte(controlPlayer(u), 2251)), int32(id))
+		return playerSpellClassCheck(int32(controlPlayer(u).InfoBytes[66]), int32(id))
 	}
 	v := -int32(bool2int(server.Sub_57AEE0(spell.ID(int(int32(id))), parent)))
 	v = int32(uint32(v)&0xffffff00 | uint32(byte(v)&0xf6))
@@ -71,10 +73,10 @@ func spellLifePower(id int32, u *server.Object) int32 {
 		return 3
 	}
 	if u.ObjClass&4 != 0 {
-		return int32(*spellLifeWord(controlPlayer(u), 3696+4*int(id)))
+		return int32(controlPlayer(u).SpellLvl[int(id)])
 	}
 	if u.ObjClass&2 != 0 {
-		return int32(*spellLifeWord(u.UpdateData, 2040))
+		return int32(layout.As[server.MonsterUpdateData](u.UpdateData).Field510)
 	}
 	return 3
 }

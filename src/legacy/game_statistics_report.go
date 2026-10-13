@@ -1,8 +1,9 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 func statisticsReport(report unsafe.Pointer, mode int, eventCount int16) []byte {
@@ -54,7 +55,7 @@ func statisticsReport(report unsafe.Pointer, mode int, eventCount int16) []byte 
 			if mode == 1 {
 				tag = statisticsTag(71488)
 			}
-			records.add(7, tag, 0, []byte(statisticsString(*controlPtr(*controlPtr(report, 608), 4*i))))
+			records.add(7, tag, 0, []byte(statisticsString(statisticsNames(report, int(count))[i])))
 			for _, f := range []struct {
 				tag    string
 				kind   uint16
@@ -69,12 +70,12 @@ func statisticsReport(report unsafe.Pointer, mode int, eventCount int16) []byte 
 				if f.kind == 6 {
 					index *= 4
 				}
-				value := int32(*controlByte(*controlPtr(report, f.array), index))
+				value := int32(*controlByte(statisticsArray(report, f.array), index))
 				records.add(f.kind, f.tag, value, nil)
 			}
 			*memmap.PtrUint32(0x5D4594, 741660) = uint32(i + 1)
 		}
-		records.add(20, statisticsTag(eventOff), 0, unsafe.Slice((*byte)(*controlPtr(report, 636)), int(uint16(2*int32(eventCount)))))
+		records.add(20, statisticsTag(eventOff), 0, unsafe.Slice((*byte)(statisticsArray(report, 636)), int(uint16(2*int32(eventCount)))))
 	}
 	return records.serialize()
 }

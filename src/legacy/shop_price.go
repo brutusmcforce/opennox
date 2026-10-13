@@ -3,10 +3,11 @@ package legacy
 import (
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -38,9 +39,9 @@ func shopPrice(mode int, s *shopSession, u *server.Object) int32 {
 	quest := noxflags.HasGame(noxflags.GameModeQuest)
 	if class&0x100 != 0 {
 		if sub&1 != 0 {
-			value = float32(uint16(core.Spells.Price(spell.ID(*(*byte)(u.UseData.Ptr)))))
+			value = float32(uint16(core.Spells.Price(spell.ID(u.UseDataSpellReward().Spell))))
 		} else if sub&2 != 0 {
-			if typ := core.Types.ByID(alloc.GoString((*byte)(u.UseData.Ptr))); typ != nil && typ.Worth >= 0 {
+			if typ := core.Types.ByID(u.UseDataFieldGuide().Creature()); typ != nil && typ.Worth >= 0 {
 				value = float32(typ.Worth)
 			}
 			if quest {
@@ -62,35 +63,35 @@ func shopPrice(mode int, s *shopSession, u *server.Object) int32 {
 	}
 	base := value
 	if class&0x1000000 != 0 && sub&0x82 != 0 {
-		use := unsafe.Slice((*byte)(u.UseData.Ptr), 3)
-		if use[2] == 0 && use[0] != 0 {
+		use := u.UseDataAmmo()
+		if use.Infinite == 0 && use.MaxCharges != 0 {
 			key := "DefaultAmmoAmount"
 			if quest {
 				key = "DefaultAmmoAmountQuest"
 			}
 			def := floatToInt32(float32(core.Balance.Float(key)))
-			if int32(use[1]) > def {
+			if int32(use.Charges) > def {
 				per := float32(float64(value) / float64(def))
-				value = float32(float64(int32(use[1])-def)*float64(per) + float64(value))
+				value = float32(float64(int32(use.Charges)-def)*float64(per) + float64(value))
 			} else {
-				value = float32(float64(use[1]) / float64(def) * float64(value))
+				value = float32(float64(use.Charges) / float64(def) * float64(value))
 			}
 		}
 	} else if class&0x1000 != 0 && sub&0x47f0000 != 0 {
-		use := unsafe.Slice((*byte)(u.UseData.Ptr), 110)
-		if use[109] != 0 {
-			value = float32(float64(use[108]) / float64(use[109]) * float64(value))
+		use := u.UseDataWand()
+		if use.MaxCharges != 0 {
+			value = float32(float64(use.Charges) / float64(use.MaxCharges) * float64(value))
 		}
 	}
 	if vendor != nil && s != nil && s.Kind != 0 && mode != 0 {
-		mult := float64(*(*float32)(unsafe.Add(vendor, 1716)))
+		mult := float64((*server.ShopkeeperInitData)(vendor).Field1716)
 		value, base = float32(float64(value)*mult), float32(float64(base)*mult)
 	}
 	if hp := u.HealthData; hp != nil && hp.Max != 0 {
 		value = float32(float64(hp.Cur) / float64(hp.Max) * float64(value))
 	}
 	if vendor != nil && mode == 0 {
-		mult := float64(*(*float32)(unsafe.Add(vendor, 1720)))
+		mult := float64((*server.ShopkeeperInitData)(vendor).Field1720)
 		if quest {
 			mult = core.Balance.Float("QuestSellMultiplier")
 		}
@@ -99,7 +100,7 @@ func shopPrice(mode int, s *shopSession, u *server.Object) int32 {
 			value, base = float32(mult*float64(value)), float32(mult*float64(base))
 		}
 	}
-	if quest && mode == 0 && class&0x3001000 != 0 && *(*byte)(unsafe.Add(u.UpdateData, 4))&1 != 0 {
+	if quest && mode == 0 && class&0x3001000 != 0 && byte(u.UpdateDataWeaponArmor().Flags)&1 != 0 {
 		base, value = 0, 1
 	} else if !(value >= 1) { // includes NaN, matching the original forward jump
 		value = 1
@@ -135,15 +136,7 @@ func shopStockKey(n *shopItem) uint32 {
 	return n.Value | priority<<24
 }
 
-type shopStockEntry struct {
-	Type      uint32
-	Count     byte
-	_         [3]byte
-	Reward    uint32
-	Modifiers [4]*server.ModifierEff
-}
-
-func shopStockMatches(u *server.Object, e *shopStockEntry) int32 {
+func shopStockMatches(u *server.Object, e *server.ShopStockEntry) int32 {
 	if u == nil || e == nil || uint32(u.TypeInd) != e.Type {
 		return 0
 	}
@@ -158,20 +151,19 @@ func shopStockMatches(u *server.Object, e *shopStockEntry) int32 {
 	}
 	if u.ObjClass&0x100 != 0 {
 		if u.ObjSubClass&5 != 0 {
-			if uint32(*(*byte)(u.UseData.Ptr)) != e.Reward {
+			if uint32(bookRewardIndex(u)) != e.Reward {
 				return 0
 			}
-		} else if alloc.GoString((*byte)(u.UseData.Ptr)) != GetServer().S().Types.ByInd(int(e.Reward)).ID() {
+		} else if u.UseDataFieldGuide().Creature() != GetServer().S().Types.ByInd(int(e.Reward)).ID() {
 			match = 0
 		}
 	}
 	return match
 }
 func shopStockIndex(s *shopSession, u *server.Object) int32 {
-	data := shopVendor(s).InitData
-	count := int(*(*byte)(data))
-	for i := 0; i < count; i++ {
-		if shopStockMatches(u, (*shopStockEntry)(unsafe.Add(data, 4+28*i))) != 0 {
+	data := layout.As[server.ShopkeeperInitData](shopVendor(s).InitData)
+	for i := 0; i < int(data.StockCount); i++ {
+		if shopStockMatches(u, &data.Stock[i]) != 0 {
 			return int32(i)
 		}
 	}

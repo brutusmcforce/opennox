@@ -1,16 +1,18 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/sound"
-	"github.com/brutusmcforce/opennox/server"
 	"image"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func collisionRetained(u, v *server.Object) int32 {
-	count := *controlByte(u.UpdateData, 2172)
-	for i := 0; i < int(count); i++ {
-		if *equipmentWord(u.UpdateData, 2140+4*i) == v.NetCode {
+	md := layout.As[server.MonsterUpdateData](u.UpdateData)
+	for i := 0; i < int(md.Field543_0); i++ {
+		if md.Field535[i] == v.NetCode {
 			return 1
 		}
 	}
@@ -105,13 +107,13 @@ func collisionWallOpen(grid *[2]int32, u *server.Object) {
 	if w == nil || w.Flags4&4 == 0 || u.ObjClass&6 == 0 {
 		return
 	}
-	ud := w.Data
-	if *controlByte(ud, 21) != 1 || *controlByte(ud, 20)&2 == 0 {
+	ud := w.SecretData()
+	if ud.State != server.SecretWallClosed || ud.Flags&2 == 0 {
 		return
 	}
-	*controlByte(ud, 21) = 4
-	*controlByte(ud, 22) = 0
-	x, y := int32(*equipmentWord(ud, 4))*23, int32(*equipmentWord(ud, 8))*23
+	ud.State = server.SecretWallOpening
+	ud.Progress = 0
+	x, y := int32(ud.GridX)*23, int32(ud.GridY)*23
 	pos := types.Pointf{float32(float64(x) + 11.5), float32(float64(y) + 11.5)}
 	s.Audio.EventPos(sound.ByName(s.Walls.DefByInd(int(w.Tile1)).OpenSound()), pos, 0, 0)
 }

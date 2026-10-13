@@ -1,9 +1,9 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func spellEffectPortal(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
@@ -21,39 +21,38 @@ func spellEffectPortalSlot(id int32, source, origin *server.Object, slot int32) 
 	if source.ObjClass&4 == 0 {
 		return 1
 	}
-	ud := source.UpdateData
+	ud := source.UpdateDataPlayer()
 	if slot < 0 {
 		slot = 0
-		for slot < 4 && spellEffectObject(ud, 116+int(slot)*4) != nil {
+		for slot < 4 && ud.Field29[slot] != nil {
 			slot++
 		}
 		if slot == 4 {
+			// replace the oldest marker
 			oldest := GetServer().S().Frame()
-			slot = int32(memmap.PtrWord(source.CObj()))
+			slot = 0
 			for i := int32(0); i < 4; i++ {
-				u := spellEffectObject(ud, 116+int(i)*4)
-				if u.Field34 < oldest {
+				if u := ud.Field29[i]; u.Field34 < oldest {
 					oldest = u.Field34
 					slot = i
 				}
 			}
 		}
 	}
-	off := 116 + int(slot)*4
-	if u := spellEffectObject(ud, off); u != nil {
+	if u := ud.Field29[slot]; u != nil {
 		Nox_xxx_unitMove_4E7010(u, pos)
 		u.Field34 = GetServer().S().Frame()
 	} else {
 		names := [4]string{"TeleportGlyph1", "TeleportGlyph2", "TeleportGlyph3", "TeleportGlyph4"}
 		u := GetServer().S().NewObjectByTypeID(names[slot])
-		*controlPtr(ud, off) = u.CObj()
+		ud.Field29[slot] = u
 		if u == nil {
 			spellEffectAudio(id, 0, source)
 			return 1
 		}
 		spellEffectCreate(u, source, pos)
 	}
-	*controlByte(ud, 156+int(slot)) = 3
+	(*[4]byte)(unsafe.Pointer(&ud.Field39))[slot] = 3
 	spellEffectAudio(id, 0, source)
 	return 1
 }

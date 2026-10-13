@@ -1,13 +1,15 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/object"
-	"github.com/brutusmcforce/opennox/libs/strman"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func doubleToInt32(v float64) int32 {
@@ -84,7 +86,7 @@ func runtimePauseStart(actor *server.Object, kind int32) {
 		actor = runtimePauseActor()
 	}
 	if kind == 0 && actor != nil {
-		inventorySound(902, actor, 2, int(*(*uint32)(unsafe.Add(actor.CObj(), int(layoutServerObject.Off(36)) /* NetCode */))))
+		inventorySound(902, actor, 2, int(actor.NetCode))
 		text := GetServer().S().Strings().GetStringInFile(strman.ID("expLevel.c:LevelUP"), `C:\NoxPost\src\common\GameMech\PauseFX.c`)
 		Nox_xxx_netSendLineMessage_4D9EB0(runtimePauseActor(), text)
 		actor = runtimePauseActor()
@@ -92,7 +94,7 @@ func runtimePauseStart(actor *server.Object, kind int32) {
 	if actor != nil {
 		ud := actor.UpdateData
 		if Nox_xxx_playerSetState_4FA020(actor, 30) {
-			*(*byte)(unsafe.Add(ud, 236)) = 4
+			layout.As[server.PlayerUpdateData](ud).Field59_0 = 4
 		}
 	}
 	delay := uint32(0)
@@ -147,14 +149,14 @@ func runtimeHostOwnership() {
 		for child := marker.Field129; child != nil; {
 			next := child.Field128
 			s.ObjSetOwner(host.PlayerUnit, child)
-			if child.Class().Has(object.ClassMonster) && *(*byte)(unsafe.Add(child.UpdateData, 1440))&0x80 != 0 {
+			if child.Class().Has(object.ClassMonster) && *(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](child.UpdateData).StatusFlags))&0x80 != 0 {
 				child.ObjSubClass |= 0x80
 				gameplayReportAcquireCreature(int(host.PlayerInd), child)
 				s.Players.Nox_xxx_netMarkMinimapObject_417190(host.PlayerIndex(), child, 1)
 			}
 			child = next
 		}
-		*(*uint32)(unsafe.Add(marker.CObj(), int(layoutServerObject.Off(44)) /* ScriptIDVal */)) = 0
+		marker.ScriptIDVal = 0
 		GetServer().DelayedDelete(marker)
 		return
 	}

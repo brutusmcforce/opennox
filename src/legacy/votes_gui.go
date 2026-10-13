@@ -5,10 +5,10 @@ import (
 	"image"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/internal/netlist"
+	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -143,7 +143,7 @@ func voteGUISelection() int {
 	votePreviousNameCount = voteNameCount
 	votePreviousNames = voteNames
 	voteNameCount = 0
-	selected := unsafe.Pointer(uintptr(teamUIEvent(votePlayersWindow, 16404, 0, 0)))
+	selected := unsafe.Pointer(uintptr(teamUIEvent(votePlayersWindow, 16404, 0, 0))) // multi-select: the selected indexes
 	if selected != nil {
 		for i := 0; i < 32; i++ {
 			index := *(*int32)(unsafe.Add(selected, 4*i))

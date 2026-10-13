@@ -1,13 +1,14 @@
 package legacy
 
 import (
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"image"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/server"
-	"image"
-	"unsafe"
 )
 
 func interactionDollImage(handle uint32, pos image.Point) {
@@ -84,7 +85,7 @@ func interactionDollDraw(origin image.Point) int16 {
 	for i, c := range []uint32{p.Colors.Hair, p.Colors.Goatee, p.Colors.UnkColor, p.Colors.Beard, p.Colors.Mustache, p.Colors.Skin} {
 		data.SetMaterial(i+1, noxcolor.RGBA5551(c))
 	}
-	gender := uintptr(*(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(2252)) /* info */)))
+	gender := uintptr(p.InfoBytes[67])
 	base := uintptr(16)
 	if p.Colors.Skin == p.Colors.Hair {
 		base = 24

@@ -251,7 +251,7 @@ func voteThreshold(p *voteRecord) int {
 	return 0
 }
 func voteBlockPlayer(pl *server.Player) {
-	serverConfigBlockedAdd(15, &pl.NameFinal[0], (*byte)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(2112)) /* SerialBuf */)))
+	serverConfigBlockedAdd(15, &pl.NameFinal[0], &pl.SerialBuf[0])
 }
 func voteUpdateNormal(p *voteRecord) {
 	u := p.target

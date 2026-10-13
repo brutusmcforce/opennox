@@ -1,11 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/server"
-	"github.com/brutusmcforce/opennox/libs/strman"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"unsafe"
+	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func uiInventoryCellRef(v uint32) *uiInventoryCell {
@@ -13,21 +14,21 @@ func uiInventoryCellRef(v uint32) *uiInventoryCell {
 }
 func uiInventoryPointer(p unsafe.Pointer) uint32 { return memmap.PtrWord(p) }
 func uiInventorySetNext(dr, next *client.Drawable) {
-	*(**client.Drawable)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(368)) /* NextPtr */)) = next
+	dr.NextPtr = next
 }
 func uiInventoryPrev(dr *client.Drawable) *client.Drawable {
-	return *(**client.Drawable)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(372)) /* Field_93 */))
+	return dr.Field_93
 }
 func uiInventorySetPrev(dr, prev *client.Drawable) {
-	*(**client.Drawable)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(372)) /* Field_93 */)) = prev
+	dr.Field_93 = prev
 }
 func uiInventoryError(id string) {
 	s := GetServer().S().Strings().GetStringInFile(strman.ID(id), `C:\NoxPost\src\Client\Gui\guiinv.c`)
 	Nox_xxx_printCentered_445490(s)
 }
 func uiInventoryCopyItem(dst, src *client.Drawable) {
-	copy(unsafe.Slice((*byte)(unsafe.Add(dst.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)), 24), unsafe.Slice((*byte)(unsafe.Add(src.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)), 24))
-	*(*uint32)(unsafe.Add(dst.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */)) = *(*uint32)(unsafe.Add(src.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */))
+	dst.Union, dst.Field_113 = src.Union, src.Field_113 // the item data (24 bytes on 386)
+	dst.Field_73_1, dst.Field_73_2 = src.Field_73_1, src.Field_73_2
 }
 func uiInventoryClearAlternateFlags() uintptr {
 	grid := uiInventoryGrid()
@@ -100,7 +101,7 @@ func uiInventoryNewStack(code, typ uint32, mods *server.ModifierInitData, coords
 				if class&0x1000000 != 0 && sub&2 == 0 || class&0x1000 != 0 {
 					def := GetServer().S().Modif.Nox_xxx_getProjectileClassById413250(int(dr.TypeIDVal))
 					// Match the 386 shift-count masking before the original byte truncation.
-					if def == nil || byte(uint32(1)<<(*(*byte)(unsafe.Add(uiMeterPlayer(), 2251))&31))&*(*byte)(unsafe.Add(unsafe.Pointer(def), int(layoutServerModifier.Off(62)) /* Classes62 */)) != 0 {
+					if def == nil || byte(uint32(1)<<(uiMeterPlayer().InfoBytes[66]&31))&def.Classes62 != 0 {
 						uiInventorySetAlternate(cell)
 						cell.Alternate = 1
 					}

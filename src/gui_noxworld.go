@@ -11,6 +11,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/libs/env"
 	noxlog "github.com/brutusmcforce/opennox/libs/log"
 	"github.com/brutusmcforce/opennox/libs/noxnet"
 	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
@@ -112,7 +113,21 @@ func nox_client_refreshServerList_4378B0() {
 	ctx := context.Background()
 	winNewDialogID(legacy.Get_nox_wol_wnd_world_814980(), "Wolchat.c:PleaseWait", "C:\\NoxPost\\src\\client\\shell\\noxworld.c")
 	noxServer.NetStr.Responded = false
-	go discoverAndPingServers(ctx, noxClient.Log)
+	if env.IsE2E() {
+		if list := e2eServers(); len(list) != 0 {
+			// multiplayer tests list their servers in NOX_E2E_SERVERS; nothing else is searched
+			discover.UseOnlyServers(list)
+			go discoverAndPingServers(ctx, noxClient.Log)
+		} else {
+			// no network in tests: an empty list, received on the next poll
+			select {
+			case discoverDone <- nil:
+			default:
+			}
+		}
+	} else {
+		go discoverAndPingServers(ctx, noxClient.Log)
+	}
 	legacy.Set_dword_5d4594_815104(0)
 	legacy.Set_qword_5d4594_815068(
 		// next auto-refresh

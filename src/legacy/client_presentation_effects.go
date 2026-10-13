@@ -1,8 +1,10 @@
 package legacy
 
 import (
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
-	"github.com/brutusmcforce/opennox/libs/spell"
+	"image"
+	"math"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
@@ -10,10 +12,9 @@ import (
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/server"
-	"image"
-	"math"
-	"unsafe"
 )
 
 var presentationChantTree *server.PhonemeLeaf
@@ -124,7 +125,7 @@ func presentationTurnUndead(pos *[2]int16) {
 		if dr == nil {
 			continue
 		}
-		*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(508)) /* Field_127 */)) = uint16(angle)
+		*(*uint16)(unsafe.Pointer(&dr.Field_127)) = uint16(angle)
 		dr.Field_117 = math.Float32bits(*memmap.PtrFloat32(0x587000, 194136+8*uintptr(angle)) * 4)
 		dr.Field_118 = math.Float32bits(*memmap.PtrFloat32(0x587000, 194140+8*uintptr(angle)) * 4)
 		dr.Field_119 = 0
@@ -146,7 +147,8 @@ func presentationBubble(typ int, pos image.Point, z int16, a, b, c, d, e byte, l
 		return
 	}
 	dr.ZVal = uint16(z)
-	*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(noxcolor.RGB5551Color(byte(dr.LightColor.R), byte(dr.LightColor.G), byte(dr.LightColor.B)).Color32())
+	u := (*client.DrawableUnionBubble)(unsafe.Pointer(&dr.Union))
+	u.Glow = uint32(noxcolor.RGB5551Color(byte(dr.LightColor.R), byte(dr.LightColor.G), byte(dr.LightColor.B)).Color32())
 	rgb := [3]byte{200, 200, 255}
 	for i, value := range [][3]byte{{255, 128, 128}, {255, 255, 255}, {200, 200, 255}, {255, 100, 50}, {64, 255, 64}, {255, 100, 255}, {255, 200, 255}, {255, 255, 200}} {
 		if i != 2 && uint32(typ) == *effectMapped(1217512 + 4*uintptr(i)) {
@@ -154,8 +156,8 @@ func presentationBubble(typ int, pos image.Point, z int16, a, b, c, d, e byte, l
 			break
 		}
 	}
-	*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(noxcolor.RGB5551Color(rgb[0], rgb[1], rgb[2]).Color32())
-	copy(unsafe.Slice(effectByte(dr, int(layoutClientDrawable.Off(440)) /* Union._ */), 7), []byte{a, 1, b, b, d, e, c})
+	u.Core = uint32(noxcolor.RGB5551Color(rgb[0], rgb[1], rgb[2]).Color32())
+	u.Size, u.Phase, u.Timer, u.Period, u.FlipPeriod, u.Flip, u.Rise = a, 1, b, b, d, e, c
 	cl := GetClient().Cli()
 	cl.Objs.List6Add(dr)
 	cl.Objs.TransparentDecay(dr, lifetime)

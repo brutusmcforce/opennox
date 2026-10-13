@@ -2,8 +2,9 @@ package legacy
 
 import (
 	"encoding/binary"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
 
 	"github.com/brutusmcforce/opennox/server"
 )
@@ -36,9 +37,9 @@ func shopSendItem(u *server.Object, n *shopItem) uint32 {
 		b[i] = 0xff
 	}
 	if uint32(it.ObjClass)&0x13001000 != 0 {
-		for i, p := range unsafe.Slice((*unsafe.Pointer)(it.InitData), 4) {
+		for i, p := range it.InitDataModifier().Modifiers {
 			if p != nil {
-				b[14+i] = *(*byte)(unsafe.Add(p, 4))
+				b[14+i] = byte(p.Ind4)
 			}
 		}
 	}

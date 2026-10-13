@@ -1,11 +1,13 @@
 package legacy
 
 import (
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func playerFileAttributes(u *server.Object, info unsafe.Pointer) int {
@@ -47,23 +49,23 @@ func playerFileAttributes(u *server.Object, info unsafe.Pointer) int {
 	*(*uint16)(unsafe.Add(info, 2*int(size))) = 0
 	if data != nil {
 		bytes := 2 * (playerFileWideLen(info) + 1)
-		copy(unsafe.Slice((*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(4704)) /* NameFinal */)), bytes), unsafe.Slice((*byte)(info), bytes))
+		copy(unsafe.Slice((*byte)(unsafe.Pointer(&p.NameFinal[0])), bytes), unsafe.Slice((*byte)(info), bytes))
 	}
 	if r.read() && data != nil {
 		crc := protectionStringChecksum(info, uint32(2*playerFileWideLen(info)))
-		setProtectionRecord(int32(*equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4628)) /* ProtPlayerOrigName */)), uint32(crc))
+		setProtectionRecord(int32(p.ProtPlayerOrigName), uint32(crc))
 	}
 	r.raw(unsafe.Add(info, 50), 4)
 	r.raw(unsafe.Add(info, 54), 4)
 	if r.read() && data != nil {
-		setProtectionRecord(int32(*equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4624)) /* ProtPlayerField2239 */)), *(*uint32)(unsafe.Add(info, 54)))
-		setProtectionRecord(int32(*equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4620)) /* ProtPlayerField2235 */)), *(*uint32)(unsafe.Add(info, 50)))
+		setProtectionRecord(int32(p.ProtPlayerField2239), *(*uint32)(unsafe.Add(info, 54)))
+		setProtectionRecord(int32(p.ProtPlayerField2235), *(*uint32)(unsafe.Add(info, 50)))
 	}
 	r.raw(unsafe.Add(info, 58), 4)
 	r.raw(unsafe.Add(info, 62), 4)
 	r.raw(unsafe.Add(info, 66), 1)
 	if r.read() && data != nil {
-		setProtectionRecord(int32(*equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4616)) /* ProtPlayerClass */)), uint32(*(*byte)(unsafe.Add(info, 66))))
+		setProtectionRecord(int32(p.ProtPlayerClass), uint32(*(*byte)(unsafe.Add(info, 66))))
 	}
 	r.raw(unsafe.Add(info, 67), 1)
 	for off := 68; off <= 80; off += 3 {
@@ -83,14 +85,14 @@ func playerFileAttributes(u *server.Object, info unsafe.Pointer) int {
 	if version >= 3 {
 		lives := uint32(0)
 		if data != nil {
-			lives = *(*uint32)(unsafe.Add(data, 320))
+			lives = layout.As[server.PlayerUpdateData](data).Field80
 		}
 		lives = r.word(lives)
 		if r.read() && data != nil {
-			*(*uint32)(unsafe.Add(data, 320)) = lives
+			layout.As[server.PlayerUpdateData](data).Field80 = lives
 		}
 		max := uint32(floatToInt32(float32(GetServer().S().Balance.Float("MaxExtraLives"))))
-		if data != nil && *(*uint32)(unsafe.Add(data, 320)) > max {
+		if data != nil && layout.As[server.PlayerUpdateData](data).Field80 > max {
 			return 0
 		}
 		if version == 3 {
@@ -105,15 +107,15 @@ func playerFileAttributes(u *server.Object, info unsafe.Pointer) int {
 	if version >= 4 {
 		stage := uint32(0)
 		if p != nil {
-			stage = *equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4696)) /* field4696 */)
+			stage = p.Field4696
 		}
 		stage = r.word(stage)
 		if r.read() {
 			if p != nil {
-				*equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4696)) /* field4696 */) = stage
+				p.Field4696 = stage
 			}
 			if data != nil {
-				questRuntimeHighestMessage(int(p.PlayerInd), uint16(*equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4696)) /* field4696 */)))
+				questRuntimeHighestMessage(int(p.PlayerInd), uint16(p.Field4696))
 			}
 		}
 	}
@@ -149,24 +151,24 @@ func playerFileStatus(u *server.Object) int {
 	*hp = uint32(u.HealthData.Cur)
 	r.raw(unsafe.Pointer(hp), 2)
 	mana := memmap.PtrUint32(0x5D4594, 527700)
-	*mana = uint32(*(*uint16)(unsafe.Add(data, 4)))
+	*mana = uint32(layout.As[server.PlayerUpdateData](data).ManaCur)
 	r.raw(unsafe.Pointer(mana), 2)
-	poison := r.byte(*(*byte)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(540)) /* Poison540 */)))
+	poison := r.byte(u.Poison540)
 	if r.read() {
 		resourceSetPoison(u, int32(poison))
 	}
-	r.raw(unsafe.Add(u.CObj(), int(layoutServerObject.Off(541)) /* Field541 */), 1)
-	r.raw(unsafe.Add(u.CObj(), int(layoutServerObject.Off(542)) /* Field542 */), 2)
+	r.raw(unsafe.Pointer(&u.Field541), 1)
+	r.raw(unsafe.Pointer(&u.Field542), 2)
 	r.raw(unsafe.Pointer(&u.Experience), 4)
 	if r.read() {
 		p := u.UpdateDataPlayer().Player
-		updateProtectionFloat(int32(*equipmentWord(unsafe.Pointer(p), int(layoutServerPlayer.Off(4604)) /* ProtUnitExperience */)), u.Experience, false)
+		updateProtectionFloat(int32(p.ProtUnitExperience), u.Experience, false)
 		gameplayReportExperience(u)
 	}
 	if version >= 2 {
-		r.raw(unsafe.Add(u.CObj(), int(layoutServerObject.Off(124)) /* Direction1 */), 2)
+		r.raw(unsafe.Pointer(&u.Direction1), 2)
 		if r.read() {
-			*(*uint16)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(126)) /* Direction2 */)) = *(*uint16)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(124)) /* Direction1 */))
+			*(*uint16)(unsafe.Pointer(&u.Direction2)) = *(*uint16)(unsafe.Pointer(&u.Direction1))
 		}
 	}
 	return 1

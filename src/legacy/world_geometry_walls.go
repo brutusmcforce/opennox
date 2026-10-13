@@ -1,11 +1,13 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"image"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var geometryCircleWallSpans = [...]struct {
@@ -42,7 +44,7 @@ func geometryCircleWall(grid *[2]int32, u *server.Object) int32 {
 			if wl := s.Walls.GetWallAtGrid(image.Pt(int(grid[0]), int(grid[1]))); wl != nil {
 				p = wl.C()
 			}
-			*(*unsafe.Pointer)(unsafe.Add(u.UpdateData, 296)) = p
+			*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](u.UpdateData).Field74)) = p
 		}
 		if geometryPointWall(u, &point) != 0 {
 			result = 1

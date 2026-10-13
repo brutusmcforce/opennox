@@ -2,16 +2,23 @@ package legacy
 
 import (
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
 )
+
+// bookRewardIndex returns the spell (SpellRewardUse) or the ability (AbilityRewardUse) taught by a book.
+func bookRewardIndex(u *server.Object) byte {
+	if u.ObjSubClass&1 != 0 {
+		return u.UseDataSpellReward().Spell
+	}
+	return u.UseDataAbilityReward().Ability
+}
 
 func bookUseGuide(u, item *server.Object) int {
 	if uint32(u.ObjClass)&4 == 0 {
 		return 0
 	}
 	p := u.UpdateDataPlayer().Player
-	id := bookGuideID(alloc.GoString((*byte)(item.UseData.Ptr)))
+	id := bookGuideID(item.UseDataFieldGuide().Creature())
 	if noxflags.HasGame(4096) && p.PlayerClass() != 2 {
 		bookAwardPrivate(u, "pickup.c:ObjectEquipClassFail")
 		return 0
@@ -25,7 +32,7 @@ func bookUseGuide(u, item *server.Object) int {
 	return 1
 }
 func bookUseSpell(u, item *server.Object) int {
-	id := int32(*(*byte)(item.UseData.Ptr))
+	id := int32(item.UseDataSpellReward().Spell)
 	if uint32(u.ObjClass)&4 == 0 {
 		return 0
 	}
@@ -48,7 +55,7 @@ func bookUseSpell(u, item *server.Object) int {
 	return 1
 }
 func bookUseAbility(u, item *server.Object) int {
-	id := int32(*(*byte)(item.UseData.Ptr))
+	id := int32(item.UseDataAbilityReward().Ability)
 	if uint32(u.ObjClass)&4 == 0 {
 		return 0
 	}

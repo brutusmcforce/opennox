@@ -5,22 +5,28 @@ import (
 	"math"
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/server"
 )
 
+// questRuntimePlayerWord returns the quest statistics word of pl at 386 offset off (4652-4684).
+func questRuntimePlayerWord(pl *server.Player, off int) *uint32 {
+	return (*uint32)(unsafe.Add(unsafe.Pointer(pl), layoutServerPlayer.Off(uintptr(off))))
+}
 func questRuntimeReset(u *server.Object) uint32 {
 	if u == nil {
 		return 0
 	}
 	pl := controlPlayer(u)
 	for off := 4652; off <= 4684; off += 4 {
-		*equipmentWord(pl, off) = 0
+		*questRuntimePlayerWord(pl, off) = 0
 	}
-	*equipmentWord(pl, 4688) = memmap.Uint32(0x587000, 202028)
-	*equipmentWord(pl, 4692) = 63
-	return memmap.PtrWord(pl)
+	pl.Field4688 = memmap.Uint32(0x587000, 202028)
+	pl.Field4692 = 63
+	return memmap.PtrWord(unsafe.Pointer(pl))
 }
 func questRuntimeResetAll() uint32 {
 	players := &GetServer().S().Players
@@ -34,29 +40,29 @@ func questRuntimeStageComplete(u *server.Object) uint32 {
 		return controlRaw(u)
 	}
 	pl := controlPlayer(u)
-	if *equipmentWord(pl, 4792) == 1 {
-		*equipmentWord(pl, 4652)++
-		*equipmentWord(pl, 4692) |= 1
+	if pl.Field4792 == 1 {
+		*questRuntimePlayerWord(pl, 4652)++
+		pl.Field4692 |= 1
 	}
-	return memmap.PtrWord(pl)
+	return memmap.PtrWord(unsafe.Pointer(pl))
 }
 func questRuntimeIncrement(u *server.Object, off int, mask uint32) uint32 {
 	if u == nil || u.ObjFlags&0x20 != 0 {
 		return controlRaw(u)
 	}
 	pl := controlPlayer(u)
-	*equipmentWord(pl, off)++
+	*questRuntimePlayerWord(pl, off)++
 	if off == 4672 {
-		*equipmentWord(pl, 4676)++
+		pl.Field4676++
 	}
-	*equipmentWord(pl, 4692) |= mask
-	return memmap.PtrWord(pl)
+	pl.Field4692 |= mask
+	return memmap.PtrWord(unsafe.Pointer(pl))
 }
 func questRuntimeCount() int {
 	count := 0
 	players := &GetServer().S().Players
 	for u := players.FirstUnit(); u != nil; u = players.NextUnit(u) {
-		if !worldQuestIgnoreHost(u) && *equipmentWord(controlPlayer(u), 4792) == 1 {
+		if !worldQuestIgnoreHost(u) && controlPlayer(u).Field4792 == 1 {
 			count++
 		}
 	}
@@ -66,7 +72,7 @@ func questRuntimeRoom() bool {
 	count := 0
 	players := &GetServer().S().Players
 	for u := players.FirstUnit(); u != nil; u = players.NextUnit(u) {
-		if !worldQuestIgnoreHost(u) && *equipmentWord(controlPlayer(u), 4792) != 0 {
+		if !worldQuestIgnoreHost(u) && controlPlayer(u).Field4792 != 0 {
 			count++
 		}
 	}
@@ -80,12 +86,12 @@ func questRuntimeScore(a, b, c, stage uint32) uint32 {
 func questRuntimePlayerScore(to int) uint32 {
 	count := questRuntimeCount()
 	pl := GetServer().S().Players.ByInd(ntype.PlayerInd(to))
-	if pl == nil || *equipmentWord(pl.C(), int(layoutServerPlayer.Off(4792)) /* Field4792 */) == 0 {
+	if pl == nil || pl.Field4792 == 0 {
 		return 0
 	}
 	p := pl.C()
 	score := func() uint32 {
-		return questRuntimeScore(*equipmentWord(p, int(layoutServerPlayer.Off(4668)) /* field4668 */), *equipmentWord(p, int(layoutServerPlayer.Off(4672)) /* field4672 */), *equipmentWord(p, int(layoutServerPlayer.Off(4664)) /* field4664 */), *equipmentWord(p, int(layoutServerPlayer.Off(4688)) /* field4688 */))
+		return questRuntimeScore(layout.As[server.Player](p).Field4668, layout.As[server.Player](p).Field4672, layout.As[server.Player](p).Field4664, layout.As[server.Player](p).Field4688)
 	}
 	var result uint32
 	if count == 1 {
@@ -98,13 +104,13 @@ func questRuntimePlayerScore(to int) uint32 {
 		// it includes every unit in the aggregation, not only participating units.
 		for u := players.FirstUnit(); u != nil; u = players.NextUnit(u) {
 			q := controlPlayer(u)
-			v := questRuntimeScore(*equipmentWord(q, 4668), *equipmentWord(q, 4672), 0, *equipmentWord(q, 4688))
+			v := questRuntimeScore(q.Field4668, q.Field4672, 0, q.Field4688)
 			if v > maximum {
 				maximum = v
 			}
-			a += *equipmentWord(q, 4668)
-			b += *equipmentWord(q, 4672)
-			stage = *equipmentWord(q, 4688)
+			a += q.Field4668
+			b += q.Field4672
+			stage = q.Field4688
 		}
 		total := questRuntimeScore(a, b, 0, stage)
 		ratio := float32(1)
@@ -128,25 +134,25 @@ func questRuntimeScoreboard(to int) int {
 	players := &GetServer().S().Players
 	for u := players.FirstUnit(); u != nil; u = players.NextUnit(u) {
 		p := controlPlayer(u)
-		if *equipmentWord(p, 4792) == 1 && count < 6 {
+		if p.Field4792 == 1 && count < 6 {
 			at := 6 + 14*count
 			binary.LittleEndian.PutUint16(data[at:], uint16(u.NetCode))
 			for i, off := range []int{4668, 4672, 4680, 4664} {
-				binary.LittleEndian.PutUint16(data[at+2+2*i:], uint16(*equipmentWord(p, off)))
+				binary.LittleEndian.PutUint16(data[at+2+2*i:], uint16(*equipmentWord(unsafe.Pointer(p), off)))
 			}
-			binary.LittleEndian.PutUint32(data[at+10:], questRuntimePlayerScore(int(*controlByte(p, 2064))))
+			binary.LittleEndian.PutUint32(data[at+10:], questRuntimePlayerScore(int(p.PlayerInd)))
 			count++
-			binary.LittleEndian.PutUint16(data[4:], uint16(*equipmentWord(pl.C(), int(layoutServerPlayer.Off(4688)) /* field4688 */)))
+			binary.LittleEndian.PutUint16(data[4:], uint16(pl.Field4688))
 		}
 	}
 	return gameplayReportSend(to, data, true, 1)
 }
 func questRuntimeClearRelations(u *server.Object, slot int) {
-	d := u.UpdateData
-	*controlByte(d, 452+slot) = 0
-	*equipmentWord(d, 324+4*slot) = 0
-	*controlByte(d, 484+slot) = 0
-	*controlByte(d, 516+slot) = 0
+	d := u.UpdateDataPlayer()
+	d.QuestLevels[slot] = 0
+	d.Field81[slot] = 0
+	d.SilverKeys[slot] = 0
+	d.GoldKeys[slot] = 0
 }
 func questRuntimeReconnect(u *server.Object) uint32 {
 	d := u.UpdateData
@@ -154,7 +160,7 @@ func questRuntimeReconnect(u *server.Object) uint32 {
 	questRuntimeReset(u)
 	players := &GetServer().S().Players
 	for it := players.FirstUnit(); it != nil; it = players.NextUnit(it) {
-		questRuntimeClearRelations(it, int(*controlByte(*controlPtr(d, 276), 2064)))
+		questRuntimeClearRelations(it, int(layout.As[server.PlayerUpdateData](d).Player.PlayerInd))
 	}
 	return 0
 }
@@ -167,7 +173,7 @@ func questRuntimeDepartureTick() int {
 	for i := 0; i < 32; i++ {
 		p := memmap.PtrUint32(0x5D4594, 1556172+4*uintptr(i))
 		pl := core.Players.ByInd(ntype.PlayerInd(i))
-		if pl != nil && pl.PlayerUnit != nil && pl.Active != 0 && *equipmentWord(pl.C(), int(layoutServerPlayer.Off(4792)) /* Field4792 */) == 1 {
+		if pl != nil && pl.PlayerUnit != nil && pl.Active != 0 && pl.Field4792 == 1 {
 			*p = 0
 		} else if *p != 0 && core.Frame()-*p > 30*uint32(core.TickRate()) {
 			for u := core.Players.FirstUnit(); u != nil; u = core.Players.NextUnit(u) {

@@ -1,13 +1,14 @@
 package legacy
 
 import (
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/noxrender"
-	"github.com/brutusmcforce/opennox/libs/object"
-	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func runtimeLookupString(id, file string) *uint16 {
@@ -101,6 +102,7 @@ func runtimeModifierLabel(mask byte) *uint16 {
 	id := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, off+12)))
 	return runtimeLookupString(id, `C:\NoxPost\src\common\Object\Modifier.c`)
 }
+
 var runtimeMaterial7 *server.ModifierEff
 
 func runtimeMaterial(u *server.Object) bool {

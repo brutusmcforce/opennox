@@ -9,7 +9,7 @@ import (
 
 func quickbarCorpse() bool {
 	p := LocalPlayerDrawable
-	return p != nil && *(*byte)(unsafe.Add(p.C(), int(layoutClientDrawable.Off(120)) /* ObjFlags */))&2 != 0
+	return p != nil && *(*byte)(unsafe.Pointer(&p.ObjFlags))&2 != 0
 }
 
 func quickbarSlotEvent(w *gui.Window, event, arg uint32) int {
@@ -29,7 +29,7 @@ func quickbarSlotEvent(w *gui.Window, event, arg uint32) int {
 	switch event {
 	case 5:
 		if s.ID == 0 || *quickbarWord(1047928) != 0 || *quickbarWord(1047932) != 0 || Nox_xxx_get_57AF20() != 0 ||
-			bookClass(quickbarPlayer()) != 0 && !bool(nox_xxx_spellIsEnabled_424B70(int(s.ID))) {
+			bookClass(unsafe.Pointer(quickbarPlayer())) != 0 && !bool(nox_xxx_spellIsEnabled_424B70(int(s.ID))) {
 			return 1
 		}
 		w.Capture(true)
@@ -99,7 +99,7 @@ func quickbarSlotEvent(w *gui.Window, event, arg uint32) int {
 					*quickbarWord(1049532) = 0
 					return 1
 				}
-				if bookClass(quickbarPlayer()) != 0 {
+				if bookClass(unsafe.Pointer(quickbarPlayer())) != 0 {
 					if bool(nox_xxx_spellIsEnabled_424B70(int(s.ID))) {
 						quickbarSpellCursor(s.ID, byte(s.Flags))
 						quickbarLastButton(i)
@@ -217,7 +217,7 @@ func quickbarTrapButtonEvent(w *gui.Window, event, arg uint32) int {
 	}
 	quickbarLit(quickbarWindow(1049504), true)
 	if p := quickbarPlayer(); p != nil {
-		if bookClass(p) == 1 && quickbarTrapTargets() != 0 {
+		if bookClass(unsafe.Pointer(p)) == 1 && quickbarTrapTargets() != 0 {
 			w.Capture(true)
 			*quickbarWord(1049532) = quickbarPointer(w.C())
 			*quickbarWord(1047928) = 1

@@ -11,6 +11,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -27,8 +28,13 @@ import (
 )
 
 var (
-	fVerbose = flag.Bool("v", false, "list every site")
-	fFix     = flag.Bool("fix", false, "translate the offsets of sites with a known base type through common/layout")
+	fVerbose  = flag.Bool("v", false, "list every site")
+	fFix      = flag.Bool("fix", false, "translate the offsets of sites with a known base type through common/layout")
+	fTyped    = flag.String("typed", "", "rewrite offset accesses to typed field accesses; the file lists probed base types (site<TAB>type,...)")
+	fTypedLog = flag.String("typedlog", "typed.log", "report of -typed")
+	fDry      = flag.Bool("dry", false, "with -typed: report only, do not rewrite")
+	fOverflow = flag.Bool("overflow", false, "list reinterpretations that overflow their storage on amd64")
+	fProbe    = flag.Bool("probe", false, "instrument every offset access with layout.Probe (for a copy of the tree only)")
 )
 
 var (
@@ -85,6 +91,33 @@ func main() {
 		os.Exit(1)
 	}
 	wd, _ := os.Getwd()
+	if *fTyped != "" {
+		lf, err := os.Create(*fTypedLog)
+		if err != nil {
+			panic(err)
+		}
+		defer lf.Close()
+		env := &typedEnv{dry: *fDry, byName: namedTypes(pkgs), probed: loadProbed(*fTyped), wd: wd, log: bufio.NewWriter(lf), stats: make(map[string]int)}
+		env.run(pkgs)
+		return
+	}
+	if *fOverflow {
+		overflows(pkgs, wd)
+		allocSizes(pkgs, wd)
+		return
+	}
+	if *fProbe {
+		edits := make(map[string][]insert)
+		n := 0
+		for _, p := range pkgs {
+			if p.TypesInfo != nil {
+				n += (&pkgCtx{p: p, helpers: findHelpers(p)}).probes(wd, edits)
+			}
+		}
+		applyProbes(edits)
+		fmt.Printf("# instrumented %d sites in %d files\n", n, len(edits))
+		return
+	}
 	var sites []Site
 	for _, p := range pkgs {
 		if p.TypesInfo == nil {
@@ -126,6 +159,37 @@ func paramIndex(info *types.Info, fn *types.Signature, e ast.Expr) int {
 	return -1
 }
 
+// rawAtHelper recognizes helpers whose body is "return rawAt[X](p, off)" (legacy/raw_offsets.go).
+func rawAtHelper(info *types.Info, fd *ast.FuncDecl, call *ast.CallExpr) (helper, *types.Func, bool) {
+	ix, ok := call.Fun.(*ast.IndexExpr)
+	if !ok || len(call.Args) != 2 {
+		return helper{}, nil, false
+	}
+	if id, ok := ix.X.(*ast.Ident); !ok || id.Name != "rawAt" {
+		return helper{}, nil, false
+	}
+	tv, ok := info.Types[ix.Index]
+	if !ok || !tv.IsType() {
+		return helper{}, nil, false
+	}
+	fn, ok := info.Defs[fd.Name].(*types.Func)
+	if !ok {
+		return helper{}, nil, false
+	}
+	sig := fn.Type().(*types.Signature)
+	bi := paramIndex(info, sig, call.Args[0])
+	oi := paramIndex(info, sig, call.Args[1])
+	if oi < 0 {
+		if c, ok := ast.Unparen(call.Args[1]).(*ast.CallExpr); ok && len(c.Args) == 1 {
+			oi = paramIndex(info, sig, c.Args[0])
+		}
+	}
+	if bi < 0 || oi < 0 {
+		return helper{}, nil, false
+	}
+	return helper{baseParam: bi, offParam: oi, access: tv.Type}, fn, true
+}
+
 func findHelpers(p *packages.Package) map[*types.Func]helper {
 	out := make(map[*types.Func]helper)
 	info := p.TypesInfo
@@ -140,7 +204,14 @@ func findHelpers(p *packages.Package) map[*types.Func]helper {
 				continue
 			}
 			conv, ok := ast.Unparen(ret.Results[0]).(*ast.CallExpr)
-			if !ok || len(conv.Args) != 1 {
+			if !ok {
+				continue
+			}
+			if h, fn, ok := rawAtHelper(info, fd, conv); ok {
+				out[fn] = h
+				continue
+			}
+			if len(conv.Args) != 1 {
 				continue
 			}
 			tv, ok := info.Types[conv.Fun]

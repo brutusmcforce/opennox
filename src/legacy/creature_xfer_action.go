@@ -3,6 +3,8 @@ package legacy
 import (
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
@@ -41,9 +43,12 @@ func creatureXferAction(u *server.Object) int {
 	savedFrame := r.word(frame)
 	delta := frame - savedFrame
 	residue := r.word(0)
-	at := func(off, n int) { r.raw(unsafe.Add(p, off), n) }
-	word := func(off int) *uint32 { return (*uint32)(unsafe.Add(p, off)) }
-	byteAt := func(off int) *byte { return (*byte)(unsafe.Add(p, off)) }
+	// The saved data keeps the layout of the original game: offsets are 386 offsets of MonsterUpdateData.
+	md := layout.As[server.MonsterUpdateData](p)
+	tb := layoutServerMonsterUpdateData
+	at := func(off, n int) { creatureXferRaw(r, tb, p, off, n) }
+	word := func(off int) *uint32 { return (*uint32)(unsafe.Add(p, tb.Off(uintptr(off)))) }
+	byteAt := func(off int) *byte { return (*byte)(unsafe.Add(p, tb.Off(uintptr(off)))) }
 	adjust := func(off int) { creatureXferAdjust(word(off), delta) }
 	at(8, 4)
 	at(12, 8*int(*word(8)))
@@ -56,12 +61,12 @@ func creatureXferAction(u *server.Object) int {
 	}
 	at(296, 4)
 	residue = 0
-	for i := int32(0); i < int32(*word(296)); i++ {
-		dest := (**server.Waypoint)(unsafe.Add(p, 300+4*i))
+	for i := int32(0); i < int32(md.Field74); i++ {
+		dest := &roamHistory(md)[i] // waypoints as pointer words
 		if r.read() {
-			*dest = GetServer().S().WPs.PendingByInd(int(r.word(0)))
+			*dest = memmap.PtrWord(unsafe.Pointer(GetServer().S().WPs.PendingByInd(int(r.word(0)))))
 		} else {
-			r.raw(unsafe.Pointer(*dest), 4)
+			r.raw(unsafe.Pointer(roamWaypoint(*dest)), 4)
 		}
 		residue++
 	}
@@ -99,13 +104,14 @@ func creatureXferAction(u *server.Object) int {
 	adjust(540)
 	at(544, 1)
 	for i := 0; i <= int(int8(*byteAt(544))); i++ {
-		creatureXferArgument(unsafe.Add(p, 552+24*i), delta)
+		creatureXferArgument(&md.AIStack[i], delta)
 	}
 	at(1129, 1)
 	for i := 0; i < int(*byteAt(1129)); i++ {
-		dest := unsafe.Add(p, 1132+4*i)
+		dest := unsafe.Pointer(&md.Field283[i])
 		if r.read() {
-			r.raw(dest, 4)
+			md.Field283[i] = nil
+			r.raw(dest, 4) // a script ID until the references are resolved
 		} else {
 			cache := memmap.PtrUint32(0x5d4594, 2487688)
 			if *cache == 0 {
@@ -116,10 +122,11 @@ func creatureXferAction(u *server.Object) int {
 		}
 	}
 	if r.read() {
-		at(1196, 4)
+		md.CurrentEnemy = nil
+		at(1196, 4) // a script ID until the references are resolved
 	} else {
 		id := uint32(0)
-		if ref := *(**server.Object)(unsafe.Add(p, 1196)); ref != nil {
+		if ref := md.CurrentEnemy; ref != nil {
 			id = uint32(ref.ScriptIDVal)
 		}
 		r.word(id)
@@ -130,7 +137,7 @@ func creatureXferAction(u *server.Object) int {
 	at(2100, 4)
 	at(2104, 1)
 	at(2105, 1)
-	text := (*byte)(unsafe.Add(p, 2106))
+	text := &md.DialogPortraitBuf[0]
 	n = r.byte(byte(len(alloc.GoString(text))))
 	r.raw(unsafe.Pointer(text), int(n))
 	*byteAt(2106 + int(n)) = 0
@@ -156,12 +163,13 @@ func creatureXferAction(u *server.Object) int {
 	at(1212, 4)
 	adjust(1212)
 	id := uint32(0)
-	if ref := *(**server.Object)(unsafe.Add(p, 1216)); ref != nil {
+	if ref := md.Field304; ref != nil {
 		id = uint32(ref.ScriptIDVal)
 	}
 	id = r.word(id)
 	if r.read() {
-		*word(1216) = id
+		md.Field304 = nil
+		*word(1216) = id // a script ID until the references are resolved
 	}
 	at(2172, 1)
 	for i := 0; i < int(*byteAt(2172)); i++ {

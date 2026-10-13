@@ -9,13 +9,14 @@ import (
 	"strings"
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	"github.com/brutusmcforce/opennox/libs/common"
 	"github.com/brutusmcforce/opennox/libs/console"
 	"github.com/brutusmcforce/opennox/libs/env"
 	"github.com/brutusmcforce/opennox/libs/ifs"
 	"github.com/brutusmcforce/opennox/libs/noxnet/netxfer"
 	"github.com/brutusmcforce/opennox/libs/object"
-	"github.com/brutusmcforce/opennox/libs/types"
 	crypt "github.com/brutusmcforce/opennox/noxcrypt"
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
@@ -323,7 +324,7 @@ func sub_4DCC10(u *server.Object) int {
 	if dword_5d4594_1563092 != 0 && dword_5d4594_1563092+dword_5d4594_1563088 > u.Server().Frame() {
 		v = false
 	}
-	if *(*uint32)(unsafe.Add(u.UpdateData, 284)) != 0 { // TODO: which type is expected here?
+	if layout.As[server.PlayerUpdateData](u.UpdateData).DialogWith != nil {
 		v = false
 	}
 	if u.Flags().Has(object.FlagNoUpdate) {
@@ -887,11 +888,7 @@ func nox_xxx_saveMakePlayerLocation_4DB600(a1 unsafe.Pointer) bool {
 	}
 	pos := u.Pos()
 	if a1 != nil {
-		ptr := *(*unsafe.Pointer)(unsafe.Add(a1, 700))
-		pos = types.Pointf{
-			X: *(*float32)(unsafe.Add(ptr, 80)),
-			Y: *(*float32)(unsafe.Add(ptr, 84)),
-		}
+		pos = layout.As[server.Object](a1).CollideDataExit().Dest
 	}
 	s.CreateObjectAt(obj, nil, pos)
 	s.ObjectsAddPending()

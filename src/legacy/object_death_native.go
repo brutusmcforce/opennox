@@ -1,13 +1,15 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/strman"
+	"math"
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/server"
-	"math"
-	"unsafe"
 )
 
 func objectDeathImpEgg(u *server.Object) uint32 {
@@ -36,11 +38,11 @@ func objectDeathBarrel(u *server.Object) {
 }
 func objectDeathCreate(u *server.Object, spawn bool) int16 {
 	core := GetServer().S()
-	data := u.DeathData
-	if t := core.NewObjectByTypeID(alloc.GoString((*byte)(data))); t != nil {
+	data := u.DeathDataCreateObject()
+	if t := core.NewObjectByTypeID(alloc.GoString(&data.Name[0])); t != nil {
 		GetServer().CreateObjectAt(t, nil, u.PosVec)
 	}
-	if id := *(*uint32)(unsafe.Add(data, 128)); id != 0 {
+	if id := data.Sound; id != 0 {
 		core.Audio.EventObj(sound.ID(id), u, 0, 0)
 	}
 	if spawn {
@@ -53,9 +55,10 @@ func objectDeathCreate(u *server.Object, spawn bool) int16 {
 func objectDeathMarker(u *server.Object) {
 	if owner := u.FindOwnerChainPlayer(); owner != nil {
 		// The retained owner-chain service can return a non-player terminal owner;
-		// preserve the C callback's raw four-slot layout access.
-		for i := 0; i < 4; i++ {
-			p := (**server.Object)(unsafe.Add(owner.UpdateData, 116+4*i))
+		// preserve the C callback's raw four-slot layout access (the teleport markers of players).
+		marks := &layout.As[server.PlayerUpdateData](owner.UpdateData).Field29
+		for i := range marks {
+			p := &marks[i]
 			if *p == u {
 				*p = nil
 				break

@@ -8,7 +8,6 @@ import (
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/common/unit/ai"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
@@ -246,11 +245,11 @@ func (s *serverAIPaths) IndexObject(obj *Object) {
 	)
 	v1 := obj
 	result = int32(obj.ObjClass)
-	if !((result&0xC080) == 0 && (result&0x2000 != 0 || (int32(*(*uint8)(unsafe.Add(unsafe.Pointer(obj), int(layoutServerObject.Off(16)) /* ObjFlags */)))&0x49) == 0) && (result&0x2008 != 0 || int32(*(*uint8)(unsafe.Add(unsafe.Pointer(obj), int(layoutServerObject.Off(16)) /* ObjFlags */)))&2 != 0)) {
+	if !((result&0xC080) == 0 && (result&0x2000 != 0 || (int32(*(*uint8)(unsafe.Pointer(&obj.ObjFlags)))&0x49) == 0) && (result&0x2008 != 0 || int32(*(*uint8)(unsafe.Pointer(&obj.ObjFlags)))&2 != 0)) {
 		return
 	}
 	if uint32(result)&0x10000 != 0 {
-		alloc.Memcpy(unsafe.Pointer(&v25[0]), unsafe.Add(unsafe.Pointer(obj), int(layoutServerObject.Off(172)) /* Shape.Kind */), 60)
+		alloc.Memcpy(unsafe.Pointer(&v25[0]), unsafe.Pointer(&obj.Shape), 60)
 		if obj.Shape.Kind == 2 {
 			v3 := float64(dword_587000_234176 + obj.Shape.Circle.R)
 			obj.Shape.Circle.R = float32(v3)
@@ -289,10 +288,10 @@ func (s *serverAIPaths) IndexObject(obj *Object) {
 					if v1.Sub547DB0(&a2) {
 						*(*uint32)(unsafe.Add(unsafe.Pointer(v10), -int(4*1))) = s.mapIndexGen
 						v12 = int32(v1.ObjClass)
-						if v12&8 != 0 || int32(*(*uint8)(unsafe.Add(unsafe.Pointer(v1), int(layoutServerObject.Off(16)) /* ObjFlags */)))&2 != 0 {
+						if v12&8 != 0 || int32(*(*uint8)(unsafe.Pointer(&v1.ObjFlags)))&2 != 0 {
 							v13 = int16(int32(*(*uint16)(unsafe.Pointer(v10))) | 0x100)
 							*(*uint16)(unsafe.Pointer(v10)) = uint16(v13)
-							if (int32(*(*uint8)(unsafe.Add(unsafe.Pointer(v1), int(layoutServerObject.Off(16)) /* ObjFlags */))) & 0x10) == 0 {
+							if (int32(*(*uint8)(unsafe.Pointer(&v1.ObjFlags))) & 0x10) == 0 {
 								*(*uint8)(unsafe.Add(unsafe.Pointer(&v13), unsafe.Sizeof(int16(0))-1)) |= 2
 								*(*uint16)(unsafe.Pointer(v10)) = uint16(v13)
 							}
@@ -316,7 +315,7 @@ func (s *serverAIPaths) IndexObject(obj *Object) {
 		v9++
 	}
 	if v1.ObjClass&0x10000 != 0 {
-		alloc.Memcpy(unsafe.Add(unsafe.Pointer(v1), int(layoutServerObject.Off(172)) /* Shape.Kind */), unsafe.Pointer(&v25[0]), 0x3C)
+		alloc.Memcpy(unsafe.Pointer(&v1.Shape), unsafe.Pointer(&v25[0]), 0x3C)
 		v1.Nox_xxx_objectUnkUpdateCoords_4E7290()
 	}
 }
@@ -534,7 +533,7 @@ func (s *serverAIPaths) Sub50AFA0() {
 				v7 = int32(v28)
 				s.MapIndex(int(v6), int(v7)).Flags8 |= 0x4
 			} else if (v1 & 0x8000) == 0 {
-				if (int32(*(*uint8)(unsafe.Add(unsafe.Pointer(it), int(layoutServerObject.Off(16)) /* ObjFlags */))) & 0x49) == 0 {
+				if (int32(*(*uint8)(unsafe.Pointer(&it.ObjFlags))) & 0x49) == 0 {
 					if uint32(v1)&0x400000 != 0 {
 						v31 = float32(float64(it.CollideP1.X) / 23)
 						v10 = int32(v31)
@@ -562,7 +561,7 @@ func (s *serverAIPaths) Sub50AFA0() {
 										a2.Y = v42 + *v17
 										if it.Sub547DB0(&a2) {
 											v16p.Flags8 |= 1
-											if (int32(*(*uint8)(unsafe.Add(unsafe.Pointer(it), int(layoutServerObject.Off(16)) /* ObjFlags */))) & 0x10) == 0 {
+											if (int32(*(*uint8)(unsafe.Pointer(&it.ObjFlags))) & 0x10) == 0 {
 												v16p.Flags8 |= 2
 											}
 											break
@@ -622,7 +621,7 @@ func (s *serverAIPaths) Sub_50AC20(node *AIVisitNode, out *[2]uint16) int32 {
 		if int64(uintptr(obj.CollideData)) == -8 {
 			return 0
 		}
-		cd := (*ntype.Point32)(unsafe.Add(obj.CollideData, 8))
+		cd := &obj.CollideDataHole().Dest
 		if obj.ObjFlags&0x1000000 != 0 {
 			out[0] = uint16(cd.X / 23)
 			out[1] = uint16(cd.Y / 23)
@@ -634,7 +633,7 @@ func (s *serverAIPaths) Sub_50AC20(node *AIVisitNode, out *[2]uint16) int32 {
 		if obj == nil {
 			return 0
 		}
-		targ := *(**Object)(unsafe.Add(obj.UpdateData, 12))
+		targ := obj.UpdateDataTransporter().Destination
 		if targ != nil && obj.ObjFlags&0x1000000 != 0 {
 			out[0] = uint16(int16(float64(targ.PosVec.X) / 23))
 			out[1] = uint16(int16(float64(targ.PosVec.Y) / 23))
@@ -646,7 +645,7 @@ func (s *serverAIPaths) Sub_50AC20(node *AIVisitNode, out *[2]uint16) int32 {
 		if obj == nil {
 			return 0
 		}
-		targ := *(**Object)(unsafe.Add(obj.UpdateData, 4))
+		targ := obj.UpdateDataElevator().Partner
 		if targ != nil && obj.ObjFlags&0x1000000 != 0 {
 			out[0] = uint16(int16(float64(targ.PosVec.X) / 23))
 			out[1] = uint16(int16(float64(targ.PosVec.Y) / 23))
@@ -658,7 +657,7 @@ func (s *serverAIPaths) Sub_50AC20(node *AIVisitNode, out *[2]uint16) int32 {
 		if obj == nil {
 			return 0
 		}
-		targ := *(**Object)(unsafe.Add(obj.UpdateData, 4))
+		targ := obj.UpdateDataElevatorShaft().Partner
 		if targ != nil && obj.ObjFlags&0x1000000 != 0 {
 			out[0] = uint16(int16(float64(targ.PosVec.X) / 23))
 			out[1] = uint16(int16(float64(targ.PosVec.Y) / 23))

@@ -83,7 +83,7 @@ func nox_xxx_spellIconHighlight_424AB0(ind int) unsafe.Pointer {
 
 func nox_xxx_allocSpellRelatedArrays_4FC9B0() error {
 	s := noxServer
-	legacy.Set_nox_alloc_magicEnt_1569668(alloc.NewClass("magicEntityClass", 60, 64).UPtr())
+	legacy.Set_nox_alloc_magicEnt_1569668(legacy.NewSpellLifeBookPool())
 	nox_xxx_imagCasterUnit_1569664 = s.NewObjectByTypeID("ImaginaryCaster")
 	if nox_xxx_imagCasterUnit_1569664 == nil {
 		return errors.New("cannot find ImaginaryCaster object type")

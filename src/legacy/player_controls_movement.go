@@ -1,12 +1,14 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/spell"
-	"github.com/brutusmcforce/opennox/libs/types"
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func controlFindStart(out *types.Pointf, u *server.Object) {
@@ -19,7 +21,7 @@ func controlFindStart(out *types.Pointf, u *server.Object) {
 	}
 	team := int32(0)
 	if u.TeamVal.Has() {
-		team = int32(*controlByte(u.CObj(), int(layoutServerObject.Off(52)) /* TeamVal.ID */))
+		team = int32(*(*byte)(unsafe.Pointer(&u.TeamVal.ID)))
 		nox_xxx_getTeamByID_418AB0(int(team))
 	}
 	var last, best *server.Object
@@ -75,7 +77,7 @@ func controlDropBall(u *server.Object) int32 {
 		}
 		it.ObjFlags &^= 0x40
 		GetServer().ApplyForce(it, u.PosVec, float64(float32(100)))
-		*controlPtr(it.CObj(), int(layoutServerObject.Off(520)) /* Obj130 */) = nil
+		*(*unsafe.Pointer)(unsafe.Pointer(&it.Obj130)) = nil
 		GetServer().S().ObjSetOwner(nil, it)
 		GetServer().S().Audio.EventObj(sound.ID(926), u, 0, 0)
 		sub_4E8290(int8(1), int16(0))
@@ -96,8 +98,8 @@ func controlNearStart(u *server.Object, out *types.Pointf) int32 {
 	return int32(result)
 }
 func controlWalkWaypoint(u *server.Object) int32 {
-	ptr := controlPtr(u.UpdateData, 168+4*int(*controlByte(u.UpdateData, 181)))
-	it := (*server.Object)(*ptr)
+	ptr := &layout.As[server.PlayerUpdateData](u.UpdateData).Waypoints[*controlWaypointByte(u.UpdateData, 1)]
+	it := *ptr
 	if it == nil {
 		return 0
 	}
@@ -116,7 +118,7 @@ func controlWalkWaypoint(u *server.Object) int32 {
 	off := uintptr(int(int16(u.Direction2)) * 8)
 	for i := 0; i < 2; i++ {
 		f := (*float32)(unsafe.Add(u.CObj(), 88+4*i))
-		*f = float32(float64(*memmap.PtrFloat32(0x587000, 194136+off+uintptr(i*4)))*float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(544)) /* SpeedCur */))) + float64(*f))
+		*f = float32(float64(*memmap.PtrFloat32(0x587000, 194136+off+uintptr(i*4)))*float64(u.SpeedCur) + float64(*f))
 	}
 	return 1
 }
@@ -125,27 +127,27 @@ func controlInputAttack(u *server.Object) {
 		return
 	}
 	d := u.UpdateData
-	weapon := *equipmentWord(controlPlayer(u), 4)
-	setAttack := func() { *equipmentWord(u.CObj(), int(layoutServerObject.Off(136)) /* Field34 */) = GetServer().S().Frame(); *controlByte(d, 236) = 0 }
+	weapon := controlPlayer(u).WeaponEquip
+	setAttack := func() { u.Field34 = GetServer().S().Frame(); layout.As[server.PlayerUpdateData](d).Field59_0 = 0 }
 	if weapon == 0 {
-		if *controlByte(d, 88) != 1 {
+		if layout.As[server.PlayerUpdateData](d).State != 1 {
 			Nox_xxx_playerSetState_4FA020(u, 1)
 		}
 		return
 	}
 	if weapon&0x47f0000 != 0 && controlActionState(u) != 29 {
-		it := controlObject(d, 104)
-		data := it.UseData.Ptr
-		if *controlByte(data, 108) != 0 || *controlByte(data, 109) == 0 {
+		it := layout.As[server.PlayerUpdateData](d).Field26
+		data := it.UseDataWand()
+		if data.Charges != 0 || data.MaxCharges == 0 {
 			setAttack()
 			Nox_xxx_playerSetState_4FA020(u, 1)
 			effectsUse(u, it)
 		} else if controlSubStamina(u, 45) != 0 {
-			*equipmentWord(data, 96) |= 2
+			data.Flags |= 2
 			setAttack()
 			Nox_xxx_playerSetState_4FA020(u, 1)
 		}
-	} else if *controlByte(d, 88) != 1 {
+	} else if *(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](d).State)) != 1 {
 		cost := controlWeaponStamina(weapon)
 		if controlSubStamina(u, cost) != 0 {
 			setAttack()
@@ -162,12 +164,12 @@ func controlFollowEnemy(u *server.Object) int32 {
 	if u == nil {
 		return 0
 	}
-	it := controlObject(u.CObj(), 520)
+	it := u.Obj130
 	if it == nil {
 		return 0
 	}
 	it = it.FindOwnerChainPlayer()
-	if it.ObjFlags&0x20 != 0 || it.ObjClass&2 != 0 || it.ObjClass&4 != 0 && *controlByte(controlPlayer(it), 3680)&1 != 0 {
+	if it.ObjFlags&0x20 != 0 || it.ObjClass&2 != 0 || it.ObjClass&4 != 0 && *(*byte)(unsafe.Pointer(&controlPlayer(it).Field3680))&1 != 0 {
 		return 0
 	}
 	Nox_xxx_playerCameraFollow_4E6060(u, it)

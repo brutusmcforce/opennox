@@ -2,11 +2,13 @@ package legacy
 
 import (
 	"encoding/binary"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"strconv"
 	"strings"
 	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 func serverOptionsLimits(data []byte) int {
@@ -37,9 +39,9 @@ func serverOptionsLabels(data []byte) int {
 		key = "GoMessage"
 	}
 	serverOptionsStoreText(1046224, 64, serverOptionsFormat(key))
-	teamUIEvent(serverOptionsChild(10121), 16385, uintptr(serverOptionsListHead())+12, ^uintptr(0))
-	teamUIEvent(serverOptionsChild(10118), 16385, uintptr(serverOptionsListHead())+140, ^uintptr(0))
-	return teamUIEvent(serverOptionsChild(10117), 16385, uintptr(serverOptionsListHead())+268, ^uintptr(0))
+	teamUIEvent(serverOptionsChild(10121), 16385, uintptr(memmap.PtrOff(0x5D4594, 1045968)), ^uintptr(0))
+	teamUIEvent(serverOptionsChild(10118), 16385, uintptr(memmap.PtrOff(0x5D4594, 1046096)), ^uintptr(0))
+	return teamUIEvent(serverOptionsChild(10117), 16385, uintptr(memmap.PtrOff(0x5D4594, 1046224)), ^uintptr(0))
 }
 func serverOptionsSettingsLabels(data []byte) int {
 	mode := binary.LittleEndian.Uint16(data[52:])

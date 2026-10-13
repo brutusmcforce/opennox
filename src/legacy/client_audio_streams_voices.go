@@ -1,11 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
-func audioStreamVoiceNew(ctx *audioStreamContext) *audioStreamVoice {
+func audioStreamVoiceNew(ctx *AudioStreamContext) *audioStreamVoice {
 	p, _ := alloc.New(audioStreamVoice{})
 	listInit(&p.Node)
 	p.Flags = 0
@@ -158,12 +159,7 @@ func audioStreamVoiceBind(p *audioStreamVoice, b *audioStreamBuffer) {
 		p.Length = b.Length
 	}
 }
-func audioStreamVoiceState(p unsafe.Pointer) unsafe.Pointer {
-	*(*uint32)(unsafe.Add(p, 4)) = 0
-	*(*uint32)(unsafe.Add(p, 8)) = 0
-	return p
-}
-func audioStreamVoiceLink(ctx *audioStreamContext, p *audioStreamVoice) int32 {
+func audioStreamVoiceLink(ctx *AudioStreamContext, p *audioStreamVoice) int32 {
 	p.Context = ctx
 	ctx.VoiceCount++
 	ctx.Mutating++
@@ -188,7 +184,7 @@ func audioStreamVoiceUnlink(p *audioStreamVoice) int32 {
 	}
 	return result
 }
-func audioStreamVoiceCreate(ctx *audioStreamContext) *audioStreamVoice {
+func audioStreamVoiceCreate(ctx *AudioStreamContext) *audioStreamVoice {
 	if ctx.VoiceCount >= ctx.VoiceCapacity {
 		return nil
 	}
@@ -199,7 +195,7 @@ func audioStreamVoiceCreate(ctx *audioStreamContext) *audioStreamVoice {
 	audioStreamVoiceLink(ctx, p)
 	return p
 }
-func audioStreamVoiceCreateMany(ctx *audioStreamContext, count int32) int32 {
+func audioStreamVoiceCreateMany(ctx *AudioStreamContext, count int32) int32 {
 	result := int32(0)
 	for audioStreamVoiceCreate(ctx) != nil {
 		result++
@@ -210,7 +206,7 @@ func audioStreamVoiceCreateMany(ctx *audioStreamContext, count int32) int32 {
 	}
 	return result
 }
-func audioStreamVoiceFirst(ctx *audioStreamContext, it **audioStreamVoice) *audioStreamVoice {
+func audioStreamVoiceFirst(ctx *AudioStreamContext, it **audioStreamVoice) *audioStreamVoice {
 	*it = (*audioStreamVoice)(unsafe.Pointer(listNext(&ctx.Voices)))
 	return *it
 }
@@ -220,7 +216,7 @@ func audioStreamVoiceNext(it **audioStreamVoice) *audioStreamVoice {
 	}
 	return *it
 }
-func audioStreamVoiceSelect(ctx *audioStreamContext, kind int32) *audioStreamVoice {
+func audioStreamVoiceSelect(ctx *AudioStreamContext, kind int32) *audioStreamVoice {
 	if kind == -1 {
 		kind = 1
 	}
@@ -249,7 +245,7 @@ func audioStreamVoiceSelect(ctx *audioStreamContext, kind int32) *audioStreamVoi
 	}
 	return active
 }
-func audioStreamVoiceDeleteKind(ctx *audioStreamContext, kind int32) int32 {
+func audioStreamVoiceDeleteKind(ctx *AudioStreamContext, kind int32) int32 {
 	for n := listNext(&ctx.Voices); n != nil; {
 		next := listNext(n)
 		p := (*audioStreamVoice)(unsafe.Pointer(n))
@@ -260,7 +256,7 @@ func audioStreamVoiceDeleteKind(ctx *audioStreamContext, kind int32) int32 {
 	}
 	return 0
 }
-func audioStreamVoiceStopKind(ctx *audioStreamContext, kind int32) uintptr {
+func audioStreamVoiceStopKind(ctx *AudioStreamContext, kind int32) uintptr {
 	var result uintptr
 	for n := listNext(&ctx.Voices); n != nil; {
 		next := listNext(n)

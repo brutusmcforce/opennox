@@ -1,8 +1,11 @@
 package alloc
 
 import (
+	"reflect"
 	"sync"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 )
 
 var (
@@ -36,6 +39,7 @@ type number interface {
 // Since passing types as parameters is not supported, the first argument must be a value, instead of a type.
 func New[T comparable](zero T) (*T, func()) {
 	ptr, free := Malloc(unsafe.Sizeof(zero))
+	layout.TrackAs[T](ptr)
 	return (*T)(ptr), free
 }
 
@@ -48,6 +52,13 @@ func Make[T comparable, N number](src []T, n N) ([]T, func()) {
 	}
 	var elem T
 	ptr, free := Calloc(int(n), unsafe.Sizeof(elem))
+	if layout.Checking {
+		if unsafe.Sizeof(elem) > 1 {
+			layout.Track(ptr, uintptr(n)*unsafe.Sizeof(elem), reflect.ArrayOf(int(n), reflect.TypeFor[T]()), "")
+		} else {
+			layout.Track(ptr, uintptr(n), nil, "bytes") // untyped memory, but not scanned for pointers
+		}
+	}
 	out := unsafe.Slice((*T)(ptr), n)
 	copy(out, src)
 	return out, free

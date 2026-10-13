@@ -68,10 +68,10 @@ func itemXferWeapon(u *server.Object) int {
 	}
 	itemXferModifiers(r, u)
 	if v >= 41 && uint32(u.Class())&0x1000 != 0 && uint32(u.SubClass())&0x47f0000 != 0 && (v >= 62 || uint32(u.SubClass())&0x4000000 == 0) {
-		p := u.UseData.Ptr
-		count := (*byte)(unsafe.Add(p, 108))
-		max := (*byte)(unsafe.Add(p, 109))
-		amount := objectXferWord(p, 112)
+		p := u.UseDataWand()
+		count := &p.Charges
+		max := &p.MaxCharges
+		amount := &p.Percent
 		oldMax, oldAmount := *max, int32(*amount)
 		a, b := r.byte(*count), r.byte(*max)
 		c := *amount
@@ -91,7 +91,7 @@ func itemXferWeapon(u *server.Object) int {
 		r.byte(0)
 	}
 	if v >= 64 {
-		r.raw(unsafe.Add(u.UpdateData, 4), 4)
+		r.raw(unsafe.Pointer(&u.UpdateDataWeaponArmor().Flags), 4)
 	}
 	return objectXferFinish(r, u, v, saved)
 }
@@ -113,7 +113,7 @@ func itemXferArmor(u *server.Object) int {
 		r.byte(0)
 	}
 	if v >= 62 {
-		r.raw(unsafe.Add(u.UpdateData, 4), 4)
+		r.raw(unsafe.Pointer(&u.UpdateDataWeaponArmor().Flags), 4)
 	}
 	return objectXferFinish(r, u, v, saved)
 }
@@ -123,16 +123,16 @@ func itemXferAmmo(u *server.Object) int {
 		return 0
 	}
 	itemXferModifiers(r, u)
-	p := (*[3]byte)(u.UseData.Ptr)
+	p := u.UseDataAmmo()
 	if r.read() {
 		a, b := r.byte(0), r.byte(0)
 		if noxflags.HasGame(4096) {
-			p[2] = 0
+			p.Infinite = 0
 		}
-		p[1], p[0] = a, b
+		p.Charges, p.MaxCharges = a, b
 	} else {
-		r.raw(unsafe.Pointer(&p[1]), 1)
-		r.raw(unsafe.Pointer(&p[0]), 1)
+		r.raw(unsafe.Pointer(&p.Charges), 1)
+		r.raw(unsafe.Pointer(&p.MaxCharges), 1)
 	}
 	return objectXferFinish(r, u, v, saved)
 }
@@ -143,7 +143,7 @@ func itemXferTeam(u *server.Object) int {
 	}
 	itemXferModifiers(r, u)
 	if r.read() && uint32(u.Class())&0x10000000 != 0 {
-		*(*[2]uint32)(u.UpdateData) = *(*[2]uint32)(unsafe.Add(unsafe.Pointer(u), int(layoutServerObject.Off(56)) /* PosVec.X */))
+		u.UpdateDataFlag().Home = u.PosVec
 	}
 	return objectXferFinish(r, u, v, saved)
 }

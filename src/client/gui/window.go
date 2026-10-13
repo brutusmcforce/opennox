@@ -32,16 +32,20 @@ type Window struct {
 	Off            image.Point    // 4, 16
 	EndPos         image.Point    // 6, 24
 	WidgetData     unsafe.Pointer // 8, 32; different types
-	drawData       WindowData     // 9, 36
-	field92        uint32         // 92, 368
+	DrawDataVal    WindowData     // 9, 36
+	Field92        uint32         // 92, 368
 	field93        unsafe.Pointer // 93
-	field94        unsafe.Pointer // 94, 376
+	Field94        unsafe.Pointer // 94, 376
 	drawFunc       unsafe.Pointer // 95, 380, second arg is &field_9
 	TooltipFuncPtr unsafe.Pointer // 96, 384
 	prev           *Window        // 97, 388
 	next           *Window        // 98, 392
 	parent         *Window        // 99, 396
 	Field100Ptr    *Window        // 100, 400
+
+	// Value is an integer for windows that keep one instead of widget data (meters, progress bars, the
+	// character color pickers, summon commands). Go-only: legacy code kept it in WidgetData.
+	Value uint32
 }
 
 func (win *Window) C() unsafe.Pointer {
@@ -100,7 +104,7 @@ func (win *Window) Size() image.Point {
 }
 
 func (win *Window) DrawData() *WindowData {
-	return &win.drawData
+	return &win.DrawDataVal
 }
 
 func (win *Window) CopyDrawData(p *WindowData) int {
@@ -110,7 +114,7 @@ func (win *Window) CopyDrawData(p *WindowData) int {
 	if p == nil {
 		return -3
 	}
-	win.drawData = *p
+	win.DrawDataVal = *p
 	return 0
 }
 
@@ -362,7 +366,7 @@ func (win *Window) Func94(e WindowEvent) WindowEventResp {
 	if ext := win.ext(); ext != nil && ext.Func94 != nil {
 		return ext.Func94(win, e)
 	}
-	if win.field94 == nil || uintptr(win.field94) == deadWord {
+	if win.Field94 == nil || uintptr(win.Field94) == deadWord {
 		return nil
 	}
 	panic("unregistered raw window event callback")

@@ -97,7 +97,7 @@ func (a *abilityHarpoon) createBolt(u *server.Object) {
 		return
 	}
 	r := u.Shape.Circle.R + 1.0
-	*(**server.Object)(unsafe.Add(bolt.CollideData, 4)) = u
+	bolt.CollideDataProjectile().SetOwnerObj(u)
 	dv := u.Direction1.Vec()
 	hpos := u.Pos().Add(dv.Mul(r))
 	a.s.CreateObjectAt(bolt, u, hpos)
@@ -206,8 +206,8 @@ func (a *abilityHarpoon) Update(bolt *server.Object) {
 		a.breakForOwner(owner, true)
 		return
 	}
-	bud := bolt.UpdateData
-	obj4 := asObjectS(*(**server.Object)(bud))
+	bud := bolt.UpdateDataHarpoon()
+	obj4 := asObjectS(bud.TargetObj())
 	if obj4 != nil && obj4.Flags().HasAny(object.FlagDestroyed|object.FlagDead) {
 		a.breakForOwner(owner, true)
 		return
@@ -220,10 +220,10 @@ func (a *abilityHarpoon) Update(bolt *server.Object) {
 		if obj4 == nil {
 			aim := d.getAim()
 			obj6 := a.s.Nox_xxx_spellFlySearchTarget(&aim, bolt, 32, a.maxDist, 0, owner)
-			*(**server.Object)(bud) = obj6
+			bud.SetTargetObj(obj6)
 			if obj6 != nil {
 				if legacy.Nox_server_testTwoPointsAndDirection_4E6E50(bolt.Pos(), int16(bolt.Direction1), obj6.Pos())&0x1 == 0 {
-					*(**server.Object)(bud) = nil
+					bud.SetTargetObj(nil)
 				}
 			}
 		} else {

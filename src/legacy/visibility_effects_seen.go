@@ -4,18 +4,20 @@ import (
 	"math"
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/server"
 )
 
-func visibilityWord(p unsafe.Pointer, off int) *uint32   { return (*uint32)(unsafe.Add(p, off)) }
-func visibilityFloat(p unsafe.Pointer, off int) *float32 { return (*float32)(unsafe.Add(p, off)) }
+func visibilityWord(p unsafe.Pointer, off int) *uint32   { return rawAt[uint32](p, off) }
+func visibilityFloat(p unsafe.Pointer, off int) *float32 { return rawAt[float32](p, off) }
 func visibilityObject(p unsafe.Pointer, off int) **server.Object {
 	return (**server.Object)(unsafe.Add(p, off))
 }
 func visibilitySlots(p unsafe.Pointer) []*server.Object {
-	return unsafe.Slice(visibilityObject(p, 1132), 16)
+	return unsafe.Slice((**server.Object)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](p).Field283)), 16)
 }
 func visibilityKillable(u *server.Object) int {
 	h := u.HealthData
@@ -34,17 +36,17 @@ func visibilityLost(u *server.Object, index int) int {
 	slots := visibilitySlots(ud)
 	v := slots[index]
 	unitDebug(0, GetServer().S().Frame(), v.NetCode, GetServer().S().Types.ByInd(int(v.TypeInd)).ID())
-	GetServer().NoxScriptC().ScriptCallback((*server.ScriptCallback)(unsafe.Add(ud, 1296)), slots[index], u, server.ScriptEventType(15))
-	selected := visibilityObject(ud, 1196)
+	GetServer().NoxScriptC().ScriptCallback(&layout.As[server.MonsterUpdateData](ud).ScriptLostEnemy, slots[index], u, server.ScriptEventType(15))
+	selected := &layout.As[server.MonsterUpdateData](ud).CurrentEnemy
 	if slots[index] == *selected {
-		*visibilityWord(ud, 1200) = (*selected).NetCode
+		layout.As[server.MonsterUpdateData](ud).Field300 = (*selected).NetCode
 		*selected = nil
 	}
-	count := controlByte(ud, 1129)
+	count := &layout.As[server.MonsterUpdateData](ud).Field282_1
 	*count--
 	result := int(*count)
 	if index < int(*count) {
-		result = int(uintptr(unsafe.Add(ud, 1132+4*index)))
+		result = int(uintptr(unsafe.Pointer(&slots[index]))) // the legacy return value is the address of the slot
 		for i := index; i < int(*count); i++ {
 			slots[i] = slots[i+1]
 			result += 4
@@ -54,7 +56,7 @@ func visibilityLost(u *server.Object, index int) int {
 }
 func visibilityRemove(u, v *server.Object) int {
 	ud := u.UpdateData
-	count := int(*controlByte(ud, 1129))
+	count := int(layout.As[server.MonsterUpdateData](ud).Field282_1)
 	slots := visibilitySlots(ud)
 	for i := 0; i < count; i++ {
 		if slots[i] == v {
@@ -66,7 +68,7 @@ func visibilityRemove(u, v *server.Object) int {
 func visibilityContains(u, v *server.Object) bool {
 	ud := u.UpdateData
 	for i, it := range visibilitySlots(ud) {
-		if i >= int(*controlByte(ud, 1129)) {
+		if i >= int(layout.As[server.MonsterUpdateData](ud).Field282_1) {
 			break
 		}
 		if it == v {
@@ -77,13 +79,13 @@ func visibilityContains(u, v *server.Object) bool {
 }
 func visibilitySelectTarget(u *server.Object) {
 	ud := u.UpdateData
-	selected := visibilityObject(ud, 1196)
+	selected := &layout.As[server.MonsterUpdateData](ud).CurrentEnemy
 	*selected = nil
 	best := float32(100000000)
 	slots := visibilitySlots(ud)
-	for i := 0; i < int(*controlByte(ud, 1129)); i++ {
+	for i := 0; i < int(layout.As[server.MonsterUpdateData](ud).Field282_1); i++ {
 		it := slots[i]
-		if it == *visibilityObject(ud, 1216) {
+		if it == *(**server.Object)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](ud).Field304)) {
 			*selected = it
 			return
 		}
@@ -99,7 +101,7 @@ func visibilitySelectTarget(u *server.Object) {
 }
 func visibilitySee(u, v *server.Object) {
 	ud := u.UpdateData
-	count := controlByte(ud, 1129)
+	count := &layout.As[server.MonsterUpdateData](ud).Field282_1
 	slots := visibilitySlots(ud)
 	if *count == 16 {
 		farthest := float64(0)
@@ -121,14 +123,14 @@ func visibilitySee(u, v *server.Object) {
 	slots[int(*count)] = v
 	*count++
 	s := GetServer().S()
-	cooldown := visibilityWord(ud, 536)
+	cooldown := &layout.As[server.MonsterUpdateData](ud).Field134
 	if s.Frame() > *cooldown && s.IsEnemyTo(u, v) && (!monsterIsZombie(u) || uint32(u.ObjFlags)&0x8000 == 0) {
 		if set := Nox_xxx_monsterGetSoundSet_424300(u); set != nil {
-			s.Audio.EventObj(sound.ID(*visibilityWord(set, 68)), u, 0, 0)
+			s.Audio.EventObj(sound.ID(set.Sound(17)), u, 0, 0)
 		}
 		*cooldown = s.Frame() + uint32(s.Rand.Logic.IntClamp(int(int32(2*s.TickRate())), int(int32(4*s.TickRate()))))
 	}
-	GetServer().NoxScriptC().ScriptCallback((*server.ScriptCallback)(unsafe.Add(ud, 1232)), v, u, server.ScriptEventType(14))
+	GetServer().NoxScriptC().ScriptCallback(&layout.As[server.MonsterUpdateData](ud).ScriptEnemySighted, v, u, server.ScriptEventType(14))
 }
 func visibilityCandidate(candidate, u *server.Object) {
 	ud := u.UpdateData
@@ -136,7 +138,7 @@ func visibilityCandidate(candidate, u *server.Object) {
 		return
 	}
 	s := GetServer().S()
-	status := visibilityWord(ud, 1440)
+	status := (*uint32)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](ud).StatusFlags))
 	if *status&0x400 == 0 && !s.IsEnemyTo(u, candidate) {
 		return
 	}

@@ -1,14 +1,15 @@
 package legacy
 
 import (
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
-	"github.com/brutusmcforce/opennox/libs/object"
+	"image"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/server"
-	"image"
-	"unsafe"
 )
 
 // Current object in the optional debug overlay traversal; cleared at its end.
@@ -22,7 +23,7 @@ func minimapLevel(dr *client.Drawable) int {
 	} else {
 		p = dr.PosVec
 	}
-	index := int(mapPolygonIndex((*[2]int32)(unsafe.Pointer(&p)), memmap.Uint32(0x5D4594, 1096312)))
+	index := int(mapPolygonIndex(&[2]int32{int32(p.X), int32(p.Y)}, memmap.Uint32(0x5D4594, 1096312)))
 	if index != 0 {
 		*memmap.PtrUint32(0x5D4594, 1096312) = uint32(index)
 	} else {
@@ -31,14 +32,14 @@ func minimapLevel(dr *client.Drawable) int {
 	if index == 0 {
 		return 1
 	}
-	return int(*(*byte)(unsafe.Add(unsafe.Pointer(mapPolygonGet(uint32(index))), int(layoutLegacyMapPolygon.Off(130)) /* Level */)))
+	return int(mapPolygonGet(uint32(index)).Level)
 }
 func minimapPolygonLevel(p image.Point) (int, bool) {
-	poly := mapPolygonFind((*[2]int32)(unsafe.Pointer(&p)), 0, false)
+	poly := mapPolygonFind(&[2]int32{int32(p.X), int32(p.Y)}, 0, false)
 	if poly == nil {
 		return 0, false
 	}
-	return int(*(*byte)(unsafe.Add(unsafe.Pointer(poly), int(layoutLegacyMapPolygon.Off(130)) /* Level */))), true
+	return int(poly.Level), true
 }
 func minimapDrawSprite(dr *client.Drawable) {
 	if local := minimapLocalDrawable(); local != nil && local.Buffs&(1<<2) != 0 {
@@ -150,8 +151,8 @@ func minimapDraw(_ *client.Drawable, level int) int {
 				continue
 			}
 			if w.Flags4&4 != 0 {
-				v := *(*byte)(unsafe.Add(w.Data, 21))
-				if v == 2 || v == 3 {
+				v := w.SecretData().State
+				if v == server.SecretWallClosing || v == server.SecretWallOpen {
 					continue
 				}
 			}

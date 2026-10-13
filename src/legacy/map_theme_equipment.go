@@ -83,7 +83,7 @@ func mapThemeAttributes(p, f uint32) uint32 {
 				return 0
 			}
 			for j, value := range values {
-				mapThemeCopy(a+uint32(60*j), value)
+				mapThemeCopyAt(a, int(uint32(60*j)), value)
 			}
 		}
 		*populationWord(p, 136+4*i) = uint32(len(values))
@@ -111,7 +111,7 @@ func mapThemeEquipment(cfg, f uint32, armor bool) uint32 {
 		if p == 0 || !mapThemeNext(f) {
 			return 0
 		}
-		mapThemeCopy(p+60, mapThemeText())
+		mapThemeCopyAt(p, 60, mapThemeText())
 		if mapThemeLower(populationString(p+60)) != "template" {
 			if !mapThemeNext(f) {
 				return 0

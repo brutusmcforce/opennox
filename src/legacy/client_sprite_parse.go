@@ -1,12 +1,13 @@
 package legacy
 
 import (
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/internal/binfile"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"unsafe"
 )
 
 // Draw-data buffers share the legacy allocator domain with spriteDataFree.
@@ -35,17 +36,18 @@ func spriteReadImage(f *binfile.MemFile, scratch []byte, empty uintptr) noxrende
 	return GetClient().R2().GetBag().ImageRef(id, typ, name).C()
 }
 func spriteReadFrames(f *binfile.MemFile, scratch []byte, empty uintptr, count int) *noxrender.ImageHandle {
-	frames := (*noxrender.ImageHandle)(spriteDataAlloc(count, 4))
+	frames := spriteDataMake[noxrender.ImageHandle](count)
 	if frames == nil {
 		return nil
 	}
-	for i := 0; i < count; i++ {
-		*(*noxrender.ImageHandle)(unsafe.Add(unsafe.Pointer(frames), 4*i)) = spriteReadImage(f, scratch, empty)
+	list := unsafe.Slice(frames, count)
+	for i := range list {
+		list[i] = spriteReadImage(f, scratch, empty)
 	}
 	return frames
 }
 func spriteParseAnimate(obj *client.ObjectType, f *binfile.MemFile, scratch []byte) bool {
-	data := (*spriteAnimationData)(spriteDataAlloc(1, 16))
+	data := spriteDataNew[spriteAnimationData]()
 	data.Size = 16
 	data.Count = f.ReadU8()
 	data.Delay = f.ReadU8()
@@ -59,7 +61,7 @@ func spriteParseAnimate(obj *client.ObjectType, f *binfile.MemFile, scratch []by
 	return true
 }
 func spriteParseConditional(obj *client.ObjectType, f *binfile.MemFile, scratch []byte) bool {
-	data := (*spriteConditionalData)(spriteDataAlloc(1, 56))
+	data := spriteDataNew[spriteConditionalData]()
 	data.Size = 16 // Historical header value is not the allocation size.
 	states := int(f.ReadU8())
 	for i := 0; i < states; i++ {
@@ -77,25 +79,25 @@ func spriteParseConditional(obj *client.ObjectType, f *binfile.MemFile, scratch 
 	return true
 }
 func spriteStaticRandomData(f *binfile.MemFile, scratch []byte) unsafe.Pointer {
-	data := spriteDataAlloc(1, 12)
-	*(*uint32)(data) = 12
+	data := spriteDataNew[client.SpriteStaticRandomData]()
+	data.Size = 12
 	count := f.ReadU8()
-	*(*byte)(unsafe.Add(data, 8)) = count
+	data.Count = count
 	frames := spriteReadFrames(f, scratch, 830852, int(count))
-	*(**noxrender.ImageHandle)(unsafe.Add(data, 4)) = frames
+	data.Frames = frames
 	if frames == nil {
 		return nil
 	}
-	return data
+	return unsafe.Pointer(data)
 }
 func spriteParseStatic(obj *client.ObjectType, f *binfile.MemFile, scratch []byte) bool {
-	data := spriteDataAlloc(1, 8)
+	data := spriteDataNew[client.SpriteStaticData]()
 	if data == nil {
 		return false
 	}
-	*(*uint32)(data) = 8
-	*(*noxrender.ImageHandle)(unsafe.Add(data, 4)) = spriteReadImage(f, scratch, 830856)
-	obj.DrawData = data
+	data.Size = 8
+	data.Image = spriteReadImage(f, scratch, 830856)
+	obj.DrawData = unsafe.Pointer(data)
 	obj.DrawFunc = drawableDrawKey(drawKey_nox_thing_static_draw)
 	return true
 }
@@ -127,8 +129,8 @@ func spriteVectorFrames(vector *client.AnimationVector, f *binfile.MemFile) int 
 	return 1
 }
 func spriteParseState(obj *client.ObjectType, f *binfile.MemFile) bool {
-	data := spriteDataAlloc(1, 148)
-	*(*uint32)(data) = 148
+	data := spriteDataNew[client.SpriteStateData]()
+	data.Size = 148
 	for {
 		cmd := f.ReadU32()
 		if cmd == 0x454e4420 {
@@ -148,7 +150,7 @@ func spriteParseState(obj *client.ObjectType, f *binfile.MemFile) bool {
 		} else {
 			state = 2
 		}
-		vector := (*client.AnimationVector)(unsafe.Add(data, 4+state*48))
+		vector := &data.States[state]
 		spriteVectorHeader(vector, f)
 		if spriteVectorFrames(vector, f) == 0 {
 			return false
@@ -156,6 +158,6 @@ func spriteParseState(obj *client.ObjectType, f *binfile.MemFile) bool {
 	}
 	obj.Field_54 = 2
 	obj.DrawFunc = drawableDrawKey(drawKey_nox_thing_animate_state_draw)
-	obj.DrawData = data
+	obj.DrawData = unsafe.Pointer(data)
 	return true
 }

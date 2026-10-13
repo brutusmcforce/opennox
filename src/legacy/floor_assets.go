@@ -2,12 +2,13 @@ package legacy
 
 import (
 	"bytes"
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/internal/binfile"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func floorAssetName(f *binfile.MemFile) string {
@@ -185,7 +186,7 @@ func floorAssetBind(f *binfile.MemFile, scratch []byte) int {
 	a, b, c := f.ReadU8(), f.ReadU8(), f.ReadU8()
 	f.Skip(1)
 	count := int(a) * int(b) * int(c)
-	ptr := legacyCalloc(uintptr(count), 4)
+	ptr := legacyCalloc(uintptr(count), unsafe.Sizeof(unsafe.Pointer(nil)))
 	tileDefinitionsAll()[index].Data32 = ptr
 	words := unsafe.Slice((*unsafe.Pointer)(ptr), count)
 	typ := a
@@ -215,8 +216,8 @@ func edgeAssetBind(f *binfile.MemFile, scratch []byte) int {
 	}
 	b, c := f.ReadU8(), f.ReadU8()
 	count := 2 * int(a) * (int(b) + int(c))
-	// Keep the original allocation extent: handles use four bytes of each five.
-	ptr := legacyCalloc(uintptr(count), 5)
+	// Keep the original allocation extent: handles use four bytes of each five (on 386).
+	ptr := legacyCalloc(uintptr(count), max(5, unsafe.Sizeof(unsafe.Pointer(nil))))
 	edgeAssets[index].Data32 = ptr
 	if ptr == nil {
 		return 0

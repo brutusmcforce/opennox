@@ -1,20 +1,22 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func sustainedHasMana(u *server.Object) uint32 {
 	if u.ObjClass&0x400000 != 0 && u.ObjSubClass&0x18 != 0 {
-		if *spellLifeWord(u.UpdateData, 0) > 0 {
+		if u.UpdateDataObelisk().Mana > 0 {
 			return 1
 		}
 	} else if u.ObjClass&2 != 0 {
-		if *controlByte(u.UpdateData, 1440)&0x20 != 0 {
+		if *(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](u.UpdateData).StatusFlags))&0x20 != 0 {
 			return 1
 		}
 	} else if u.ObjClass&4 != 0 && resourceGetMana(u) != 0 {
@@ -23,7 +25,7 @@ func sustainedHasMana(u *server.Object) uint32 {
 	return 0
 }
 func sustainedTransferMana(u, t *server.Object, amount int32) uint32 {
-	if u.ObjClass&4 != 0 && uint16(resourceGetMana(u)) >= *controlHalf(u.UpdateData, 8) {
+	if u.ObjClass&4 != 0 && uint16(resourceGetMana(u)) >= u.UpdateDataPlayer().ManaMax {
 		return 0
 	}
 	moved := amount
@@ -31,7 +33,7 @@ func sustainedTransferMana(u, t *server.Object, amount int32) uint32 {
 		if t.HasTeam() && !t.TeamPtr().SameAs(u.TeamPtr()) {
 			return 0
 		}
-		pool := spellLifeWord(t.UpdateData, 0)
+		pool := (*uint32)(unsafe.Pointer(&t.UpdateDataObelisk().Mana))
 		if int32(*pool) <= amount {
 			moved = int32(*pool)
 			amount = moved
@@ -48,12 +50,12 @@ func sustainedTransferMana(u, t *server.Object, amount int32) uint32 {
 			t.NeedSync()
 		}
 	} else if t.ObjClass&2 != 0 {
-		if *controlByte(t.UpdateData, 1440)&0x20 != 0 {
+		if *(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](t.UpdateData).StatusFlags))&0x20 != 0 {
 			moved = 1
 			amount = 1
 		}
 	} else if t.ObjClass&4 != 0 {
-		mana := int32(*controlHalf(t.UpdateData, 4))
+		mana := int32(layout.As[server.PlayerUpdateData](t.UpdateData).ManaCur)
 		if mana <= amount {
 			moved = mana
 			amount = mana
@@ -68,7 +70,7 @@ func sustainedTransferMana(u, t *server.Object, amount int32) uint32 {
 	if sustainedGame(4096) && u.ObjClass&4 != 0 {
 		mult := GetServer().S().Players.Mult
 		var scale float32
-		switch *controlByte(controlPlayer(u), 2251) {
+		switch controlPlayer(u).InfoBytes[66] {
 		case 0:
 			scale = mult.Warrior.Mana
 		case 1:
@@ -98,7 +100,7 @@ func sustainedManaCandidate(t, u *server.Object) {
 	}
 	weight := 1.0
 	if t.ObjClass&2 != 0 {
-		if !((u == nil || sustainedEnemy(u, t)) && *controlByte(t.UpdateData, 1440)&0x20 != 0) {
+		if !((u == nil || sustainedEnemy(u, t)) && *(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](t.UpdateData).StatusFlags))&0x20 != 0) {
 			return
 		}
 	} else if t.ObjClass&0x400000 != 0 && t.ObjSubClass&0x18 != 0 {
@@ -109,7 +111,7 @@ func sustainedManaCandidate(t, u *server.Object) {
 		if u != nil && !sustainedEnemy(u, t) {
 			return
 		}
-		if Nox_xxx_unitsHaveSameTeam_4EC520(t, u) || *controlByte(controlPlayer(t), 3680)&1 != 0 {
+		if Nox_xxx_unitsHaveSameTeam_4EC520(t, u) || *(*byte)(unsafe.Pointer(&controlPlayer(t).Field3680))&1 != 0 {
 			return
 		}
 		weight = 0.5
@@ -155,16 +157,16 @@ func sustainedDrainMana(p unsafe.Pointer) uint32 {
 		return 1
 	}
 	d.Target48 = sustainedFindMana(u.PosVec, u)
-	previous := spellEffectObject(p, 36)
+	previous := durWordObject(layout.As[server.DurSpell](p).Field36)
 	if d.Target48 == nil {
 		if previous != nil {
 			sustainedStopRay(d, previous)
 		}
 		return 1
 	}
-	value := float32(spellEffectTable("ManaDrainCoeff", int32(d.Level)-1) + float64(*temporaryFloat(p, 72)))
+	value := float32(spellEffectTable("ManaDrainCoeff", int32(d.Level)-1) + float64(*(*float32)(durScratch(p, 72))))
 	n := floatToInt32(value)
-	*temporaryFloat(p, 72) = float32(float64(value) - float64(n))
+	*(*float32)(durScratch(p, 72)) = float32(float64(value) - float64(n))
 	if d.Target48 != previous {
 		if previous != nil {
 			sustainedStopRay(d, previous)
@@ -219,11 +221,11 @@ func sustainedGreaterHealTick(p unsafe.Pointer) uint32 {
 	if sustainedHurtRecently(u) || resourceGetMaxHP(t) == resourceGetHP(t) {
 		return 1
 	}
-	value := float32(float64(*temporaryFloat(p, 72)) + float64(*memmap.PtrFloat32(0x587000, 260360+uintptr(d.Level)*4)))
+	value := float32(float64(*(*float32)(durScratch(p, 72))) + float64(*memmap.PtrFloat32(0x587000, 260360+uintptr(d.Level)*4)))
 	if u != nil && u.ObjClass&4 != 0 {
 		m := GetServer().S().Players.Mult
 		var scale float32
-		switch *controlByte(controlPlayer(u), 2251) {
+		switch controlPlayer(u).InfoBytes[66] {
 		case 0:
 			scale = m.Warrior.Health
 		case 1:
@@ -236,7 +238,7 @@ func sustainedGreaterHealTick(p unsafe.Pointer) uint32 {
 		value = float32(float64(scale) * float64(value))
 	}
 	n := floatToInt32(value)
-	*temporaryFloat(p, 72) = float32(float64(value) - float64(n))
+	*(*float32)(durScratch(p, 72)) = float32(float64(value) - float64(n))
 	resourceAdjustHP(t, n)
 	resourceSubMana(u, 1)
 	return 0
@@ -262,9 +264,9 @@ func sustainedChannelLife(p unsafe.Pointer) uint32 {
 		return 1
 	}
 	if resourceGetHP(u) != 0 {
-		value := float32(spellEffectTable("ChannelLifeCoeff", int32(d.Level)-1) + float64(*temporaryFloat(p, 72)))
+		value := float32(spellEffectTable("ChannelLifeCoeff", int32(d.Level)-1) + float64(*(*float32)(durScratch(p, 72))))
 		n := floatToInt32(value)
-		*temporaryFloat(p, 72) = float32(float64(value) - float64(n))
+		*(*float32)(durScratch(p, 72)) = float32(float64(value) - float64(n))
 		resourceAddMana(t, int16(n))
 		resourceDamage(u, 1)
 	}
@@ -328,14 +330,14 @@ func sustainedShieldDamage(u *server.Object, damage *int32, kind int32, source *
 		sustainedShieldAbsorb(u, *damage)
 		return
 	}
-	if u.ObjClass&4 != 0 && *controlByte(controlPlayer(u), 2251) == 0 && *controlByte(u.UpdateData, 88) == 16 && source != nil && stateFront(&u.PosVec, int32(int16(u.Direction1)), &source.PrevPos)&1 != 0 {
+	if u.ObjClass&4 != 0 && controlPlayer(u).InfoBytes[66] == 0 && u.UpdateDataPlayer().State == 16 && source != nil && stateFront(&u.PosVec, int32(int16(u.Direction1)), &source.PrevPos)&1 != 0 {
 		*damage = 1
 	} else {
 		resourceSetHP(u, 2)
 		*damage = 0
 	}
 	sustainedShieldAbsorb(u, 999999)
-	*controlPtr(u.CObj(), int(layoutServerObject.Off(520)) /* Obj130 */) = source.CObj()
-	*spellLifeWord(u.CObj(), int(layoutServerObject.Off(524)) /* Field131 */) = uint32(kind)
+	*(*unsafe.Pointer)(unsafe.Pointer(&u.Obj130)) = source.CObj()
+	u.Field131 = uint32(kind)
 	u.Frame134 = sustainedFrame()
 }

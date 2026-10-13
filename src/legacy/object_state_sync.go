@@ -1,9 +1,11 @@
 package legacy
 
 import (
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 // The legacy sync ABI returns the one-past pointer for the 32 player words.
@@ -43,8 +45,8 @@ func stateBuffs(u *server.Object, flags uint32) unsafe.Pointer {
 	u.NeedSync()
 	u.Buffs = flags
 	if u.ObjClass&4 != 0 {
-		pl := *(*unsafe.Pointer)(unsafe.Add(u.UpdateData, 276))
-		setProtectionRecord(int32(*equipmentWord(pl, 4612)), flags)
+		pl := layout.As[server.PlayerUpdateData](u.UpdateData).Player
+		setProtectionRecord(int32(layout.As[server.Player](unsafe.Pointer(pl)).ProtUnitBuffs), flags)
 	}
 	return stateSync(u, 0x800000, 128)
 }
@@ -101,7 +103,7 @@ func stateChecksum(u *server.Object) uint32 {
 	for _, off := range [...]int{340, 248, 120, 128, 132, 136, 148, 152, 108, 104, 100, 96, 92, 88, 84, 80, 76, 72, 68, 64, 60, 16, 20, 36, 40, 44, 56} {
 		sum ^= *equipmentWord(u.CObj(), off)
 	}
-	sum ^= uint32(int32(int16(u.Direction1))) ^ uint32(int32(int16(u.Direction2))) ^ uint32(u.TypeInd) ^ uint32(*(*byte)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(52)) /* TeamVal.ID */)))
+	sum ^= uint32(int32(int16(u.Direction1))) ^ uint32(int32(int16(u.Direction2))) ^ uint32(u.TypeInd) ^ uint32(*(*byte)(unsafe.Pointer(&u.TeamVal.ID)))
 	if h := u.HealthData; h != nil {
 		for _, v := range unsafe.Slice((*uint16)(unsafe.Pointer(h)), 3) {
 			sum ^= uint32(v)

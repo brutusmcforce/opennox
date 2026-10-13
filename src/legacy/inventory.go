@@ -4,7 +4,6 @@ import (
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func inventoryInt(u *server.Object) int32 { return int32(memmap.PtrWord(u.CObj())) }
@@ -26,7 +25,7 @@ func inventoryRemove(u, it *server.Object) {
 			report = 0
 		}
 		if it.ObjClass&0x10000000 != 0 && noxflags.HasGame(32) {
-			*(*uint32)(unsafe.Add(unsafe.Pointer(pl), 4)) &^= 1
+			pl.WeaponEquip &^= 1
 			if report == 1 {
 				gameplayReportDequipFlags(255, it)
 			}

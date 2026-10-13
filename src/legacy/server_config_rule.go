@@ -1,18 +1,19 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/ifs"
-	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/client/noxrender"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/server"
 	"image"
 	"os"
 	"path/filepath"
 	"strings"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var serverConfigRuleWords [7]uint32
@@ -22,12 +23,12 @@ func serverConfigRuleWindow(index int) *gui.Window {
 }
 func serverConfigRuleOpen(parent *gui.Window, settings *byte) int {
 	w := Nox_new_window_from_file("rulelist.wnd", serverConfigRuleProc)
-	serverConfigRuleWords[0] = uint32(serverOptionsPtr(w))
+	serverConfigRuleWords[0] = memmap.PtrWord(w.C())
 	if w == nil {
 		return 0
 	}
 	for i := 1; i < 7; i++ {
-		serverConfigRuleWords[i] = uint32(serverOptionsPtr(w.ChildByID(uint(10169 + i))))
+		serverConfigRuleWords[i] = memmap.PtrWord(w.ChildByID(uint(10169 + i)).C())
 	}
 	w.ChildByID(10176).SetDraw(serverConfigRuleDraw)
 	w.SetParent(parent)
@@ -44,7 +45,7 @@ func serverConfigRuleOpen(parent *gui.Window, settings *byte) int {
 	data.Field_7 = up.C()
 	data.Field_8 = down.C()
 	serverConfigRulePopulate(settings)
-	return int(serverOptionsPtr(w))
+	return int(memmap.PtrWord(w.C())) // stored as a pointer word
 }
 func serverConfigRulePopulate(settings *byte) int {
 	list := serverConfigRuleWindow(1)

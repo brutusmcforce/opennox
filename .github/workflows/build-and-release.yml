@@ -33,9 +33,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: gocache
-          key: mingw-gocache-v4-${{ hashFiles('**/go.sum', 'src/go.mod', 'scripts/ci/*') }}
+          key: mingw-gocache-v5-${{ hashFiles('**/go.sum', 'src/go.mod', 'scripts/ci/*') }}
           restore-keys: |
-            mingw-gocache-v4-
+            mingw-gocache-v5-
 
       - name: Build
         run: docker run --rm --platform linux/amd64 -v "$PWD:/w" -w /w debian:bookworm scripts/ci/build-windows.sh
@@ -54,7 +54,7 @@ jobs:
           retention-days: 1
 
   linux_docker:
-    # Compile Linux binaries in 32-bit Debian, see scripts/ci/build-linux.sh
+    # Compile Linux binaries in 64-bit Debian, see scripts/ci/build-linux.sh
     name: Compile for Linux
     runs-on: ubuntu-latest
     steps:
@@ -67,13 +67,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: gocache
-          key: linux-gocache-v4-${{ hashFiles('**/go.sum', 'src/go.mod', 'scripts/ci/*') }}
+          key: linux-gocache-v5-${{ hashFiles('**/go.sum', 'src/go.mod', 'scripts/ci/*') }}
           restore-keys: |
-            linux-gocache-v4-
+            linux-gocache-v5-
 
-      # 32-bit Debian 12, so the binaries run on any distribution with glibc 2.36 or newer
+      # Debian 12, so the binaries run on any distribution with glibc 2.36 or newer
       - name: Build
-        run: docker run --rm --platform linux/386 -v "$PWD:/w" -w /w debian:bookworm scripts/ci/build-linux.sh
+        run: docker run --rm --platform linux/amd64 -v "$PWD:/w" -w /w debian:bookworm scripts/ci/build-linux.sh
 
       - uses: actions/upload-artifact@v4
         name: Upload artifacts
@@ -236,9 +236,9 @@ jobs:
           name: opennox-linux
           path: build
 
-      # bundles SDL2 and OpenAL from 32-bit Debian 12, the same system the binaries are built on
+      # bundles SDL2 and OpenAL from Debian 12, the same system the binaries are built on
       - name: Build the AppImage
-        run: docker run --rm --platform linux/386 -v "$PWD:/w" -w /w debian:bookworm scripts/appimage/build.sh
+        run: docker run --rm --platform linux/amd64 -v "$PWD:/w" -w /w debian:bookworm scripts/appimage/build.sh
 
       - uses: actions/upload-artifact@v4
         name: Upload the AppImage
@@ -246,7 +246,7 @@ jobs:
         with:
           name: opennox-release-linux-appimage
           path: |
-            build/opennox-bundle-i386.AppImage
+            build/opennox-bundle-x86_64.AppImage
           if-no-files-found: error
           retention-days: 1
 
@@ -345,7 +345,7 @@ jobs:
           draft: true
           fail_on_unmatched_files: true
           files: |
-            /tmp/release-tmp/opennox-bundle-i386.AppImage
+            /tmp/release-tmp/opennox-bundle-x86_64.AppImage
             /tmp/release-tmp/OpenNox-linux-*.tar.gz
             /tmp/release-tmp/OpenNox-*.zip
             /tmp/release-tmp/OpenNox-*.exe
@@ -365,7 +365,7 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "Development build" \
             --notes "Automatic build of the dev branch at ${GITHUB_SHA::8}. It may be unstable; see the releases with version tags for stable builds." \
-            /tmp/release-tmp/opennox-bundle-i386.AppImage \
+            /tmp/release-tmp/opennox-bundle-x86_64.AppImage \
             /tmp/release-tmp/OpenNox-linux-*.tar.gz \
             /tmp/release-tmp/OpenNox-*.zip \
             /tmp/release-tmp/OpenNox-*.exe

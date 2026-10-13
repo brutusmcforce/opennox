@@ -1,9 +1,10 @@
 package legacy
 
 import (
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func scoreboardObserver(p *server.Player) bool { return p.Field3680&1 != 0 && p.Field3680&0x20 == 0 }
@@ -24,12 +25,12 @@ func scoreboardCollectPlayer(p *server.Player, score uint32) {
 	r := &scoreboardPlayers()[*scoreboardCount(1090117)]
 	r.NetCode = p.NetCodeVal
 	r.Score = score
-	r.Ping = uint32(*(*uint16)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(2148)) /* field2148 */)))
+	r.Ping = uint32(*(*uint16)(unsafe.Pointer(&p.Field2148)))
 	r.Flags = p.Field3680
 	r.Objective = int32(scoreboardObjective(p))
 	scoreboardCopyName(&r.Name[0], &p.NameFinal[0])
 	scoreboardClipName(&r.Name[0])
-	r.Class = *(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(2251)) /* info */))
+	r.Class = p.InfoBytes[66]
 	r.Team = -1
 	if ot := objectRenderTeam(int(p.NetCodeVal)); ot != nil && ot.Has() {
 		if tm := GetServer().S().Teams.ByID(ot.ID); tm != nil {

@@ -18,6 +18,9 @@ type chatBubble struct {
 	Next, Previous           *chatBubble
 }
 
+// ChatBubbleSize is the size of a chat bubble in the "Chat" pool.
+const ChatBubbleSize = unsafe.Sizeof(chatBubble{})
+
 var chatBubblePool unsafe.Pointer
 var chatBubbleTail *chatBubble
 

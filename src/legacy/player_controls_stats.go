@@ -1,11 +1,13 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/player"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/player"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func controlGiveAbilities(u *server.Object, level int8, notify int32) {
@@ -19,7 +21,7 @@ func controlGiveAbilities(u *server.Object, level int8, notify int32) {
 			continue
 		}
 		if controlFlags(4096) || questRuntimeWord(1556160) != 0 || questRuntimeWord(1556164) != 0 {
-			*equipmentWord(pl, 3696+4*i) = 0
+			pl.SpellLvl[i] = 0
 		} else {
 			bookAwardAbility(u, int32(ability), int32(notify))
 		}
@@ -31,72 +33,74 @@ func controlGiveAbilities(u *server.Object, level int8, notify int32) {
 func controlReadStats(u *server.Object, notify int32) int32 {
 	d := u.UpdateData
 	pl := controlPlayer(u)
-	class := *controlByte(pl, 2251)
+	class := pl.InfoBytes[66]
 	s := GetServer().S()
 	base := s.Players.BaseStats()
 	max := s.Players.ClassStats(player.Class(class))
 	warrior := s.Players.ClassStats(player.Warrior)
-	put := func(off int, x float32) { *equipmentWord(pl, off) = uint32(floatToInt32(x)) }
-	hp := controlPtr(u.CObj(), int(layoutServerObject.Off(556)) /* HealthData */)
+	// put writes an unaligned word of the player info (strength at 2239, speed at 2235)
+	put := func(off int, x float32) {
+		*(*uint32)(unsafe.Pointer(&pl.InfoBytes[off-2185])) = uint32(floatToInt32(x))
+	}
+	hp := &u.HealthData
 	if controlFlags(8192) {
-		*controlHalf(*hp, 4) = uint16(floatToInt32(max.Health))
+		(*hp).Max = uint16(floatToInt32(max.Health))
 		resourceSetHP(u, uint16(floatToInt32(float32(math.Abs(float64(max.Health))))))
-		*controlHalf(d, 8) = uint16(floatToInt32(max.Mana))
-		*controlHalf(d, 4) = *controlHalf(d, 8)
+		layout.As[server.PlayerUpdateData](d).ManaMax = uint16(floatToInt32(max.Mana))
+		layout.As[server.PlayerUpdateData](d).ManaCur = layout.As[server.PlayerUpdateData](d).ManaMax
 		put(2239, max.Strength)
-		*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(548)) /* SpeedBase */)) = float32(float64(max.Speed) * 0.000099999997)
+		u.SpeedBase = float32(float64(max.Speed) * 0.000099999997)
 		put(2235, max.Speed)
 		if class == 0 && !controlFlags(4096) && sub_4D6F30() == 0 {
 			controlGiveAbilities(u, 10, 0)
 		}
 	} else {
-		level := int8(*controlByte(pl, 3684))
+		level := int8(pl.Level)
 		if level > 10 {
 			level = 10
 		}
 		n := float64(int32(level) - 1)
 		interp := func(a, b float32) float64 { return (float64(a)-float64(b))*n/9 + float64(b) }
-		*controlHalf(*hp, 4) = uint16(floatToInt32(float32(interp(max.Health, base.Health) + 0.5)))
-		resourceSetHP(u, *controlHalf(*hp, 4))
+		(*hp).Max = uint16(floatToInt32(float32(interp(max.Health, base.Health) + 0.5)))
+		resourceSetHP(u, (*hp).Max)
 		mana := interp(max.Mana, base.Mana)
 		if mana > float64(max.Mana) {
 			mana = float64(max.Mana)
 		}
-		*controlHalf(d, 8) = uint16(floatToInt32(float32(mana + 0.5)))
-		*controlHalf(d, 4) = *controlHalf(d, 8)
+		layout.As[server.PlayerUpdateData](d).ManaMax = uint16(floatToInt32(float32(mana + 0.5)))
+		layout.As[server.PlayerUpdateData](d).ManaCur = layout.As[server.PlayerUpdateData](d).ManaMax
 		put(2239, float32(interp(max.Strength, base.Strength)+0.5))
 		speed := interp(max.Speed, base.Speed)
-		*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(548)) /* SpeedBase */)) = float32(speed * 0.000099999997)
+		u.SpeedBase = float32(speed * 0.000099999997)
 		put(2235, float32(speed+0.5))
 		if class == 0 {
 			controlGiveAbilities(u, level, notify)
 		}
 	}
-	strength := float64(int32(*equipmentWord(pl, 2239))) / float64(warrior.Strength)
-	*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(120)) /* Mass */)) = float32(strength*20 + 10)
+	strength := float64(int32(*(*uint32)(unsafe.Pointer(&pl.InfoBytes[54])))) / float64(warrior.Strength)
+	u.Mass = float32(strength*20 + 10)
 	carry := int64((strength*1250 + 750) * *memmap.PtrFloat64(0x581450, 10216))
-	*controlHalf(pl, 3652) = uint16(carry)
-	*controlHalf(u.CObj(), int(layoutServerObject.Off(490)) /* CarryCapacity */) = uint16(carry)
-	for _, v := range [][2]int{{4624, 2239}, {4620, 2235}} {
-		setProtectionRecord(int32(*equipmentWord(pl, v[0])), *equipmentWord(pl, v[1]))
-	}
-	setProtectionRecord(int32(*equipmentWord(pl, 4600)), uint32(*controlHalf(d, 8)))
-	setProtectionRecord(int32(*equipmentWord(pl, 4592)), uint32(*controlHalf(*hp, 4)))
+	*(*uint16)(unsafe.Pointer(&pl.Field3652)) = uint16(carry)
+	u.CarryCapacity = uint16(carry)
+	setProtectionRecord(int32(pl.ProtPlayerField2239), pl.Info().Field2239())
+	setProtectionRecord(int32(pl.ProtPlayerField2235), pl.Info().Field2235())
+	setProtectionRecord(int32(pl.ProtUnitManaMax), uint32(layout.As[server.PlayerUpdateData](d).ManaMax))
+	setProtectionRecord(int32(pl.ProtUnitHPMax), uint32((*hp).Max))
 	var weight uint32
 	for it := u.InvFirstItem; it != nil; it = it.InvNextItem {
-		weight += uint32(*controlByte(it.CObj(), int(layoutServerObject.Off(488)) /* Weight */))
+		weight += uint32(it.Weight)
 	}
-	*equipmentWord(pl, 3656) = 0
-	if weight > uint32(*controlHalf(u.CObj(), int(layoutServerObject.Off(490)) /* CarryCapacity */)) {
-		*equipmentWord(pl, 3656) = 1
+	pl.Field3656 = 0
+	if weight > uint32(u.CarryCapacity) {
+		pl.Field3656 = 1
 	}
-	name := unsafe.Add(pl, 2185)
+	name := unsafe.Pointer(&pl.InfoBytes)
 	n := 0
 	for *controlHalf(name, n) != 0 {
 		n += 2
 	}
-	result := protectionValidateString(name, uint32(n), int32(*equipmentWord(pl, 4628)))
-	*controlByte(pl, 2184) = 1
+	result := protectionValidateString(name, uint32(n), int32(pl.ProtPlayerOrigName))
+	pl.Field2184 = 1
 	return int32(result)
 }
 func controlLevelFromXP(u *server.Object) int32 {
@@ -105,14 +109,14 @@ func controlLevelFromXP(u *server.Object) int32 {
 	if !controlFlags(8192) {
 		i := 0
 		for ; i <= 10; i++ {
-			if float64(nox_xxx_gamedataGetFloatTable_419D70(internCStr("XPTable"), int(int32(i)))) > float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(28)) /* Experience */))) {
+			if float64(nox_xxx_gamedataGetFloatTable_419D70(internCStr("XPTable"), int(int32(i)))) > float64(u.Experience) {
 				break
 			}
 		}
 		level = i - 1
 	}
-	*controlByte(pl, 3684) = byte(level)
-	setProtectionRecord(int32(*equipmentWord(pl, 4644)), uint32(byte(level)))
+	pl.Level = byte(level)
+	setProtectionRecord(int32(pl.ProtPlayerLevel), uint32(byte(level)))
 	return controlReadStats(u, 0)
 }
 func controlSetLevel(u *server.Object, level byte) {
@@ -121,18 +125,18 @@ func controlSetLevel(u *server.Object, level byte) {
 		level = 10
 	}
 	xp := nox_xxx_gamedataGetFloatTable_419D70(internCStr("XPTable"), int(int8(level)))
-	*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(28)) /* Experience */)) = float32(xp)
+	u.Experience = float32(xp)
 	xp = nox_xxx_gamedataGetFloatTable_419D70(internCStr("XPTable"), int(int8(level)))
 	// XP protection stores a truncated numeric value, not its float bits.
-	updateProtectionFloat(int32(*equipmentWord(pl, 4604)), float32(xp), false)
+	updateProtectionFloat(int32(pl.ProtUnitExperience), float32(xp), false)
 	gameplayReportExperience(u)
-	*controlByte(pl, 3684) = level
-	setProtectionRecord(int32(*equipmentWord(pl, 4644)), uint32(level))
+	pl.Level = level
+	setProtectionRecord(int32(pl.ProtPlayerLevel), uint32(level))
 	controlReadStats(u, 0)
 	if controlFlags(2048) {
-		if *controlByte(pl, 2251) == 0 {
+		if pl.InfoBytes[66] == 0 {
 			for i := 1; i < 6; i++ {
-				if *equipmentWord(pl, 3696+4*i) != 0 {
+				if pl.SpellLvl[i] != 0 {
 					quickbarBookSlot(3, uint32(i), i-1)
 				}
 			}

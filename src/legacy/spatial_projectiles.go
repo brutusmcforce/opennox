@@ -6,7 +6,6 @@ import (
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
 	"math"
-	"unsafe"
 )
 
 func spatialPredict(a, b *server.Object, speed float32, out *types.Pointf) *server.Object {
@@ -53,7 +52,7 @@ func spatialCandidate(a, b *server.Object, next, prev *types.Pointf, hit **serve
 	if b.ObjSubClass&4 != 0 {
 		return
 	}
-	dir := *(*uint32)(unsafe.Add(b.UpdateData, 12))
+	dir := b.UpdateDataDoor().Dir
 	ray := [4]float32{prev.X, prev.Y, next.X, next.Y}
 	door := [4]float32{b.PosVec.X, b.PosVec.Y, float32(float64(memmap.Int32(0x587000, uintptr(196184+8*dir))) + float64(b.PosVec.X)), float32(float64(memmap.Int32(0x587000, uintptr(196188+8*dir))) + float64(b.PosVec.Y))}
 	if server.LineTraceXxx(types.Rectf{Min: types.Pointf{ray[0], ray[1]}, Max: types.Pointf{ray[2], ray[3]}}, types.Rectf{Min: types.Pointf{door[0], door[1]}, Max: types.Pointf{door[2], door[3]}}) {

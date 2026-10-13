@@ -26,46 +26,46 @@ func sessionFilterAccept(p unsafe.Pointer) int {
 	if mode != 1 && mode != 2 {
 		return 1
 	}
-	data := unsafe.Slice((*byte)(p), 169)
+	rec := (*Nox_gui_server_ent_t)(p)
 	f := sessionFilterValues(0)
 	switch mode {
 	case 1:
-		return bool2int(data[100]&0x30 == 0 && binary.LittleEndian.Uint32(data[48:]) == 0x000f039a)
+		return bool2int(rec.StatusVal&0x30 == 0 && rec.VersionVal == 0x000f039a)
 	case 2:
 		if f[0] != 0 {
-			ping := binary.LittleEndian.Uint32(data[96:])
+			ping := uint32(rec.PingVal)
 			if ping > f[4] && ping != 9999 {
 				return 0
 			}
 		}
-		if f[1] != 0 && data[100]&0x10 != 0 {
+		if f[1] != 0 && rec.StatusVal&0x10 != 0 {
 			return 0
 		}
-		if f[2] != 0 && data[100]&0x20 != 0 {
+		if f[2] != 0 && rec.StatusVal&0x20 != 0 {
 			return 0
 		}
-		if int8(data[102]) < 0 && f[3] > uint32(data[102]&127) {
+		if int8(rec.Field_25_2) < 0 && f[3] > uint32(rec.Field_25_2&127) {
 			return 0
 		}
 		if f[5] != 0 {
 			var st server.Settings2
-			copy(st.Field0[:], data[111:135])
-			ruleLoad(&st, "user.rul", nil, 5, binary.LittleEndian.Uint16(data[163:]))
+			copy(st.Field0[:], unsafe.Slice(&rec.MapNameBuf[0], 24)) // the map and server names
+			ruleLoad(&st, "user.rul", nil, 5, binary.LittleEndian.Uint16(rec.FlagsVal[:]))
 			for i, v := range st.Field24.Vals {
-				if v != binary.LittleEndian.Uint32(data[135+4*i:]) {
+				if v != binary.LittleEndian.Uint32(rec.Field_33_3[4*i:]) {
 					return 0
 				}
 			}
 			for i, v := range st.Field44 {
-				if v != data[155+i] {
+				if v != rec.Field_38_3[i] {
 					return 0
 				}
 			}
-			if st.Field48 != binary.LittleEndian.Uint32(data[159:]) {
+			if st.Field48 != binary.LittleEndian.Uint32(rec.Field_39_3[:]) {
 				return 0
 			}
 		}
-		if f[10] != 0 && binary.LittleEndian.Uint32(data[48:]) != 0x000f039a {
+		if f[10] != 0 && rec.VersionVal != 0x000f039a {
 			return 0
 		}
 	}

@@ -72,7 +72,7 @@ func (c *Client) DrawNPC(vp *noxrender.Viewport, dr *client.Drawable) int {
 	return 1
 }
 func (c *Client) nox_xxx_spriteNPCInfo_49A4B0(dr *client.Drawable, weapons, armor uint32) int {
-	ptr := (*uint32)(unsafe.Add(unsafe.Pointer(&dr.Union), 0))
+	ptr := &(*client.DrawableUnionNPC)(unsafe.Pointer(&dr.Union)).Anim
 	res := int(*ptr)
 	*ptr = 0
 	switch dr.AnimInd - 1 {

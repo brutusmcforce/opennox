@@ -1,11 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func generatorOccupied(p types.Pointf) uint32 {
@@ -41,7 +42,7 @@ func generatorRadial(radius float32, origin types.Pointf, out *types.Pointf, des
 }
 func generatorPlace(u *server.Object, out *types.Pointf, player, descriptor *server.Object) int {
 	core := GetServer().S()
-	if *(*uint32)(unsafe.Add(u.UpdateData, 92))&2 != 0 && player != nil {
+	if u.UpdateDataMonsterGen().Flags92&2 != 0 && player != nil {
 		p := types.Pointf{X: player.PosVec.X - u.PosVec.X, Y: player.PosVec.Y - u.PosVec.Y}
 		if p.X == 0 {
 			p.X++
@@ -82,10 +83,10 @@ func generatorPick(u *server.Object, out *types.Pointf, descriptor *server.Objec
 			continue
 		}
 		info := p.UpdateDataPlayer().Player
-		if *(*byte)(unsafe.Add(unsafe.Pointer(info), int(layoutServerPlayer.Off(3680)) /* Field3680 */))&1 != 0 {
+		if *(*byte)(unsafe.Pointer(&info.Field3680))&1 != 0 {
 			continue
 		}
-		flags := *(*uint32)(unsafe.Add(u.UpdateData, 92))
+		flags := u.UpdateDataMonsterGen().Flags92
 		dist := float64(stateDistance(u, p))
 		if flags&1 != 0 {
 			if dist <= 300 {
@@ -96,8 +97,8 @@ func generatorPick(u *server.Object, out *types.Pointf, descriptor *server.Objec
 		if flags&2 == 0 {
 			return 0
 		}
-		w := uint32(*(*uint16)(unsafe.Add(unsafe.Pointer(info), 10)))
-		h := uint32(*(*uint16)(unsafe.Add(unsafe.Pointer(info), 12)))
+		w := uint32(info.Field10)
+		h := uint32(info.Field12)
 		radius := float32(math.Sqrt(float64(int32(w*w + h*h))))
 		if dist <= float64(radius) && core.MapTraceRay(u.PosVec, p.PosVec, 69) {
 			choices = append(choices, p)
@@ -130,9 +131,10 @@ func generatorUpdate(u *server.Object) int8 {
 		return int8(result)
 	}
 	u.NeedSync()
-	last := (*uint32)(unsafe.Add(u.UpdateData, 88))
+	gen := u.UpdateDataMonsterGen()
+	last := &gen.Frame88
 	elapsed := core.Frame() - *last
-	rate := *(*byte)(unsafe.Add(u.UpdateData, 80+uintptr(level)))
+	rate := gen.Rates[level]
 	result = memmap.PtrWord(u.CObj())
 	if rate <= 4 {
 		result = *cache(uintptr(rate) + 2)
@@ -151,10 +153,10 @@ func generatorUpdate(u *server.Object) int8 {
 		result = adjusted
 	}
 	if elapsed > result {
-		current := *(*byte)(unsafe.Add(u.UpdateData, 86))
+		current := gen.Current
 		result = result&0xffffff00 | uint32(current)
-		if current < *(*byte)(unsafe.Add(u.UpdateData, 87)) && byte(core.Frame())&8 != 0 {
-			sources := unsafe.Slice((**server.Object)(unsafe.Add(u.UpdateData, 16*uintptr(level))), 4)
+		if current < gen.Max && byte(core.Frame())&8 != 0 {
+			sources := gen.Field0[4*level : 4*level+4]
 			n := 0
 			for _, p := range sources {
 				if p != nil {

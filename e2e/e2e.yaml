@@ -855,4 +855,183 @@ steps:
     action: screen
     dt: 1
   - action: run-stop
+  # con02: the necromancer scene in Ix, then the barkeeper's shop: buy and sell an apple, repair the staff.
+  # A click step without dt happens in the same frame as the step before it: a screen step before such a click
+  # shows the result of the click (e.g. the cursor on the button, or a dialog the click closed).
+  - name: "Wait for the map to load"
+    action: wait
+    dt: 30
+  - name: "con02-000 Village"
+    action: screen
+  - name: "Run up the road"
+    action: run
+    ang: 0.25
+    dt: 75
+  - name: "con02-001 Necromancer"
+    action: screen
+  - name: "Close the necromancer dialog 1"
+    action: interact
+    x: 774
+    y: 754
+    dt: 30
+  - name: "Close the necromancer dialog 2"
+    action: interact
+    x: 774
+    y: 754
+    dt: 30
+  - name: "Close the necromancer dialog 3"
+    action: interact
+    x: 774
+    y: 754
+    dt: 30
+  - name: "Close the necromancer dialog 4"
+    action: interact
+    x: 774
+    y: 754
+    dt: 30
+  - name: "Close the necromancer dialog 5"
+    action: interact
+    x: 774
+    y: 754
+    dt: 30
+  - name: "Close the necromancer dialog 6"
+    action: interact
+    x: 774
+    y: 754
+    dt: 30
+  - name: "Close the necromancer dialog 7"
+    action: interact
+    x: 774
+    y: 754
+    dt: 30
+  - name: "Close the necromancer dialog 8"
+    action: interact
+    x: 774
+    y: 754
+    dt: 30
+  - name: "Close the necromancer dialog 9"
+    action: interact
+    x: 774
+    y: 754
+    dt: 30
+  - name: "Close the necromancer dialog 10"
+    action: interact
+    x: 774
+    y: 754
+    dt: 30
+  - name: "Close the necromancer dialog 11"
+    action: interact
+    x: 774
+    y: 754
+    dt: 30
+  - name: "Close the necromancer dialog 12"
+    action: interact
+    x: 774
+    y: 754
+    dt: 30
+  - name: "Wait for the necromancer scene to end"
+    action: wait
+    dt: 200
+  - name: "con02-002 After the necromancer"
+    action: screen
+  - name: "Run to the bend"
+    action: run
+    ang: 0.25
+    dt: 25
+  - name: "Run north"
+    action: run
+    ang: -0.05
+    dt: 100
+  - name: "Run east to the tavern"
+    action: run
+    ang: 0.44
+    dt: 125
+  - name: "con02-003 Tavern"
+    action: screen
+  - name: "Walk to the bar"
+    action: walk
+    ang: -0.15
+    dt: 20
+  - name: "Talk to the barkeeper"
+    action: interact
+    x: 433
+    y: 300
+  - name: "con02-004 Shop dialog"
+    action: screen
+    dt: 40
+  - name: "Buy"
+    action: click
+    x: 775
+    y: 662
+  - name: "con02-005 Shop stock"
+    action: screen
+    dt: 20
+  - name: "Pick an apple"
+    action: click
+    x: 467
+    y: 680
+  - name: "con02-006 Buy amount"
+    action: screen
+    dt: 15
+  - name: "Confirm"
+    action: click
+    x: 381
+    y: 703
+  - name: "con02-007 Bought an apple"
+    action: screen
+    dt: 20
+  - name: "Sell"
+    action: click
+    x: 775
+    y: 692
+    dt: 2
+  - name: "con02-008 Sell mode"
+    action: screen
+    dt: 20
+  - name: "Pick the apples"
+    action: click
+    x: 389
+    y: 90
+    dt: 5
+  - name: "con02-009 Sell amount"
+    action: screen
+    dt: 3
+  - name: "Confirm the sale"
+    action: click
+    x: 302
+    y: 113
+    dt: 2
+  - name: "con02-010 Sold an apple"
+    action: screen
+    dt: 15
+  - name: "Repair"
+    action: click
+    x: 775
+    y: 722
+  - name: "con02-011 Repair mode"
+    action: screen
+    dt: 15
+  - name: "Pick the staff"
+    action: click
+    x: 485
+    y: 40
+    dt: 5
+  - name: "con02-012 Repair cost"
+    action: screen
+    dt: 3
+  - name: "Confirm the repair"
+    action: click
+    x: 400
+    y: 62
+    dt: 2
+  - name: "con02-013 Repaired the staff"
+    action: screen
+    dt: 15
+  - name: "Exit the shop"
+    action: click
+    x: 775
+    y: 754
+  - name: "con02-014 Shop closed"
+    action: screen
+    dt: 20
   - action: quit

@@ -1,9 +1,10 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/libs/types"
 )
 
 func mapRoomRound(pos *types.Pointf, out *[2]int32) int64 {
@@ -24,10 +25,10 @@ func mapRoomGridRows() **mapRoomCellData {
 	return (**mapRoomCellData)(mapRoomPointer(*mapRoomGlobalWord(0)))
 }
 func mapRoomGridRow(x int32) *mapRoomCellData {
-	return *(**mapRoomCellData)(unsafe.Add(unsafe.Pointer(mapRoomGridRows()), int(x)*4))
+	return unsafe.Slice(mapRoomGridRows(), x+1)[x]
 }
 func mapRoomGridCellAt(x, y int32) *mapRoomCellData {
-	return (*mapRoomCellData)(unsafe.Add(unsafe.Pointer(mapRoomGridRow(x)), int(y)*20))
+	return &unsafe.Slice(mapRoomGridRow(x), y+1)[y]
 }
 func mapRoomCell(pos *[2]int32) *mapRoomCellData {
 	x := int32(*mapRoomGlobalWord(1)) + pos[0]
@@ -43,7 +44,7 @@ func mapRoomGridInit(config unsafe.Pointer) uint32 {
 	size := 2*radius + 1
 	*mapRoomGlobalWord(2) = size
 	*mapRoomGlobalWord(1) = radius
-	table := mapRoomCalloc(size, 4)
+	table := unsafe.Pointer(mapRoomMake[*mapRoomCellData](size))
 	*mapRoomGlobalWord(0) = mapRoomRaw(table)
 	if table == nil {
 		return 0
@@ -51,8 +52,8 @@ func mapRoomGridInit(config unsafe.Pointer) uint32 {
 	if size > 0 {
 		var x int32
 		for {
-			p := mapRoomCalloc(*mapRoomGlobalWord(2), 20)
-			*mapRoomRef(table, int(x)*4) = p
+			p := mapRoomMake[mapRoomCellData](*mapRoomGlobalWord(2))
+			unsafe.Slice((**mapRoomCellData)(table), x+1)[x] = p
 			if p == nil {
 				return 0
 			}

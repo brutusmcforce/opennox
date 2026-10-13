@@ -1,8 +1,6 @@
 package legacy
 
 import (
-	"unsafe"
-
 	"github.com/brutusmcforce/opennox/libs/strman"
 
 	"github.com/brutusmcforce/opennox/common/memmap"
@@ -24,7 +22,7 @@ func initDialog() {
 	Dialogs = dialog.NewDialog(
 		"dialog",
 		(*uint32)(&dword_587000_122848),
-		(*uint32)(&dword_5d4594_830864), (*uint32)(&dword_5d4594_831084), (*uint32)(&dword_587000_122856), (*uint32)(&dword_5d4594_831076), (*ail.Driver)(unsafe.Pointer(&dword_5d4594_831092)),
+		(*uint32)(&dword_5d4594_830864), (*uint32)(&dword_5d4594_831084), (*uint32)(&dword_587000_122856), (*uint32)(&dword_5d4594_831076), &dword_5d4594_831092,
 		memmap.PtrUint32(0x5D4594, 830860),
 		func() *strman.StringManager {
 			return GetServer().S().Strings()

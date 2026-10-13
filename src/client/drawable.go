@@ -9,6 +9,7 @@ import (
 	"github.com/brutusmcforce/opennox/libs/object"
 
 	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
@@ -506,9 +507,36 @@ func (c *clientDrawables) EachInRect(rect image.Rectangle, fnc func(dr *Drawable
 	}
 }
 
-type DrawableUnion struct {
-	_ [20]byte
+// AudioHandle refers to the audio event of a drawable (legacy audioEventHandle).
+type AudioHandle struct {
+	Event    unsafe.Pointer // 0, 0
+	Serial   uint32         // 1, 4
+	Metadata unsafe.Pointer // 2, 8
 }
+
+// DrawableUnion holds one of the DrawableUnionX types, depending on the drawable class.
+type DrawableUnion struct {
+	// Five pointer-sized words: the size of DrawableUnionDoor on every architecture
+	// (an array sized by unsafe.Sizeof would hide the 386 layout from common/layout).
+	_ [5]unsafe.Pointer
+}
+
+func init() {
+	layout.Union[DrawableUnion](DrawableUnionMonster{}, DrawableUnionItem{}, DrawableUnionEffect{}, DrawableUnionDoor{}, DrawableUnionSummon{},
+		DrawableUnionSpark{}, DrawableUnionTail{}, DrawableUnionRainOrb{}, DrawableUnionOrb{}, DrawableUnionBubble{}, DrawableUnionVortex{},
+		DrawableUnionRay{}, DrawableUnionHeight{}, DrawableUnionBoulder{}, DrawableUnionGenerator{}, DrawableUnionShield{},
+		DrawableUnionCloud{}, DrawableUnionNPC{}, DrawableUnionBook{}, DrawableUnionColorLight{}, DrawableUnionPressurePlate{})
+}
+
+// All variants must fit in the union.
+var (
+	_ [unsafe.Sizeof(DrawableUnion{}) - unsafe.Sizeof(DrawableUnionMonster{})]struct{}
+	_ [unsafe.Sizeof(DrawableUnion{}) - unsafe.Sizeof(DrawableUnionItem{})]struct{}
+	_ [unsafe.Sizeof(DrawableUnion{}) - unsafe.Sizeof(DrawableUnionEffect{})]struct{}
+	_ [unsafe.Sizeof(DrawableUnion{}) - unsafe.Sizeof(DrawableUnionDoor{})]struct{}
+	_ [unsafe.Sizeof(DrawableUnion{}) - unsafe.Sizeof(DrawableUnionSummon{})]struct{}
+	_ [unsafe.Sizeof(DrawableUnionDoor{}) - unsafe.Sizeof(DrawableUnion{})]struct{}
+)
 
 type DrawableUnionMonster struct {
 	Field_108_0 uint8 // 108, 432
@@ -522,12 +550,9 @@ type DrawableUnionMonster struct {
 }
 
 type DrawableUnionItem struct {
-	Field_108   uint32 // 108, 432
-	Field_109   uint32 // 109, 436
-	Field_110   uint32 // 110, 440
-	Field_111   uint32 // 111, 444
-	Field_112_0 int16  // 112, 448
-	Field_112_2 int16  // 112, 450
+	Modifiers   [4]*server.ModifierEff // 108, 432
+	Field_112_0 int16                  // 112, 448
+	Field_112_2 int16                  // 112, 450
 }
 
 type DrawableUnionEffect struct {
@@ -536,6 +561,13 @@ type DrawableUnionEffect struct {
 	Field_110 uint32 // 110, 440
 	Field_111 uint32 // 111, 444
 	Field_112 uint32 // 112, 448
+}
+
+// DrawableUnionSummon is the union of a summoning effect (legacy drawableSummonStart).
+type DrawableUnionSummon struct {
+	Child    *Drawable // 108, 432: the creature being summoned
+	Duration uint16    // 109, 436: in frames
+	Owner    uint16    // 109, 438: net code of the summoner
 }
 
 type DrawableUnionDoor struct {
@@ -644,9 +676,7 @@ type Drawable struct {
 	Field_121           uint32         // 121, 484
 	Field_122           uint32         // 122, 488
 	AudioLoop           uint32         // 123, 492
-	Field_124           unsafe.Pointer // 124, 496
-	Field_125           uint32         // 125, 500
-	Field_126           uint32         // 126, 504
+	Audio               AudioHandle    // 124-126, 496
 	Field_127           uint32         // 127, 508
 	clientHandle        uintptr        // EXT
 }
@@ -790,7 +820,7 @@ func (s *Drawable) CallDraw(vp *noxrender.Viewport) int {
 
 func (s *Drawable) HasFX(id int) bool {
 	for fx := s.Field_114; fx != nil; fx = fx.Next {
-		if fx.Field0 == uint32(id) {
+		if fx.Kind == uint32(id) {
 			return true
 		}
 	}
@@ -887,10 +917,7 @@ func (s *Drawable) LinkType(typeID int, typ *ObjectType) {
 	}
 	if s.Class().HasAny(object.ClassFlag | object.ClassArmor | object.ClassWeapon | object.ClassWand) {
 		d := s.UnionItem()
-		d.Field_108 = 0
-		d.Field_109 = 0
-		d.Field_110 = 0
-		d.Field_111 = 0
+		d.Modifiers = [4]*server.ModifierEff{}
 		// TODO: or was it uint32?
 		d.Field_112_0 = -1
 		d.Field_112_2 = -1

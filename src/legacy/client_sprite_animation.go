@@ -1,19 +1,14 @@
 package legacy
 
 import (
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"unsafe"
 )
 
-type spriteAnimationData struct {
-	Size         uint32
-	Frames       *noxrender.ImageHandle
-	Count, Delay byte
-	Reserved     uint16
-	Kind         client.AnimKind
-}
+type spriteAnimationData = client.SpriteAnimationData
 type spriteConditionalData struct {
 	Size     uint32
 	Frames   [5]*noxrender.ImageHandle
@@ -24,7 +19,7 @@ type spriteConditionalData struct {
 }
 
 func spriteFrameImage(frames *noxrender.ImageHandle, index int) noxrender.ImageHandle {
-	return *(*noxrender.ImageHandle)(unsafe.Add(unsafe.Pointer(frames), index*4))
+	return client.SpriteFrame(frames, index)
 }
 func spriteAnimateDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	data := (*spriteAnimationData)(dr.DrawData)
@@ -57,10 +52,10 @@ func spriteAnimateDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 			}
 		}
 	case client.AnimLoop:
-		flags := *effectWord(dr, int(layoutClientDrawable.Off(120)) /* ObjFlags */)
-		class := *effectWord(dr, int(layoutClientDrawable.Off(112)) /* ObjClass */)
+		flags := *(*uint32)(unsafe.Pointer(&dr.ObjFlags))
+		class := *(*uint32)(unsafe.Pointer(&dr.ObjClass))
 		if flags&0x1000000 != 0 || class&0x10000000 != 0 && noxflags.HasGame(noxflags.GameFlag(32)) {
-			index = int(int32((gameFrame() + *effectWord(dr, int(layoutClientDrawable.Off(128)) /* NetCode32 */)) / period))
+			index = int(int32((gameFrame() + dr.NetCode32) / period))
 			if index >= count {
 				index %= count
 			}
@@ -83,14 +78,14 @@ func spriteAnimateDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 func spriteConditionalDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	data := (*spriteConditionalData)(dr.DrawData)
 	state := 1
-	if *effectWord(dr, int(layoutClientDrawable.Off(120)) /* ObjFlags */)&0x1000000 != 0 {
+	if *(*uint32)(unsafe.Pointer(&dr.ObjFlags))&0x1000000 != 0 {
 		state = 0
 	}
 	count := int(data.Count[state])
 	var index int
 	switch data.Kind[state] {
 	case client.AnimLoop:
-		index = int(int32((gameFrame() + *effectWord(dr, int(layoutClientDrawable.Off(128)) /* NetCode32 */)) / (uint32(data.Delay[state]) + 1)))
+		index = int(int32((gameFrame() + dr.NetCode32) / (uint32(data.Delay[state]) + 1)))
 		if index >= count {
 			index %= count
 		}
@@ -105,20 +100,21 @@ func spriteConditionalDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	return 1
 }
 func spriteStaticDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
-	if *effectWord(dr, int(layoutClientDrawable.Off(112)) /* ObjClass */)&0x40000 == 0 || *effectWord(dr, int(layoutClientDrawable.Off(120)) /* ObjFlags */)&0x1000000 != 0 {
-		img := *(*noxrender.ImageHandle)(unsafe.Add(dr.DrawData, 4))
+	if *(*uint32)(unsafe.Pointer(&dr.ObjClass))&0x40000 == 0 || *(*uint32)(unsafe.Pointer(&dr.ObjFlags))&0x1000000 != 0 {
+		img := (*client.SpriteStaticData)(dr.DrawData).Image
 		Nox_xxx_drawObject_4C4770_draw(vp, dr, img)
 	}
 	return 1
 }
 func spriteSlaveDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
-	frames := *(**noxrender.ImageHandle)(unsafe.Add(dr.DrawData, 4))
+	frames := client.SpriteFrames(dr.DrawData)
 	Nox_xxx_drawObject_4C4770_draw(vp, dr, spriteFrameImage(frames, int(int32(dr.AnimFrameSlave))))
 	return 1
 }
 func spriteBoulderDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
-	oldX, oldY := effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */), effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */)
-	index, bank := effectWord(dr, int(layoutClientDrawable.Off(440)) /* Union._ */), effectWord(dr, int(layoutClientDrawable.Off(444)) /* Union._ */)
+	u := (*client.DrawableUnionBoulder)(unsafe.Pointer(&dr.Union))
+	oldX, oldY := &u.OldX, &u.OldY
+	index, bank := &u.Frame, &u.Bank
 	x, y := uint32(dr.PosVec.X), uint32(dr.PosVec.Y)
 	if *oldX == 0 && *oldY == 0 {
 		*oldX, *oldY = x, y
@@ -142,7 +138,7 @@ func spriteBoulderDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 		}
 		*oldX, *oldY = x, y
 	}
-	frames := *(**noxrender.ImageHandle)(unsafe.Add(dr.DrawData, 4))
+	frames := client.SpriteFrames(dr.DrawData)
 	Nox_xxx_drawObject_4C4770_draw(vp, dr, spriteFrameImage(frames, int(int32(*index+*bank))))
 	return 1
 }

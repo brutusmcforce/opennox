@@ -2,12 +2,14 @@ package legacy
 
 import (
 	"encoding/binary"
-	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
 )
 
 var clientGameBlueSpark, clientGameVioletSpark uint32
@@ -178,12 +180,13 @@ func clientGameEffects(player int, op netmsg.Op, data []byte) (int, bool) {
 		pos := signedPos()
 		for i := 0; i < 5; i++ {
 			if dr := effectSpawn(int(typ), pos); dr != nil {
-				*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(dr.PosVec.X) << 12
-				*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(dr.PosVec.Y) << 12
+				u := (*client.DrawableUnionSpark)(unsafe.Pointer(&dr.Union))
+				u.X = uint32(dr.PosVec.X) << 12
+				u.Y = uint32(dr.PosVec.Y) << 12
 				dr.Field_74_4 = byte(effectRand(0, 255))
-				*effectWord(dr, int(layoutClientDrawable.Off(440)) /* Union._ */) = uint32(effectRand(1333, 4000))
-				*effectWord(dr, int(layoutClientDrawable.Off(448)) /* Union._ */) = gameFrame() + uint32(effectRand(5, 20))
-				*effectWord(dr, int(layoutClientDrawable.Off(444)) /* Union._ */) = gameFrame()
+				u.Speed = uint32(effectRand(1333, 4000))
+				u.Expires = gameFrame() + uint32(effectRand(5, 20))
+				u.Born = gameFrame()
 				dr.ZVal = 20
 				dr.VelZ = int8(effectRand(-5, 5))
 				effectLink(dr)
@@ -193,10 +196,11 @@ func clientGameEffects(player int, op netmsg.Op, data []byte) (int, bool) {
 		x, y := int(word(1)), int(word(3))
 		pos := image.Pt(x+(int(word(5))-x)/2, y+(int(word(7))-y)/2)
 		if dr := effectSpawn(int(*effectMapped(1200844)), pos); dr != nil {
-			*effectByte(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = 0
-			*effectWord(dr, int(layoutClientDrawable.Off(433)) /* Union._ */) = uint32(word(9))
-			*effectWord(dr, int(layoutClientDrawable.Off(437)) /* Union._ */) = binary.LittleEndian.Uint32(data[1:])
-			*effectWord(dr, int(layoutClientDrawable.Off(441)) /* Union._ */) = binary.LittleEndian.Uint32(data[5:])
+			u := (*client.DrawableUnionRay)(unsafe.Pointer(&dr.Union))
+			u.ByCode = 0
+			*u.ArgWord() = uint32(word(9))
+			*u.FromCode() = binary.LittleEndian.Uint32(data[1:])
+			*u.ToCode() = binary.LittleEndian.Uint32(data[5:])
 		}
 	case 154:
 		*effectMapped(1096520) = 1
@@ -210,10 +214,11 @@ func clientGameEffects(player int, op netmsg.Op, data []byte) (int, bool) {
 		}
 	case 159:
 		if dr := GetClient().Cli().Objs.ByNetCode(word(1)); dr != nil {
-			*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = gameFrame()
-			*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */) = math.Float32bits(float32(data[3]))
-			*effectWord(dr, int(layoutClientDrawable.Off(440)) /* Union._ */) = math.Float32bits(float32(int8(data[4])))
-			*effectWord(dr, int(layoutClientDrawable.Off(444)) /* Union._ */) = math.Float32bits(float32(data[5]))
+			u := (*client.DrawableUnionHeight)(unsafe.Pointer(&dr.Union))
+			u.Frame = gameFrame()
+			u.Height = float32(data[3])
+			u.Velocity = float32(int8(data[4]))
+			u.Restitution = float32(data[5])
 		}
 	case 160:
 		pos := [2]int16{int16(word(1)), int16(word(3))}
@@ -253,12 +258,13 @@ func clientGameEffects(player int, op netmsg.Op, data []byte) (int, bool) {
 			angle := effectRand(0, 255)
 			where := image.Pt(pos.X+r*int(memmap.Int32(0x587000, 192088+8*uintptr(angle)))/16, pos.Y+r*int(memmap.Int32(0x587000, 192092+8*uintptr(angle)))/16)
 			if dr := effectSpawn(int(*effectMapped(1200784)), where); dr != nil {
-				*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(dr.PosVec.X) << 12
-				*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(dr.PosVec.Y) << 12
+				u := (*client.DrawableUnionSpark)(unsafe.Pointer(&dr.Union))
+				u.X = uint32(dr.PosVec.X) << 12
+				u.Y = uint32(dr.PosVec.Y) << 12
 				dr.Field_74_4 = 0
-				*effectWord(dr, int(layoutClientDrawable.Off(440)) /* Union._ */) = 0
-				*effectWord(dr, int(layoutClientDrawable.Off(448)) /* Union._ */) = gameFrame() + uint32(effectRand(30, 40))
-				*effectWord(dr, int(layoutClientDrawable.Off(444)) /* Union._ */) = gameFrame()
+				u.Speed = 0
+				u.Expires = gameFrame() + uint32(effectRand(30, 40))
+				u.Born = gameFrame()
 				dr.ZVal = 0
 				dr.VelZ = int8(effectRand(4, 10))
 				effectLink(dr)

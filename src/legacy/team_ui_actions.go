@@ -1,12 +1,13 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func teamUIJoin(t *server.Team) {
@@ -98,7 +99,7 @@ func teamUIPlayersEvent(w *gui.Window, code int, child *gui.Window, value int) i
 		if index >= 0 {
 			if t := teamRuntimeFind(alloc.InternCString16(teamUISelectedName(index))); t != nil {
 				players := root.ChildByID(10501)
-				selected := (*int32)(unsafe.Pointer(uintptr(teamUIEvent(players, 16404, 0, 0))))
+				selected := (*int32)(unsafe.Pointer(uintptr(teamUIEvent(players, 16404, 0, 0)))) // multi-select: the selected indexes
 				for cursor := selected; *cursor >= 0; cursor = (*int32)(unsafe.Add(unsafe.Pointer(cursor), 4)) {
 					text := teamUIEvent(players, 16406, uintptr(*cursor), 0)
 					if p := teamUIPlayerByName(alloc.GoString16((*uint16)(unsafe.Pointer(uintptr(text))))); p != nil && p.Field3680&1 == 0 && p.WeaponEquip&1 == 0 {

@@ -6,11 +6,12 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/client/keybind"
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -121,8 +122,8 @@ func uiInventoryDrawTray(ax, ay int32) int32 {
 				left := x + 60 + col*50
 				r.Data().SetAlphaEnabled(true)
 				r.Data().SetAlpha(64)
-				current := *(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */))
-				maximum := *(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(294)) /* Field_73_2 */))
+				current := dr.Field_73_1
+				maximum := dr.Field_73_2
 				var color uint32
 				shade := false
 				if float64(current) < float64(maximum)*memmap.Float64(0x581450, 9608) {
@@ -152,8 +153,8 @@ func uiInventoryDrawTray(ax, ay int32) int32 {
 				}
 				r.Data().SetAlphaEnabled(false)
 				uiInventoryDrawItem(dr, image.Pt(left+25, y+25))
-				charges := *(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(448)) /* Union._ */))
-				maxCharges := *(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(450)) /* Union._ */))
+				item := layout.As[client.DrawableUnionItem](unsafe.Pointer(&dr.Union))
+				charges, maxCharges := uint16(item.Field_112_0), uint16(item.Field_112_2)
 				if uiInventoryMode() == 6 {
 					depleted := uint32(dr.Class())&0x1000 != 0 && charges < maxCharges && maxCharges != 0
 					if (current == maximum || maximum == 0) && !depleted {

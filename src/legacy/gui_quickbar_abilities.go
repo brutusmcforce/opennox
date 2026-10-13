@@ -1,8 +1,9 @@
 package legacy
 
 import (
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
 )
 
 func quickbarAbilityState(id, state uint32) uintptr {
@@ -60,7 +61,7 @@ func quickbarAbilityReward(id, rank int, notify uintptr) {
 		off := uintptr(1047764 + 24*n)
 		if *quickbarWord(off) == uint32(id) && *quickbarWord(off + 16) != uint32(rank) {
 			if p := quickbarPlayer(); p != nil && noxflags.HasGame(noxflags.GameFlag(2)) {
-				*bookPlayerWord(p, 3696, id) = uint32(rank)
+				*bookPlayerWord(unsafe.Pointer(p), 3696, id) = uint32(rank)
 			}
 			*quickbarWord(off + 16) = uint32(rank)
 			if rank != 0 {

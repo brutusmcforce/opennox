@@ -1,11 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"unsafe"
+	"github.com/brutusmcforce/opennox/libs/types"
 )
 
 func mapPopulationProgress(flag byte) {
@@ -35,7 +36,7 @@ func mapPopulationExitName(object, name uint32) uint32 {
 	if typ == nil || typ.Xfer != xferIdentityKey(xferIDExit) {
 		return 0
 	}
-	dst := unsafe.Slice((*byte)(u.CollideData), 80)
+	dst := u.CollideDataExit().MapName[:]
 	s := populationString(name)
 	for i := range dst {
 		if i < len(s) {
@@ -148,6 +149,6 @@ func mapPopulationFinish(cfg uint32) {
 	mapPaintSelectObject((*byte)(unsafe.Pointer(name)))
 	free()
 	mapPaintPlaceObject(&pos)
-	mapMetadataSetAmbient(*(*[3]uint32)(mapRoomPointer(cfg + 536)))
+	mapMetadataSetAmbient(*(*[3]uint32)(unsafe.Pointer(populationWord(cfg, 536))))
 	mapPopulationMetadataFree()
 }

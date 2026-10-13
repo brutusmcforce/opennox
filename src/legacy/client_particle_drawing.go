@@ -32,7 +32,7 @@ func particleMagicDraw(vp *noxrender.Viewport, dr *client.Drawable, missile bool
 	effectGlow(pos, color, 2*size+1, (size>>1)+3)
 	effectColor(uint32(nox_color_white_2523948))
 	particleRect(pos.Sub(image.Pt(size>>1, size>>1)), size)
-	light := unsafe.Add(dr.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */)
+	light := dr
 	if missile {
 		particleLightColor(light, 255, 180, 50)
 	} else {
@@ -44,7 +44,8 @@ func particleMagicDraw(vp *noxrender.Viewport, dr *client.Drawable, missile bool
 }
 func particleTailDraw(vp *noxrender.Viewport, dr *client.Drawable, missile bool) int {
 	from := effectScreen(vp, dr)
-	to := vp.ToScreenPos(image.Pt(int(*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */)), int(*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */))))
+	u := (*client.DrawableUnionTail)(unsafe.Pointer(&dr.Union))
+	to := vp.ToScreenPos(image.Pt(int(u.X), int(u.Y)))
 	to.Y -= int(int16(dr.ZVal)) + int(int16(dr.ZVal2))
 	remaining := int32(dr.Deadline - gameFrame())
 	if remaining <= 0 {
@@ -64,7 +65,7 @@ func particleTailDraw(vp *noxrender.Viewport, dr *client.Drawable, missile bool)
 		index = 63
 	}
 	color := *effectMapped(off + uintptr(4*index))
-	light := unsafe.Add(dr.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */)
+	light := dr
 	if missile {
 		particleLightColor(light, 255, 128, 50)
 	} else {
@@ -81,8 +82,9 @@ func particleTailDraw(vp *noxrender.Viewport, dr *client.Drawable, missile bool)
 	return 1
 }
 func particleBubbleDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
-	size, phase := effectByte(dr, int(layoutClientDrawable.Off(440)) /* Union._ */), effectByte(dr, int(layoutClientDrawable.Off(441)) /* Union._ */)
-	timer, period := effectByte(dr, int(layoutClientDrawable.Off(442)) /* Union._ */), effectByte(dr, int(layoutClientDrawable.Off(443)) /* Union._ */)
+	u := (*client.DrawableUnionBubble)(unsafe.Pointer(&dr.Union))
+	size, phase := &u.Size, &u.Phase
+	timer, period := &u.Timer, &u.Period
 	if *phase != 3 && dr.Deadline != 0 && dr.Deadline <= gameFrame() {
 		*phase = 3
 		*timer = 4
@@ -95,11 +97,11 @@ func particleBubbleDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	}
 	pos := vp.ToScreenPos(dr.PosVec)
 	pos.Y -= int(int16(dr.ZVal))
-	effectGlow(pos, *effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */), int(*size), int(*size)+3)
-	effectColor(*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */))
+	effectGlow(pos, u.Glow, int(*size), int(*size)+3)
+	effectColor(u.Core)
 	effectPoint(pos, int(*size)>>1)
 	if nox_client_drawIsTick && gameFrame()&3 != 0 {
-		dr.ZVal += uint16(int8(*effectByte(dr, int(layoutClientDrawable.Off(446)) /* Union._ */)))
+		dr.ZVal += uint16(int8(u.Rise))
 	}
 	if *timer != 0 && nox_client_drawIsTick {
 		*timer--
@@ -125,12 +127,12 @@ func particleBubbleDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 			*timer = *period
 		}
 	}
-	flip := effectByte(dr, int(layoutClientDrawable.Off(445)) /* Union._ */)
+	flip := &u.Flip
 	if *flip != 0 {
 		*flip--
 		if *flip == 0 {
-			*effectByte(dr, int(layoutClientDrawable.Off(446)) /* Union._ */) = -*effectByte(dr, int(layoutClientDrawable.Off(446)) /* Union._ */)
-			*flip = *effectByte(dr, int(layoutClientDrawable.Off(444)) /* Union._ */)
+			u.Rise = -u.Rise
+			*flip = u.FlipPeriod
 		}
 	}
 	if int16(dr.ZVal) < 0 {
@@ -148,12 +150,13 @@ func particleBlueRain(vp *noxrender.Viewport, dr *client.Drawable) int {
 		x := dr.PosVec.X + effectRand(-10, 10)
 		y := dr.PosVec.Y + effectRand(-10, 10)
 		if child := effectSpawn(int(typ), image.Pt(x, y)); child != nil {
-			*effectWord(child, int(layoutClientDrawable.Off(432)) /* Union._ */) = uint32(x) << 12
-			*effectWord(child, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(y) << 12
+			u := (*client.DrawableUnionSpark)(unsafe.Pointer(&child.Union))
+			u.X = uint32(x) << 12
+			u.Y = uint32(y) << 12
 			child.Field_74_4 = 0
-			*effectWord(child, int(layoutClientDrawable.Off(440)) /* Union._ */) = 0
-			*effectWord(child, int(layoutClientDrawable.Off(448)) /* Union._ */) = gameFrame() + uint32(effectRand(90, 120))
-			*effectWord(child, int(layoutClientDrawable.Off(444)) /* Union._ */) = gameFrame()
+			u.Speed = 0
+			u.Expires = gameFrame() + uint32(effectRand(90, 120))
+			u.Born = gameFrame()
 			child.ZVal2 = 0
 			child.VelZ = -5
 			child.ZVal = uint16(y - vp.World.Min.Y)
@@ -217,9 +220,10 @@ func particleVortexDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 		dword_5d4594_1313816 = uint32(particleRGB(170, 170, 170))
 		*effectMapped(1313820) = 1
 	}
-	center := image.Pt(int(*effectWord(dr, int(layoutClientDrawable.Off(440)) /* Union._ */)), int(*effectWord(dr, int(layoutClientDrawable.Off(444)) /* Union._ */)))
-	radius := int(*effectByte(dr, int(layoutClientDrawable.Off(450)) /* Union._ */))
-	angle := int(*effectByte(dr, int(layoutClientDrawable.Off(448)) /* Union._ */))
+	u := (*client.DrawableUnionVortex)(unsafe.Pointer(&dr.Union))
+	center := image.Pt(int(u.CenterX), int(u.CenterY))
+	radius := int(u.Radius)
+	angle := int(u.Angle)
 	world := updateRadial(center, angle, radius)
 	pos := vp.ToScreenPos(world)
 	pos.Y -= int(int16(dr.ZVal))
@@ -228,15 +232,15 @@ func particleVortexDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 		return 0
 	}
 	if world.Y >= center.Y {
-		effectGlow(pos, *effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */), 3, 5)
-		effectColor(*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */))
+		effectGlow(pos, u.Glow, 3, 5)
+		effectColor(u.Core)
 		effectPoint(pos, 3)
 	} else {
 		effectGlow(pos, uint32(dword_5d4594_1313816), 2, 4)
 		effectColor(uint32(dword_5d4594_1313816))
 		effectPoint(pos, 2)
 	}
-	speed := int(int8(*effectByte(dr, int(layoutClientDrawable.Off(449)) /* Union._ */)))
+	speed := int(int8(u.Speed))
 	previous := angle - 2*speed
 	if speed > 0 {
 		if previous < 0 {
@@ -246,24 +250,24 @@ func particleVortexDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 		previous -= 256
 	}
 	// The source uses unsigned products/division for the trailing endpoint.
-	oldWorld := image.Pt(int(uint32(center.X)+uint32(radius)**memmap.PtrUint32(0x587000, 192088+uintptr(8*previous))/16), int(uint32(center.Y)+uint32(radius)**memmap.PtrUint32(0x587000, 192092+uintptr(8*previous))/16))
+	oldWorld := image.Pt(int(int32(uint32(center.X)+uint32(radius)**memmap.PtrUint32(0x587000, 192088+uintptr(8*previous))/16)), int(int32(uint32(center.Y)+uint32(radius)**memmap.PtrUint32(0x587000, 192092+uintptr(8*previous))/16)))
 	old := vp.ToScreenPos(oldWorld)
 	old.Y -= int(int16(dr.ZVal))
 	if oldWorld.Y >= center.Y {
-		effectColor(*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */))
+		effectColor(u.Core)
 	} else {
 		effectColor(uint32(dword_5d4594_1313816))
 	}
 	effectLine(pos, old)
 	if nox_client_drawIsTick {
-		*effectByte(dr, int(layoutClientDrawable.Off(448)) /* Union._ */) += *effectByte(dr, int(layoutClientDrawable.Off(449)) /* Union._ */)
-		dr.ZVal += uint16(*effectByte(dr, int(layoutClientDrawable.Off(451)) /* Union._ */))
+		u.Angle += u.Speed
+		dr.ZVal += uint16(u.Rise)
 	}
 	shrink := effectFloatInt(float32(float64(int16(dr.ZVal)) * 0.0024999999 * 50))
 	if 50-shrink <= 0 {
 		effectDelete(dr)
 		return 0
 	}
-	*effectByte(dr, int(layoutClientDrawable.Off(450)) /* Union._ */) = byte(50 - shrink)
+	u.Radius = byte(50 - shrink)
 	return 1
 }

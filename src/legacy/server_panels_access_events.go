@@ -2,12 +2,13 @@ package legacy
 
 import (
 	"encoding/binary"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"unsafe"
 )
 
 func serverPanelsAccessProc(w *gui.Window, e gui.WindowEvent) gui.WindowEventResp {
@@ -176,7 +177,7 @@ func serverPanelsAccessEvent(_ *gui.Window, event int, arg uintptr, value int) i
 					Nox_xxx_playerDisconnByPlrID_4DEB00(ntype.PlayerInd(player.PlayerInd))
 				}
 				if id == 10192 {
-					serverConfigBlockedAdd(int32(0), (*uint16)(unsafe.Pointer(name)), (*byte)(unsafe.Pointer(unsafe.Add(unsafe.Pointer(player), int(layoutServerPlayer.Off(2112)) /* SerialBuf */))))
+					serverConfigBlockedAdd(int32(0), (*uint16)(unsafe.Pointer(name)), (*byte)(unsafe.Pointer(unsafe.Pointer(&player.SerialBuf))))
 				}
 			}
 		case 10206, 10207:

@@ -4,10 +4,10 @@ import (
 	"image"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/libs/wall"
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/libs/wall"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -17,16 +17,13 @@ const worldTileGridCapacity = 128
 // Words 5 and 10 hold unmanaged subtile-list addresses.
 type worldTileCell [11]uint32
 
-
-
-
 var worldTileGrid **worldTileCell
 var worldTileDefinitions [176]server.TileDef
 var worldTileDefinitionCount uint32
 var worldSecretHead unsafe.Pointer
 
 func worldGridAllocate() int {
-	worldTileGrid = (**worldTileCell)(legacyCalloc(worldTileGridCapacity, 4))
+	worldTileGrid = legacyMake[*worldTileCell](int(worldTileGridCapacity))
 	if worldTileGrid == nil {
 		return 0
 	}
@@ -95,13 +92,14 @@ func worldDrawableAttach(d *client.Drawable, x, y int) unsafe.Pointer {
 	}
 	value := byte(1)
 	if p != nil {
-		value = *(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutLegacyMapPolygon.Off(130)) /* Level */))
+		value = p.Level
 	}
 	w.Field8 = (w.Field8 & 0xff00) | uint16(value)
 	return unsafe.Pointer(p)
 }
 func worldSecretInsert(p unsafe.Pointer) unsafe.Pointer {
-	*(*unsafe.Pointer)(p) = worldSecretHead // the record starts with its next pointer
+	// Secret wall records keep the 32-bit layout of the map file: references are pointer words.
+	server.AsSecretWallData(p).Next = memmap.PtrWord(worldSecretHead)
 	worldSecretHead = p
 	return p
 }
@@ -109,11 +107,16 @@ func worldSecretNext(p unsafe.Pointer) unsafe.Pointer {
 	if p == nil {
 		return nil
 	}
-	return *(*unsafe.Pointer)(p)
+	return memmap.WordPtr(server.AsSecretWallData(p).Next)
+}
+
+// worldSecretWall returns the wall of a secret wall record.
+func worldSecretWall(p unsafe.Pointer) *server.Wall {
+	return (*server.Wall)(memmap.WordPtr(server.AsSecretWallData(p).Wall))
 }
 func worldSecretFind(id int16) *server.Wall {
 	for p := worldSecretHead; p != nil; p = worldSecretNext(p) {
-		w := *(**server.Wall)(unsafe.Add(p, 12))
+		w := worldSecretWall(p)
 		if int32(w.Field10) == int32(id) {
 			return w
 		}
@@ -128,7 +131,7 @@ func worldSecretRemove(p unsafe.Pointer) unsafe.Pointer {
 			if prev == nil {
 				worldSecretHead = next
 			} else {
-				*(*unsafe.Pointer)(prev) = next
+				server.AsSecretWallData(prev).Next = memmap.PtrWord(next)
 			}
 			legacyFree(p)
 			return cur
@@ -146,3 +149,9 @@ func worldSecretClear() unsafe.Pointer {
 	worldSecretHead = nil
 	return nil
 }
+
+// WorldSecretNext returns the next secret wall record (see worldSecretInsert).
+func WorldSecretNext(p unsafe.Pointer) unsafe.Pointer { return worldSecretNext(p) }
+
+// WorldSecretWall returns the wall of a secret wall record.
+func WorldSecretWall(p unsafe.Pointer) *server.Wall { return worldSecretWall(p) }

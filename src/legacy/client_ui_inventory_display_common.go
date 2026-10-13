@@ -5,14 +5,17 @@ import (
 	"image"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/common/layout"
+
+	"golang.org/x/image/font"
+
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/server"
-	"golang.org/x/image/font"
 )
 
 func uiInventoryText(id string) string {
@@ -48,32 +51,30 @@ func uiInventoryAlternate() *uiInventoryCell {
 func uiInventorySelectedItem() *client.Drawable {
 	return uiInventoryDrawable(uint32(dword_5d4594_1063116))
 }
-// drawableModifier returns modifier slot i (0-3) of an item drawable: four pointer-sized words at offset 432,
-// a union shared with effect data of other drawables.
-func drawableModifier(dr *client.Drawable, i int) *unsafe.Pointer {
-	return (*unsafe.Pointer)(unsafe.Add(dr.C(), 432+4*uintptr(i)))
+
+// drawableModifier returns modifier slot i (0-3) of an item drawable.
+func drawableModifier(dr *client.Drawable, i int) **server.ModifierEff {
+	return &layout.As[client.DrawableUnionItem](unsafe.Pointer(&dr.Union)).Modifiers[i]
 }
 
-// drawableSetModifiers sets the modifiers of an item drawable; Field16 goes to offset 448.
+// drawableSetModifiers sets the modifiers of an item drawable; Field16 goes to Field_112.
 func drawableSetModifiers(dr *client.Drawable, m *server.ModifierInitData) {
-	for i, p := range m.Modifiers {
-		*drawableModifier(dr, i) = unsafe.Pointer(p)
-	}
-	*(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(448)) /* Union._ */)) = m.Field16
+	d := layout.As[client.DrawableUnionItem](unsafe.Pointer(&dr.Union))
+	d.Modifiers = m.Modifiers
+	*(*uint32)(unsafe.Pointer(&d.Field_112_0)) = m.Field16
 }
 
 // drawableModifiers returns the modifiers of an item drawable (see drawableSetModifiers).
 func drawableModifiers(dr *client.Drawable) *server.ModifierInitData {
 	m := new(server.ModifierInitData)
-	for i := range m.Modifiers {
-		m.Modifiers[i] = (*server.ModifierEff)(*drawableModifier(dr, i))
-	}
-	m.Field16 = *(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(448)) /* Union._ */))
+	d := layout.As[client.DrawableUnionItem](unsafe.Pointer(&dr.Union))
+	m.Modifiers = d.Modifiers
+	m.Field16 = *(*uint32)(unsafe.Pointer(&d.Field_112_0))
 	return m
 }
 
 func uiInventoryItemModifier(dr *client.Drawable, index int) *server.ModifierEff {
-	return (*server.ModifierEff)(*drawableModifier(dr, index))
+	return *drawableModifier(dr, index)
 }
 func uiInventoryElementValue(dr *client.Drawable, fire bool) float64 {
 	if dr == nil || uint32(dr.Class())&0x13001000 == 0 {
@@ -91,8 +92,8 @@ func uiInventoryElementValue(dr *client.Drawable, fire bool) float64 {
 	return 0
 }
 func uiInventoryScaledDurability(dr *client.Drawable, current, maximum *float32) uint32 {
-	*current = float32(*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */)))
-	*maximum = float32(*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(294)) /* Field_73_2 */)))
+	*current = float32(dr.Field_73_1)
+	*maximum = float32(dr.Field_73_2)
 	ret := uiInventoryPointer(dr.C())
 	if uint32(dr.Class())&0x13001000 != 0 {
 		if m := uiInventoryItemModifier(dr, 1); m != nil && m.Defend76.Fnc == modifierKey(modifierIDDurabilityMultiplierEffect) {
@@ -176,15 +177,15 @@ func nox_xxx_inventoryNameSignInit_4671E0() int {
 	if noxflags.HasGame(4096) || questRuntimeWord(1556160) != 0 || questRuntimeWord(1556164) != 0 {
 		level = int(min(uint32(dword_5d4594_1049844), 10))
 	} else if p != nil {
-		level = int(*(*int8)(unsafe.Add(p, 3684)))
+		level = int(*(*int8)(unsafe.Pointer(&layout.As[server.Player](unsafe.Pointer(p)).Level)))
 	}
 	if p == nil {
 		return level
 	}
-	class := *(*byte)(unsafe.Add(p, 2251))
+	class := layout.As[server.Player](unsafe.Pointer(p)).InfoBytes[66]
 	className := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 29456+uintptr(class)*4)))
 	title := uiInventoryText(fmt.Sprintf("experience:%s%d", className, level))
-	return textFormatBuffer(unsafe.Slice(dst, 256), (*uint16)(unsafe.Pointer(internWStr(uiInventoryText("ElaborateNameFormat")))), textFormatPointer(unsafe.Add(p, 4704)), textFormatPointer(unsafe.Pointer(internWStr(title))))
+	return textFormatBuffer(unsafe.Slice(dst, 256), (*uint16)(unsafe.Pointer(internWStr(uiInventoryText("ElaborateNameFormat")))), textFormatPointer(unsafe.Pointer(&layout.As[server.Player](unsafe.Pointer(p)).NameFinal)), textFormatPointer(unsafe.Pointer(internWStr(title))))
 }
 
 func sub_467750(code int32, status int8) int32 {

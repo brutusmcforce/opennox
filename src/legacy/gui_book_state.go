@@ -1,14 +1,17 @@
 package legacy
 
 import (
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
-	"github.com/brutusmcforce/opennox/client/gui"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/common/sound"
 	"image"
 	"sort"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client/gui"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/sound"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var bookVector [2]float32
@@ -72,9 +75,9 @@ func bookWord(off uintptr) *uint32 {
 }
 func bookWindow(word uint32) *gui.Window { return AsWindowP(memmap.WordPtr(word)) }
 func bookRoot() *gui.Window              { return legacyGlobals.nox_win_unk1 }
-func bookClass(p unsafe.Pointer) int     { return int(*(*byte)(unsafe.Add(p, 2251))) }
+func bookClass(p unsafe.Pointer) int     { return int(layout.As[server.Player](p).InfoBytes[66]) }
 func bookPlayerWord(p unsafe.Pointer, off, id int) *uint32 {
-	return (*uint32)(unsafe.Add(p, off+4*id))
+	return (*uint32)(unsafe.Add(p, layoutServerPlayer.Off(uintptr(off+4*id)))) // a 386 offset
 }
 func bookSound(id sound.ID) { Nox_xxx_clientPlaySoundSpecial_452D80(id, 100) }
 func bookHideWindow(w *gui.Window, hidden bool) int {

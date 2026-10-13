@@ -97,11 +97,11 @@ func Nox_xxx_playerRemoveSpawnedStuff_4E5AD0(u *server.Object) {
 }
 
 func Nox_xxx_playerObserverFindGoodSlave0_4E6280(p *server.Player) *server.Object {
-	return controlObserverSlave(p.C())
+	return controlObserverSlave((*server.Player)(p.C()))
 }
 
 func Sub_4E6150(p *server.Player) *server.Object {
-	return controlNextObserver(p.C())
+	return controlNextObserver((*server.Player)(p.C()))
 }
 
 func Get_nox_xxx_updatePlayer_4F8100() unsafe.Pointer {
@@ -157,7 +157,7 @@ func Sub_509C30(p *server.Player) {
 }
 
 func Nox_xxx_playerLeaveObserver_0_4E6AA0(p *server.Player) {
-	controlLeaveObserver(p.C())
+	controlLeaveObserver((*server.Player)(p.C()))
 }
 
 func Nox_xxx_netGuiGameSettings_4DD9B0(a1 int, a2 *server.Settings2, a3 int) {

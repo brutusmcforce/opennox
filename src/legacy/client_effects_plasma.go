@@ -1,12 +1,14 @@
 package legacy
 
 import (
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"image"
+	"math"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"image"
-	"math"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 )
 
 func effectPlasmaSegment(from, to image.Point, slot int) int8 {
@@ -176,8 +178,9 @@ func effectPlasmaDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	b = vp.ToScreenPos(b)
 	a.Y -= 20
 	b.Y -= 20
-	angle := int(*effectByte(dr, int(layoutClientDrawable.Off(433)) /* Union._ */))
-	if *effectByte(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) != 0 {
+	u := (*client.DrawableUnionRay)(unsafe.Pointer(&dr.Union))
+	angle := int(u.Arg[0])
+	if u.ByCode != 0 {
 		angle = int(byte(effectAngle(float32(float64(mouse.X)-float64(a.X)), float32(float64(mouse.Y)-float64(a.Y)))))
 	}
 	effectPlasma(angle, a, b)

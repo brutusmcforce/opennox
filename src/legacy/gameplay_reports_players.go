@@ -4,11 +4,13 @@ import (
 	"encoding/binary"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -26,13 +28,13 @@ func gameplayReportReset(unit *server.Object) int {
 	result := gameplayReportPtr(unit.CObj())
 	if uint32(unit.ObjClass)&4 != 0 {
 		ud := unit.UpdateData
-		*gameplayReportWord(ud, 248) = 0
-		*gameplayReportWord(ud, 252) = 0
-		*gameplayReportWord(ud, 256) = GetServer().S().Frame()
-		if *gameplayReportWord(ud, 260) != 0 {
+		layout.As[server.PlayerUpdateData](ud).Field62 = 0
+		layout.As[server.PlayerUpdateData](ud).Field63 = 0
+		layout.As[server.PlayerUpdateData](ud).Field64 = GetServer().S().Frame()
+		if layout.As[server.PlayerUpdateData](ud).IsCamping != 0 {
 			result = gameplayReportInterestingID(unit)
 		}
-		*gameplayReportWord(ud, 260) = 0
+		layout.As[server.PlayerUpdateData](ud).IsCamping = 0
 	}
 	return result
 }
@@ -93,15 +95,15 @@ func gameplayReportScavenger(unit *server.Object) int {
 	}
 	b := gameplayReportID(85, unit, 7)
 	pl := controlPlayer(unit)
-	binary.LittleEndian.PutUint16(b[3:], *controlHalf(pl, 2152))
-	binary.LittleEndian.PutUint16(b[5:], *controlHalf(pl, 2156))
+	binary.LittleEndian.PutUint16(b[3:], *(*uint16)(unsafe.Pointer(&pl.Field2152)))
+	binary.LittleEndian.PutUint16(b[5:], *(*uint16)(unsafe.Pointer(&pl.Field2156)))
 	return gameplayReportSend(255, b, false, 1)
 }
 func gameplayReportEliminationDeath(unit *server.Object) int {
 	if uint32(unit.ObjClass)&4 == 0 {
 		return 0
 	}
-	*gameplayReportWord(controlPlayer(unit), 2140)++
+	controlPlayer(unit).Field2140++
 	if !controlFlags(1024) {
 		return 0
 	}
@@ -109,7 +111,7 @@ func gameplayReportEliminationDeath(unit *server.Object) int {
 	elapsed := core.Frame()-*memmap.PtrUint32(0x5D4594, 3520) > 20*uint32(core.TickRate())
 	if elapsed && *memmap.PtrUint32(0x5D4594, 3536) == 0 {
 		for pl := core.Players.First(); pl != nil; pl = core.Players.Next(pl) {
-			if *controlByte(pl.C(), int(layoutServerPlayer.Off(3680)) /* Field3680 */)&1 != 0 {
+			if *(*byte)(unsafe.Pointer(&pl.Field3680))&1 != 0 {
 				Nox_xxx_netNeedTimestampStatus_4174F0(pl, 256)
 			}
 		}
@@ -149,22 +151,22 @@ func gameplayReportChangeScore(unit *server.Object, value int) int {
 		return gameplayReportPtr(unit.CObj())
 	}
 	pl := controlPlayer(unit)
-	*gameplayReportWord(pl, 2136) += uint32(value)
-	return gameplayReportPtr(pl)
+	*(*uint32)(unsafe.Pointer(&pl.Lessons)) += uint32(value)
+	return gameplayReportPtr(unsafe.Pointer(pl))
 }
 func gameplayReportSubtractLessons(unit *server.Object, value int) int {
 	if uint32(unit.ObjClass)&4 == 0 {
 		return gameplayReportPtr(unit.CObj())
 	}
 	pl := controlPlayer(unit)
-	*gameplayReportWord(pl, 2136) -= uint32(value)
-	return gameplayReportPtr(pl)
+	*(*uint32)(unsafe.Pointer(&pl.Lessons)) -= uint32(value)
+	return gameplayReportPtr(unsafe.Pointer(pl))
 }
 func gameplayReportLesson(unit *server.Object) int {
 	b := []byte{78, byte(unit.NetCode), byte(unit.NetCode >> 8), 0, 0, 0, 0, 0, 0, 0, 0}
 	pl := controlPlayer(unit)
-	binary.LittleEndian.PutUint32(b[3:], *gameplayReportWord(pl, 2136))
-	binary.LittleEndian.PutUint32(b[7:], *gameplayReportWord(pl, 2140))
+	binary.LittleEndian.PutUint32(b[3:], *(*uint32)(unsafe.Pointer(&pl.Lessons)))
+	binary.LittleEndian.PutUint32(b[7:], pl.Field2140)
 	return gameplayReportSend(255, b, true, 1)
 }
 func gameplayReportAnything(unit *server.Object) int {
@@ -175,33 +177,34 @@ func gameplayReportAnything(unit *server.Object) int {
 	ud := unit.UpdateData
 	pl := controlPlayer(unit)
 	to := gameplayReportRecipient(unit)
-	armor := *gameplayReportWord(ud, 228)
-	if *(*float32)(unsafe.Add(ud, 232)) != *(*float32)(unsafe.Add(ud, 228)) {
+	armor := layout.As[server.PlayerUpdateData](ud).Field57
+	if *(*float32)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).Field58)) != *(*float32)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).Field57)) {
 		gameplayReportArmor(to, armor)
-		*gameplayReportWord(ud, 232) = armor
+		layout.As[server.PlayerUpdateData](ud).Field58 = armor
 	}
-	if *gameplayReportWord(pl, 2168) != *gameplayReportWord(pl, 2164) {
+	if pl.Field2168 != pl.GoldVal {
 		gameplayReportPlayerStat(to, unit)
-		*gameplayReportWord(pl, 2168) = *gameplayReportWord(pl, 2164)
+		pl.Field2168 = pl.GoldVal
 	}
-	if *controlByte(pl, 2172) != *controlByte(unit.CObj(), int(layoutServerObject.Off(440)) /* Field110 */) {
+	if pl.Field2172 != *(*byte)(unsafe.Pointer(&unit.Field110)) {
 		gameplayReportObjectByte(to, unit)
-		*controlByte(pl, 2172) = *controlByte(unit.CObj(), int(layoutServerObject.Off(440)) /* Field110 */)
+		pl.Field2172 = *(*byte)(unsafe.Pointer(&unit.Field110))
 	}
 	if controlFlags(4096) {
 		for i := 0; i < 32; i++ {
 			player := core.Players.ByInd(ntype.PlayerInd(i))
-			if player != nil && player.PlayerUnit != nil && *gameplayReportWord(ud, 320) != uint32(*controlByte(ud, 452+i)) {
+			pud := layout.As[server.PlayerUpdateData](ud)
+			if player != nil && player.PlayerUnit != nil && pud.Field80 != uint32(pud.QuestLevels[i]) {
 				gameplayReportQuestLevel(i, unit)
-				*controlByte(ud, 452+i) = *controlByte(ud, 320)
+				pud.QuestLevels[i] = byte(pud.Field80)
 			}
 		}
 		for _, key := range []struct {
 			name   string
 			cache  uintptr
-			offset int
+			keys   func(*server.PlayerUpdateData) *[32]byte
 			report func(int, *server.Object, byte) int
-		}{{"SilverKey", 1556324, 484, gameplayReportSilverKey}, {"GoldKey", 1556328, 516, gameplayReportGoldKey}} {
+		}{{"SilverKey", 1556324, func(d *server.PlayerUpdateData) *[32]byte { return &d.SilverKeys }, gameplayReportSilverKey}, {"GoldKey", 1556328, func(d *server.PlayerUpdateData) *[32]byte { return &d.GoldKeys }, gameplayReportGoldKey}} {
 			for i := 0; i < 32; i++ {
 				cache := memmap.PtrUint32(0x5D4594, key.cache)
 				if *cache == 0 {
@@ -217,26 +220,26 @@ func gameplayReportAnything(unit *server.Object) int {
 						break
 					}
 				}
-				if value != *controlByte(ud, key.offset+i) {
+				if keys := key.keys(layout.As[server.PlayerUpdateData](ud)); value != keys[i] {
 					key.report(i, unit, value)
-					*controlByte(ud, key.offset+i) = value
+					keys[i] = value
 				}
 			}
 		}
 	}
-	if *controlByte(pl, 2184) != 0 {
+	if pl.Field2184 != 0 {
 		gameplayReportTotalHealth(to, unit)
 		gameplayReportTotalMana(to, unit)
-		gameplayReportStats(to, unit, *controlByte(pl, 3684))
-		*controlByte(pl, 2184) = 0
+		gameplayReportStats(to, unit, pl.Level)
+		pl.Field2184 = 0
 	}
-	if hp := unit.HealthData; hp != nil && hp.Cur != *controlHalf(ud, 10) {
+	if hp := unit.HealthData; hp != nil && hp.Cur != layout.As[server.PlayerUpdateData](ud).Field2_1 {
 		gameplayReportPlayerHealthToTeam(to)
-		*controlHalf(ud, 10) = hp.Cur
+		layout.As[server.PlayerUpdateData](ud).Field2_1 = hp.Cur
 	}
-	if *controlHalf(ud, 4) != *controlHalf(ud, 6) {
+	if layout.As[server.PlayerUpdateData](ud).ManaCur != layout.As[server.PlayerUpdateData](ud).ManaPrev {
 		gameplayReportMana(to, unit)
-		*controlHalf(ud, 6) = *controlHalf(ud, 4)
+		layout.As[server.PlayerUpdateData](ud).ManaPrev = layout.As[server.PlayerUpdateData](ud).ManaCur
 	}
 	return 0
 }

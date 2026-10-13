@@ -5,6 +5,7 @@ import (
 
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/internal/protection"
+	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -397,8 +398,8 @@ var dword_5d4594_3835392 uint32 = uint32(0)
 var dword_5d4594_588084 uint32 = uint32(0)
 var dword_5d4594_816368 uint32 = uint32(0)
 var dword_5d4594_816372 uint32 = uint32(0)
-var dword_5d4594_816376 uint32 = uint32(0)
-var dword_5d4594_831092 uint32 = uint32(0)
+var dword_5d4594_816376 ail.Driver
+var dword_5d4594_831092 ail.Driver
 var nox_xxx_energyBoltTarget_5d4594_2487880 uint32 = uint32(0)
 var nox_xxx_lightningClosestTargetDistance_5d4594_2487912 uint32 = uint32(0)
 var nox_xxx_lightningOwner_5d4594_2487900 uint32 = uint32(0)

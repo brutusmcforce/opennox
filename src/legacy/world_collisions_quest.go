@@ -3,6 +3,8 @@ package legacy
 import (
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
@@ -18,9 +20,9 @@ func worldQuestCountdown() int32 {
 	total, ready := 0, 0
 	players := &GetServer().S().Players
 	for u := players.FirstUnit(); u != nil; u = players.NextUnit(u) {
-		if *equipmentWord(controlPlayer(u), 4792) == 1 {
+		if controlPlayer(u).Field4792 == 1 {
 			total++
-			if *controlPtr(u.UpdateData, 312) != nil {
+			if u.UpdateDataPlayer().Field78 != nil {
 				ready++
 			}
 		}
@@ -41,7 +43,7 @@ func worldQuestCountdown() int32 {
 	return 1
 }
 func worldQuestIgnoreHost(u *server.Object) bool {
-	return noxflags.HasGame(noxflags.GameHost) && noxflags.HasEngine(noxflags.EngineNoRendering) && *controlByte(controlPlayer(u), 2064) == 31
+	return noxflags.HasGame(noxflags.GameHost) && noxflags.HasEngine(noxflags.EngineNoRendering) && controlPlayer(u).PlayerInd == 31
 }
 func worldQuestMaybeWarp() bool {
 	stage := uint32(Nox_game_getQuestStage_4E3CC0())
@@ -54,14 +56,14 @@ func worldQuestMaybeWarp() bool {
 			continue
 		}
 		pl := controlPlayer(u)
-		if *equipmentWord(pl, 4792) == 0 {
+		if pl.Field4792 == 0 {
 			continue
 		}
 		count++
-		if *controlPtr(u.UpdateData, 316) == nil {
+		if u.UpdateDataPlayer().Field79 == nil {
 			return false
 		}
-		if *equipmentWord(pl, 4696) >= threshold {
+		if pl.Field4696 >= threshold {
 			allow = true
 		}
 	}
@@ -71,11 +73,11 @@ func worldQuestExitReady() bool {
 	count := 0
 	players := &GetServer().S().Players
 	for u := players.FirstUnit(); u != nil; u = players.NextUnit(u) {
-		if worldQuestIgnoreHost(u) || *equipmentWord(controlPlayer(u), 4792) == 0 {
+		if worldQuestIgnoreHost(u) || controlPlayer(u).Field4792 == 0 {
 			continue
 		}
 		count++
-		if *controlPtr(u.UpdateData, 312) == nil {
+		if u.UpdateDataPlayer().Field78 == nil {
 			return false
 		}
 	}
@@ -90,9 +92,9 @@ func worldCollideExit(a, b *server.Object) {
 		return
 	}
 	d := b.UpdateData
-	mapName := (*byte)(a.CollideData)
+	mapName := &a.CollideDataExit().MapName[0]
 	quest := noxflags.HasGame(noxflags.GameModeQuest)
-	if quest && (*controlPtr(d, 312) != nil || *controlPtr(d, 316) != nil) {
+	if quest && (*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](d).Field78)) != nil || *(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](d).Field79)) != nil) {
 		return
 	}
 	if a.ObjSubClass&2 != 0 && questRuntimeWord(1556120) == 0 {
@@ -105,11 +107,11 @@ func worldCollideExit(a, b *server.Object) {
 		return
 	}
 	pl := b.UpdateDataPlayer().Player
-	if *controlByte(pl.C(), int(layoutServerPlayer.Off(2251)) /* info */) == 1 {
+	if pl.InfoBytes[66] == 1 {
 		for it := b.Field129; it != nil; it = it.Field128 {
 			if uint32(it.TypeInd) == uint32(dword_5d4594_1567960) && it.InvHolder == nil {
 				GetServer().DelayedDelete(it)
-				if count := controlByte(d, 244); *count != 0 {
+				if count := (*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](d).CurTraps)); *count != 0 {
 					*count -= 1
 				}
 			}
@@ -132,26 +134,26 @@ func worldCollideExit(a, b *server.Object) {
 		if a.ObjSubClass&1 != 0 {
 			stage := uint32(Nox_game_getQuestStage_4E3CC0()) + 1
 			questRuntimeStageComplete(b)
-			pl = (*server.Player)(*controlPtr(d, 276))
-			if highest := equipmentWord(pl.C(), int(layoutServerPlayer.Off(4696)) /* field4696 */); *highest < stage {
+			pl = (*server.Player)(layout.As[server.PlayerUpdateData](d).Player)
+			if highest := &pl.Field4696; *highest < stage {
 				*highest = stage
 				questRuntimeHighestMessage(int(uint8(pl.PlayerInd)), uint16(stage))
 			}
-			*controlPtr(d, 312) = a.CObj()
-			*controlPtr(d, 316) = nil
+			*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](d).Field78)) = a.CObj()
+			*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](d).Field79)) = nil
 			Nox_xxx_playerSetState_4FA020(b, 13)
-			Nox_xxx_playerGoObserver_4E6860((*server.Player)(*controlPtr(d, 276)), 0, 0)
+			Nox_xxx_playerGoObserver_4E6860((*server.Player)(layout.As[server.PlayerUpdateData](d).Player), 0, 0)
 			gameplayTextInformationAll(18, unsafe.Pointer(&b.NetCode))
 			ready = worldQuestExitReady()
 		} else if a.ObjSubClass&2 != 0 {
-			*controlPtr(d, 312) = nil
-			*controlPtr(d, 316) = a.CObj()
+			*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](d).Field78)) = nil
+			*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](d).Field79)) = a.CObj()
 			questRuntimeSetWord(1556108, core.Frame())
 			Nox_xxx_playerSetState_4FA020(b, 13)
-			Nox_xxx_playerGoObserver_4E6860((*server.Player)(*controlPtr(d, 276)), 0, 0)
+			Nox_xxx_playerGoObserver_4E6860((*server.Player)(layout.As[server.PlayerUpdateData](d).Player), 0, 0)
 			for u := core.Players.FirstUnit(); u != nil; u = core.Players.NextUnit(u) {
 				if u != b {
-					gameplayTextInformation(int(*controlByte(controlPlayer(u), 2064)), 19, unsafe.Pointer(&b.NetCode))
+					gameplayTextInformation(int(controlPlayer(u).PlayerInd), 19, unsafe.Pointer(&b.NetCode))
 				}
 			}
 			worldCollideMessage(b, "objcoll.c:PlayerEntersWarp")
@@ -170,7 +172,7 @@ func worldCollideExit(a, b *server.Object) {
 		if a.ObjSubClass&2 != 0 {
 			stage := uint32(Nox_game_getQuestStage_4E3CC0())
 			threshold := uint32(Nox_server_questNextStageThreshold_4D74F0(int(stage)))
-			Nox_game_setQuestStage_4E3CD0(int(threshold - 1))
+			Nox_game_setQuestStage_4E3CD0(int(int32(threshold - 1)))
 			questRuntimeSetWord(1556124, 1)
 			questRuntimeResetAll()
 		}
@@ -178,7 +180,7 @@ func worldCollideExit(a, b *server.Object) {
 	}
 }
 func worldCollideSoulGate(a, b *server.Object) {
-	d := a.CollideData
+	d := a.CollideDataSoulGate()
 	core := GetServer().S()
 	if !noxflags.HasGame(noxflags.GameModeQuest) || b == nil || b.ObjClass&4 == 0 {
 		return
@@ -186,18 +188,18 @@ func worldCollideSoulGate(a, b *server.Object) {
 	questRuntimeGateSet(0)
 	first := true
 	for u := core.Players.FirstUnit(); u != nil; u = core.Players.NextUnit(u) {
-		if *equipmentWord(controlPlayer(u), 4792) == 1 && *controlPtr(u.UpdateData, 308) != nil {
+		if controlPlayer(u).Field4792 == 1 && u.UpdateDataPlayer().Field77 != nil {
 			first = false
 		}
 	}
 	if first {
 		questRuntimeSetSoulFrame(core.Frame())
 	}
-	if *controlPtr(b.UpdateData, 308) != a.CObj() || core.Frame()-*equipmentWord(d, 0) > uint32(core.TickRate()) {
+	if layout.As[server.PlayerUpdateData](b.UpdateData).Field77 != a || core.Frame()-d.Frame > uint32(core.TickRate()) {
 		worldCollideSound(1005, a)
 		visibilityFXPoint(130, a.PosVec)
 		worldCollideMessage(b, "objcoll.c:SoulGateCollide")
 	}
-	*controlPtr(b.UpdateData, 308) = a.CObj()
-	*equipmentWord(d, 0) = core.Frame()
+	layout.As[server.PlayerUpdateData](b.UpdateData).Field77 = a
+	d.Frame = core.Frame()
 }

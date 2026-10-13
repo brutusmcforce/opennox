@@ -2,11 +2,12 @@ package legacy
 
 import (
 	"encoding/binary"
+	"strconv"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"strconv"
-	"unsafe"
 )
 
 func serverOptionsHideRange(w *gui.Window, first, last uint, hidden bool) {

@@ -2,10 +2,11 @@ package legacy
 
 import (
 	"encoding/binary"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"unsafe"
 )
 
 func presentationLocal() *client.Drawable { return LocalPlayerDrawable }
@@ -63,10 +64,9 @@ func presentationBake(_ *noxrender.Viewport, dr *client.Drawable) {
 		if dr.ObjClass&0x40000 != 0 && dr.ObjFlags&0x1000000 == 0 {
 			return
 		}
-		handle = *(*noxrender.ImageHandle)(unsafe.Add(dr.DrawData, 4))
+		handle = (*client.SpriteStaticData)(dr.DrawData).Image
 	} else {
-		frames := *(*unsafe.Pointer)(unsafe.Add(dr.DrawData, 4))
-		handle = *(*noxrender.ImageHandle)(unsafe.Add(frames, 4*uintptr(dr.AnimFrameSlave)))
+		handle = client.SpriteFrame(client.SpriteFrames(dr.DrawData), int(dr.AnimFrameSlave))
 	}
 	data := GetClient().R2().GetBag().AsImage(handle).Pixdata()
 	if len(data) == 0 {
@@ -91,7 +91,7 @@ func presentationBake(_ *noxrender.Viewport, dr *client.Drawable) {
 	base := legacyGlobals.nox_video_tileBuf_ptr_3798796
 	size := int(uintptr(legacyGlobals.nox_video_tileBuf_end_3798844) - uintptr(base))
 	stride := int(dword_5d4594_3798804)
-	start := int(uint32(stride)*(uint32(y)+uint32(dword_5d4594_3798840)-uint32(originY)) + 2*(uint32(x)+uint32(dword_5d4594_3798836)-uint32(originX)))
+	start := int(int32(uint32(stride)*(uint32(y)+uint32(dword_5d4594_3798840)-uint32(originY)) + 2*(uint32(x)+uint32(dword_5d4594_3798836)-uint32(originX))))
 	if start >= size {
 		start -= size
 	}

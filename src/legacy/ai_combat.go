@@ -1,15 +1,16 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/object"
-	"github.com/brutusmcforce/opennox/libs/types"
+	"math"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/common/unit/ai"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
-	"math"
-	"unsafe"
 )
 
 type combatAIAction struct{ typ ai.ActionType }
@@ -59,7 +60,7 @@ func init() {
 }
 func combatSound(u *server.Object, index int) {
 	if p := Nox_xxx_monsterGetSoundSet_424300(u); p != nil {
-		id := *(*uint32)(unsafe.Add(p, 4*index))
+		id := p.Sound(int(index))
 		GetServer().S().Audio.EventObj(sound.ID(id), u, 0, 0)
 	}
 }
@@ -214,7 +215,7 @@ func combatMeleeStart(u *server.Object) {
 	p := u.PosVec
 	s.Map.EachObjInRect(types.Rectf{Min: types.Pointf{X: p.X - radius, Y: p.Y - radius}, Max: types.Pointf{X: p.X + radius, Y: p.Y + radius}}, func(t *server.Object) bool { combatScan(t, u); return true })
 	t := (*server.Object)(memmap.WordPtr(dword_5d4594_2487948))
-	if t != nil && !s.IsEnemyTo(u, t) && u.SubClass()&0x10 != 0 && ud.Field516 != 0 && (*server.Object)(memmap.WordPtr(ud.Field516)).SubClass()&0x4000 != 0 {
+	if t != nil && !s.IsEnemyTo(u, t) && u.SubClass()&0x10 != 0 && ud.Field516 != nil && ud.Field516.SubClass()&0x4000 != 0 {
 		combatDebug(u, "Tried to MELEE_ATTACK but friend in the way")
 		u.MonsterPopAction()
 		u.MonsterPushAction(ai.ACTION_FACE_ANGLE, int32(int16(u.Direction1)))

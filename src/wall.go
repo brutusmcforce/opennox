@@ -74,10 +74,7 @@ func nox_xxx_wallSecretGetFirstWall_410780() unsafe.Pointer {
 }
 
 func nox_xxx_wallSecretNext_410790(p unsafe.Pointer) unsafe.Pointer {
-	if p == nil {
-		return nil
-	}
-	return *(*unsafe.Pointer)(p)
+	return legacy.WorldSecretNext(p)
 }
 
 type Wall server.Wall
@@ -151,17 +148,17 @@ func (w *Wall) open() {
 	if !w.Flags4.Has(wall.FlagSecret) {
 		return
 	}
-	p := w.Data
-	st := *(*uint8)(unsafe.Add(p, 21))
-	if st != 3 && st != 4 {
-		*(*uint8)(unsafe.Add(p, 21)) = 4
+	p := server.AsSecretWallData(w.Data)
+	st := p.State
+	if st != server.SecretWallOpen && st != server.SecretWallOpening {
+		p.State = server.SecretWallOpening
 		s := w.Server()
 		if s.Walls.NoWallSounds {
 			return
 		}
 		pos := types.Pointf{
-			X: float32(int32(*(*uint32)(unsafe.Add(p, 4)))*23) + 11.5,
-			Y: float32(int32(*(*uint32)(unsafe.Add(p, 8)))*23) + 11.5,
+			X: float32(int32(p.GridX)*23) + 11.5,
+			Y: float32(int32(p.GridY)*23) + 11.5,
 		}
 		sndName := w.Def().OpenSound()
 		s.Audio.EventPos(sound.ByName(sndName), pos, 0, 0)
@@ -172,17 +169,17 @@ func (w *Wall) close() {
 	if !w.Flags4.Has(wall.FlagSecret) {
 		return
 	}
-	p := w.Data
-	st := *(*uint8)(unsafe.Add(p, 21))
-	if st != 1 && st != 2 {
-		*(*uint8)(unsafe.Add(p, 21)) = 2
+	p := server.AsSecretWallData(w.Data)
+	st := p.State
+	if st != server.SecretWallClosed && st != server.SecretWallClosing {
+		p.State = server.SecretWallClosing
 		s := w.Server()
 		if s.Walls.NoWallSounds {
 			return
 		}
 		pos := types.Pointf{
-			X: float32(int32(*(*uint32)(unsafe.Add(p, 4)))*23) + 11.5,
-			Y: float32(int32(*(*uint32)(unsafe.Add(p, 8)))*23) + 11.5,
+			X: float32(int32(p.GridX)*23) + 11.5,
+			Y: float32(int32(p.GridY)*23) + 11.5,
 		}
 		sndName := w.Def().CloseSound()
 		s.Audio.EventPos(sound.ByName(sndName), pos, 0, 0)
@@ -320,7 +317,7 @@ func (s *Server) Nox_xxx_damageToMap_534BC0(gx, gy int, dmg int, dtyp object.Dam
 		return v7
 	}()) == nil || (func() bool {
 		v8 = 99999999
-		return (int32(*(*uint8)(unsafe.Add(unsafe.Pointer(v7), int(layoutServerObject.Off(8)) /* ObjClass */))) & 4) == 0
+		return (int32(*(*uint8)(unsafe.Pointer(&v7.ObjClass))) & 4) == 0
 	}()) {
 		v8 = dmg
 	}
@@ -361,7 +358,7 @@ func (s *Server) Nox_xxx_wall_4DF1E0(a1 int) {
 		return
 	}
 	for it := s.Objs.First(); it != nil; it = it.Next() {
-		if it.Class().Has(object.ClassDoor) && *(*byte)(unsafe.Add(it.UpdateData, 48)) != 0 {
+		if it.Class().Has(object.ClassDoor) && it.UpdateDataDoor().Notified != 0 {
 			s.Sub_4D6A20(a1, it)
 		}
 	}
@@ -373,10 +370,11 @@ func (s *Server) Nox_xxx_wall_4DF1E0(a1 int) {
 func sub_4DF2A0(a1 int8) {
 	v1 := int32(1) << a1
 	for it := nox_xxx_wallSecretGetFirstWall_410780(); it != nil; it = nox_xxx_wallSecretNext_410790(it) {
-		if *(*int32)(unsafe.Add(it, 4*5))&8 != 0 {
-			*(*int32)(unsafe.Add(it, 4*7)) |= v1
+		sw := server.AsSecretWallData(it)
+		if sw.Flags&8 != 0 {
+			sw.OpenSent |= uint32(v1)
 		} else {
-			*(*int32)(unsafe.Add(it, 4*7)) &^= v1
+			sw.OpenSent &^= uint32(v1)
 		}
 	}
 }

@@ -118,7 +118,7 @@ func (c *Client) sub_498B50(cl color.Color, p1, p2 image.Point) {
 		}
 		v11 := uint32(v11a - 1)
 		v11 &= 0xFFFFFFFE
-		sy = int(v11 + 1)
+		sy = int(int32(v11 + 1)) // -1 or 1
 	}
 	alpha := byte(208)
 	cp := p1
@@ -704,11 +704,11 @@ func (c *clientSight) Nox_xxx_client_4984B0_drawable_A(vp *noxrender.Viewport, d
 	var vec1, vec2 image.Point
 	if dr.Shape.Kind == 2 {
 		v12 := int(dr.Shape.Circle.R)
-		if *(*uint16)(unsafe.Add(dr.C(), 2)) != 0 {
-			v35 := int(*(*uint16)(unsafe.Add(dr.C(), 6)))
-			vec1.X = pos.X - (int(*(*uint16)(unsafe.Add(dr.C(), 4))) >> 1) - opos.X
+		if *(*uint16)(unsafe.Add(unsafe.Pointer(&dr.Field_0), 2)) != 0 {
+			v35 := int(*(*uint16)(unsafe.Add(unsafe.Pointer(&dr.Field_1), 2)))
+			vec1.X = pos.X - (int(*(*uint16)(unsafe.Pointer(&dr.Field_1))) >> 1) - opos.X
 			vec1.Y = pos.Y + v12 + int(dr.ZVal) - v35 - opos.Y - int(dr.ZSizeMin)
-			vec2.X = vec1.X + int(*(*uint16)(unsafe.Add(dr.C(), 4)))
+			vec2.X = vec1.X + int(*(*uint16)(unsafe.Pointer(&dr.Field_1)))
 			vec2.Y = vec1.Y + v35
 		} else {
 			vec1.X = pos.X - v12 - opos.X
@@ -717,11 +717,11 @@ func (c *clientSight) Nox_xxx_client_4984B0_drawable_A(vp *noxrender.Viewport, d
 			vec2.Y = pos.Y + v12 + int(dr.ZVal) - opos2.Y - int(dr.ZSizeMin)
 		}
 	} else {
-		if *(*uint16)(unsafe.Add(dr.C(), 2)) != 0 {
-			vec1.X = pos.X - (int(*(*uint16)(unsafe.Add(dr.C(), 4))) >> 1) - opos.X
+		if *(*uint16)(unsafe.Add(unsafe.Pointer(&dr.Field_0), 2)) != 0 {
+			vec1.X = pos.X - (int(*(*uint16)(unsafe.Pointer(&dr.Field_1))) >> 1) - opos.X
 			vec2.Y = int(dr.Shape.Box.RightTop2) + pos.Y + int(dr.ZVal) - opos.Y
-			vec1.Y = vec2.Y - int(*(*uint16)(unsafe.Add(dr.C(), 6)))
-			vec2.X = vec1.X + int(*(*uint16)(unsafe.Add(dr.C(), 4)))
+			vec1.Y = vec2.Y - int(*(*uint16)(unsafe.Add(unsafe.Pointer(&dr.Field_1), 2)))
+			vec2.X = vec1.X + int(*(*uint16)(unsafe.Pointer(&dr.Field_1)))
 		} else {
 			vec1.X = dx + int(dr.Shape.Box.LeftBottom2)
 			v17 := pos.Y - opos.Y - int(dr.ZSizeMax)
@@ -754,7 +754,7 @@ func (c *clientSight) Nox_xxx_client_4984B0_drawable_A(vp *noxrender.Viewport, d
 	} else {
 		scrIn++
 	}
-	if int32(*(*uint16)(unsafe.Add(unsafe.Pointer(dr), 2))) != 0 {
+	if int32(*(*uint16)(unsafe.Add(unsafe.Pointer(&dr.Field_0), 2))) != 0 {
 		if vec2.X-vec1.X > 6 {
 			vec1.X += 3
 			vec2.X -= 3
@@ -1342,8 +1342,8 @@ func (c *clientSight) newFromDrawableBox(a1 *Drawable) {
 func (c *clientSight) newFromViewport(vp *noxrender.Viewport) {
 	v1 := int32(vp.World.Min.X)
 	v2 := int32(vp.World.Min.Y)
-	v3 := int32(vp.Size.X + int(uint32(v1)))
-	v4 := int32(vp.Size.Y + int(uint32(v2)))
+	v3 := int32(vp.Size.X + int(int32(uint32(v1))))
+	v4 := int32(vp.Size.Y + int(int32(uint32(v2))))
 	v9 := c.sub_4CA8B0(v2-int32(c.sightViewCenter.Y), v1-int32(c.sightViewCenter.X))
 	v5 := c.sub_4CA8B0(v2-int32(c.sightViewCenter.Y), v3-int32(c.sightViewCenter.X))
 	v6 := c.sub_4CA8B0(v4-int32(c.sightViewCenter.Y), v3-int32(c.sightViewCenter.X))

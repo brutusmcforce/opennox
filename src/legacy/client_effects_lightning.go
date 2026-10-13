@@ -1,13 +1,15 @@
 package legacy
 
 import (
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"image"
+	"math"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"image"
-	"math"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 )
 
 func effectPrepareLightning() int {
@@ -143,8 +145,10 @@ func effectLightningPasses(a, b image.Point, mode int, coords *[4]int16, unused,
 	return effectLightningStep(from, to)
 }
 func effectRayEndpoints(dr *client.Drawable, stripStatic bool) (a, b image.Point, ok bool) {
-	if *effectByte(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) == 0 {
-		return image.Pt(int(*effectShort(dr, int(layoutClientDrawable.Off(437)) /* Union._ */)), int(*effectShort(dr, int(layoutClientDrawable.Off(439)) /* Union._ */))), image.Pt(int(*effectShort(dr, int(layoutClientDrawable.Off(441)) /* Union._ */)), int(*effectShort(dr, int(layoutClientDrawable.Off(443)) /* Union._ */))), true
+	u := (*client.DrawableUnionRay)(unsafe.Pointer(&dr.Union))
+	if u.ByCode == 0 {
+		from, to := u.FromPos(), u.ToPos()
+		return image.Pt(int(from[0]), int(from[1])), image.Pt(int(to[0]), int(to[1])), true
 	}
 	lookup := func(code uint32) *client.Drawable {
 		if code&0x8000 != 0 {
@@ -158,7 +162,7 @@ func effectRayEndpoints(dr *client.Drawable, stripStatic bool) (a, b image.Point
 		}
 		return GetClient().Cli().Objs.ByNetCodeDynamic(int(code))
 	}
-	from, to := lookup(*effectWord(dr, int(layoutClientDrawable.Off(437)) /* Union._ */)), lookup(*effectWord(dr, int(layoutClientDrawable.Off(441)) /* Union._ */))
+	from, to := lookup(*u.FromCode()), lookup(*u.ToCode())
 	if from == nil || to == nil {
 		return a, b, false
 	}
@@ -167,9 +171,10 @@ func effectRayEndpoints(dr *client.Drawable, stripStatic bool) (a, b image.Point
 
 // Lightning and chain lightning share the repaired endpoint construction.
 func effectLightningDraw(vp *noxrender.Viewport, dr *client.Drawable, kind int) int {
-	if kind == 2 && *effectByte(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) == 0 && *effectWord(dr, int(layoutClientDrawable.Off(433)) /* Union._ */) != 0 {
-		*effectWord(dr, int(layoutClientDrawable.Off(433)) /* Union._ */)--
-		if *effectWord(dr, int(layoutClientDrawable.Off(433)) /* Union._ */) == 0 {
+	u := (*client.DrawableUnionRay)(unsafe.Pointer(&dr.Union))
+	if kind == 2 && u.ByCode == 0 && *u.ArgWord() != 0 {
+		*u.ArgWord()--
+		if *u.ArgWord() == 0 {
 			return effectDelete(dr)
 		}
 	}
@@ -184,7 +189,7 @@ func effectLightningDraw(vp *noxrender.Viewport, dr *client.Drawable, kind int) 
 	outer := 1
 	switch kind {
 	case 1:
-		*memmap.PtrUint8(0x5D4594, 1316420) = byte(2 * (int(int8(*effectByte(dr, int(layoutClientDrawable.Off(433)) /* Union._ */))) + 127))
+		*memmap.PtrUint8(0x5D4594, 1316420) = byte(2 * (int(int8(u.Arg[0])) + 127))
 		dword_5d4594_1316436 = uint32(*effectMapped(1316496))
 		dword_5d4594_1316484 = uint32(*effectMapped(1316468))
 		outer = 0

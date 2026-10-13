@@ -1,14 +1,15 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/spell"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/internal/cryptfile"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/legacy/music"
+	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func playerFileStream() objectXferStream { return objectXferStream{cf: cryptfile.Global()} }
@@ -132,7 +133,7 @@ func playerFileGuides(u *server.Object) int {
 	if !noxflags.HasGame(2048 | 4096) {
 		return 0
 	}
-	known := unsafe.Slice((*uint32)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(4244)) /* BeastScrollLvl */)), 41)
+	known := unsafe.Slice(&p.BeastScrollLvl[0], 41)
 	if r.read() {
 		count := r.byte(0)
 		if count > 41 {
@@ -178,8 +179,8 @@ func playerFileSpells(u *server.Object) int {
 	if !noxflags.HasGame(2048 | 4096) {
 		return 0
 	}
-	class := *(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(2251)) /* info */))
-	levels := unsafe.Slice((*uint32)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(3696)) /* SpellLvl */)), 137)
+	class := p.InfoBytes[66]
+	levels := unsafe.Slice(&p.SpellLvl[0], 137)
 	if r.read() {
 		count := r.byte(0)
 		if count > 137 {

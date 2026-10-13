@@ -18,6 +18,7 @@ import (
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/legacy/timer"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -713,19 +714,19 @@ func writeConfigLegacyMain(sect *cfg.Section) {
 
 	v := 0
 	if legacy.Sub_453070() == 1 {
-		v = int(*(*uint32)(unsafe.Add(unsafe.Pointer(legacy.Get_dword_587000_127004()), 4)) >> 16)
+		v = int((*timer.TimerGroup)(legacy.Get_dword_587000_127004()).Timers[0].Current >> 16)
 	}
 	sect.Set("FXVolume", strconv.Itoa(v))
 
 	v = 0
 	if legacy.Sub_44D990() == 1 {
-		v = int(*(*uint32)(unsafe.Add(unsafe.Pointer(legacy.Get_dword_587000_122852()), 4)) >> 16)
+		v = int((*timer.TimerGroup)(legacy.Get_dword_587000_122852()).Timers[0].Current >> 16)
 	}
 	sect.Set("DialogVolume", strconv.Itoa(v))
 
 	v = 0
 	if legacy.Sub_43DC30() == 1 {
-		v = int(*(*uint32)(unsafe.Add(unsafe.Pointer(legacy.Get_dword_587000_93164()), 4)) >> 16)
+		v = int((*timer.TimerGroup)(legacy.Get_dword_587000_93164()).Timers[0].Current >> 16)
 	}
 	sect.Set("MusicVolume", strconv.Itoa(v))
 

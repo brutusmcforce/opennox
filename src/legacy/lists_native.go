@@ -147,7 +147,7 @@ func playerGroupAdd(id uint32, name *uint16) *playerGroup {
 	if playerGroupFind(id) != nil {
 		return nil
 	}
-	p := (*playerGroup)(legacyCalloc(1, 52))
+	p := legacyNew[playerGroup]()
 	if p == nil {
 		panic("player group allocation")
 	}
@@ -159,7 +159,7 @@ func playerGroupAdd(id uint32, name *uint16) *playerGroup {
 	return p
 }
 func playerGroupAddMember(p *playerGroup, index int32) {
-	member := (*playerGroupMember)(legacyCalloc(1, 16))
+	member := legacyNew[playerGroupMember]()
 	if member == nil {
 		panic("player group member allocation")
 	}

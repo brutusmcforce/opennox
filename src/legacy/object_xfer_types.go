@@ -3,11 +3,11 @@ package legacy
 import (
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/spell"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/internal/cryptfile"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -27,12 +27,10 @@ func objectXferFinish(r objectXferStream, u *server.Object, version int, saved u
 	u.Field34 = saved
 	return 1
 }
-func objectXferWord(p unsafe.Pointer, off int) *uint32 { return (*uint32)(unsafe.Add(p, off)) }
-func objectXferScriptName(u *server.Object, off int) unsafe.Pointer {
-	if u.Field189 == nil {
-		return nil
-	}
-	return unsafe.Add(u.Field189, off)
+func objectXferWord(p unsafe.Pointer, off int) *uint32 { return rawAt[uint32](p, off) }
+// objectXferScriptName returns the editor-mode name slot of a script callback (see server.ObjectEditorData).
+func objectXferScriptName(u *server.Object, slot int) unsafe.Pointer {
+	return u.EditorData().ScriptName(slot)
 }
 
 func objectXferPedestal(u *server.Object) int {
@@ -40,12 +38,13 @@ func objectXferPedestal(u *server.Object) int {
 	if !ok {
 		return 0
 	}
-	r.raw(u.CollideData, 4)
+	r.raw(unsafe.Pointer(&u.CollideDataAwardSpell().Spell), 4)
 	return objectXferFinish(r, u, v, saved)
 }
 func objectXferReadable(u *server.Object) int {
-	p := u.UseData.Ptr
-	n := uint32(len(alloc.GoString((*byte)(p))) + 1)
+	data := u.UseDataRead()
+	p := unsafe.Pointer(&data.TextBuf[0])
+	n := uint32(len(data.Text()) + 1)
 	r, v, saved, ok := objectXferStart(u, 60)
 	if !ok {
 		return 0
@@ -55,12 +54,13 @@ func objectXferReadable(u *server.Object) int {
 	}
 	r.raw(p, int(n))
 	if r.read() {
-		*objectXferWord(p, 256) = 0
+		data.LastRead = 0
 	}
 	return objectXferFinish(r, u, v, saved)
 }
 func objectXferExit(u *server.Object) int {
-	p := u.CollideData
+	// The map name is copied with its actual length, which is not bounded by the field.
+	p := unsafe.Pointer(&u.CollideDataExit().MapName[0])
 	n := uint32(len(alloc.GoString((*byte)(p))) + 1)
 	r, v, saved, ok := objectXferStart(u, 60)
 	if !ok {
@@ -91,26 +91,26 @@ func objectXferDoor(u *server.Object) int {
 	if !ok {
 		return 0
 	}
-	p := u.UpdateData
-	direction := r.word(*objectXferWord(p, 12))
-	state := r.word(uint32(*(*byte)(unsafe.Add(p, 1))))
+	p := u.UpdateDataDoor()
+	direction := r.word(p.Dir)
+	state := r.word(uint32(p.KeyType))
 	orientation := direction
 	if v >= 41 {
-		orientation = r.word(*objectXferWord(p, 4))
+		orientation = r.word(p.BaseDir)
 	}
 	if r.read() {
-		*objectXferWord(p, 12) = direction
-		*(*uint16)(unsafe.Add(p, 40)) = uint16((int32(direction) << 8) / 32)
-		*objectXferWord(p, 4) = orientation
-		*objectXferWord(p, 8) = direction
+		p.Dir = direction
+		p.Angle = int16(uint16((int32(direction) << 8) / 32))
+		p.BaseDir = orientation
+		p.PrevDir = direction
 		halfX := memmap.Int32(0x587000, 196184+8*uintptr(orientation)) / 2
 		halfY := memmap.Int32(0x587000, 196188+8*uintptr(orientation)) / 2
 		x := int32(int64((float64(halfX) + float64(u.PosVec.X)) * 0.043478262))
 		y := int32(int64((float64(halfY) + float64(u.PosVec.Y)) * 0.043478262))
 		worldDoorAttach(u.CObj(), int(x), int(y))
-		*objectXferWord(p, 16) = uint32(x)
-		*objectXferWord(p, 20) = uint32(y)
-		*(*byte)(unsafe.Add(p, 1)) = byte(state)
+		p.GridX = uint32(x)
+		p.GridY = uint32(y)
+		p.KeyType = byte(state)
 	}
 	return objectXferFinish(r, u, v, saved)
 }
@@ -130,7 +130,7 @@ func objectXferTrigger(u *server.Object) int {
 	if !ok {
 		return 0
 	}
-	p := u.UpdateData
+	p := u.UpdateDataTrigger()
 	if r.read() {
 		w, h := int32(r.word(0)), int32(r.word(0))
 		u.Shape.Box.W = float32(w)
@@ -152,20 +152,20 @@ func objectXferTrigger(u *server.Object) int {
 			r.raw(unsafe.Pointer(&scratch[0]), 3)
 		}
 	} else {
-		for off := 54; off < 60; off++ {
-			r.raw(unsafe.Add(p, off), 1)
+		for i := range p.Colors {
+			r.raw(unsafe.Pointer(&p.Colors[i]), 1)
 		}
 	}
-	r.raw(p, 4)
+	r.raw(unsafe.Pointer(&p.Flags), 4)
 	if v >= 3 {
-		objectXferScript(unsafe.Add(p, 20), objectXferScriptName(u, 256))
-		objectXferScript(unsafe.Add(p, 28), objectXferScriptName(u, 384))
+		objectXferScript(unsafe.Pointer(&p.ScriptActivate), objectXferScriptName(u, server.ScriptNameTriggerActivate))
+		objectXferScript(unsafe.Pointer(&p.ScriptDeactivate), objectXferScriptName(u, server.ScriptNameTriggerDeactivate))
 		if v >= 31 {
-			objectXferScript(unsafe.Add(p, 12), objectXferScriptName(u, 512))
+			objectXferScript(unsafe.Pointer(&p.ScriptCollide), objectXferScriptName(u, server.ScriptNameTriggerCollide))
 		}
 	} else {
-		objectXferLegacyScript(unsafe.Add(p, 20))
-		objectXferLegacyScript(unsafe.Add(p, 28))
+		objectXferLegacyScript(unsafe.Pointer(&p.ScriptActivate))
+		objectXferLegacyScript(unsafe.Pointer(&p.ScriptDeactivate))
 	}
 	if r.read() && v < 31 {
 		for i := 0; i < 4; i++ {
@@ -173,19 +173,19 @@ func objectXferTrigger(u *server.Object) int {
 			r.cf.Seek(int64(4*int(n)), 1)
 		}
 	}
-	r.raw(unsafe.Add(p, 44), 4)
-	r.raw(unsafe.Add(p, 48), 4)
+	r.raw(unsafe.Pointer(&p.AllowClass), 4)
+	r.raw(unsafe.Pointer(&p.IgnoreClass), 4)
 	if r.read() {
-		*(*byte)(unsafe.Add(p, 52)) = 0
-		*(*byte)(unsafe.Add(p, 53)) = 0
+		p.AllowTeam = 0
+		p.IgnoreTeam = 0
 	}
 	if !r.read() || v >= 21 {
-		r.raw(unsafe.Add(p, 52), 1)
-		r.raw(unsafe.Add(p, 53), 1)
+		r.raw(unsafe.Pointer(&p.AllowTeam), 1)
+		r.raw(unsafe.Pointer(&p.IgnoreTeam), 1)
 	}
 	if v >= 61 {
-		r.raw(unsafe.Add(p, 8), 1)
-		r.raw(unsafe.Add(p, 9), 1)
+		r.raw(unsafe.Pointer(&p.State), 1)
+		r.raw(unsafe.Pointer(&p.Field9), 1)
 		r.raw(unsafe.Pointer(&u.Field33), 4)
 		if r.read() {
 			stateAnimation(u, u.Field33)
@@ -198,23 +198,23 @@ func objectXferHole(u *server.Object) int {
 	if !ok {
 		return 0
 	}
-	p := u.CollideData
+	d := u.CollideDataHole()
 	if v < 42 {
-		*objectXferWord(p, 24) = 0
+		d.Triggered = 0
 	} else {
-		r.raw(unsafe.Add(p, 24), 4)
+		r.raw(unsafe.Pointer(&d.Triggered), 4)
 	}
 	if v < 41 {
-		r.raw(unsafe.Add(p, 8), 8)
-		*objectXferWord(p, 4) = 0xffffffff
-		*objectXferWord(p, 0) = 0
-		*objectXferWord(p, 16) = 0
-		*(*uint16)(unsafe.Add(p, 20)) = 0
+		r.raw(unsafe.Pointer(&d.Dest), 8)
+		d.Script.Func = -1
+		d.Script.Flags = 0
+		d.Frame = 0
+		d.Delay = 0
 	} else {
-		objectXferScript(p, objectXferScriptName(u, 128))
-		r.raw(unsafe.Add(p, 8), 8)
-		r.raw(unsafe.Add(p, 16), 4)
-		r.raw(unsafe.Add(p, 20), 2)
+		objectXferScript(unsafe.Pointer(&d.Script), objectXferScriptName(u, server.ScriptNameHole))
+		r.raw(unsafe.Pointer(&d.Dest), 8)
+		r.raw(unsafe.Pointer(&d.Frame), 4)
+		r.raw(unsafe.Pointer(&d.Delay), 2)
 	}
 	return objectXferFinish(r, u, v, saved)
 }
@@ -223,13 +223,13 @@ func objectXferTransporter(u *server.Object) int {
 	if !ok {
 		return 0
 	}
-	p := u.UpdateData
+	p := u.UpdateDataTransporter()
 	if r.read() {
-		r.raw(unsafe.Add(p, 16), 4)
+		r.raw(unsafe.Pointer(&p.DestExtent), 4)
 	} else {
 		var id uint32
-		if *(*unsafe.Pointer)(unsafe.Add(p, 12)) != nil {
-			id = *objectXferWord(p, 16)
+		if p.Destination != nil {
+			id = p.DestExtent
 		}
 		r.word(id)
 	}
@@ -240,13 +240,13 @@ func objectXferElevator(u *server.Object) int {
 	if !ok {
 		return 0
 	}
-	p := u.UpdateData
-	r.raw(unsafe.Add(p, 8), 4)
+	p := u.UpdateDataElevator()
+	r.raw(unsafe.Pointer(&p.PartnerExtent), 4)
 	if v >= 41 {
-		r.raw(unsafe.Add(p, 16), 4)
+		r.raw(unsafe.Pointer(&p.Field_4), 4)
 	}
 	if v >= 61 {
-		r.raw(unsafe.Add(p, 12), 1)
+		r.raw(unsafe.Pointer(&p.Field_3), 1)
 	}
 	return objectXferFinish(r, u, v, saved)
 }
@@ -255,7 +255,7 @@ func objectXferShaft(u *server.Object) int {
 	if !ok {
 		return 0
 	}
-	r.raw(unsafe.Add(u.UpdateData, 8), 4)
+	r.raw(unsafe.Pointer(&u.UpdateDataElevatorShaft().Field_2), 4)
 	return objectXferFinish(r, u, v, saved)
 }
 func objectXferMover(u *server.Object) int {
@@ -263,20 +263,20 @@ func objectXferMover(u *server.Object) int {
 	if !ok {
 		return 0
 	}
-	p := u.UpdateData
-	for _, off := range []int{4, 8, 32} {
-		r.raw(unsafe.Add(p, off), 4)
-	}
+	p := u.UpdateDataMover()
+	r.raw(unsafe.Pointer(&p.Field_1), 4)
+	r.raw(unsafe.Pointer(&p.Field_2), 4)
+	r.raw(unsafe.Pointer(&p.Field_8), 4)
 	if v >= 41 {
-		r.raw(p, 1)
+		r.raw(unsafe.Pointer(&p.Field_0), 1)
 		if r.read() {
-			r.raw(unsafe.Add(p, 16), 4)
-			r.raw(unsafe.Add(p, 24), 4)
+			r.raw(unsafe.Pointer(&p.NextInd), 4)
+			r.raw(unsafe.Pointer(&p.PrevInd), 4)
 		} else {
-			for _, off := range []int{12, 20} {
+			for _, wp := range []*server.Waypoint{p.Next, p.Prev} {
 				var id uint32
-				if q := *(*unsafe.Pointer)(unsafe.Add(p, off)); q != nil {
-					id = *(*uint32)(q)
+				if wp != nil {
+					id = wp.Index
 				}
 				r.word(id)
 			}
@@ -293,20 +293,20 @@ func objectXferGlyph(u *server.Object) int {
 	if !ok {
 		return 0
 	}
-	p := u.InitData
+	p := u.InitDataGlyph()
 	if v < 41 {
 		r.word(0)
 	}
 	r.raw(unsafe.Pointer(&u.Direction1), 1)
-	r.raw(unsafe.Add(p, 28), 4)
-	r.raw(unsafe.Add(p, 32), 4)
-	r.raw(unsafe.Add(p, 20), 1)
-	count := int(*(*byte)(unsafe.Add(p, 20)))
+	r.raw(unsafe.Pointer(&p.SpellArg.Pos.X), 4)
+	r.raw(unsafe.Pointer(&p.SpellArg.Pos.Y), 4)
+	r.raw(unsafe.Pointer(&p.SpellsCnt), 1)
+	count := int(byte(p.SpellsCnt))
 	if r.read() && v < 31 {
-		r.raw(p, 20)
+		r.raw(unsafe.Pointer(&p.Spells[0]), 20)
 	} else {
 		for i := 0; i < count; i++ {
-			field := objectXferWord(p, 4*i)
+			field := &p.Spells[i]
 			if r.read() {
 				n := int(r.byte(0))
 				buf := make([]byte, n+1)
@@ -322,7 +322,7 @@ func objectXferGlyph(u *server.Object) int {
 	}
 	if r.read() {
 		u.Direction2 = u.Direction1
-		*objectXferWord(p, 24) = 0
+		p.SpellArg.Obj = nil
 	}
 	return objectXferFinish(r, u, v, saved)
 }
@@ -331,14 +331,14 @@ func objectXferSentry(u *server.Object) int {
 	if !ok {
 		return 0
 	}
-	p := u.UpdateData
-	r.raw(unsafe.Add(p, 4), 4)
-	r.raw(unsafe.Add(p, 8), 4)
+	p := u.UpdateDataSentryGlobe()
+	r.raw(unsafe.Pointer(&p.BaseAngle), 4)
+	r.raw(unsafe.Pointer(&p.Speed), 4)
 	if r.read() || noxflags.HasGame(0x200000) {
-		*objectXferWord(p, 0) = *objectXferWord(p, 4)
+		p.Angle = p.BaseAngle
 	}
 	if v >= 61 {
-		r.raw(p, 4)
+		r.raw(unsafe.Pointer(&p.Angle), 4)
 	}
 	return objectXferFinish(r, u, v, saved)
 }

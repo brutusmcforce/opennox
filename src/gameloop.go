@@ -352,7 +352,7 @@ func nox_xxx_clientResetSpriteAndGui_4357D0(noSkip bool) bool {
 
 // ----- (0048D7D0) --------------------------------------------------------
 func nox_xxx_chatInit_48D7D0() bool {
-	legacy.Set_nox_alloc_chat_1197364(alloc.NewClass("Chat", 692, 64).UPtr())
+	legacy.Set_nox_alloc_chat_1197364(alloc.NewClass("Chat", legacy.ChatBubbleSize, 64).UPtr())
 	return legacy.Get_nox_alloc_chat_1197364() != nil
 }
 
@@ -942,7 +942,8 @@ func nox_xxx_gameChangeMap_43DEB0() error {
 func nox_xxx_cliDrawConnectedLoop_43B360() int {
 	noxflags.SetGame(noxflags.GameFlag3)
 	noxflags.UnsetGame(noxflags.GameHost)
-	v0 := alloc.GoString((*byte)(unsafe.Add(legacy.Get_dword_5d4594_814624(), 12)))
+	sel := (*legacy.Nox_gui_server_ent_t)(legacy.Get_dword_5d4594_814624())
+	v0 := alloc.GoStringS(sel.AddrBuf[:])
 	if v0 == "" {
 		clientSetServerHost("localhost")
 	} else {
@@ -952,7 +953,7 @@ func nox_xxx_cliDrawConnectedLoop_43B360() int {
 		clientSetServerHost(v0)
 	}
 	writeConfigLegacy("nox.cfg")
-	v2 := *(*int8)(unsafe.Add(legacy.Get_dword_5d4594_814624(), 102))
+	v2 := int8(sel.Field_25_2)
 	if v2 >= 0 {
 		videoSetMaxSize(noxVideoMax)
 	} else if res, ok := videoModeByID(byte(v2) & 0x7F); ok {

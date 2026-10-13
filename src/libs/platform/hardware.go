@@ -32,7 +32,13 @@ func (*hardware) TimeSeed() int64 {
 }
 
 func (p *hardware) RandInt() int {
-	return p.rand.Int()
+	return RandInt31(p.rand)
+}
+
+// RandInt31 returns what r.Int() returns on 32-bit platforms (the low 31 bits of r.Int63()),
+// so the game draws the same random numbers on every architecture.
+func RandInt31(r *rand.Rand) int {
+	return int(uint32(r.Int63()) &^ (1 << 31))
 }
 
 func (p *hardware) RandSeed(seed int64) {

@@ -2,10 +2,11 @@ package legacy
 
 import (
 	"encoding/binary"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/internal/netlist"
-	"unsafe"
 )
 
 func quickbarQueueTarget(id uint32) int {
@@ -63,7 +64,7 @@ func quickbarInvokeSlot(slot int) {
 		return
 	}
 	s := &quickbarMain().Current[slot]
-	if bookClass(p) != 0 {
+	if bookClass(unsafe.Pointer(p)) != 0 {
 		quickbarSendSpells(&s.ID, 1, byte(s.Flags)&1)
 	} else {
 		quickbarSendAbility(s.ID)

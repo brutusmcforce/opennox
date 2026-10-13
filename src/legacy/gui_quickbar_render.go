@@ -4,10 +4,10 @@ import (
 	"image"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/client/keybind"
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 )
 
 func quickbarWhite() {
@@ -134,7 +134,7 @@ func quickbarDrawSpell(w *gui.Window, _ *gui.WindowData) int {
 		}
 	}
 	p := LocalPlayerDrawable
-	buffed := p != nil && *(*uint32)(unsafe.Add(p.C(), int(layoutClientDrawable.Off(124)) /* Buffs */))&(1<<29) != 0
+	buffed := p != nil && p.Buffs&(1<<29) != 0
 	if !bool(nox_xxx_spellIsEnabled_424B70(int(id))) || Nox_xxx_playerAnimCheck_4372B0() != 0 || buffed {
 		GetClient().R2().DrawRectFilledAlpha(pos.X, pos.Y, 30, 30)
 	} else if mana < cost && cost != 0 {

@@ -11,6 +11,7 @@ import (
 
 // Offset tables for struct fields accessed by their 386 offset (see common/layout).
 var (
+	layoutServerMonsterUpdateData = layout.Of[server.MonsterUpdateData]()
 	layoutClientDrawable          = layout.Of[client.Drawable]()
 	layoutGuiWindow               = layout.Of[gui.Window]()
 	layoutLegacyAudioStreamBuffer = layout.Of[audioStreamBuffer]()

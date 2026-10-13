@@ -1,10 +1,11 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"unicode/utf16"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 // Keep one owned snapshot when the selected record is about to be replaced or
@@ -16,9 +17,9 @@ func browserKeepSelection(p unsafe.Pointer) {
 		return
 	}
 	if browserSelectedSnapshot == nil {
-		browserSelectedSnapshot, _ = alloc.Malloc(169)
+		browserSelectedSnapshot, _ = alloc.Malloc(unsafe.Sizeof(Nox_gui_server_ent_t{}))
 	}
-	copy(unsafe.Slice((*byte)(browserSelectedSnapshot), 169), unsafe.Slice((*byte)(p), 169))
+	*(*Nox_gui_server_ent_t)(browserSelectedSnapshot) = *(*Nox_gui_server_ent_t)(p)
 	browserUI.selected = browserSelectedSnapshot
 }
 func browserListHead() *legacyListNode {
@@ -103,17 +104,17 @@ func browserListInsert(p *legacyListNode) int {
 	mode := uint32(browserUI.sort)
 	switch mode {
 	case 2:
-		rec.Sort_key = int32(rec.PlayersVal)
+		rec.SetSortKey(int32(rec.PlayersVal))
 	case 3:
-		rec.Sort_key = 32 - int32(rec.PlayersVal)
+		rec.SetSortKey(32 - int32(rec.PlayersVal))
 	case 6:
-		rec.Sort_key = rec.PingVal
+		rec.SetSortKey(rec.PingVal)
 	case 7:
-		rec.Sort_key = 1000 - rec.PingVal
+		rec.SetSortKey(1000 - rec.PingVal)
 	case 8:
-		rec.Sort_key = int32(rec.StatusVal & 0x30)
+		rec.SetSortKey(int32(rec.StatusVal & 0x30))
 	case 9:
-		rec.Sort_key = 48 - int32(rec.StatusVal&0x30)
+		rec.SetSortKey(48 - int32(rec.StatusVal&0x30))
 	}
 	if mode == 2 || mode == 3 || mode >= 6 && mode <= 9 {
 		return listAscending(head, p)
@@ -124,7 +125,7 @@ func browserListInsert(p *legacyListNode) int {
 		cmp := 0
 		if mode < 2 {
 			// Original comparison follows the record's C string through its terminator.
-			cmp = browserASCIICompare(alloc.GoString((*byte)(unsafe.Add(unsafe.Pointer(p), 120))), alloc.GoString((*byte)(unsafe.Add(unsafe.Pointer(it), 120))))
+			cmp = browserASCIICompare(alloc.GoString(&rec.ServerNameBuf[0]), alloc.GoString(&other.ServerNameBuf[0]))
 		} else {
 			cmp = browserWideCompare(browserModeName(uint16(rec.Flags())), browserModeName(uint16(other.Flags())))
 		}
@@ -144,8 +145,8 @@ func browserListAdd(record unsafe.Pointer) int {
 	if browserUI.sort > 9 {
 		return 0
 	} // No valid UI path uses other modes.
-	p, _ := alloc.Malloc(169)
-	copy(unsafe.Slice((*byte)(p), 169), unsafe.Slice((*byte)(record), 169))
+	p, _ := alloc.Malloc(unsafe.Sizeof(Nox_gui_server_ent_t{}))
+	*(*Nox_gui_server_ent_t)(p) = *(*Nox_gui_server_ent_t)(record)
 	return browserListInsert((*legacyListNode)(p))
 }
 func browserListRender() {

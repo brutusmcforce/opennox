@@ -1,11 +1,13 @@
 package legacy
 
 import (
+	"math"
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"math"
-	"unsafe"
 )
 
 func damageTypeByName(name string) int32 {
@@ -67,7 +69,7 @@ func damageMelee(u, it *server.Object) bool {
 		return u.ObjClass&4 != 0 || u.ObjClass&2 != 0 && u.ObjSubClass&0x10 != 0
 	}
 	if it.ObjClass&0x1000 != 0 {
-		if it.ObjSubClass&0x47f0000 == 0 || *(*byte)(unsafe.Add(it.UseData.Ptr, 96))&2 != 0 {
+		if it.ObjSubClass&0x47f0000 == 0 || it.UseDataWand().Flags&2 != 0 {
 			return true
 		}
 	} else if it.ObjClass&0x1000000 != 0 && it.ObjSubClass&0x47f00fe == 0 {
@@ -84,9 +86,9 @@ func damageFraction(u *server.Object, out *int32, value float32) {
 	}
 	var fraction *float32
 	if u.ObjClass&4 != 0 {
-		fraction = (*float32)(unsafe.Add(u.UpdateData, 84))
+		fraction = (*float32)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](u.UpdateData).Field21))
 	} else if u.ObjClass&2 != 0 {
-		fraction = (*float32)(unsafe.Add(u.UpdateData, 4))
+		fraction = (*float32)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](u.UpdateData).Field1))
 	}
 	if fraction != nil {
 		value = float32(float64(value) + float64(*fraction))
@@ -119,7 +121,7 @@ func damageDurability(it, holder, source, weapon *server.Object, value float32, 
 	if weaponOnly && it.ObjClass&0x1000000 != 0 && it.ObjSubClass&0x7800000 != 0 {
 		return
 	}
-	fraction := (*float32)(it.UpdateData)
+	fraction := &it.UpdateDataWeaponArmor().Roundoff
 	if m := unsafe.Slice((**server.ModifierEff)(it.InitData), 4)[1]; m != nil && m.Defend76.Fnc != nil {
 		data, free := alloc.New(float32(0))
 		*data = value
@@ -142,9 +144,9 @@ func damageDurability(it, holder, source, weapon *server.Object, value float32, 
 func damageInventory(u, source, weapon *server.Object, amount int32, kindBits float32) {
 	var coeff float32
 	if u.ObjClass&4 != 0 {
-		coeff = *(*float32)(unsafe.Add(u.UpdateData, 228))
+		coeff = *(*float32)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](u.UpdateData).Field57))
 	} else if u.ObjClass&2 != 0 && u.ObjSubClass&0x10 != 0 {
-		coeff = *(*float32)(unsafe.Add(u.UpdateData, 2072))
+		coeff = *(*float32)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](u.UpdateData).Field518))
 	} else {
 		return
 	}
@@ -158,7 +160,7 @@ func damageInventory(u, source, weapon *server.Object, amount int32, kindBits fl
 func damageConductivity(u *server.Object) float64 {
 	value := float32(1)
 	for it := u.InvFirstItem; it != nil; it = it.InvNextItem {
-		if it.ObjClass&0x2000000 == 0 || *(*byte)(unsafe.Add(it.CObj(), int(layoutServerObject.Off(24)) /* Material */))&0x10 == 0 || it.ObjFlags&0x100 == 0 || runtimeMaterial(it) {
+		if it.ObjClass&0x2000000 == 0 || *(*byte)(unsafe.Pointer(&it.Material))&0x10 == 0 || it.ObjFlags&0x100 == 0 || runtimeMaterial(it) {
 			continue
 		}
 		var add float64

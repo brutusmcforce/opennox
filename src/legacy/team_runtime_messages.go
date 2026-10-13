@@ -2,8 +2,9 @@ package legacy
 
 import (
 	"encoding/binary"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
@@ -31,14 +32,14 @@ func teamRuntimeDescribe(t *server.Team, to int) {
 	b := make([]byte, 18+2*len(text))
 	b[0] = 196
 	binary.LittleEndian.PutUint32(b[2:], uint32(t.ID()))
-	binary.LittleEndian.PutUint32(b[6:], *teamRuntimeWord(t, layoutServerTeam.Off(60) /* field_60 */))
+	binary.LittleEndian.PutUint32(b[6:], t.Field_60)
 	binary.LittleEndian.PutUint32(b[10:], uint32(t.Lessons))
 	if noxflags.HasGame(512) {
 		b[14] = 1
 	}
 	b[15] = byte(len(text))
 	b[16] = byte(t.ColorInd)
-	b[17] = byte(*teamRuntimeWord(t, layoutServerTeam.Off(68) /* field_68 */))
+	b[17] = byte(t.Field_68)
 	for i, c := range text {
 		binary.LittleEndian.PutUint16(b[18+2*i:], c)
 	}
@@ -55,7 +56,7 @@ func teamRuntimeRename(t *server.Team, name *uint16) {
 		return
 	}
 	teamUITeamRename(t, alloc.GoString16(name))
-	*teamRuntimeWord(t, layoutServerTeam.Off(68) /* field_68 */) = 0
+	t.Field_68 = 0
 	if noxflags.HasGame(1) {
 		var b [46]byte
 		b[0], b[1] = 196, 4

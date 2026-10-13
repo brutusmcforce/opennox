@@ -1,19 +1,15 @@
 package legacy
 
 import (
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
-func spellEffectObject(p unsafe.Pointer, off int) *server.Object {
-	return (*server.Object)(*controlPtr(p, off))
-}
-func spellEffectPos(p unsafe.Pointer, off int) types.Pointf {
-	return *(*types.Pointf)(unsafe.Add(p, off))
-}
 func spellEffectScalar(name string) float64 {
 	return float64(nox_xxx_gamedataGetFloat_419D40(internCStr(name)))
 }
@@ -31,7 +27,7 @@ func spellEffectPosAudio(id, phase int32, pos types.Pointf) {
 func spellEffectInform(u *server.Object) {
 	if u.ObjClass&4 != 0 {
 		v := int32(2)
-		gameplayTextInformation(int(int32(*controlByte(controlPlayer(u), 2064))), 0, unsafe.Pointer(&v))
+		gameplayTextInformation(int(int32(controlPlayer(u).PlayerInd)), 0, unsafe.Pointer(&v))
 	}
 }
 func spellEffectAlert(source, target *server.Object) {
@@ -63,7 +59,7 @@ func spellEffectSummonCost(id int32, u *server.Object) int32 {
 	return 0
 }
 func spellEffectRestoreHealth(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
-	u := spellEffectObject(record, 0)
+	u := (*server.SpellAcceptArg)(record).Obj
 	if u == nil {
 		return 0
 	}
@@ -72,18 +68,18 @@ func spellEffectRestoreHealth(id int32, a, b, c *server.Object, record unsafe.Po
 	return 1
 }
 func spellEffectRestoreMana(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
-	u := spellEffectObject(record, 0)
+	u := (*server.SpellAcceptArg)(record).Obj
 	if u == nil {
 		return 0
 	}
 	if u.ObjClass&4 != 0 {
-		resourceAddMana(u, int16(*controlHalf(u.UpdateData, 8)))
+		resourceAddMana(u, int16(layout.As[server.PlayerUpdateData](u.UpdateData).ManaMax))
 		GetServer().S().Audio.EventObj(755, u, 0, 0)
 	}
 	return 1
 }
 func spellEffectConfuse(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
-	u := spellEffectObject(record, 0)
+	u := (*server.SpellAcceptArg)(record).Obj
 	if u == nil {
 		return 0
 	}
@@ -92,14 +88,14 @@ func spellEffectConfuse(id int32, a, b, c *server.Object, record unsafe.Pointer,
 	return 1
 }
 func spellEffectStun(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
-	u := spellEffectObject(record, 0)
+	u := (*server.SpellAcceptArg)(record).Obj
 	if u == nil {
 		return 0
 	}
 	dur := int16(floatToInt32(float32(spellEffectScalar("StunEnchantDuration"))))
 	buff := int32(5)
 	if u.ObjClass&4 != 0 {
-		if *controlByte(controlPlayer(u), 2251) == 0 {
+		if controlPlayer(u).InfoBytes[66] == 0 {
 			buff = 4
 		}
 	} else if u.ObjClass&2 != 0 && u.Mass > 15 {
@@ -110,7 +106,7 @@ func spellEffectStun(id int32, a, b, c *server.Object, record unsafe.Pointer, le
 	return 1
 }
 func spellEffectShock(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
-	u := spellEffectObject(record, 0)
+	u := (*server.SpellAcceptArg)(record).Obj
 	if u == nil {
 		return 0
 	}
@@ -123,7 +119,7 @@ func spellEffectShock(id int32, a, b, c *server.Object, record unsafe.Pointer, l
 	return 1
 }
 func spellEffectPoison(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
-	u := spellEffectObject(record, 0)
+	u := (*server.SpellAcceptArg)(record).Obj
 	if u == nil {
 		return 0
 	}
@@ -132,7 +128,7 @@ func spellEffectPoison(id int32, a, b, c *server.Object, record unsafe.Pointer, 
 	return 1
 }
 func spellEffectCurePoison(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
-	u := spellEffectObject(record, 0)
+	u := (*server.SpellAcceptArg)(record).Obj
 	if u == nil {
 		return 0
 	}
@@ -153,7 +149,7 @@ func spellEffectCurePoison(id int32, a, b, c *server.Object, record unsafe.Point
 	return 1
 }
 func spellEffectTelekinesis(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
-	u := spellEffectObject(record, 0)
+	u := (*server.SpellAcceptArg)(record).Obj
 	if u == nil {
 		return 0
 	}
@@ -169,7 +165,7 @@ func spellEffectTelekinesis(id int32, a, b, c *server.Object, record unsafe.Poin
 	return 1
 }
 func spellEffectLesserHeal(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
-	u := spellEffectObject(record, 0)
+	u := (*server.SpellAcceptArg)(record).Obj
 	if u == nil {
 		return 0
 	}
@@ -180,7 +176,7 @@ func spellEffectLesserHeal(id int32, a, b, c *server.Object, record unsafe.Point
 	v := float32(spellEffectScalar("LesserHealAmount"))
 	if b != nil && b.ObjClass&4 != 0 {
 		var max float64
-		switch *controlByte(controlPlayer(b), 2251) {
+		switch controlPlayer(b).InfoBytes[66] {
 		case 0:
 			max = float64(GetServer().S().Players.Mult.Warrior.Health)
 		case 1:
@@ -199,7 +195,7 @@ func spellEffectLesserHeal(id int32, a, b, c *server.Object, record unsafe.Point
 	return 1
 }
 func spellEffectFumble(id int32, a, b, c *server.Object, record unsafe.Pointer, level int32) int32 {
-	u := spellEffectObject(record, 0)
+	u := (*server.SpellAcceptArg)(record).Obj
 	if u == nil {
 		return 0
 	}
@@ -227,3 +223,12 @@ func spellEffectFumble(id int32, a, b, c *server.Object, record unsafe.Pointer, 
 	spellEffectAudio(id, 1, u)
 	return 1
 }
+
+// durScratch returns byte off (72-87, as in the original) of the scratch area that spells keep in their duration
+// spell: the bytes from Field72 on, which are contiguous on every platform (but not at the same offsets).
+func durScratch(record unsafe.Pointer, off int) unsafe.Pointer {
+	return unsafe.Add(unsafe.Pointer(&layout.As[server.DurSpell](record).Field72), off-72)
+}
+
+// durWordObject reads an object reference kept as a pointer word in a field of a duration spell.
+func durWordObject(w uint32) *server.Object { return (*server.Object)(memmap.WordPtr(w)) }

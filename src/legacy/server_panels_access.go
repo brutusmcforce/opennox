@@ -2,16 +2,17 @@ package legacy
 
 import (
 	"encoding/binary"
+	"image"
+	"slices"
+	"strconv"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"image"
-	"slices"
-	"strconv"
-	"unsafe"
 )
 
 func serverPanelsAccessOpen(parent *gui.Window) int {
@@ -19,7 +20,7 @@ func serverPanelsAccessOpen(parent *gui.Window) int {
 		return 0
 	}
 	w := Nox_new_window_from_file(serverPanelsResource(127824), serverPanelsAccessProc)
-	*serverPanelsWord(1045516) = uint32(serverOptionsPtr(w))
+	*serverPanelsWord(1045516) = memmap.PtrWord(w.C())
 	if w == nil {
 		return 0
 	}
@@ -29,7 +30,7 @@ func serverPanelsAccessOpen(parent *gui.Window) int {
 		off uintptr
 		id  uint
 	}{{1045520, 10102}, {1045524, 10103}, {1045532, 10109}, {1045528, 10105}, {1045536, 10200}, {1045540, 10111}, {1045544, 10112}, {1045548, 10113}, {1045556, 10104}, {1045560, 10125}, {1045564, 10127}, {1045568, 10129}, {1045572, 10131}, {1045576, 10126}, {1045580, 10128}, {1045584, 10130}, {1045588, 10132}, {1045552, 10123}, {1045592, 10133}} {
-		*serverPanelsWord(v.off) = uint32(serverOptionsPtr(w.ChildByID(v.id)))
+		*serverPanelsWord(v.off) = memmap.PtrWord(w.ChildByID(v.id).C())
 	}
 	en := noxrender.ImageHandle(memmap.WordPtr(uiMeterLoadImage("UISlider")))
 	lit := noxrender.ImageHandle(memmap.WordPtr(uiMeterLoadImage("UISliderLit")))
@@ -50,7 +51,7 @@ func serverPanelsAccessOpen(parent *gui.Window) int {
 	if noxflags.HasGame(1) {
 		w.SetDraw(serverPanelsAccessDraw)
 	}
-	return int(serverOptionsPtr(w))
+	return int(memmap.PtrWord(w.C())) // stored as a pointer word
 }
 func serverPanelsAccessMeasure() int {
 	w := serverPanelsWindow(1045516).ChildByID(10123)
@@ -165,15 +166,14 @@ func serverPanelsAccessRefresh() uintptr {
 		allowed, blocked := serverPanelsWindow(1045532), serverPanelsWindow(1045528)
 		teamUIEvent(blocked, 16399, 0, 0)
 		teamUIEvent(allowed, 16399, 0, 0)
-		for node := listNext(serverConfigAllowedHead()); node != nil; node = listNext(node) {
-			teamUIEvent(allowed, 16397, uintptr(unsafe.Add(unsafe.Pointer(node), 12)), ^uintptr(0))
+		for p := serverConfigAllowedFirst(); p != nil; p = serverConfigAllowedNext(p) {
+			teamUIEvent(allowed, 16397, uintptr(unsafe.Pointer(&p.name[0])), ^uintptr(0))
 		}
-		for node := listNext(serverConfigBlockedHead()); node != nil; node = listNext(node) {
-			p := unsafe.Add(unsafe.Pointer(node), 12)
-			if *(*byte)(unsafe.Add(unsafe.Pointer(node), 72)) != 0 {
-				teamUIEvent(blocked, 16397, uintptr(p), ^uintptr(0))
+		for p := serverConfigBlockedFirst(); p != nil; p = serverConfigBlockedNext(p) {
+			if p.address[0] != 0 {
+				teamUIEvent(blocked, 16397, uintptr(unsafe.Pointer(&p.name[0])), ^uintptr(0))
 			} else {
-				serverOptionsSetText(blocked, 16397, "*"+alloc.GoString16((*uint16)(p)), -1)
+				serverOptionsSetText(blocked, 16397, "*"+alloc.GoString16(&p.name[0]), -1)
 			}
 		}
 	}

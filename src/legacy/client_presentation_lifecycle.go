@@ -1,9 +1,10 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"strings"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 func clientServerAddressCopy(address string) {
@@ -16,13 +17,13 @@ func clientServerAddressCopy(address string) {
 }
 func clientAudioContextDestroy() {
 	if p := Get_dword_5d4594_805984(); p != nil {
-		audioStreamContextDestroy((*audioStreamContext)(p))
+		audioStreamContextDestroy((*AudioStreamContext)(p))
 		Set_dword_5d4594_805984(nil)
 	}
 }
 func clientAudioContextStop() {
 	if p := Get_dword_5d4594_805984(); p != nil {
-		audioStreamVoiceStopKind((*audioStreamContext)(p), -1)
+		audioStreamVoiceStopKind((*AudioStreamContext)(p), -1)
 	}
 }
 

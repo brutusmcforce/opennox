@@ -1,11 +1,12 @@
 package legacy
 
 import (
+	"image"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"image"
-	"unsafe"
 )
 
 func browserColumns() []*gui.Window {
@@ -111,7 +112,7 @@ func browserInfoPopup(point *[2]uint32, record unsafe.Pointer) {
 	w.SetPos(image.Pt(int(int32(point[0])), int(int32(point[1]))))
 	browserDetails(record)
 	browserUI.hasSelection = 1
-	*memmap.PtrUint16(0x5D4594, 814604) = *(*uint16)(unsafe.Add(record, 109))
+	*memmap.PtrUint16(0x5D4594, 814604) = *(*uint16)(unsafe.Pointer(&(*Nox_gui_server_ent_t)(record).PortVal))
 	if noxflags.HasEngine(noxflags.EngineNoRendering) {
 		uiWindowEnable(browserUI.joinButton, 0)
 	}

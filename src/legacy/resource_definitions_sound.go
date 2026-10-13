@@ -1,16 +1,17 @@
 package legacy
 
 import (
+	"os"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/internal/binfile"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"os"
-	"unsafe"
 )
 
-var resourceSoundHead unsafe.Pointer
+var resourceSoundHead *server.MonsterSoundSet
 
 func resourceToken(f *binfile.Binfile, out []byte) bool {
 	n := 0
@@ -46,14 +47,14 @@ func resourceToken(f *binfile.Binfile, out []byte) bool {
 		previous = c
 	}
 }
-func resourceSoundSetField(row unsafe.Pointer, name string, id uint32) bool {
+func resourceSoundSetField(row *server.MonsterSoundSet, name string, id uint32) bool {
 	for off := uintptr(64704); ; off += 8 {
 		p := (*byte)(memmap.LoadPtr(0x587000, off))
 		if p == nil {
 			return false
 		}
 		if alloc.GoString(p) == name {
-			*resourceWord(row, uintptr(memmap.Uint32(0x587000, off+4))) = id
+			*row.SoundPtr(int(memmap.Uint32(0x587000, off+4) / 4)) = id
 			return true
 		}
 	}
@@ -74,11 +75,11 @@ func resourceSoundLoad(path string) int {
 	}
 	var a, b [256]byte
 	for resourceToken(f, a[:]) {
-		row, _ := alloc.Calloc(1, 84)
-		*(*unsafe.Pointer)(unsafe.Add(row, 76)) = resourceSoundHead
+		row, _ := alloc.New(server.MonsterSoundSet{})
+		row.Next = resourceSoundHead
 		resourceSoundHead = row
 		name, _ := alloc.CString(alloc.GoStringS(a[:]))
-		*(*unsafe.Pointer)(row) = unsafe.Pointer(name)
+		row.Name = name
 		for resourceToken(f, a[:]) && alloc.GoStringS(a[:]) != "END" && resourceToken(f, b[:]) {
 			if !resourceSoundSetField(row, alloc.GoStringS(a[:]), uint32(sound.ByName(alloc.GoStringS(b[:])))) {
 				return 0
@@ -87,17 +88,17 @@ func resourceSoundLoad(path string) int {
 	}
 	return 1
 }
-func resourceSoundByName(name string) unsafe.Pointer {
-	for p := resourceSoundHead; p != nil; p = *(*unsafe.Pointer)(unsafe.Add(p, 76)) {
-		if alloc.GoString(*(**byte)(p)) == name {
+func resourceSoundByName(name string) *server.MonsterSoundSet {
+	for p := resourceSoundHead; p != nil; p = p.Next {
+		if alloc.GoString(p.Name) == name {
 			return p
 		}
 	}
 	return nil
 }
-func resourceMonsterSound(u *server.Object) unsafe.Pointer {
+func resourceMonsterSound(u *server.Object) *server.MonsterSoundSet {
 	if u == nil || uint32(u.ObjClass)&2 == 0 {
 		return nil
 	}
-	return *(*unsafe.Pointer)(unsafe.Add(u.UpdateData, 488))
+	return layout.As[server.MonsterUpdateData](u.UpdateData).SoundSet122
 }

@@ -70,8 +70,7 @@ func rewardWeighted(base, stride uintptr, eligible func(uintptr) bool) (uintptr,
 	}
 	return 0, false
 }
-func rewardExplicit(data unsafe.Pointer, start, count int) int32 {
-	values := unsafe.Slice((*byte)(unsafe.Add(data, start)), count)
+func rewardExplicit(values []byte) int32 {
 	var n int32
 	for _, v := range values {
 		if v == 1 {
@@ -94,20 +93,21 @@ func rewardExplicit(data unsafe.Pointer, start, count int) int32 {
 }
 func rewardBook(u *server.Object, stage uint32, kind int) *server.Object {
 	var id int32
+	d := u.InitDataRewardMarker()
 	switch kind {
 	case 1:
-		if *(*byte)(unsafe.Add(u.InitData, 4))&2 != 0 {
-			id = rewardExplicit(u.InitData, 145, 6)
+		if byte(d.Explicit)&2 != 0 {
+			id = rewardExplicit(d.Abilities[:])
 		} else {
 			id = rewardRoll(1, 5)
 		}
 	default:
-		flag, start, count, base := byte(1), 8, 137, uintptr(207104)
+		flag, list, base := byte(1), d.Spells[:], uintptr(207104)
 		if kind == 2 {
-			flag, start, count, base = 4, 151, 41, 207792
+			flag, list, base = 4, d.Guides[:], 207792
 		}
-		if *(*byte)(unsafe.Add(u.InitData, 4))&flag != 0 {
-			id = rewardExplicit(u.InitData, start, count)
+		if byte(d.Explicit)&flag != 0 {
+			id = rewardExplicit(list)
 		} else {
 			tier := rewardTier(stage)
 			off, ok := rewardWeighted(base, 12, func(off uintptr) bool { return rewardWord(off+8)&tier != 0 })
@@ -143,11 +143,13 @@ func rewardBook(u *server.Object, stage uint32, kind int) *server.Object {
 	}
 	if kind == 2 {
 		name := alloc.GoString((*byte)(rewardPtr(uintptr(70500 + 4*id))))
-		data := unsafe.Slice((*byte)(it.UseData.Ptr), len(name)+1)
+		data := it.UseDataFieldGuide().CreatureBuf[:len(name)+1]
 		copy(data, name)
 		data[len(name)] = 0
+	} else if kind == 0 {
+		it.UseDataSpellReward().Spell = byte(id)
 	} else {
-		*(*byte)(it.UseData.Ptr) = byte(id)
+		it.UseDataAbilityReward().Ability = byte(id)
 	}
 	return it
 }
@@ -203,12 +205,12 @@ func rewardMarker(u *server.Object, stage uint32) *server.Object {
 	if uint32(u.TypeInd) == stateType(1568276, "RewardMarkerPlus") {
 		stage += 2
 	}
-	chance := *equipmentWord(u.InitData, 212)
+	chance := u.InitDataRewardMarker().Chance
 	thresholds := [4]int32{75, 50, 25, 5}
 	if chance >= 1 && chance <= 4 && rewardRoll(0, 100) > thresholds[chance-1] {
 		return nil
 	}
-	mask := *equipmentWord(u.InitData, 0)
+	mask := u.InitDataRewardMarker().Categories
 	var total int32
 	for i := uint(0); i < 8; i++ {
 		if mask&(1<<i) != 0 {

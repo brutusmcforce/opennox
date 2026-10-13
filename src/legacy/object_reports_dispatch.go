@@ -1,8 +1,6 @@
 package legacy
 
 import (
-	"unsafe"
-
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/internal/netlist"
@@ -28,22 +26,22 @@ func objectReportSprite(viewer *server.Object, to int, u *server.Object) int {
 	case cls&0x400000 != 0 && uint32(u.ObjSubClass)&0x18 != 0:
 		b[0], b[3] = 179, *(*byte)(u.UpdateData)
 		return gameplayReportSend(to, b, true, 1)
-	case typ == memmap.Uint32(0x5D4594, 2386972):
-		b[3] = *(*byte)(unsafe.Add(u.UpdateData, 20))
+	case typ == memmap.Uint32(0x5D4594, 2386972): // TeleportPentagram
+		b[3] = u.UpdateDataTransporter().Anim
 	case typ == memmap.Uint32(0x5D4594, 2386980):
 		b[3] = ^byte(uint32(u.ObjFlags)>>24) & 1
 	case typ == memmap.Uint32(0x5D4594, 2386976):
 		b[0], b[3] = 180, *(*byte)(u.UpdateData)&1
 	case cls&0x4000 != 0:
-		b[3] = *(*byte)(unsafe.Add(u.UpdateData, 16)) >> 2
+		b[3] = byte(u.UpdateDataElevator().Field_4) >> 2
 	case cls&0x8000 != 0:
 		if u.UpdateData != nil {
-			if link := *(**server.Object)(unsafe.Add(u.UpdateData, 4)); link != nil {
-				b[3] = *(*byte)(unsafe.Add(link.UpdateData, 16)) >> 2
+			if link := u.UpdateDataElevatorShaft().Partner; link != nil {
+				b[3] = byte(link.UpdateDataElevator().Field_4) >> 2
 			}
 		}
 	case cls&0x80 != 0:
-		b[0], b[3] = 178, *(*byte)(unsafe.Add(u.UpdateData, 12))
+		b[0], b[3] = 178, byte(u.UpdateDataDoor().Dir)
 	default:
 		visibilitySpecialUpdate(viewer, u)
 		return 0

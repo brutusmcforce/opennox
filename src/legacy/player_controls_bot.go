@@ -1,41 +1,61 @@
 package legacy
 
 import (
+	"math"
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 // Bot update data remains C-owned because the object lifecycle frees it in C.
 // Morphing temporarily exchanges player and monster records without copying them.
 func controlBotCreate(u *server.Object) uint32 {
-	d := u.UpdateData
-	ptr := controlPtr(d, 292)
+	d := u.UpdateDataPlayer()
 	result := controlRaw(u)
-	if *ptr == nil {
-		*ptr = legacyCalloc(1, 2200)
-		result = memmap.PtrWord(*ptr)
+	if d.BotData == nil {
+		p := legacyCalloc(1, unsafe.Sizeof(server.MonsterUpdateData{}))
+		layout.TrackAs[server.MonsterUpdateData](p)
+		d.BotData = (*server.MonsterUpdateData)(p)
+		result = memmap.PtrWord(p)
 	}
-	b := *ptr
+	b := d.BotData
 	if b == nil {
 		return result
 	}
-	clear(unsafe.Slice((*byte)(b), 2200))
-	*controlPtr(b, 2180) = d
-	*controlPtr(b, 484) = unsafe.Pointer(monsterDefinitionByType(uint32(GetServer().S().Types.IndByID("NPC"))))
-	for _, v := range [][2]uint32{{1336, 1048576000}, {1344, 1061997773}, {1440, 186376}, {552, 5}, {1360, 38}, {1308, 1056964608}, {1304, 1062501089}, {1312, 1125515264}, {1316, 1106247680}, {1320, 1065353216}, {1328, 1056964608}, {1352, 1065353216}, {2040, 3}, {2096, 0xffffffff}, {2100, 0xffffffff}, {0, 0xdeadface}} {
-		*equipmentWord(b, int(v[0])) = v[1]
+	*b = server.MonsterUpdateData{}
+	b.BotPlayerData = d
+	b.MonsterDef = monsterDefinitionByType(uint32(GetServer().S().Types.IndByID("NPC")))
+	b.RetreatLevel = math.Float32frombits(1048576000)
+	b.ResumeLevel = math.Float32frombits(1061997773)
+	b.StatusFlags = 186376
+	b.AIStack[0].Action = 5
+	b.AIAction340 = 38
+	b.Aggression2 = math.Float32frombits(1056964608)
+	b.Aggression = math.Float32frombits(1062501089)
+	b.SightRange = math.Float32frombits(1125515264)
+	b.Field329 = math.Float32frombits(1106247680)
+	b.Field330 = math.Float32frombits(1065353216)
+	b.Field332 = math.Float32frombits(1056964608)
+	b.Field338 = math.Float32frombits(1065353216)
+	b.Field510 = 3
+	b.DialogStartFunc = -1
+	b.DialogEndFunc = -1
+	b.Field0 = 0xdeadface
+	b.Field335 = 1
+	b.Field337 = 1
+	b.Field333 = 255
+	b.Field331 = 30
+	for _, cb := range []*server.ScriptCallback{
+		&b.ScriptLookingForEnemy, &b.ScriptEnemySighted, &b.ScriptChangeFocus, &b.ScriptIsHit, &b.ScriptRetreat,
+		&b.ScriptDeath, &b.ScriptCollision, &b.ScriptHearEnemy, &b.ScriptEndOfWaypoint, &b.ScriptLostEnemy,
+	} {
+		cb.Func = -1
 	}
-	for _, v := range [][2]int{{1340, 1}, {1348, 1}, {1332, 255}, {1324, 30}} {
-		*controlByte(b, v[0]) = byte(v[1])
-	}
-	for i := 1228; i <= 1300; i += 8 {
-		*equipmentWord(b, i) = 0xffffffff
-	}
-	*equipmentWord(b, 376) = uint32(int32(int16(u.Direction1)))
-	*equipmentWord(b, 380) = *equipmentWord(u.CObj(), int(layoutServerObject.Off(56)) /* PosVec.X */)
-	*equipmentWord(b, 384) = *equipmentWord(u.CObj(), int(layoutServerObject.Off(60)) /* PosVec.Y */)
-	class := *controlByte(controlPlayer(u), 2251)
+	b.Direction94 = uint32(int32(int16(u.Direction1)))
+	b.Pos95 = u.PosVec
+	class := d.Player.InfoBytes[66] // PlayerClassVal
 	if class == 0 {
 		return 0
 	}
@@ -44,50 +64,46 @@ func controlBotCreate(u *server.Object) uint32 {
 	}
 	fps := GetServer().S().TickRate()
 	f := uint32(fps)
-	*equipmentWord(b, 1356) = 1112014848
-	*equipmentWord(b, 1640) = 0x8000000
-	*equipmentWord(b, 1440) |= 0x20
-	*controlHalf(b, 1450) = uint16(f >> 1)
-	*controlHalf(b, 1464) = uint16(3 * f)
-	*controlHalf(b, 1466) = uint16(30 * f)
-	*controlHalf(b, 1474) = uint16(2 * f)
-	*controlHalf(b, 1482) = uint16(6 * f)
-	*equipmentWord(b, 1504) = 0x80000000
+	b.FleeRange = math.Float32frombits(1112014848)
+	b.Field410 = 0x8000000
+	b.StatusFlags |= 0x20
+	b.Field362_2 = uint16(f >> 1)
+	b.Field366_0 = uint16(3 * f)
+	b.Field366_2 = uint16(30 * f)
+	b.Field368_2 = uint16(2 * f)
+	b.Field370_2 = uint16(6 * f)
+	b.Field376 = 0x80000000
 	if class == 2 {
-		for _, i := range []int{430} {
-			*equipmentWord(b, 4*i) = 0x10000000
+		b.Field430 = 0x10000000
+		b.Field432 = 0x20000000
+		b.Field446 = 0x20000000
+		for _, p := range []*uint32{&b.Field401, &b.Field424, &b.Field456, &b.Field455, &b.Field464} {
+			*p = 0x40000000
 		}
-		for _, i := range []int{432, 446} {
-			*equipmentWord(b, 4*i) = 0x20000000
-		}
-		for _, i := range []int{401, 424, 456, 455, 464} {
-			*equipmentWord(b, 4*i) = 0x40000000
-		}
-		*controlHalf(b, 1458) = uint16(6 * f)
+		b.Field364_2 = uint16(6 * f)
 		return f
 	}
-	for _, i := range []int{423, 408, 411} {
-		*equipmentWord(b, 4*i) = 0x10000000
-	}
-	for _, i := range []int{384, 405} {
-		*equipmentWord(b, 4*i) = 0x20000000
-	}
-	*controlHalf(b, 1458) = uint16(f)
+	b.Field423 = 0x10000000
+	b.Field408 = 0x10000000
+	b.Field411 = 0x10000000
+	b.Field384 = 0x20000000
+	b.Field405 = 0x20000000
+	b.Field364_2 = uint16(f)
 	n := GetServer().S().Rand.Logic.IntClamp(0, 100)
 	if n < 33 {
-		*equipmentWord(b, 1596) = 0x40000000
+		b.Field399 = 0x40000000
 	} else if n < 66 {
-		*equipmentWord(b, 1552) = 0x40000000
+		b.Field388 = 0x40000000
 	} else {
-		*equipmentWord(b, 1660) = 0x40000000
-		*equipmentWord(b, 1688) = 0x40000000
+		b.Field415 = 0x40000000
+		b.Field422 = 0x40000000
 	}
 	return 6 * f
 }
 func controlMorphFromPlayer(u *server.Object) int8 {
 	if u.ObjClass&4 != 0 {
 		u.ObjClass = u.ObjClass&^4 | 2
-		u.UpdateData = *controlPtr(u.UpdateData, 292)
+		u.UpdateData = unsafe.Pointer(u.UpdateDataPlayer().BotData)
 		u.ObjSubClass = 16
 	}
 	return int8(u.ObjClass)
@@ -95,34 +111,31 @@ func controlMorphFromPlayer(u *server.Object) int8 {
 func controlMorphToPlayer(u *server.Object) int8 {
 	if u.ObjClass&2 != 0 {
 		u.ObjClass = u.ObjClass&^2 | 4
-		u.UpdateData = *controlPtr(u.UpdateData, 2180)
+		u.UpdateData = unsafe.Pointer(u.UpdateDataMonster().BotPlayerData)
 		u.ObjSubClass = 0
 	}
 	return int8(u.ObjClass)
 }
 func controlBotUpdate(u *server.Object) uint32 {
-	d := u.UpdateData
-	if *controlPtr(d, 292) == nil {
+	d := u.UpdateDataPlayer()
+	if d.BotData == nil {
 		controlBotCreate(u)
 	}
-	b := *controlPtr(d, 292)
+	b := d.BotData
 	if b == nil {
-		*controlPtr(u.CObj(), int(layoutServerObject.Off(744)) /* Update */) = updateIdentityKey(updateIDPlayer)
+		u.Update = updateIdentityKey(updateIDPlayer)
 		return 0
 	}
 	result := controlRespawnBot(u)
 	if result != 0 {
 		return uint32(result)
 	}
-	*equipmentWord(b, 1440) |= 0x100
+	b.StatusFlags |= 0x100
 	controlMorphFromPlayer(u)
 	Nox_xxx_unitUpdateMonster_50A5C0(u)
 	controlMorphToPlayer(u)
-	*controlByte(d, 88) = byte(controlBotState(u))
-	*controlByte(d, 236) = *controlByte(b, 481)
-	pl := *controlPtr(d, 276)
-	*equipmentWord(pl, 3632) = *equipmentWord(u.CObj(), int(layoutServerObject.Off(56)) /* PosVec.X */)
-	result = int32(*equipmentWord(u.CObj(), int(layoutServerObject.Off(60)) /* PosVec.Y */))
-	*equipmentWord(pl, 3636) = uint32(result)
-	return uint32(result)
+	d.State = server.PlayerState(controlBotState(u))
+	d.Field59_0 = b.Field120_1
+	d.Player.Pos3632Vec = u.PosVec
+	return math.Float32bits(u.PosVec.Y)
 }

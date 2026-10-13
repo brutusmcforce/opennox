@@ -3,10 +3,11 @@ package legacy
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/brutusmcforce/opennox/libs/ifs"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func serverOptionsMapList(mode int, current string, update bool) {
@@ -15,7 +16,7 @@ func serverOptionsMapList(mode int, current string, update bool) {
 	*serverOptionsWord(1046552) = uint32(mode)
 	selected, index := -1, 0
 	for it := mapCatalogFirst(); it != nil; it = mapCatalogNext(it) {
-		if it.Field_6 == 0 || int(sessionMapFlags(unsafe.Pointer(it)))&mode == 0 {
+		if it.Field_6 == 0 || int(sessionMapFlags(it))&mode == 0 {
 			continue
 		}
 		var base, custom server.Settings2

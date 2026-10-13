@@ -152,8 +152,7 @@ func goBuild(cmd string, bin string, opts *buildOpts) error {
 	)
 	if opts.CGO {
 		envs = append(envs,
-			"GOARCH=386",
-			"GO386=sse2",
+			"GOARCH=amd64",
 			"CGO_ENABLED=1",
 			`CGO_CFLAGS_ALLOW=(-fshort-wchar)|(-fno-strict-aliasing)|(-fno-strict-overflow)`,
 		)
@@ -161,9 +160,9 @@ func goBuild(cmd string, bin string, opts *buildOpts) error {
 			switch goos {
 			case "windows":
 				envs = append(envs,
-					"CXX_FOR_TARGET=i686-w64-mingw32-g++",
-					"CC_FOR_TARGET=i686-w64-mingw32-gcc",
-					"CC=i686-w64-mingw32-gcc",
+					"CXX_FOR_TARGET=x86_64-w64-mingw32-g++",
+					"CC_FOR_TARGET=x86_64-w64-mingw32-gcc",
+					"CC=x86_64-w64-mingw32-gcc",
 				)
 			}
 		}

@@ -5,10 +5,9 @@ ARG GID=1000
 ARG GIT_SHA=""
 ARG GIT_TAG=""
 
-RUN dpkg --add-architecture i386 && \
-    apt-get update && \
+RUN apt-get update && \
     apt-get install -y \
-                        gcc gcc-multilib
+                        gcc
 
 RUN groupadd --gid $GID runner && \
     useradd --home-dir /home/runner --no-create-home --gid runner --uid $UID --shell /bin/sh runner
@@ -26,10 +25,9 @@ RUN go run ./internal/noxbuild server && ./opennox-server -h
 
 FROM debian:trixie AS server
 
-RUN dpkg --add-architecture i386 && \
-    apt update && \
+RUN apt update && \
     apt upgrade -y && \
-    apt install -y libc6:i386 ca-certificates && \
+    apt install -y ca-certificates && \
     apt-get autoremove -y && apt-get clean -y cache
 
 COPY --from=builder /home/runner/opennox/opennox-server /usr/bin/opennox-server

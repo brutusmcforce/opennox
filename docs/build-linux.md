@@ -17,15 +17,14 @@ or see [official docs](https://golang.org/doc/install) for manual installation.
 ## Installing C compiler
 
 ```bash
-sudo apt install gcc-multilib
+sudo apt install gcc
 ```
 
 ## Installing other dependencies
 
 ```bash
-sudo dpkg --add-architecture i386
 sudo apt update
-sudo apt install libsdl2-dev:i386 libopenal-dev:i386
+sudo apt install libsdl2-dev libopenal-dev
 ```
 
 ## Building
@@ -35,4 +34,4 @@ cd src
 go run ./internal/noxbuild
 ```
 
-This should produce `opennox` and `opennox-server` binaries.
+This should produce `opennox` and `opennox-server` binaries (64-bit, amd64; 32-bit builds are not supported).

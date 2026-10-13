@@ -1,14 +1,15 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
 	"math"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/types"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/common/unit/ai"
+	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -111,20 +112,20 @@ func monsterActionToAnimation(u *server.Object) int {
 	}
 	return v
 }
-func monsterCalcDir(u *server.Object, p *float32) {
+func monsterCalcDir(u *server.Object, p types.Pointf) {
 	if u == nil {
 		return
 	}
-	q := [2]float32{*p - u.PosVec.X, *(*float32)(unsafe.Add(unsafe.Pointer(p), 4)) - u.PosVec.Y}
+	q := [2]float32{p.X - u.PosVec.X, p.Y - u.PosVec.Y}
 	u.Direction2 = server.Dir16(int32(geometryVectorAngle((*types.Pointf)(unsafe.Pointer(unsafe.Pointer(&q[0]))))))
 }
-func monsterNPCAnim(u *server.Object) unsafe.Pointer {
+func monsterNPCAnim(u *server.Object) *server.MonsterAnim {
 	ud := u.UpdateDataMonster()
 	if u.SubClass()&0x10 == 0 {
 		if ud.Field119 == nil {
 			return nil
 		}
-		return unsafe.Pointer(&ud.Field119[monsterActionToAnimation(u)])
+		return &ud.Field119[monsterActionToAnimation(u)]
 	}
 	a, b := 0, 0
 	lookup := false
@@ -161,14 +162,13 @@ func monsterNPCAnim(u *server.Object) unsafe.Pointer {
 	if lookup {
 		a, b = GetServer().S().PlayerAnimFrames(a)
 	}
-	*memmap.PtrUint32(0x5D4594, 2487964) = 0
-	*memmap.PtrUint32(0x5D4594, 2487968) = 0
-	*memmap.PtrUint32(0x5D4594, 2487972) = 0
-	*memmap.PtrUint32(0x5D4594, 2487976) = 0
-	*memmap.PtrUint8(0x5D4594, 2487973) = uint8(a)
-	*memmap.PtrUint8(0x5D4594, 2487974) = uint8(b)
-	return memmap.PtrOff(0x5D4594, 2487964)
+	monsterNPCAnimData = server.MonsterAnim{Frames: uint8(a), Delay: uint8(b)}
+	return &monsterNPCAnimData
 }
+
+// monsterNPCAnimData is the animation of NPCs, which use player animations. Was 0x5D4594+2487964.
+var monsterNPCAnimData server.MonsterAnim
+
 func monsterMoveAudio(u *server.Object) {
 	ud := u.UpdateDataMonster()
 	if u.SubClass()&0x30 != 0 {

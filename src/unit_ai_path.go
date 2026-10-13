@@ -134,7 +134,7 @@ func (s *Server) nox_xxx_pathFind_50BA00(far bool, obj *server.Object, a3 *types
 				if ii < 4 {
 					v30 = obj
 				} else {
-					v60 := byte(int8(int32(uint16(int16(^(int32(*(*uint16)(unsafe.Add(unsafe.Pointer(obj), int(layoutServerObject.Off(16)) /* ObjFlags */)))>>8))))&0xD8 | 0x98))
+					v60 := byte(int8(int32(uint16(int16(^(int32(*(*uint16)(unsafe.Pointer(&obj.ObjFlags)))>>8))))&0xD8 | 0x98))
 					s.Doors.SetKeyHolder(obj)
 					switch ii {
 					case 4:
@@ -408,9 +408,9 @@ func (s *Server) sub_57B630(obj *server.Object, x, y int) int8 {
 	if wl.Flags4.Has(wall.FlagDoor) {
 		door := asObject(wl.Data).SObj()
 		if door != nil {
-			ud := door.UpdateData
-			v7 := *(*uint32)(unsafe.Add(ud, 12))
-			if v7 == *(*uint32)(unsafe.Add(ud, 4)) {
+			ud := door.UpdateDataDoor()
+			v7 := ud.Dir
+			if v7 == ud.BaseDir {
 				v8x := memmap.Int32(0x587000, uintptr(v7)*8+196184)
 				v8y := memmap.Int32(0x587000, uintptr(v7)*8+196188)
 				if v8x > 0 {
@@ -420,7 +420,7 @@ func (s *Server) sub_57B630(obj *server.Object, x, y int) int8 {
 								return 1
 							}
 						} else {
-							if int32(*(*uint8)(unsafe.Add(ud, 1))) != 0 && s.DoorCheckKey(obj, door) == nil {
+							if int32(ud.KeyType) != 0 && s.DoorCheckKey(obj, door) == nil {
 								return 1
 							}
 						}
@@ -431,7 +431,7 @@ func (s *Server) sub_57B630(obj *server.Object, x, y int) int8 {
 								return 0
 							}
 						} else {
-							if int32(*(*uint8)(unsafe.Add(ud, 1))) != 0 && s.DoorCheckKey(obj, door) == nil {
+							if int32(ud.KeyType) != 0 && s.DoorCheckKey(obj, door) == nil {
 								return 0
 							}
 						}
@@ -444,7 +444,7 @@ func (s *Server) sub_57B630(obj *server.Object, x, y int) int8 {
 								return 1
 							}
 						} else {
-							if int32(*(*uint8)(unsafe.Add(ud, 1))) != 0 && s.DoorCheckKey(obj, door) == nil {
+							if int32(ud.KeyType) != 0 && s.DoorCheckKey(obj, door) == nil {
 								return 1
 							}
 						}
@@ -455,7 +455,7 @@ func (s *Server) sub_57B630(obj *server.Object, x, y int) int8 {
 								return 0
 							}
 						} else {
-							if int32(*(*uint8)(unsafe.Add(ud, 1))) != 0 && s.DoorCheckKey(obj, door) == nil {
+							if int32(ud.KeyType) != 0 && s.DoorCheckKey(obj, door) == nil {
 								return 0
 							}
 						}
@@ -468,8 +468,8 @@ func (s *Server) sub_57B630(obj *server.Object, x, y int) int8 {
 		if !wl.Flags4.Has(wall.FlagSecret) {
 			return int8(wl.Dir0)
 		}
-		v13 := wl.Data
-		if (int32(*(*uint8)(unsafe.Add(v13, 20)))&2) == 0 && int32(*(*uint8)(unsafe.Add(v13, 22))) <= 11 {
+		v13 := wl.SecretData()
+		if (int32(v13.Flags)&2) == 0 && int32(v13.Progress) <= 11 {
 			return int8(wl.Dir0)
 		}
 	}
@@ -535,11 +535,11 @@ func (s *Server) Nox_xxx_creatureSetDetailedPath_50D220(obj *server.Object, a2 *
 	if (s.Frame() - ud.Field70) >= 10 {
 		ud.Field68 = *a2
 		ud.Field2 = uint32(s.nox_xxx_genPathToPoint_50B9A0(ud.Path[:], obj, a2))
-		*(*uint8)(unsafe.Add(unsafe.Pointer(ud), 284)) = uint8(int8(s.AI.Paths.PathFindStatus()))
+		*(*uint8)(unsafe.Pointer(&ud.Field71)) = uint8(int8(s.AI.Paths.PathFindStatus()))
 		ud.Field70 = s.Frame()
 	} else {
 		ud.Field2 = 0
-		*(*uint8)(unsafe.Add(unsafe.Pointer(ud), 284)) = 1
+		*(*uint8)(unsafe.Pointer(&ud.Field71)) = 1
 	}
 }
 

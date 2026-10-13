@@ -4,10 +4,10 @@ import (
 	"encoding/binary"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -45,7 +45,7 @@ func uiItemTooltip(dr *client.Drawable) *uint16 {
 			}
 			return &dst[0]
 		}
-		metadata := item.Field_108
+		metadata := *(*uint32)(unsafe.Pointer(item)) // request state, not modifiers
 		kind, sentinel := byte(4), uint32(6)
 		if sub&1 != 0 {
 			kind, sentinel = 1, 137
@@ -56,7 +56,7 @@ func uiItemTooltip(dr *client.Drawable) *uint16 {
 			var request [4]byte
 			request[0], request[3] = 0xe2, kind
 			binary.LittleEndian.PutUint16(request[1:3], uint16(nox_xxx_netGetUnitCodeCli_578B00(int32(memmap.PtrWord(unsafe.Pointer(dr))))))
-			item.Field_108 = sentinel
+			*(*uint32)(unsafe.Pointer(item)) = sentinel
 			Nox_xxx_netClientSend2_4E53C0(31, unsafe.Pointer(&request[0]), 4, 0, 1)
 			return &dst[0]
 		}
@@ -106,11 +106,10 @@ func uiItemTooltip(dr *client.Drawable) *uint16 {
 	}
 	var mods [4]*uint16
 	if class&0x1000000 == 0 || sub&0x7800000 == 0 {
-		for i, word := range [4]uint32{item.Field_108, item.Field_109, item.Field_110, item.Field_111} {
-			if word == 0 {
+		for i, mod := range item.Modifiers {
+			if mod == nil {
 				continue
 			}
-			mod := (*server.ModifierEff)(memmap.WordPtr(word))
 			if i == 3 {
 				mods[i] = mod.SecondaryDescPtr()
 			} else {

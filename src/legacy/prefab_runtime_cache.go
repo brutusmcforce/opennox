@@ -58,7 +58,7 @@ func prefabWallNew(x, y byte) uint32 {
 	if node == 0 {
 		return 0
 	}
-	data := mapRoomRaw(mapRoomCalloc(1, 36))
+	data := mapRoomRaw(mapRoomCalloc(1, unsafe.Sizeof(server.Wall{}))) // used as *server.Wall
 	*prefabWord(node, 0) = data
 	if data == 0 {
 		head := *prefabWord(node, 4)
@@ -128,7 +128,10 @@ func prefabObjectNext(raw uint32) uint32 {
 	if raw == 0 {
 		return 0
 	}
-	return *prefabWord(raw, 444)
+	if next := populationObject(raw).ObjNext; next != nil {
+		return mapRoomRaw(unsafe.Pointer(next))
+	}
+	return 0
 }
 func prefabNodeNext(raw uint32) uint32 {
 	if raw == 0 {

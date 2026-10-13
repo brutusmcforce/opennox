@@ -5,10 +5,10 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/object"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -28,76 +28,92 @@ func prefabScriptName(name string, instance, x, y int32, objectOnly bool) string
 	return out
 }
 func prefabScriptSetCallback(u *server.Object, event int, name string) {
-	if u.Field189 == nil {
+	names := u.EditorData()
+	if names == nil {
 		return
 	}
-	off, field := -1, -1
+	slot, field := -1, -1
 	data := u.UpdateData
 	if event == 14 {
-		off = 0
+		slot = server.ScriptNamePickup
 	} else if u.Class().Has(object.ClassTrigger) {
 		switch event {
 		case 0:
-			off, field = 512, 16
+			slot, field = server.ScriptNameTriggerCollide, 16
 		case 1:
-			off, field = 256, 24
+			slot, field = server.ScriptNameTriggerActivate, 24
 		case 2:
-			off, field = 384, 32
+			slot, field = server.ScriptNameTriggerDeactivate, 32
 		}
 	} else if u.Class().Has(object.ClassMonster) {
 		switch event {
 		case 3:
-			off, field = 640, 1236
+			slot, field = server.ScriptNameEnemySighted, 1236
 		case 4:
-			off, field = 768, 1228
+			slot, field = server.ScriptNameLookingForEnemy, 1228
 		case 5:
-			off, field = 896, 1268
+			slot, field = server.ScriptNameDeath, 1268
 		case 6:
-			off, field = 1024, 1244
+			slot, field = server.ScriptNameChangeFocus, 1244
 		case 7:
-			off, field = 1152, 1252
+			slot, field = server.ScriptNameIsHit, 1252
 		case 8:
-			off, field = 1280, 1260
+			slot, field = server.ScriptNameRetreat, 1260
 		case 9:
-			off, field = 1408, 1276
+			slot, field = server.ScriptNameCollision, 1276
 		case 10:
-			off, field = 1536, 1284
+			slot, field = server.ScriptNameEnemyHeard, 1284
 		case 11:
-			off, field = 1664, 1292
+			slot, field = server.ScriptNameEndOfWaypoint, 1292
 		case 13:
-			off, field = 1792, 1300
+			slot, field = server.ScriptNameLostEnemy, 1300
 		}
 	} else if u.Class().Has(object.ClassHole) {
 		if event == 12 {
-			off, field = 128, 4
-			data = u.CollideData
+			slot, field = server.ScriptNameHole, 4
 		}
 	} else if u.Class().Has(object.ClassMonsterGenerator) {
 		switch event {
 		case 15:
-			off, field = 1920, 52
+			slot, field = server.ScriptNameGen52, 52
 		case 16:
-			off, field = 2048, 60
+			slot, field = server.ScriptNameGen60, 60
 		case 17:
-			off, field = 2304, 68
+			slot, field = server.ScriptNameGen68, 68
 		case 18:
-			off, field = 2176, 76
+			slot, field = server.ScriptNameGen76, 76
 		}
 	}
-	if off < 0 {
+	if slot < 0 {
 		return
 	}
 	if noxflags.HasGame(noxflags.GameFlag(0x600000)) {
 		// Preserve the legacy storage layout and strcpy's used-prefix mutation.
-		dst := unsafe.Slice((*byte)(unsafe.Add(u.Field189, off)), len(name)+1)
+		dst := unsafe.Slice((*byte)(names.ScriptName(slot)), len(name)+1)
 		copy(dst, name)
 		dst[len(name)] = 0
 	} else {
 		index := GetServer().S().NoxScriptVM.ScriptIndexByName(name)
 		if event == 14 {
-			*(*int32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(768)) /* ScriptPickup.Func */)) = int32(index)
+			u.ScriptPickup.Func = int32(index)
 		} else {
-			*(*int32)(unsafe.Add(data, field)) = int32(index)
+			// field is a 386 offset; monster and generator data are Go structs with pointers.
+			off := uintptr(field)
+			switch {
+			case u.Class().Has(object.ClassTrigger):
+				// field is the 386 offset of the script function, which follows the callback flags.
+				u.UpdateDataTrigger().ScriptAt(field - 4).Func = int32(index)
+				return
+			case u.Class().Has(object.ClassMonster):
+				off = layoutServerMonsterUpdateData.Off(off)
+			case u.Class().Has(object.ClassHole):
+				// field is the 386 offset of the script function, which follows the callback flags.
+				u.CollideDataHole().Script.Func = int32(index)
+				return
+			case u.Class().Has(object.ClassMonsterGenerator):
+				off = layoutServerMonsterGenUpdData.Off(off)
+			}
+			*(*int32)(unsafe.Add(data, off)) = int32(index)
 		}
 	}
 }
@@ -191,10 +207,11 @@ func prefabScriptPending(bounds *[4]int32, index uint32) uint32 {
 		case xferIdentityKey(xferIDTransporter):
 			ref(u.UpdateData, 16, true)
 		case xferIdentityKey(xferIDHole):
-			*word(u.CollideData, 8) += dx
-			*word(u.CollideData, 12) += dy
+			d := &u.CollideDataHole().Dest
+			d.X += int32(dx)
+			d.Y += int32(dy)
 		case xferIdentityKey(xferIDExit):
-			shift(u.CollideData, 80)
+			shift(unsafe.Pointer(&u.CollideDataExit().Dest), 0)
 		case xferIdentityKey(xferIDMover):
 			wp := s.WPs.PendingByIndTmp(*word(u.UpdateData, 8))
 			*word(u.UpdateData, 8) = 0

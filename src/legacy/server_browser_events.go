@@ -2,13 +2,14 @@ package legacy
 
 import (
 	"encoding/binary"
+	"image"
+	"net/netip"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"image"
-	"net/netip"
-	"unsafe"
 )
 
 func browserLabel(key string) {

@@ -3,10 +3,9 @@ package legacy
 import (
 	"fmt"
 	"image"
-	"unsafe"
 
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/client/gui"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 )
 
 func uiProgressNew(parent *gui.Window, status gui.StatusFlags, x, y, w, h int, draw *gui.WindowData) *gui.Window {
@@ -33,12 +32,12 @@ func uiProgressEvent(win *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 		a, _ := ev.EventArgsC()
 		v := int32(a)
 		if v >= 0 && v <= 100 {
-			*(*uint32)(unsafe.Add(win.C(), int(layoutGuiWindow.Off(32)) /* WidgetData */)) = uint32(v)
+			win.Value = uint32(v)
 		}
 	}
 	return nil
 }
-func uiProgressValue(win *gui.Window) int { return int(*(*int32)(unsafe.Add(win.C(), int(layoutGuiWindow.Off(32)) /* WidgetData */))) }
+func uiProgressValue(win *gui.Window) int { return int(int32(win.Value)) }
 func uiProgressDraw(win *gui.Window, draw *gui.WindowData) int {
 	r := GetClient().R2()
 	p := win.GlobalPos()

@@ -1,10 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 // attackPlayer keeps the original byte-sized animation counter: elapsed frame
@@ -14,24 +16,24 @@ func attackPlayer(u *server.Object) int {
 	var it *server.Object
 	var bits uint32
 	var anim, prior byte
-	var priorOffset int
+	var priorAt *byte // the animation frame of the previous attack check
 	player := u.ObjClass&4 != 0
 	if player {
-		pd := *(*unsafe.Pointer)(unsafe.Add(ud, 276))
-		it = *temporaryRefWord(ud, 104)
-		bits = *(*uint32)(unsafe.Add(pd, 4))
-		anim = *(*byte)(unsafe.Add(pd, 8))
-		priorOffset = 236
+		pd := layout.As[server.PlayerUpdateData](ud).Player
+		it = *(**server.Object)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).Field26))
+		bits = layout.As[server.Player](unsafe.Pointer(pd)).WeaponEquip
+		anim = *(*byte)(unsafe.Pointer(&layout.As[server.Player](unsafe.Pointer(pd)).Field8))
+		priorAt = &layout.As[server.PlayerUpdateData](ud).Field59_0
 	} else {
 		if u.ObjClass&2 == 0 || u.ObjSubClass&0x10 == 0 {
 			return 0
 		}
-		bits = *(*uint32)(unsafe.Add(ud, 2056))
-		it = *temporaryRefWord(ud, 2064)
-		anim = *(*byte)(unsafe.Add(ud, 2068))
-		priorOffset = 481
+		bits = layout.As[server.MonsterUpdateData](ud).Field514
+		it = *(**server.Object)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](ud).Field516))
+		anim = *(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](ud).Field517))
+		priorAt = &layout.As[server.MonsterUpdateData](ud).Field120_1
 	}
-	prior = *(*byte)(unsafe.Add(ud, priorOffset))
+	prior = *priorAt
 	var def *server.Modifier
 	if it != nil {
 		def = GetServer().S().Modif.Nox_xxx_getProjectileClassById413250(int(it.TypeInd))
@@ -43,13 +45,13 @@ func attackPlayer(u *server.Object) int {
 	} else if anim == 0 {
 		anim = byte(nox_common_randomInt_415FA0(23, 24))
 		if player {
-			pd := *(*unsafe.Pointer)(unsafe.Add(ud, 276))
-			if *(*byte)(unsafe.Add(pd, 2251)) == 0 && nox_common_randomInt_415FA0(0, 100) >= 75 {
+			pd := layout.As[server.PlayerUpdateData](ud).Player
+			if pd.InfoBytes[66] == 0 && nox_common_randomInt_415FA0(0, 100) >= 75 { // PlayerClassVal
 				anim = 25
 			}
-			*(*byte)(unsafe.Add(pd, 8)) = anim
+			*(*byte)(unsafe.Pointer(&pd.Field8)) = anim
 		} else {
-			*(*byte)(unsafe.Add(ud, 2068)) = anim
+			*(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](ud).Field517)) = anim
 		}
 	}
 	strength := equipmentStrength(u)
@@ -73,7 +75,7 @@ func attackPlayer(u *server.Object) int {
 		if int(current) >= int(frames) {
 			stored = byte(frames - 1)
 		}
-		*(*byte)(unsafe.Add(ud, priorOffset)) = stored
+		*priorAt = stored
 		return bool2int(int(current) < int(frames))
 	}
 	half := func() bool { return int(current) == int(frames)/2 && current > prior }
@@ -149,7 +151,7 @@ func attackPlayer(u *server.Object) int {
 	}
 	if bits&0x47f8000 != 0 {
 		kind := 31
-		if bits&0x8000 != 0 || *(*byte)(unsafe.Add(it.UseData.Ptr, 96))&2 != 0 {
+		if bits&0x8000 != 0 || it.UseDataWand().Flags&2 != 0 {
 			kind = 29
 		}
 		animation(kind)
@@ -157,16 +159,16 @@ func attackPlayer(u *server.Object) int {
 		current = elapsed()
 		if int(current) >= int(frames) {
 			if bits&0x47f0000 != 0 {
-				*(*uint32)(unsafe.Add(it.UseData.Ptr, 96)) &^= 2
+				it.UseDataWand().Flags &^= 2
 			}
 			return finish()
 		}
 		if kind == 29 && half() {
 			melee(0, 0, false, 879)
 		} else if u.ObjClass&2 != 0 && kind != 29 && current == 1 && prior == 0 {
-			data := it.UseData.Ptr
+			data := it.UseDataWand()
 			effectsUse(u, it)
-			if *(*byte)(unsafe.Add(data, 108)) == 0 && *(*byte)(unsafe.Add(data, 109)) != 0 {
+			if data.Charges == 0 && data.MaxCharges != 0 {
 				equipmentNPCDequipWeapon(u, it)
 			}
 		}
@@ -209,26 +211,26 @@ func attackPlayer(u *server.Object) int {
 			return 0
 		}
 		if round {
-			data := p.UpdateData
+			data := p.UpdateDataChakram()
 			inventoryRemove(u, it)
 			GetServer().CreateObjectAt(p, u, pos)
 			inventoryInsert(p, it, 1)
 			Nox_xxx_modifSetItemAttrs_4E4990(p, it.InitDataModifier())
 			attackProjectileVelocity(u, p)
-			*(*byte)(unsafe.Add(data, 4)) = 4
-			*(*types.Pointf)(unsafe.Add(data, 16)) = u.PosVec
-			*(*byte)(unsafe.Add(data, 24)) = 2
+			data.Bounces = 4
+			data.OwnerPos = u.PosVec
+			data.Returning = 2
 			inventorySound(891, u, 0, 0)
 		} else {
-			b := unsafe.Slice((*byte)(it.UseData.Ptr), 3)
-			*temporaryRefWord(p.CollideData, 4) = u
+			b := it.UseDataAmmo()
+			p.CollideDataProjectile().SetOwnerObj(u)
 			GetServer().CreateObjectAt(p, u, pos)
 			Nox_xxx_modifSetItemAttrs_4E4990(p, it.InitDataModifier())
 			attackProjectileVelocity(u, p)
 			inventorySound(891, u, 0, 0)
-			if b[2] == 0 {
-				b[1]--
-				if b[1] != 0 {
+			if b.Infinite == 0 {
+				b.Charges--
+				if b.Charges != 0 {
 					if player {
 						attackReportAmmo(u, it)
 					}

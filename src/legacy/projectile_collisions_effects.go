@@ -69,7 +69,7 @@ func projectileBoom(u, t *server.Object, n *types.Pointf) {
 	GetServer().DelayedDelete(u)
 }
 func projectileFireball(u, t *server.Object) {
-	data := u.CollideData
+	data := &u.CollideDataSparkExplosion().Damage
 	active := true
 	if t != nil && t.HasEnchant(27) && projectileFront(t, u) {
 		damageReflect(u, t)
@@ -82,18 +82,18 @@ func projectileFireball(u, t *server.Object) {
 	if projectileFriendly(u, t) || !active {
 		return
 	}
-	damage := int32(*(*byte)(data))
+	damage := int32(*data)
 	projectilePush(u, float32(float64(damage)*0.66666669), 0, 50)
 	if t != nil {
-		projectileDamage(t, u.FindOwnerChainPlayer(), u, int32(*(*byte)(data))>>1, 1)
+		projectileDamage(t, u.FindOwnerChainPlayer(), u, int32(*data)>>1, 1)
 	}
-	damage = int32(*(*byte)(data))
+	damage = int32(*data)
 	inner := float32(15)
 	if noxflags.HasGame(2048) {
 		inner = 0
 	}
 	projectileSplash(u, t, float32(float64(damage)*0.33333334), inner, damage>>1, 1)
-	visibilityFXSpark(u.PosVec, *(*byte)(data))
+	visibilityFXSpark(u.PosVec, *data)
 	inventorySound(42, u, 0, 0)
 	motionScorch(&u.PosVec, 2)
 	GetServer().DelayedDelete(u)
@@ -118,7 +118,7 @@ func projectilePixie(u, t *server.Object, n *types.Pointf) {
 				return
 			}
 		}
-		projectileDamage(t, u.FindOwnerChainPlayer(), u, int32(*equipmentWord(u.CollideData, 0)), 11)
+		projectileDamage(t, u.FindOwnerChainPlayer(), u, int32(u.CollideDataProjectile().Damage), 11)
 		inventorySound(96, u, 0, 0)
 		GetServer().DelayedDelete(u)
 	} else if n != nil {
@@ -129,7 +129,7 @@ func projectilePixie(u, t *server.Object, n *types.Pointf) {
 		u.NewPos.Y = float32(y)
 		gy := floatToInt32(float32(y * 0.043478262))
 		gx := floatToInt32(float32(float64(u.NewPos.X) * 0.043478262))
-		projectileWall(u, gx, gy, int32(*equipmentWord(u.CollideData, 0)), 11)
+		projectileWall(u, gx, gy, int32(u.CollideDataProjectile().Damage), 11)
 	} else {
 		GetServer().DelayedDelete(u)
 	}

@@ -1,17 +1,19 @@
 package legacy
 
 import (
+	"encoding/binary"
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/internal/cryptfile"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
 )
 
-func creatureXferArgument(entry unsafe.Pointer, delta uint32) uint32 {
+func creatureXferArgument(st *server.AIStackItem, delta uint32) uint32 {
 	r := objectXferStream{cryptfile.Global()}
-	id := (*uint32)(entry)
+	id := &st.Action
 	var name [256]byte
 	initial := alloc.GoString(unitActionName(int32(*id), false))
 	copy(name[:], initial)
@@ -19,40 +21,54 @@ func creatureXferArgument(entry unsafe.Pointer, delta uint32) uint32 {
 	r.raw(unsafe.Pointer(&name[0]), int(n))
 	name[n] = 0
 	*id = uint32(unitActionIndex(alloc.GoString(&name[0]), false))
+	// arg reads and writes the low 32 bits of an argument, as saved by the original game
+	arg := func(k uint32) unsafe.Pointer {
+		if r.read() {
+			st.Args[k] = 0
+		}
+		return unsafe.Pointer(&st.Args[k])
+	}
 	count := r.byte(*memmap.PtrUint8(0x587000, 255604+uintptr(16*(*id))))
 	for j := uint32(0); j < uint32(count); j++ {
-		p := unsafe.Add(entry, 4+8*j)
+		k := 2 * j // each argument descriptor covers two 32-bit slots
 		kind := *memmap.PtrUint32(0x587000, 255608+uintptr(16*(*id)+4*j))
 		switch kind {
-		case 0:
-			r.raw(p, 8)
+		case 0: // a point, in one piece as saved by the original game
+			var buf [8]byte
+			binary.LittleEndian.PutUint32(buf[0:], uint32(st.Args[k]))
+			binary.LittleEndian.PutUint32(buf[4:], uint32(st.Args[k+1]))
+			r.raw(unsafe.Pointer(&buf[0]), 8)
+			if r.read() {
+				st.Args[k] = uintptr(binary.LittleEndian.Uint32(buf[0:]))
+				st.Args[k+1] = uintptr(binary.LittleEndian.Uint32(buf[4:]))
+			}
 		case 1, 2:
 			if r.read() {
-				r.raw(p, 4)
+				r.raw(arg(k), 4)
 			} else {
-				ref := *(*unsafe.Pointer)(p)
+				ref := unsafe.Pointer(st.Args[k])
 				if ref == nil {
 					r.word(0)
 				} else if kind == 1 {
-					r.raw(unsafe.Add(ref, 44), 4)
+					r.raw(unsafe.Pointer(&(*server.Object)(ref).ScriptIDVal), 4)
 				} else {
 					r.raw(ref, 4)
 				}
 			}
 		case 3, 4, 6:
-			r.raw(p, 4)
+			r.raw(arg(k), 4)
 		case 5:
-			r.raw(p, 4)
+			r.raw(arg(k), 4)
 			if r.read() {
-				creatureXferAdjust((*uint32)(p), delta)
+				creatureXferAdjust((*uint32)(unsafe.Pointer(&st.Args[k])), delta)
 			}
 		case 7:
-			r.raw(p, 1)
+			r.raw(arg(k), 1)
 		default:
 			return kind
 		}
 	}
-	if _, err := r.cf.ReadWrite(unsafe.Slice((*byte)(unsafe.Add(entry, 20)), 4)); err != nil {
+	if _, err := r.cf.ReadWrite(unsafe.Slice((*byte)(unsafe.Pointer(&st.Field5)), 4)); err != nil {
 		return 0
 	}
 	return 1
@@ -82,7 +98,7 @@ func creatureXferBuffs(u *server.Object) int {
 			if id == 26 && version >= 2 {
 				extra := r.word(0)
 				if duration := spellLifeFindDuration(51, u); duration != nil {
-					*(*uint32)(unsafe.Add(unsafe.Pointer(duration), int(layoutServerDurSpell.Off(72)) /* Field72 */)) = extra
+					*(*uint32)(unsafe.Pointer(&duration.Field72)) = extra
 				}
 			}
 		}
@@ -101,10 +117,29 @@ func creatureXferBuffs(u *server.Object) int {
 		if id == 26 {
 			extra := uint32(100)
 			if duration := spellLifeFindDuration(51, u); duration != nil {
-				extra = *(*uint32)(unsafe.Add(unsafe.Pointer(duration), int(layoutServerDurSpell.Off(72)) /* Field72 */))
+				extra = *(*uint32)(unsafe.Pointer(&duration.Field72))
 			}
 			r.word(extra)
 		}
 	}
 	return 1
+}
+
+// creatureXferRaw transfers the 386 byte range [off, off+n) of the struct at p with offset table tb, as one piece
+// of the stream like the original game: the file checksum depends on how the stream is split into writes.
+func creatureXferRaw(r objectXferStream, tb *layout.Table, p unsafe.Pointer, off, n int) {
+	if n == 0 {
+		r.raw(unsafe.Add(p, off), n)
+		return
+	}
+	buf := make([]byte, n)
+	tb.Runs(uintptr(off), uintptr(n), func(o386, o, m uintptr) {
+		copy(buf[o386-uintptr(off):], unsafe.Slice((*byte)(unsafe.Add(p, o)), m))
+	})
+	r.raw(unsafe.Pointer(&buf[0]), n)
+	if r.read() {
+		tb.Runs(uintptr(off), uintptr(n), func(o386, o, m uintptr) {
+			copy(unsafe.Slice((*byte)(unsafe.Add(p, o)), m), buf[o386-uintptr(off):])
+		})
+	}
 }

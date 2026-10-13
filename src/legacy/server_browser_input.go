@@ -1,11 +1,12 @@
 package legacy
 
 import (
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"unsafe"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 )
 
 func browserMouseDraw(_ *gui.Window, _ *gui.WindowData) int {

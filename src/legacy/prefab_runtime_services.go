@@ -42,8 +42,8 @@ func prefabTransferWallData(src, dst *server.Wall) {
 		dst.Flags4 |= 4
 		dst.Data = src.Data
 		src.Data = nil
-		data := (*[8]uint32)(dst.Data)
-		data[1], data[2], data[3] = uint32(dst.X5), uint32(dst.Y6), mapRoomRaw(dst.C())
+		data := dst.SecretData()
+		data.GridX, data.GridY, data.Wall = uint32(dst.X5), uint32(dst.Y6), mapRoomRaw(dst.C())
 		worldSecretInsert(dst.Data)
 	}
 	if src.Flags4&8 != 0 && dst.Flags4&8 == 0 {

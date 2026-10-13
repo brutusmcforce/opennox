@@ -1,11 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"math"
 	"strings"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
 )
 
 func mapPopulationMetadataIndex(name uint32) uint32 {
@@ -66,7 +67,7 @@ func mapPopulationFillCachedObjects(cfg, mapping uint32) uint32 {
 	return 0
 }
 func mapPopulationPlacePrefabInRoom(cfg, room, row, index uint32) uint32 {
-	e := (*mapRoomExclusion)(mapRoomCalloc(1, 28))
+	e := mapRoomAlloc[mapRoomExclusion]()
 	if e == nil {
 		return 0
 	}

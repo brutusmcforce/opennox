@@ -1,10 +1,9 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func inventoryCrownDrop(u, it *server.Object, pos *types.Pointf) int {
@@ -13,14 +12,14 @@ func inventoryCrownDrop(u, it *server.Object, pos *types.Pointf) int {
 		time := core.Frame()
 		chosen := it
 		for other := core.Players.FirstUnit(); other != nil; other = core.Players.NextUnit(other) {
-			since := *(*uint32)(unsafe.Add(other.UpdateData, 264))
+			since := other.UpdateDataPlayer().Field66
 			if Nox_xxx_teamCompare2_419180(&other.TeamVal, it.TeamVal.ID) != 0 && since < time {
 				time = since
 				chosen = other
 			}
 		}
 		if chosen != nil && chosen != u {
-			*(*uintptr)(unsafe.Add(it.UpdateData, 4)) = uintptr(chosen.CObj())
+			it.UpdateDataCrown().SetPendingObj(chosen) // the crown goes to this player next
 		}
 	}
 	if inventoryDefaultDrop(u, it, pos) == 0 {

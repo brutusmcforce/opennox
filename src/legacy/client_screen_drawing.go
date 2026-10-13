@@ -1,20 +1,24 @@
 package legacy
 
 import (
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"image"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"image"
-	"unsafe"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func screenHarpoonRope(vp *noxrender.Viewport, dr *client.Drawable) int {
 	var from, to image.Point
-	if *effectByte(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) == 0 {
-		from = vp.ToScreenPos(image.Pt(int(*effectShort(dr, int(layoutClientDrawable.Off(437)) /* Union._ */)), int(*effectShort(dr, int(layoutClientDrawable.Off(439)) /* Union._ */))))
-		to = vp.ToScreenPos(image.Pt(int(*effectShort(dr, int(layoutClientDrawable.Off(441)) /* Union._ */)), int(*effectShort(dr, int(layoutClientDrawable.Off(443)) /* Union._ */))))
+	u := (*client.DrawableUnionRay)(unsafe.Pointer(&dr.Union))
+	if u.ByCode == 0 {
+		from = vp.ToScreenPos(image.Pt(int(u.FromPos()[0]), int(u.FromPos()[1])))
+		to = vp.ToScreenPos(image.Pt(int(u.ToPos()[0]), int(u.ToPos()[1])))
 		from.Y -= 20
 		to.Y -= 20
 	} else {
@@ -24,13 +28,13 @@ func screenHarpoonRope(vp *noxrender.Viewport, dr *client.Drawable) int {
 			}
 			return GetClient().Cli().Objs.ByNetCodeDynamic(int(code & 0x7fff))
 		}
-		a, b := lookup(*effectWord(dr, int(layoutClientDrawable.Off(437)) /* Union._ */)), lookup(*effectWord(dr, int(layoutClientDrawable.Off(441)) /* Union._ */))
+		a, b := lookup(*u.FromCode()), lookup(*u.ToCode())
 		if a == nil || b == nil {
 			return 1
 		}
 		from = vp.ToScreenPos(a.PosVec)
 		to = effectScreen(vp, b)
-		dir := uintptr(*effectByte(a, int(layoutClientDrawable.Off(297)) /* AnimDir */))
+		dir := uintptr(a.AnimDir)
 		from.X += int(*memmap.PtrInt32(0x587000, 175864+8*dir))
 		from.Y += int(*memmap.PtrInt32(0x587000, 175868+8*dir))
 		to.Y -= 8
@@ -56,9 +60,9 @@ func screenMaiden(vp *noxrender.Viewport, dr *client.Drawable) int {
 			if uint32(obj.Extent) != dr.NetCode32 {
 				continue
 			}
-			colors := unsafe.Slice((*byte)(unsafe.Add(obj.UpdateData, 2076)), 18)
-			for i := 0; i < 6; i++ {
-				r.SetMaterialRGB(i+1, int(colors[3*i]), int(colors[3*i+1]), int(colors[3*i+2]))
+			colors := &layout.As[server.MonsterUpdateData](obj.UpdateData).Color
+			for i, c := range colors {
+				r.SetMaterialRGB(i+1, int(c.R), int(c.G), int(c.B))
 			}
 			break
 		}
@@ -71,18 +75,18 @@ func screenUndead(vp *noxrender.Viewport, dr *client.Drawable) int {
 		*effectMapped(1313732) = uint32(noxcolor.RGB5551Color(100, 100, 255).Color32())
 		*effectMapped(1313728) = 1
 	}
-	if gameFrame()-*effectWord(dr, int(layoutClientDrawable.Off(316)) /* AnimStart */) > 70 {
+	if gameFrame()-dr.AnimStart > 70 {
 		return effectDelete(dr)
 	}
 	if nox_client_drawIsTick && effectRand(0, 100) > 85 {
-		coords := [4]uint16{*effectShort(dr, int(layoutClientDrawable.Off(324)) /* Field_81 */), *effectShort(dr, int(layoutClientDrawable.Off(328)) /* Field_82 */)}
+		coords := [4]uint16{*(*uint16)(unsafe.Pointer(&dr.Field_81)), *(*uint16)(unsafe.Pointer(&dr.Field_82))}
 		coords[2] = uint16(dr.PosVec.X) + uint16(effectRand(-5, 5))
 		coords[3] = uint16(dr.PosVec.Y) + uint16(effectRand(-5, 5))
 		speed := byte(effectRand(6, 10))
 		dy := effectRand(-5, 5)
 		effectCreateOrb(int(*effectMapped(1313736)), &coords, 0, dy, speed, 0)
 	}
-	distance := int(screenDistanceBetween(int32(dr.PosVec.X), int32(dr.PosVec.Y), int32(*effectWord(dr, int(layoutClientDrawable.Off(324)) /* Field_81 */)), int32(*effectWord(dr, int(layoutClientDrawable.Off(328)) /* Field_82 */))))
+	distance := int(screenDistanceBetween(int32(dr.PosVec.X), int32(dr.PosVec.Y), int32(dr.Field_81), int32(dr.Field_82)))
 	radius := 8 - distance/40
 	if radius < 0 {
 		radius = 1

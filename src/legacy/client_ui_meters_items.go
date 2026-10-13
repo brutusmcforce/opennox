@@ -1,16 +1,19 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/client/keybind"
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
-	"github.com/brutusmcforce/opennox/libs/strman"
-	"github.com/brutusmcforce/opennox/client"
-	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"image"
 	"strconv"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/client/keybind"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 const meterStringSource = `C:\NoxPost\src\Client\Gui\guimeter.c`
@@ -47,7 +50,7 @@ func uiMeterLinkPotion(index int, typeID uint32) bool {
 	return true
 }
 func uiMeterPotionDraw(w *gui.Window) int {
-	s := uiMeterSlot(int(uintptr(w.WidgetData)))
+	s := uiMeterSlot(int(w.Value))
 	pos := uiWindowPosition(w)
 	r := GetClient().R2()
 	font := r.GetFonts().AsFont(memmap.WordPtr(dword_5d4594_1096288))
@@ -80,7 +83,7 @@ func sub_470E90(window, event int) int {
 func nox_xxx_guiBottleSlotProc_471B90(window, event int) int {
 	if event == 5 {
 		w := (*gui.Window)(memmap.WordPtr(uint32(window)))
-		if typ := uiMeterSlot(int(uintptr(w.WidgetData))).Type; typ != 0 {
+		if typ := uiMeterSlot(int(w.Value)).Type; typ != 0 {
 			uiInventoryUsePotion(typ)
 		}
 	}
@@ -120,11 +123,11 @@ func uiMeterBindings() unsafe.Pointer {
 	}
 	fill(2, 38)
 	fill(0, 36)
-	if *(*byte)(unsafe.Add(player, 2251)) != 0 {
+	if layout.As[server.Player](unsafe.Pointer(player)).InfoBytes[66] != 0 {
 		fill(1, 37)
 		return unsafe.Pointer(&uiMeterSlot(1).Binding[0])
 	}
-	return player
+	return unsafe.Pointer(player)
 }
 
 func uiMeterRefreshPotions() uintptr {

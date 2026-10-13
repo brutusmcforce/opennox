@@ -1,10 +1,13 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func collisionInitTypes() {
@@ -27,7 +30,7 @@ func collisionElevator(e, u *server.Object, mode int32) {
 	if mode == 0 || collisionHeightExcluded(u) {
 		return
 	}
-	height := float64(int32(*equipmentWord(ud, 16)))
+	height := float64(int32(layout.As[server.ElevatorUpdateData](ud).Field_4))
 	delta := float32(float64(u.ZVal) - height)
 	if float64(worldAbsScratch(float32(delta))) > 10 {
 		if height > float64(u.ZVal) {
@@ -44,11 +47,10 @@ func collisionElevator(e, u *server.Object, mode int32) {
 	}
 }
 func collisionShaft(e, u *server.Object) {
-	ud := e.UpdateData
 	if collisionTypesReady == 0 {
 		collisionInitTypes()
 	}
-	linked := *temporaryRefWord(ud, 4) // the elevator partner (see worldShaft)
+	linked := e.UpdateDataElevatorShaft().Partner // the elevator (see worldShaft)
 	if linked == nil || collisionHeightExcluded(u) {
 		return
 	}
@@ -65,7 +67,7 @@ func collisionShaft(e, u *server.Object) {
 	if !collisionContains(&e.NewPos, (*[11]float32)(unsafe.Pointer(&e.Shape)), &u.NewPos) {
 		return
 	}
-	heightWide := float64(int32(*equipmentWord(linked.UpdateData, 16) - 64))
+	heightWide := float64(int32(layout.As[server.ElevatorUpdateData](linked.UpdateData).Field_4 - 64))
 	height := float32(heightWide)
 	// C spills height for later use, but subtracts the original wide value.
 	delta := float32(float64(u.ZVal) - heightWide)
@@ -101,8 +103,8 @@ func collisionCircleWalls(u *server.Object) {
 }
 func collisionDrainAngles() {
 	for p := collisionAngleHead; p != 0; {
-		ud := memmap.WordPtr(p)
-		torque := *temporaryFloat(ud, 32)
+		ud := (*server.DoorUpdateData)(memmap.WordPtr(p))
+		torque := ud.Torque
 		velocity := floatToInt32(float32(float64(torque) + float64(torque) + 0.5))
 		if velocity < 0 {
 			velocity = -velocity
@@ -110,9 +112,9 @@ func collisionDrainAngles() {
 		if velocity > 4 {
 			velocity = 4
 		}
-		angle := (*int16)(unsafe.Add(ud, 40))
-		base := int32(*equipmentWord(ud, 4))
-		current := int32(*equipmentWord(ud, 12))
+		angle := &ud.Angle
+		base := int32(ud.BaseDir)
+		current := int32(ud.Dir)
 		if !(float64(torque) >= -0.0099999998) {
 			stop := base - 12
 			if stop < 0 {
@@ -137,10 +139,10 @@ func collisionDrainAngles() {
 		for index >= 32 {
 			index -= 32
 		}
-		*equipmentWord(ud, 12) = uint32(index)
-		*equipmentWord(ud, 28) = 0
-		*equipmentWord(ud, 32) = 0
-		p = *equipmentWord(ud, 36)
+		ud.Dir = uint32(index)
+		ud.AngleQueued = 0
+		ud.Torque = 0
+		p = ud.AngleNext
 	}
 	collisionAngleHead = 0
 }

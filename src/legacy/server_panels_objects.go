@@ -1,11 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/libs/strman"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"unsafe"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/strman"
 )
 
 func serverPanelsText(file, key string) string {
@@ -39,14 +40,14 @@ func serverPanelsBackground(w *gui.Window, d *gui.WindowData) int {
 }
 func serverPanelsObjectOpen(parent *gui.Window, kind int) int {
 	w := Nox_new_window_from_file("objlst.wnd", serverPanelsObjectProc)
-	*serverPanelsWord(1045468) = uint32(serverOptionsPtr(w))
+	*serverPanelsWord(1045468) = memmap.PtrWord(w.C())
 	if w == nil {
 		return 0
 	}
 	w.SetDraw(serverPanelsBackground)
 	serverPanelsOwner(w, parent)
 	list := w.ChildByID(1510)
-	*serverPanelsWord(1045464) = uint32(serverOptionsPtr(list))
+	*serverPanelsWord(1045464) = memmap.PtrWord(list.C())
 	serverPanelsObjectLayout()
 	teamUIEvent(list, 16399, 0, 0)
 	title, count := "", 0
@@ -80,7 +81,7 @@ func serverPanelsObjectOpen(parent *gui.Window, kind int) int {
 	if !noxflags.HasGame(1) || noxflags.HasGame(49152) {
 		serverPanelsEnable(w, 1515, 1533, 0)
 	}
-	return int(serverOptionsPtr(w))
+	return int(memmap.PtrWord(w.C())) // stored as a pointer word
 }
 func serverPanelsObjectLayout() *gui.Window {
 	list := serverPanelsWindow(1045464)

@@ -1,9 +1,10 @@
 package legacy
 
 import (
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func playerStateEquip(command byte, code, mask uint32, mods *[4]byte) unsafe.Pointer {
@@ -82,11 +83,11 @@ func playerStateRespawn(pl *server.Player, mask byte) {
 	id := func(m *server.ModifierEff) byte { return byte(m.Index()) }
 	colorID := uint32(color.Index())
 	colorAt := func(offset uintptr) byte {
-		index := *(*byte)(unsafe.Add(pl.C(), offset))
+		index := *(*byte)(unsafe.Add(pl.C(), layoutServerPlayer.Off(offset))) // a 386 offset
 		return id(s.Modif.Nox_xxx_modifGetDescById413330(int(colorID + uint32(index))))
 	}
 	equip := func(command byte, bit uint32, mods [4]byte) { playerStateEquip(command, pl.NetCodeVal, bit, &mods) }
-	class := *(*byte)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(2251)) /* info */))
+	class := pl.InfoBytes[66]
 	if class != 0 || noxflags.HasGame(2048) {
 		mods := [4]byte{255, colorAt(2269), colorAt(2270), 255}
 		if mask&1 != 0 {

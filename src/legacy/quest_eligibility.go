@@ -2,7 +2,6 @@ package legacy
 
 import (
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
 )
@@ -52,13 +51,13 @@ func questEligibilityBeast(id uint32) bool {
 func questEligibilityBook(u *server.Object) bool {
 	sub := uint32(u.ObjSubClass)
 	if sub&1 != 0 {
-		return questEligibilityListed(207108, uint32(*(*byte)(u.UseData.Ptr)))
+		return questEligibilityListed(207108, uint32(u.UseDataSpellReward().Spell))
 	}
 	if sub&2 != 0 {
-		return questEligibilityListed(207796, uint32(bookGuideID(alloc.GoString((*byte)(u.UseData.Ptr)))))
+		return questEligibilityListed(207796, uint32(bookGuideID(u.UseDataFieldGuide().Creature())))
 	}
 	if sub&4 != 0 {
-		return questEligibilityAbility(uint32(*(*byte)(u.UseData.Ptr)))
+		return questEligibilityAbility(uint32(u.UseDataAbilityReward().Ability))
 	}
 	return false
 }

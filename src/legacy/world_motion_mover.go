@@ -1,10 +1,11 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func motionWaypoint(raw uint32) *server.Waypoint {
@@ -13,41 +14,41 @@ func motionWaypoint(raw uint32) *server.Waypoint {
 func motionWaypointAddress(w *server.Waypoint) uint32 { return memmap.PtrWord(unsafe.Pointer(w)) }
 func motionMover(u *server.Object) {
 	s := GetServer().S()
-	d := (*[9]uint32)(u.UpdateData)
-	state := (*byte)(u.UpdateData)
-	if d[8] == 0 {
+	d := u.UpdateDataMover()
+	state := &d.Field_0
+	if d.Field_8 == 0 {
 		s.Objs.RemoveFromUpdatable(u)
 		return
 	}
-	if d[7] == 0 {
-		d[7] = motionAddress(s.Objs.GetObjectByInd(int(d[8])))
-		if d[7] == 0 {
+	if d.Field_7 == nil {
+		d.Field_7 = s.Objs.GetObjectByInd(int(d.Field_8))
+		if d.Field_7 == nil {
 			s.Objs.RemoveFromUpdatable(u)
 			return
 		}
 	}
-	if d[4] != 0 && d[3] == 0 {
-		d[3] = motionWaypointAddress(s.WPs.ByInd(int(d[4])))
+	if d.NextInd != 0 && d.Next == nil {
+		d.Next = s.WPs.ByInd(int(d.NextInd))
 	}
-	if d[6] != 0 && d[5] == 0 {
-		d[5] = motionWaypointAddress(s.WPs.ByInd(int(d[6])))
+	if d.PrevInd != 0 && d.Prev == nil {
+		d.Prev = s.WPs.ByInd(int(d.PrevInd))
 	}
-	target := motionObject(d[7])
+	target := d.Field_7
 	if target.ObjFlags&4 == 0 || target.ObjFlags&0x20 != 0 {
-		d[7] = 0
+		d.Field_7 = nil
 		s.Objs.RemoveFromUpdatable(u)
 		return
 	}
 	switch *state {
 	case 0:
 		if u.ObjFlags&0x1000000 != 0 {
-			wp := s.WPs.ByInd(int(d[2]))
+			wp := s.WPs.ByInd(int(d.Field_2))
 			if wp != nil {
-				Nox_xxx_unitMove_4E7010(u, motionObject(d[7]).PosVec)
-				speed := float32(float64(int32(d[1])) * .25)
+				Nox_xxx_unitMove_4E7010(u, d.Field_7.PosVec)
+				speed := float32(float64(int32(math.Float32bits(d.Field_1))) * .25)
 				*state = 1
-				d[3] = motionWaypointAddress(wp)
-				d[5] = 0
+				d.Next = wp
+				d.Prev = nil
 				u.SpeedCur, u.SpeedBase = speed, speed
 			} else {
 				*state = 3
@@ -59,20 +60,20 @@ func motionMover(u *server.Object) {
 			return
 		}
 		if u.VelVec.X != 0 && u.VelVec.Y != 0 {
-			wp := motionWaypoint(d[3])
+			wp := d.Next
 			dot := (float64(wp.PosVec.Y)-float64(u.PosVec.Y))*float64(u.VelVec.Y) + (float64(wp.PosVec.X)-float64(u.PosVec.X))*float64(u.VelVec.X)
 			if dot <= 0 {
 				if wp.PointsCnt == 1 {
-					d[5] = d[3]
-					d[3] = motionWaypointAddress(wp.Points[0].Waypoint)
+					d.Prev = d.Next
+					d.Next = wp.Points[0].Waypoint
 				} else if wp.PointsCnt != 0 {
 					for {
 						i := s.Rand.Logic.IntClamp(0, int(wp.PointsCnt)-1)
-						wp = motionWaypoint(d[3])
-						next := motionWaypointAddress(wp.Points[i].Waypoint)
-						if next != d[5] {
-							d[5] = d[3]
-							d[3] = next
+						wp = d.Next
+						next := wp.Points[i].Waypoint
+						if next != d.Prev {
+							d.Prev = d.Next
+							d.Next = next
 							break
 						}
 					}
@@ -83,8 +84,8 @@ func motionMover(u *server.Object) {
 			}
 		}
 		if *state == 1 {
-			Nox_xxx_unitMove_4E7010(motionObject(d[7]), u.PosVec)
-			wp := motionWaypoint(d[3])
+			Nox_xxx_unitMove_4E7010(d.Field_7, u.PosVec)
+			wp := d.Next
 			dx := float64(wp.PosVec.X) - float64(u.PosVec.X)
 			dyWide := float64(wp.PosVec.Y) - float64(u.PosVec.Y)
 			dy := dyWide

@@ -19,7 +19,7 @@ func itemXferPositiveStart(u *server.Object, max int) (objectXferStream, int, ui
 	return r, v, saved, objectXferCommon(u, v) != 0
 }
 func itemXferSpellReward(u *server.Object) int {
-	p := (*byte)(u.UseData.Ptr)
+	p := &u.UseDataSpellReward().Spell
 	r, v, saved, ok := objectXferStart(u, 60)
 	if !ok {
 		return 0
@@ -83,7 +83,7 @@ func itemXferSpellReward(u *server.Object) int {
 	return objectXferFinish(r, u, v, saved)
 }
 func itemXferAbilityReward(u *server.Object) int {
-	p := (*byte)(u.UseData.Ptr)
+	p := &u.UseDataAbilityReward().Ability
 	r, v, saved, ok := objectXferStart(u, 61)
 	if !ok {
 		return 0
@@ -102,7 +102,8 @@ func itemXferAbilityReward(u *server.Object) int {
 	return objectXferFinish(r, u, v, saved)
 }
 func itemXferFieldGuide(u *server.Object) int {
-	p := u.UseData.Ptr
+	data := u.UseDataFieldGuide()
+	p := unsafe.Pointer(&data.CreatureBuf[0])
 	r, v, saved, ok := objectXferStart(u, 60)
 	if !ok {
 		return 0
@@ -113,9 +114,9 @@ func itemXferFieldGuide(u *server.Object) int {
 			return 0
 		}
 		r.raw(p, n)
-		*(*byte)(unsafe.Add(p, n)) = 0
+		data.CreatureBuf[n] = 0
 	} else {
-		n := int(r.byte(byte(len(alloc.GoString((*byte)(p))))))
+		n := int(r.byte(byte(len(data.Creature()))))
 		r.raw(p, n)
 	}
 	return objectXferFinish(r, u, v, saved)
@@ -133,6 +134,6 @@ func itemXferToxicCloud(u *server.Object) int {
 	if !ok {
 		return 0
 	}
-	r.raw(u.UpdateData, 4)
+	r.raw(unsafe.Pointer(&u.UpdateDataToxicCloud().Life), 4)
 	return objectXferFinish(r, u, v, saved)
 }

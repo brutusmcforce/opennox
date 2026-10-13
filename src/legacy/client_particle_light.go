@@ -4,43 +4,53 @@ import (
 	"math"
 	"unsafe"
 
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/client"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 )
 
 func particleRGB(r, g, b int) uint32 {
 	return noxcolor.RGB5551Color(byte(r), byte(g), byte(b)).Color32()
 }
-func particleLightWord(p unsafe.Pointer, off int) *uint32 { return (*uint32)(unsafe.Add(p, off)) }
-func particleLightColor(p unsafe.Pointer, r, g, b int) unsafe.Pointer {
-	*particleLightWord(p, 16) = uint32(r)
-	*particleLightWord(p, 0) = 2
-	*particleLightWord(p, 20) = uint32(g)
-	*particleLightWord(p, 24) = uint32(b)
-	return p
+func particleLightColor(d *client.Drawable, r, g, b int) *client.Drawable {
+	d.LightColor.R = r
+	d.LightFlags = 2
+	d.LightColor.G = g
+	d.LightColor.B = b
+	return d
 }
-func particleLightAngle(p unsafe.Pointer, angle int, penumbra bool) int64 {
+func particleLightAngle(d *client.Drawable, angle int, penumbra bool) int64 {
 	value := int64(float64(angle)*0.0027777778*math.Float64frombits(uint64(qword_581450_9552)) + math.Float64frombits(uint64(qword_581450_9544)))
-	off := 28
 	if penumbra {
-		off = 30
+		d.LightPenumbra = uint16(value)
 	} else {
-		*particleLightWord(p, 32) = 0
+		d.Field_42 = 0
+		d.LightDir = uint16(value)
 	}
-	*(*uint16)(unsafe.Add(p, off)) = uint16(value)
 	return value
 }
-func particleLightIntensity(p unsafe.Pointer, intensity float32, fixed bool) int {
+func particleLightIntensity(d *client.Drawable, intensity float32, fixed bool) int {
+	if intensity > 63 {
+		intensity = 63
+	}
+	d.LightIntensity = intensity
+	if fixed {
+		value := int64(float64(intensity)*math.Float64frombits(uint64(qword_581450_9552)) + math.Float64frombits(uint64(qword_581450_9544)))
+		d.LightIntensityU16 = uint32(value)
+	}
+	radius := client.LightRadius(intensity)
+	d.LightIntensityRad = uint32(radius)
+	return radius
+}
+
+// particleLightIntensityRaw is particleLightIntensity on a saved light record (the 386 layout of the light
+// fields of a drawable, starting at LightFlags).
+func particleLightIntensityRaw(p unsafe.Pointer, intensity float32) int {
 	if intensity > 63 {
 		intensity = 63
 	}
 	*(*float32)(unsafe.Add(p, 4)) = intensity
-	if fixed {
-		value := int64(float64(intensity)*math.Float64frombits(uint64(qword_581450_9552)) + math.Float64frombits(uint64(qword_581450_9544)))
-		*particleLightWord(p, 12) = uint32(value)
-	}
 	radius := client.LightRadius(intensity)
-	*particleLightWord(p, 8) = uint32(radius)
+	*(*uint32)(unsafe.Add(p, 8)) = uint32(radius)
 	return radius
 }
 func initParticlePalettes() int {

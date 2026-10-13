@@ -2,21 +2,24 @@ package legacy
 
 import (
 	"encoding/binary"
-	"github.com/brutusmcforce/opennox/server"
 	"io"
 	"math"
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/server"
+
 	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/internal/cryptfile"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
-func mapDrawableByte(d *client.Drawable, off int) *byte    { return (*byte)(unsafe.Add(d.C(), off)) }
-func mapDrawableShort(d *client.Drawable, off int) *uint16 { return (*uint16)(unsafe.Add(d.C(), off)) }
+func mapDrawableByte(d *client.Drawable, off int) *byte    { return effectByte(d, off) }
+func mapDrawableShort(d *client.Drawable, off int) *uint16 { return effectShort(d, off) }
 func mapDrawableBox(d *client.Drawable) {
-	geometryShapeBox((*server.Shape)(unsafe.Pointer(unsafe.Add(d.C(), int(layoutClientDrawable.Off(44)) /* Shape.Kind */))))
+	geometryShapeBox((*server.Shape)(unsafe.Pointer(unsafe.Pointer(&d.Shape))))
 }
 func mapDrawableTyped(kind, typ int) int {
 	var count uint32
@@ -31,13 +34,14 @@ func mapDrawableTyped(kind, typ int) int {
 	case 1:
 		if uint32(d.Class())&0x80 != 0 {
 			direction, lock := r.u32(), r.u32()
-			*mapDrawableByte(d, int(layoutClientDrawable.Off(433)) /* Union._ */) = byte(lock)
-			*mapDrawableByte(d, int(layoutClientDrawable.Off(432)) /* Union._ */) = byte(bool2int(byte(lock) != 0))
+			door := d.UnionDoor()
+			door.Field_108_1 = byte(lock)
+			door.Field_108_0 = byte(bool2int(byte(lock) != 0))
 			index := direction
 			if outer >= 41 {
 				index = r.u32()
 			}
-			*mapDrawableByte(d, int(layoutClientDrawable.Off(299)) /* Field_74_4 */) = byte(direction)
+			d.Field_74_4 = byte(direction)
 			dx := memmap.Int32(0x587000, uintptr(uint32(196184)+8*index)) / 2
 			dy := memmap.Int32(0x587000, uintptr(uint32(196188)+8*index)) / 2
 			// C stores X in a signed local; the inline Y expression divides unsigned.
@@ -52,11 +56,14 @@ func mapDrawableTyped(kind, typ int) int {
 			if h > 60 {
 				h = 60
 			}
-			*effectWord(d, int(layoutClientDrawable.Off(56)) /* Shape.Box.W */) = math.Float32bits(w)
-			*effectWord(d, int(layoutClientDrawable.Off(60)) /* Shape.Box.H */) = math.Float32bits(h)
+			*(*uint32)(unsafe.Pointer(&d.Shape.Box.W)) = math.Float32bits(w)
+			*(*uint32)(unsafe.Pointer(&d.Shape.Box.H)) = math.Float32bits(h)
 			mapDrawableBox(d)
 		}
 	case 2:
+		if cryptfile.Global().ReadOnly() {
+			d.LightColor = noxrender.RGB{} // the int components only get their low 4 bytes on 64-bit
+		}
 		for _, f := range [][2]int{{136, 4}, {140, 4}, {144, 4}, {148, 4}, {152, 12}, {164, 2}, {166, 2}, {168, 4}} {
 			r.field(d, f[0], f[1])
 		}
@@ -68,40 +75,39 @@ func mapDrawableTyped(kind, typ int) int {
 				if outer >= 42 {
 					r.field(d, 172, 4)
 				} else {
-					*effectWord(d, int(layoutClientDrawable.Off(172)) /* Field_43 */) = uint32(r.u8())
+					d.Field_43 = uint32(r.u8())
 				}
 			}
 		} else {
 			for _, off := range []int{176, 258, 260, 262, 270} {
 				*mapDrawableShort(d, off) = 0
 			}
-			*effectWord(d, int(layoutClientDrawable.Off(264)) /* Field_66 */) = 0
-			*mapDrawableByte(d, int(layoutClientDrawable.Off(274)) /* Field_68 */) = 128
-			if cryptfile.Global().ReadOnly() && !(math.Float32frombits(*effectWord(d, int(layoutClientDrawable.Off(140)) /* LightIntensity */)) <= 63 && float64(int32(*effectWord(d, int(layoutClientDrawable.Off(148)) /* LightIntensityU16 */)))*memmap.Float64(0x581450, 9752) <= memmap.Float64(0x581450, 9744)) {
-				particleLightIntensity(unsafe.Add(d.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), 63, false)
+			d.Field_66 = 0
+			*(*byte)(unsafe.Add(unsafe.Pointer(&d.Field_68), 2)) = 128
+			if cryptfile.Global().ReadOnly() && !(math.Float32frombits(*(*uint32)(unsafe.Pointer(&d.LightIntensity))) <= 63 && float64(int32(d.LightIntensityU16))*memmap.Float64(0x581450, 9752) <= memmap.Float64(0x581450, 9744)) {
+				particleLightIntensity(d, 63, false)
 			}
 		}
 		if cryptfile.Global().ReadOnly() {
-			for _, off := range []int{432, 433, 434} {
-				*mapDrawableByte(d, off) = 0
-			}
+			light := (*client.DrawableUnionColorLight)(unsafe.Pointer(&d.Union))
+			light.Counts = [3]byte{}
 			for i := 0; i < 16; i++ {
 				if *mapDrawableByte(d, 178+3*i) != 0 || *mapDrawableByte(d, 179+3*i) != 0 || *mapDrawableByte(d, 180+3*i) != 0 {
-					(*mapDrawableByte(d, int(layoutClientDrawable.Off(432)) /* Union._ */))++
+					light.Counts[0]++
 				}
 				if *mapDrawableByte(d, 226+i) != 0 {
-					(*mapDrawableByte(d, int(layoutClientDrawable.Off(433)) /* Union._ */))++
+					light.Counts[1]++
 				}
 				if *mapDrawableByte(d, 242+i) != 0 {
-					(*mapDrawableByte(d, int(layoutClientDrawable.Off(434)) /* Union._ */))++
+					light.Counts[2]++
 				}
 			}
-			a := float64(*mapDrawableShort(d, int(layoutClientDrawable.Off(164)) /* LightDir */)) * memmap.Float64(0x581450, 9752) * memmap.Float64(0x581450, 9736)
-			*mapDrawableShort(d, int(layoutClientDrawable.Off(268)) /* Field_67 */) = uint16(int64(a))
+			a := float64(d.LightDir) * memmap.Float64(0x581450, 9752) * memmap.Float64(0x581450, 9736)
+			*(*uint16)(unsafe.Pointer(&d.Field_67)) = uint16(int64(a))
 		}
 	case 3:
 		// These two readers activate before reading their trailing fields.
-		*effectWord(d, int(layoutClientDrawable.Off(288)) /* Field_72 */) = 0
+		d.Field_72 = 0
 		d.SetActive()
 		for i := 0; i < 4; i++ {
 			n := r.u8()
@@ -109,18 +115,18 @@ func mapDrawableTyped(kind, typ int) int {
 			r.bytes(name[:int(n)])
 			id := GetServer().S().Modif.Nox_xxx_modifGetIdByName413290(alloc.GoString(&name[0]))
 			mod := GetServer().S().Modif.Nox_xxx_modifGetDescById413330(id)
-			*drawableModifier(d, i) = unsafe.Pointer(mod)
-			*mapDrawableShort(d, int(layoutClientDrawable.Off(448)) /* Union._ */) = 65535
-			*mapDrawableShort(d, int(layoutClientDrawable.Off(450)) /* Union._ */) = 65535
+			*drawableModifier(d, i) = mod
+			du := layout.As[client.DrawableUnionItem](unsafe.Pointer(&d.Union))
+			du.Field_112_0, du.Field_112_2 = -1, -1
 		}
 		return int(count)
 	case 4:
-		*effectWord(d, int(layoutClientDrawable.Off(288)) /* Field_72 */) = 0
+		d.Field_72 = 0
 		d.SetActive()
-		*effectWord(d, int(layoutClientDrawable.Off(56)) /* Shape.Box.W */) = math.Float32bits(float32(int32(r.u32())))
-		*effectWord(d, int(layoutClientDrawable.Off(60)) /* Shape.Box.H */) = math.Float32bits(float32(int32(r.u32())))
+		*(*uint32)(unsafe.Pointer(&d.Shape.Box.W)) = math.Float32bits(float32(int32(r.u32())))
+		*(*uint32)(unsafe.Pointer(&d.Shape.Box.H)) = math.Float32bits(float32(int32(r.u32())))
 		mapDrawableBox(d)
-		copy(unsafe.Slice(mapDrawableByte(d, int(layoutClientDrawable.Off(432)) /* Union._ */), 6), []byte{90, 90, 90, 10, 10, 10})
+		(*client.DrawableUnionPressurePlate)(unsafe.Pointer(&d.Union)).Colors = [6]byte{90, 90, 90, 10, 10, 10}
 		if outer >= 41 {
 			for off := 432; off < 438; off++ {
 				r.field(d, off, 1)
@@ -135,7 +141,7 @@ func mapDrawableTyped(kind, typ int) int {
 			}
 		}
 	}
-	*effectWord(d, int(layoutClientDrawable.Off(288)) /* Field_72 */) = 0
+	d.Field_72 = 0
 	d.SetActive()
 	return int(count)
 }

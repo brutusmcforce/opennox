@@ -1,18 +1,20 @@
 package legacy
 
 import (
+	"math"
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"math"
-	"unsafe"
 )
 
 func equipmentObject(u unsafe.Pointer) *server.Object { return (*server.Object)(u) }
 
-func equipmentWord(p unsafe.Pointer, off int) *uint32 { return (*uint32)(unsafe.Add(p, off)) }
-func equipmentPlayer(u *server.Object) unsafe.Pointer {
-	return unsafe.Pointer(u.UpdateDataPlayer().Player)
+func equipmentWord(p unsafe.Pointer, off int) *uint32 { return rawAt[uint32](p, off) }
+func equipmentPlayer(u *server.Object) *server.Player {
+	return u.UpdateDataPlayer().Player
 }
 func equipmentWeaponBits(it *server.Object) uint32 {
 	return uint32(nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(it)))
@@ -33,13 +35,13 @@ func equipmentStrength(u *server.Object) int32 {
 		return 0
 	}
 	if u.ObjClass&4 != 0 {
-		return int32(*equipmentWord(equipmentPlayer(u), 2239))
+		return int32(*(*uint32)(unsafe.Pointer(&equipmentPlayer(u).InfoBytes[54])))
 	}
 	if u.ObjClass&2 == 0 {
 		return 0
 	}
 	if u.ObjSubClass&0x10 != 0 {
-		return int32(*(*byte)(unsafe.Add(u.UpdateData, 1324)))
+		return int32(*(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](u.UpdateData).Field331)))
 	}
 	return 30
 }
@@ -108,25 +110,25 @@ func equipmentRecalculate(u *server.Object) int {
 		value = 1
 	}
 	if u.ObjClass&4 != 0 {
-		*(*float32)(unsafe.Add(u.UpdateData, 228)) = value
+		*(*float32)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](u.UpdateData).Field57)) = value
 		return int(uintptr(u.UpdateData))
 	}
 	if u.ObjClass&2 != 0 {
-		*(*float32)(unsafe.Add(u.UpdateData, 2072)) = value
+		*(*float32)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](u.UpdateData).Field518)) = value
 		return int(math.Float32bits(value))
 	}
 	return int(u.ObjClass)
 }
 func equipmentNPCSync(u, it *server.Object, value int) unsafe.Pointer {
 	u.NeedSync()
-	off := 2060
+	ud := layout.As[server.MonsterUpdateData](u.UpdateData)
+	p := &ud.Field515
 	var bits uint32
 	if it.ObjClass&0x1001000 != 0 {
-		off, bits = 2056, equipmentWeaponBits(it)
+		p, bits = &ud.Field514, equipmentWeaponBits(it)
 	} else {
 		bits = equipmentArmorBits(it)
 	}
-	p := equipmentWord(u.UpdateData, off)
 	if value == 1 {
 		*p |= bits
 	} else {
@@ -137,10 +139,10 @@ func equipmentNPCSync(u, it *server.Object, value int) unsafe.Pointer {
 		return stateSyncEnd(u)
 	}
 	for i := 0; i < 32; i++ {
-		v := equipmentWord(u.CObj(), 560+i*4)
+		v := &u.Field140[i]
 		*v = (*v & 0xfffff000) | 0x4000000
 	}
-	return unsafe.Add(u.CObj(), int(layoutServerObject.Off(688)) /* Init */)
+	return unsafe.Pointer(&u.Init)
 }
 func equipmentCount(u *server.Object, typ int) int {
 	n := 0
@@ -182,7 +184,7 @@ func equipmentSaveShield(u *server.Object) {
 	}
 	for it := u.InvFirstItem; it != nil; it = it.InvNextItem {
 		if it.ObjClass&0x2000000 != 0 && it.ObjFlags&0x100 != 0 && equipmentArmorBits(it)&0x3000000 != 0 {
-			*(*unsafe.Pointer)(unsafe.Pointer(equipmentWord(equipmentPlayer(u), 2500))) = it.CObj()
+			equipmentPlayer(u).Weapon[7].Field4[1] = it.CObj()
 		}
 	}
 }
@@ -257,7 +259,7 @@ func equipmentSecondary(u, it *server.Object) {
 	if it != nil && (!Nox_xxx_playerClassCanUseItem_57B3D0(it, u.UpdateDataPlayer().Player.PlayerClass()) || !equipmentCheckStrength(u, it)) {
 		gameplayReportSecondary(int(int32(uint8(u.UpdateDataPlayer().Player.PlayerInd))), nil, byte(1))
 	}
-	*(*unsafe.Pointer)(unsafe.Pointer(equipmentWord(u.UpdateData, 108))) = it.CObj()
+	*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](u.UpdateData).Field27)) = it.CObj()
 }
 func equipmentInitDropTable() {
 	for off := uintptr(279432); ; off += 12 {

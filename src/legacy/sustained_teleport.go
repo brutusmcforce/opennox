@@ -1,9 +1,11 @@
 package legacy
 
 import (
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func sustainedTeleportStart(p unsafe.Pointer) uint32 {
@@ -27,10 +29,10 @@ func sustainedTeleportWake(u *server.Object, from, to *types.Pointf) uint32 {
 	if wake == nil {
 		return 0
 	}
-	*(*types.Pointf)(*controlPtr(wake.CObj(), int(layoutServerObject.Off(700)) /* CollideData */)) = *to
+	wake.CollideDataTeleportWake().Dest = *to
 	spellEffectCreate(wake, u, *from)
 	ret := sustainedFrame() + sustainedFPS()
-	*spellLifeWord(wake.CObj(), int(layoutServerObject.Off(136)) /* Field34 */) = ret
+	wake.Field34 = ret
 	return ret
 }
 func sustainedTeleportSound(d *server.DurSpell, phase int32, u *server.Object, hidden bool) {
@@ -40,7 +42,7 @@ func sustainedTeleportSound(d *server.DurSpell, phase int32, u *server.Object, h
 			return
 		}
 		mode = 2
-		code = int32(*spellLifeWord(u.CObj(), int(layoutServerObject.Off(36)) /* NetCode */))
+		code = int32(u.NetCode)
 	}
 	id := int32(nox_xxx_spellGetAud44_424800(int(int32(d.Spell)), int(int32(phase))))
 	nox_xxx_aud_501960(int32(id), asObjectC(u), int(mode), int32(code))
@@ -60,7 +62,7 @@ func sustainedBlinkTick(p unsafe.Pointer) uint32 {
 	}
 	var dest types.Pointf
 	if sustainedGame(4096) && u.ObjClass&4 != 0 {
-		if start := spellEffectObject(u.UpdateData, 308); start != nil {
+		if start := layout.As[server.PlayerUpdateData](u.UpdateData).Field77; start != nil {
 			inventoryRandomPlacement(60, &start.PosVec, &dest)
 		} else {
 			controlFindStart(&dest, u)
@@ -87,22 +89,23 @@ func sustainedBlinkTick(p unsafe.Pointer) uint32 {
 func sustainedGlyphStart(p unsafe.Pointer) uint32 {
 	d := (*server.DurSpell)(p)
 	u := d.Obj12
-	if u.ObjClass&4 != 0 && (u.UpdateData == nil || *controlPtr(u.UpdateData, int(d.Spell*4-372)) == nil) {
+	if u.ObjClass&4 != 0 && (u.UpdateData == nil || u.UpdateDataPlayer().Field29[d.Spell-122] == nil) {
 		return 1
 	}
 	return sustainedTeleportStart(p)
 }
 func sustainedGlyphUse(ud unsafe.Pointer, index int, mark bool) {
-	glyph := spellEffectObject(ud, 116+index*4)
+	pud := layout.As[server.PlayerUpdateData](ud)
+	glyph := pud.Field29[index]
 	if mark {
-		*spellLifeWord(glyph.CObj(), int(layoutServerObject.Off(136)) /* Field34 */) = sustainedFrame()
+		glyph.Field34 = sustainedFrame()
 	}
-	charge := controlByte(ud, 156+index)
+	charge := &(*[4]byte)(unsafe.Pointer(&pud.Field39))[index]
 	*charge--
 	if *charge == 0 {
 		sustainedFX(129, glyph.PosVec)
 		sustainedDelete(glyph)
-		*controlPtr(ud, 116+index*4) = nil
+		pud.Field29[index] = nil
 	}
 }
 func sustainedGlyphTick(p unsafe.Pointer) uint32 {
@@ -121,7 +124,8 @@ func sustainedGlyphTick(p unsafe.Pointer) uint32 {
 	if owner.ObjClass&4 != 0 {
 		ud := owner.UpdateData
 		index := int(d.Spell) - 122
-		glyph := spellEffectObject(ud, 116+index*4)
+		pud := layout.As[server.PlayerUpdateData](ud)
+		glyph := pud.Field29[index]
 		if glyph == nil {
 			return 1
 		}
@@ -159,7 +163,7 @@ func sustainedRandomGlyphTick(p unsafe.Pointer) uint32 {
 		ud := owner.UpdateData
 		count := 0
 		for i := 0; i < 4; i++ {
-			if spellEffectObject(ud, 116+i*4) != nil {
+			if layout.As[server.PlayerUpdateData](ud).Field29[i] != nil {
 				count++
 			}
 		}
@@ -171,7 +175,7 @@ func sustainedRandomGlyphTick(p unsafe.Pointer) uint32 {
 		index := 0
 		for glyph == nil {
 			index = GetServer().S().Rand.Logic.IntClamp(0, 3)
-			glyph = spellEffectObject(ud, 116+index*4)
+			glyph = layout.As[server.PlayerUpdateData](ud).Field29[index]
 		}
 		sustainedTeleportWake(u, &u.PosVec, &glyph.PosVec)
 		stateTeleport(u, &glyph.PosVec)
@@ -239,7 +243,7 @@ func sustainedSwapTick(p unsafe.Pointer) uint32 {
 		}
 		if u.ObjClass&4 != 0 {
 			pl := controlPlayer(u)
-			x, y := float64(*controlHalf(pl, 10)), float64(*controlHalf(pl, 12))
+			x, y := float64(pl.Field10), float64(pl.Field12)
 			rect := [4]float32{float32(float64(u.PosVec.X) - x), float32(float64(u.PosVec.Y) - y), float32(x + float64(u.PosVec.X)), float32(y + float64(u.PosVec.Y))}
 			if int32(geometryRectFloat((*types.Pointf)(unsafe.Pointer(unsafe.Pointer(&t.PosVec))), (*[4]float32)(unsafe.Pointer(unsafe.Pointer(&rect))))) == 0 {
 				resourcePriority(u, "ExecDur.c:NeedClearLOSForSwap")

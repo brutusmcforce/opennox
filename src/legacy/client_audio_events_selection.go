@@ -1,6 +1,10 @@
 package legacy
 
-import "unsafe"
+import (
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client"
+)
 
 func audioEventRandom(min, max int32) int32 {
 	return int32(GetServer().S().Rand.Other.Int(int(min), int(max)))
@@ -157,3 +161,17 @@ func audioEventHandleGet(h *audioEventHandle) *audioEvent {
 	}
 	return p
 }
+
+// AudioHandleEvent returns the audio event of a drawable's handle, or nil if the event was reused.
+func AudioHandleEvent(h *client.AudioHandle) unsafe.Pointer {
+	if p := audioEventHandleGet((*audioEventHandle)(unsafe.Pointer(h))); p != nil {
+		return unsafe.Pointer(p)
+	}
+	return nil
+}
+
+// client.AudioHandle mirrors audioEventHandle.
+var (
+	_ [unsafe.Sizeof(client.AudioHandle{}) - unsafe.Sizeof(audioEventHandle{})]struct{}
+	_ [unsafe.Sizeof(audioEventHandle{}) - unsafe.Sizeof(client.AudioHandle{})]struct{}
+)

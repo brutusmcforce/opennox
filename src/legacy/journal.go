@@ -1,19 +1,20 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/strman"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/server"
 	"image"
 	"strings"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 // Journal entries remain C allocated for the shared player/save layout. Direct
 // calloc preserves the original nil-on-failure behavior. List logic is Go.
 func journalAdd(p *server.Player, name string, flags uint16) *server.PlayerJournal {
-	n := (*server.PlayerJournal)(legacyCalloc(1, uintptr(unsafe.Sizeof(server.PlayerJournal{}))))
+	n := legacyNew[server.PlayerJournal]()
 	if n == nil {
 		return nil
 	}
@@ -76,7 +77,7 @@ func journalUnitAdd(u *server.Object, name string, flags uint16) {
 	if p.PlayerInd == 31 {
 		journalMeasure()
 	} else {
-		gameplayReportJournal(int(p.PlayerInd), unsafe.Pointer(n), 1)
+		gameplayReportJournal(int(p.PlayerInd), alloc.GoStringS(n.EntryBuf[:]), n.Field3, 1)
 	}
 }
 func journalUnitRemove(u *server.Object, name string) {
@@ -87,9 +88,7 @@ func journalUnitRemove(u *server.Object, name string) {
 	if p.PlayerInd == 31 {
 		journalMeasure()
 	} else {
-		s, free := alloc.CString(name)
-		defer free()
-		gameplayReportJournal(int(p.PlayerInd), unsafe.Pointer(s), 2)
+		gameplayReportJournal(int(p.PlayerInd), name, 0, 2)
 	}
 }
 func journalRemoveAll(name string) int {
@@ -105,7 +104,7 @@ func journalUnitUpdate(u *server.Object, name string, flags uint16) uint32 {
 		return 0
 	}
 	if p.PlayerInd != 31 {
-		return uint32(gameplayReportJournal(int(p.PlayerInd), unsafe.Pointer(n), 3))
+		return uint32(gameplayReportJournal(int(p.PlayerInd), alloc.GoStringS(n.EntryBuf[:]), n.Field3, 3))
 	}
 	return memmap.PtrWord(unsafe.Pointer(n))
 }

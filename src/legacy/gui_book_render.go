@@ -57,7 +57,7 @@ func bookDrawList(w *gui.Window) int {
 	p := bookPlayer
 	class := bookClass(p)
 	if *bookContents() != 0 {
-		perColumn := int(141 / *bookWord(1046656) - 1)
+		perColumn := int(int32(141 / *bookWord(1046656) - 1))
 		if *bookWord(1046936) == 0 {
 			bookHideWindow(bookWindow(*bookWord(1046944)), true)
 		}

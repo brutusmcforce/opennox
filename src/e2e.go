@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/fs"
 	"math"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -31,11 +32,14 @@ import (
 var (
 	e2eLog = log.New("E2E")
 
-	e2ePlay     = os.Getenv("NOX_E2E")
-	e2eRecord   = os.Getenv("NOX_E2E_RECORD")
-	e2eSlow     = os.Getenv("NOX_E2E_SLOW")
-	e2eOverride = os.Getenv("NOX_E2E_OVERRIDE") == "true"
-	e2eFailFast = os.Getenv("NOX_E2E_FAILFAST") != "false"
+	e2ePlay   = os.Getenv("NOX_E2E")
+	e2eRecord = os.Getenv("NOX_E2E_RECORD")
+	e2eSlow   = os.Getenv("NOX_E2E_SLOW")
+	// e2eServersEnv lists game servers (host:port, comma-separated) for multiplayer tests; the server list
+	// shows only these. Without it, tests have no server list (no network).
+	e2eServersEnv = os.Getenv("NOX_E2E_SERVERS")
+	e2eOverride   = os.Getenv("NOX_E2E_OVERRIDE") == "true"
+	e2eFailFast   = os.Getenv("NOX_E2E_FAILFAST") != "false"
 	// e2eZoom forces the world zoom (e.g. 0.5), to measure performance with a larger world view.
 	// Screenshots won't match the references then.
 	e2eZoom, _ = strconv.ParseFloat(os.Getenv("NOX_E2E_ZOOM"), 64)
@@ -424,6 +428,20 @@ func (sc *e2eScenario) Load(path string) {
 			sc.RunDir(l.Ang, dt, l.Name)
 		case "run-stop":
 			sc.RunEnd()
+		case "chase":
+			sc.Chase(dt, l.X, l.Name)
+		case "attack":
+			sc.Attack(dt, l.Slot, l.Name)
+		case "gather":
+			if dt != 0 {
+				sc.Wait(dt, "")
+			}
+			sc.Gather(l.Name)
+		case "players":
+			if dt != 0 {
+				sc.Wait(dt, "")
+			}
+			sc.Players(l.Name)
 		case "screen":
 			if dt != 0 {
 				sc.Wait(dt, "")
@@ -918,4 +936,21 @@ func e2eHashDir(dir string) map[string]string {
 		panic(err)
 	}
 	return hashes
+}
+
+// e2eServers returns the servers listed in NOX_E2E_SERVERS.
+func e2eServers() []netip.AddrPort {
+	var out []netip.AddrPort
+	for _, v := range strings.Split(e2eServersEnv, ",") {
+		if v = strings.TrimSpace(v); v == "" {
+			continue
+		}
+		addr, err := netip.ParseAddrPort(v)
+		if err != nil {
+			e2eLog.Printf("NOX_E2E_SERVERS: %v", err)
+			continue
+		}
+		out = append(out, addr)
+	}
+	return out
 }

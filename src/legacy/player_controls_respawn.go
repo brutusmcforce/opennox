@@ -1,10 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func controlRespawnItem(u *server.Object, name string, attrs *server.ModifierInitData, a, b int32) *server.Object {
@@ -12,7 +14,7 @@ func controlRespawnItem(u *server.Object, name string, attrs *server.ModifierIni
 	if it == nil {
 		return nil
 	}
-	if fn := *controlPtr(it.CObj(), int(layoutServerObject.Off(688)) /* Init */); fn != nil {
+	if fn := it.Init; fn != nil {
 		it.CallInitWithArg(nil)
 	}
 	if attrs != nil {
@@ -21,7 +23,7 @@ func controlRespawnItem(u *server.Object, name string, attrs *server.ModifierIni
 	Nox_xxx_inventoryServPlace_4F36F0(u, it, int(a), int(b))
 	it.ObjFlags &^= 0x80000
 	if it.ObjClass&0x3001000 != 0 {
-		*equipmentWord(it.UpdateData, 4) |= 1
+		it.UpdateDataWeaponArmor().Flags |= 1
 	}
 	return it
 }
@@ -30,6 +32,7 @@ func controlRespawnItem(u *server.Object, name string, attrs *server.ModifierIni
 // address on some paths. Keep it intact for the remaining C callers.
 func controlDefaultItems(u *server.Object, refresh, keep int32) int8 {
 	d := u.UpdateData
+	ud := layout.As[server.PlayerUpdateData](d)
 	pl := controlPlayer(u)
 	if refresh != 0 {
 		resourceRemovePoison(u)
@@ -38,35 +41,34 @@ func controlDefaultItems(u *server.Object, refresh, keep int32) int8 {
 	}
 	Nox_xxx_playerCancelAbils_4FC180(u)
 	gameplayReportReset(u)
-	for _, off := range []int{312, 316, 84} {
-		*equipmentWord(d, off) = 0
-	}
-	*controlByte(u.CObj(), int(layoutServerObject.Off(541)) /* Field541 */) = 0
-	*controlHalf(d, 78) = 0
-	*controlHalf(d, 76) = 0
-	hp := *controlHalf(*controlPtr(u.CObj(), int(layoutServerObject.Off(556)) /* HealthData */), 0)
-	for i := 0; i < 32; i++ {
-		*controlHalf(d, 12+2*i) = hp
+	ud.Field78, ud.Field79, ud.Field21 = nil, nil, 0
+	u.Field541 = 0
+	ud.Field19_1 = 0
+	ud.Field19_0 = 0
+	hp := u.HealthData.Cur
+	for i := range ud.HealthPrev {
+		ud.HealthPrev[i] = hp
 	}
 	u.ObjFlags &= 0xffeb3fe7
 	nox_xxx_playerSetState_4FA020((*nox_object_t)(u.CObj()), 13)
 	spellLifeClearBuffs(u)
-	*controlByte(d, 188) = 0
-	for _, off := range []int{216, 192, 196, 200, 204, 208, 136, 132, 268} {
-		*equipmentWord(d, off) = 0
-	}
-	*controlByte(d, 212) = 0
+	ud.Field47_0 = 0
+	ud.SpellCastStart = 0
+	ud.TrapSpells = [5]uint32{}
+	ud.HarpoonBolt, ud.HarpoonTarg = nil, nil
+	ud.Field67 = 0
+	*(*byte)(unsafe.Pointer(&ud.TrapSpellsCnt)) = 0
 	controlClearWaypoints(u)
-	*controlPtr(u.CObj(), int(layoutServerObject.Off(520)) /* Obj130 */) = nil
+	*(*unsafe.Pointer)(unsafe.Pointer(&u.Obj130)) = nil
 	if controlFlags(8192) {
-		matchRosterResyncMask(*controlByte(pl, 2064))
+		matchRosterResyncMask(pl.PlayerInd)
 	}
-	result := int8(memmap.PtrWord(pl))
-	if pl == nil || *equipmentWord(pl, 4700) != 0 {
+	result := int8(memmap.PtrWord(unsafe.Pointer(pl)))
+	if pl == nil || pl.Field4700 != 0 {
 		return result
 	}
-	gameplayReportTotalHealth(int(*controlByte(pl, 2064)), u)
-	gameplayReportTotalMana(int(*controlByte(pl, 2064)), u)
+	gameplayReportTotalHealth(int(pl.PlayerInd), u)
+	gameplayReportTotalMana(int(pl.PlayerInd), u)
 	if keep != 0 {
 		result = int8(controlRespawnNotify(u, 0))
 	} else {
@@ -78,13 +80,17 @@ func controlDefaultItems(u *server.Object, refresh, keep int32) int8 {
 			it = next
 		}
 		controlRespawnNotify(u, 1)
-		desc := func(id int32) *server.ModifierEff { return (*server.ModifierEff)(nox_xxx_modifGetDescById_413330(int32(id))) }
+		desc := func(id int32) *server.ModifierEff {
+			return (*server.ModifierEff)(nox_xxx_modifGetDescById_413330(int32(id)))
+		}
 		byName := func(name string) *server.ModifierEff {
 			return desc(int32(nox_xxx_modifGetIdByName_413290((*int8)(internCStr(name)))))
 		}
 		base := byName("UserColor1")
-		baseID := *equipmentWord(unsafe.Pointer(base), int(layoutServerModifierEff.Off(4)) /* ind4 */)
-		color := func(off int) *server.ModifierEff { return desc(int32(baseID + uint32(*controlByte(pl, 2185+off)))) }
+		baseID := base.Ind4
+		color := func(off int) *server.ModifierEff {
+			return desc(int32(baseID + uint32(pl.InfoBytes[off])))
+		}
 		// The fifth modifier word is intentionally initialized along with descriptors.
 		var attrs server.ModifierInitData
 		mods := func(m ...*server.ModifierEff) server.ModifierInitData {
@@ -93,19 +99,19 @@ func controlDefaultItems(u *server.Object, refresh, keep int32) int8 {
 			return a
 		}
 		makeItem := func(name string) *server.Object { return controlRespawnItem(u, name, &attrs, 1, 0) }
-		if (controlFlags(2560) || *controlByte(pl, 2251) != 0) && *equipmentWord(pl, 0)&0x400 == 0 {
+		if (controlFlags(2560) || pl.InfoBytes[66] != 0) && pl.ArmorEquip&0x400 == 0 {
 			attrs = mods(nil, color(84), color(85), nil, nil)
 			makeItem("StreetShirt")
 		}
-		if *controlByte(pl, 0)&4 == 0 {
+		if *(*byte)(unsafe.Pointer(&pl.ArmorEquip))&4 == 0 {
 			attrs = mods(nil, color(83), nil, nil, nil)
 			makeItem("StreetPants")
 		}
-		if *controlByte(pl, 0)&1 == 0 {
+		if *(*byte)(unsafe.Pointer(&pl.ArmorEquip))&1 == 0 {
 			attrs = mods(color(87), color(86), nil, nil, nil)
 			makeItem("StreetSneakers")
 		}
-		class := *controlByte(pl, 2251)
+		class := pl.InfoBytes[66]
 		if controlFlags(2048) {
 			attrs = mods(byName("ArmorQuality1"), nil, nil, nil, nil)
 			if class == 0 {
@@ -133,7 +139,7 @@ func controlDefaultItems(u *server.Object, refresh, keep int32) int8 {
 	}
 	pl = controlPlayer(u)
 	if pl != nil {
-		*equipmentWord(pl, 4700) = 1
+		pl.Field4700 = 1
 	}
 	return result
 }
@@ -147,7 +153,7 @@ func controlInitPlayer(u *server.Object) int8 {
 	controlReadStats(u, 0)
 	nox_xxx_spellAwardAll3_4EFE10((*nox_playerInfo)(pl))
 	if controlFlags(4096) {
-		*equipmentWord(d, 320) = uint32(floatToInt32(float32(nox_xxx_gamedataGetFloat_419D40(internCStr("QuestGameStartingExtraLives")))))
+		layout.As[server.PlayerUpdateData](d).Field80 = uint32(floatToInt32(float32(nox_xxx_gamedataGetFloat_419D40(internCStr("QuestGameStartingExtraLives")))))
 	}
 	return controlDefaultItems(u, 1, 0)
 }
@@ -156,54 +162,52 @@ func controlResetPlayer(u *server.Object) int32 {
 	pl := controlPlayer(u)
 	nox_xxx_spellAwardAll1_4EFD80((*nox_playerInfo)(pl))
 	nox_xxx_spellAwardAll2_4EFC80((*nox_playerInfo)(pl))
-	*controlByte(pl, 3684) = 1
+	pl.Level = 1
 	Nox_xxx_playerCancelAbils_4FC180(u)
 	controlReadStats(u, 0)
 	nox_xxx_spellAwardAll3_4EFE10((*nox_playerInfo)(pl))
-	mana := *controlHalf(d, 8)
-	*controlHalf(d, 4) = mana
-	*controlHalf(d, 6) = mana
-	setProtectionRecord(int32(*equipmentWord(pl, 4596)), uint32(mana))
-	for i := 192; i <= 208; i += 4 {
-		*equipmentWord(d, i) = 0
-	}
-	*controlByte(d, 212) = 0
+	mana := layout.As[server.PlayerUpdateData](d).ManaMax
+	layout.As[server.PlayerUpdateData](d).ManaCur = mana
+	layout.As[server.PlayerUpdateData](d).ManaPrev = mana
+	setProtectionRecord(int32(pl.ProtUnitManaCur), uint32(mana))
+	layout.As[server.PlayerUpdateData](d).TrapSpells = [5]uint32{}
+	*(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](d).TrapSpellsCnt)) = 0
 	resourceRestoreHP(u)
-	*controlByte(u.CObj(), int(layoutServerObject.Off(541)) /* Field541 */) = 0
+	u.Field541 = 0
 	u.ObjFlags &= 0xffeb3fe7
 	nox_xxx_playerSetState_4FA020((*nox_object_t)(u.CObj()), 13)
 	spellLifeClearBuffs(u)
 	spellLifeCancelPlayer(u)
 	resourceRemovePoison(u)
 	controlClearWaypoints(u)
-	gameplayReportTotalHealth(int(*controlByte(pl, 2064)), u)
-	gameplayReportTotalMana(int(*controlByte(pl, 2064)), u)
-	*controlPtr(u.CObj(), int(layoutServerObject.Off(520)) /* Obj130 */) = nil
-	*equipmentWord(pl, 3664) = 0xdeadface
-	*equipmentWord(pl, 3660) = 0xdeadface
+	gameplayReportTotalHealth(int(pl.PlayerInd), u)
+	gameplayReportTotalMana(int(pl.PlayerInd), u)
+	*(*unsafe.Pointer)(unsafe.Pointer(&u.Obj130)) = nil
+	pl.Field3664 = 0xdeadface
+	pl.Field3660 = 0xdeadface
 	return -559023410
 }
-func controlTeamFlag(pl unsafe.Pointer) {
-	u := controlObject(pl, 2056)
-	team := unsafe.Pointer(nox_xxx_getTeamByID_418AB0(int(*controlByte(u.CObj(), int(layoutServerObject.Off(52)) /* TeamVal.ID */))))
-	flag := controlObject(team, 76)
+func controlTeamFlag(pl *server.Player) {
+	u := pl.PlayerUnit
+	team := unsafe.Pointer(nox_xxx_getTeamByID_418AB0(int(*(*byte)(unsafe.Pointer(&u.TeamVal.ID)))))
+	flag := (*server.Object)(layout.As[server.Team](team).Field_76)
 	if flag != nil && flag.InvHolder == nil {
 		inventoryCrownPickup(u, flag, 1)
 	}
 }
-func controlLeaveObserver(pl unsafe.Pointer) {
+func controlLeaveObserver(pl *server.Player) {
 	if pl == nil {
 		return
 	}
-	u := controlObject(pl, 2056)
-	if u == nil || *controlPtr(u.CObj(), int(layoutServerObject.Off(744)) /* Update */) == updateIdentityKey(updateIDPlayerMonsterBot) {
+	u := pl.PlayerUnit
+	if u == nil || u.Update == updateIdentityKey(updateIDPlayerMonsterBot) {
 		return
 	}
 	playerStateRemoveStatus((*server.Player)(pl), 289)
 	spellLifeBuffOff(u, int32(0))
-	*controlPtr(u.CObj(), int(layoutServerObject.Off(744)) /* Update */) = updateIdentityKey(updateIDPlayer)
+	u.Update = updateIdentityKey(updateIDPlayer)
 	u.ObjFlags &^= 0x40
-	nox_xxx_monsterMarkUpdate_4E8020((*nox_object_t)(controlObject(pl, 2056).CObj()))
+	nox_xxx_monsterMarkUpdate_4E8020((*nox_object_t)(pl.PlayerUnit.CObj()))
 	if controlFlags(16) && bool(nox_xxx_CheckGameplayFlags_417DA0(4)) {
 		controlTeamFlag(pl)
 	}
@@ -212,8 +216,8 @@ func controlLeaveObserver(pl unsafe.Pointer) {
 	}
 	if controlFlags(4096) {
 		for it := GetServer().S().Players.FirstUnit(); it != nil; it = GetServer().S().Players.NextUnit(it) {
-			if *equipmentWord(controlPlayer(it), 4792) == 1 {
-				gameplayReportEnchant(int(int32(*controlByte(pl, 2064))), it)
+			if controlPlayer(it).Field4792 == 1 {
+				gameplayReportEnchant(int(int32(pl.PlayerInd)), it)
 			}
 		}
 	}
@@ -231,15 +235,15 @@ func controlRespawn(u *server.Object) int16 {
 	}
 	d := u.UpdateData
 	pl := controlPlayer(u)
-	if controlFlags(4096) && *equipmentWord(d, 548) != 0 {
-		return int16(*equipmentWord(d, 548))
+	if pd := layout.As[server.PlayerUpdateData](d); controlFlags(4096) && pd.Field137 != 0 {
+		return int16(pd.Field137)
 	}
 	if pl != nil {
-		*equipmentWord(pl, 4700) = 0
+		pl.Field4700 = 0
 	}
 	if controlFlags(4096) {
 		controlDefaultItems(u, 1, 1)
-		*controlByte(d, 452+int(*controlByte(controlPlayer(u), 2064))) = 250
+		layout.As[server.PlayerUpdateData](d).QuestLevels[controlPlayer(u).PlayerInd] = 250
 		nox_xxx_netPriMsgToPlayer_4DA2C0((*nox_object_t)(u.CObj()), (*int8)(internCStr("GeneralPrint:Respawn")), 0)
 	} else {
 		controlDefaultItems(u, 1, 0)
@@ -251,14 +255,14 @@ func controlRespawn(u *server.Object) int16 {
 	nox_xxx_aud_501960(int32(int32(sound)), (*nox_object_t)(u.CObj()), 0, 0)
 	controlMakeCorpse(u, settings)
 	pos := u.PosVec
-	if target := controlObject(d, 308); controlFlags(4096) && target != nil {
+	if target := layout.As[server.PlayerUpdateData](d).Field77; controlFlags(4096) && target != nil {
 		controlNearStart(target, &pos)
 	} else {
 		controlFindStart(&pos, u)
 	}
 	Nox_xxx_unitMove_4E7010(u, pos)
 	if controlFlags(16) && bool(nox_xxx_CheckGameplayFlags_417DA0(4)) {
-		controlTeamFlag(pl)
+		controlTeamFlag((*server.Player)(unsafe.Pointer(pl)))
 	}
 	if controlFlags(8192) {
 		spellLifeApplyBuff(u, 23, int16(5*uint16(GetServer().S().TickRate())), 5)
@@ -267,10 +271,10 @@ func controlRespawn(u *server.Object) int16 {
 	return 0
 }
 func controlRespawnBot(u *server.Object) int32 {
-	b := *controlPtr(u.UpdateData, 292)
-	settings := unsafe.Pointer((unsafe.Pointer)(unsafe.Pointer(serverConfigSettings())))
-	if *controlHalf(*controlPtr(u.CObj(), int(layoutServerObject.Off(556)) /* HealthData */), 0) == 0 {
-		if GetServer().S().Frame()-*equipmentWord(b, 548) < 2*GetServer().S().TickRate() {
+	b := u.UpdateDataPlayer().BotData
+	settings := unsafe.Pointer(serverConfigSettings())
+	if u.HealthData.Cur == 0 {
+		if GetServer().S().Frame()-b.Field137 < 2*GetServer().S().TickRate() {
 			return 1
 		}
 		controlBotCreate(u)

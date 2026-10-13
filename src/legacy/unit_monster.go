@@ -1,8 +1,6 @@
 package legacy
 
 import (
-	"unsafe"
-
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -18,6 +16,6 @@ func Nox_xxx_monsterAutoSpells_54C0C0(u *server.Object) {
 	monsterAutoSpells(u)
 }
 
-func Nox_xxx_getDefaultSoundSet_424350(name string) unsafe.Pointer {
+func Nox_xxx_getDefaultSoundSet_424350(name string) *server.MonsterSoundSet {
 	return resourceSoundByName(name)
 }

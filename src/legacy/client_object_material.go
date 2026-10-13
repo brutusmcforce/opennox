@@ -1,15 +1,16 @@
 package legacy
 
 import (
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"image"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/server"
-	"image"
-	"unsafe"
 )
 
 func objectTeamColor(arg unsafe.Pointer) int {
@@ -28,10 +29,10 @@ func objectTeamColor(arg unsafe.Pointer) int {
 	}
 }
 func objectDrawableTeamColor(dr *client.Drawable) int {
-	if *effectWord(dr, int(layoutClientDrawable.Off(112)) /* ObjClass */)&0x10000000 == 0 {
+	if *(*uint32)(unsafe.Pointer(&dr.ObjClass))&0x10000000 == 0 {
 		return 0
 	}
-	return objectTeamColor(*(*unsafe.Pointer)(unsafe.Pointer(effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */))))
+	return objectTeamColor(unsafe.Pointer(*drawableModifier(dr, 1))) // the team modifier of a flag
 }
 func objectTeamByColor(color int) *server.Team {
 	teams := &GetServer().S().Teams
@@ -76,7 +77,7 @@ func objectEquipmentMaterials(dr *client.Drawable, armor bool) {
 		if p == nil {
 			continue
 		}
-		cl := (*server.ModifierEff)(p).Color24
+		cl := p.Color24
 		GetClient().R2().Data().SetMaterialRGB(int(slot), int(cl.R), int(cl.G), int(cl.B))
 	}
 }
@@ -89,7 +90,7 @@ func objectEquipmentDraw(vp *noxrender.Viewport, dr *client.Drawable, armor, ani
 }
 func objectFlagDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	objectEquipmentDraw(vp, dr, false, true)
-	if !noxflags.HasGame(noxflags.GameFlag(128)) || *effectWord(dr, int(layoutClientDrawable.Off(120)) /* ObjFlags */)&0x1000000 == 0 {
+	if !noxflags.HasGame(noxflags.GameFlag(128)) || *(*uint32)(unsafe.Pointer(&dr.ObjFlags))&0x1000000 == 0 {
 		return 1
 	}
 	team := objectTeamByColor(objectDrawableTeamColor(dr))
@@ -97,7 +98,7 @@ func objectFlagDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 		return 1
 	}
 	p := vp.ToScreenPos(dr.PosVec)
-	p.Y -= int(int16(dr.ZVal)) + int(int64(*(*float32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(100)) /* ZSizeMax */))))
+	p.Y -= int(int16(dr.ZVal)) + int(int64(dr.ZSizeMax))
 	r := GetClient().R2()
 	r.Data().SetTextColor(noxcolor.RGBA5551(dword_8531A0_2572))
 	name := team.Name()

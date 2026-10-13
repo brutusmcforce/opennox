@@ -70,17 +70,22 @@ func ruleEqual(a []uint16, b string) bool {
 	return len(a) == len(b)
 }
 
+// ruleRejected is a rules line that could not be parsed, kept to be written back.
+type ruleRejected struct {
+	legacyListNode
+	Line [256]uint16
+}
+
 func ruleAppendRejected(list *legacyListNode, line []uint16) {
 	if list == nil {
 		return
 	}
-	p := legacyCalloc(1, 0x20c)
+	p := legacyNew[ruleRejected]()
 	if p == nil {
 		return
 	}
-	dst := unsafe.Slice((*uint16)(unsafe.Add(p, 12)), 256)
-	copy(dst[:255], line)
-	listAppend((*legacyListNode)(unsafe.Pointer(list)), (*legacyListNode)(p))
+	copy(p.Line[:255], line)
+	listAppend(list, &p.legacyListNode)
 }
 
 func ruleClearSpell(st *server.Settings2, ind int) {

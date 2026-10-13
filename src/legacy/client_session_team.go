@@ -2,11 +2,12 @@ package legacy
 
 import (
 	"encoding/binary"
+	"unicode/utf16"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"unicode/utf16"
-	"unsafe"
 )
 
 func clientSessionTeam(data []byte) int {
@@ -130,7 +131,7 @@ func clientSessionTeam(data []byte) int {
 		GetServer().TeamsResetYyy()
 	case 12:
 		if pl := s.Players.ByID(int(word(2))); pl != nil {
-			*(*byte)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(2282)) /* Field2282 */)) = data[4]
+			*(*byte)(unsafe.Pointer(&pl.Field2282)) = data[4]
 		}
 	}
 	return size

@@ -1,9 +1,10 @@
 package legacy
 
 import (
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"unsafe"
 )
 
 type serverConfigAllowed struct {
@@ -20,9 +21,28 @@ type serverConfigBlocked struct {
 func serverConfigAllowedHead() *legacyListNode { return &serverConfigAllowedList }
 func serverConfigBlockedHead() *legacyListNode { return &serverConfigBlockedList }
 
-// ServerConfigAllowedHead and ServerConfigBlockedHead return the heads of the allowed and blocked player lists.
-func ServerConfigAllowedHead() unsafe.Pointer { return unsafe.Pointer(&serverConfigAllowedList) }
-func ServerConfigBlockedHead() unsafe.Pointer { return unsafe.Pointer(&serverConfigBlockedList) }
+// ServerConfigAllowedNames returns the names on the allowed players list.
+func ServerConfigAllowedNames() []string {
+	var out []string
+	for p := serverConfigAllowedFirst(); p != nil; p = serverConfigAllowedNext(p) {
+		out = append(out, alloc.GoString16(&p.name[0]))
+	}
+	return out
+}
+
+// ServerConfigBlockedEntry is an entry of the blocked players list: a player name, or a serial when Address is not "0".
+type ServerConfigBlockedEntry struct {
+	Name, Address string
+}
+
+// ServerConfigBlocked returns the blocked players list.
+func ServerConfigBlocked() []ServerConfigBlockedEntry {
+	var out []ServerConfigBlockedEntry
+	for p := serverConfigBlockedFirst(); p != nil; p = serverConfigBlockedNext(p) {
+		out = append(out, ServerConfigBlockedEntry{Name: alloc.GoString16(&p.name[0]), Address: alloc.GoStringS(p.address[:])})
+	}
+	return out
+}
 func serverConfigAllowedFirst() *serverConfigAllowed {
 	return (*serverConfigAllowed)(unsafe.Pointer(listNext(serverConfigAllowedHead())))
 }
@@ -36,14 +56,14 @@ func serverConfigBlockedNext(p *serverConfigBlocked) *serverConfigBlocked {
 	return (*serverConfigBlocked)(unsafe.Pointer(listNext((*legacyListNode)(unsafe.Pointer(p)))))
 }
 func serverConfigAllowedAdd(name *uint16) unsafe.Pointer {
-	p := (*serverConfigAllowed)(legacyCalloc(1, 64))
+	p := legacyNew[serverConfigAllowed]()
 	listInit(&p.list)
 	alloc.StrCopyZero16P(p.name[:], name)
 	listAppend(serverConfigAllowedHead(), &p.list)
 	return unsafe.Pointer(serverPanelsAccessRefresh())
 }
 func serverConfigBlockedAdd(duration int32, name *uint16, address *byte) unsafe.Pointer {
-	p := (*serverConfigBlocked)(legacyCalloc(1, 96))
+	p := legacyNew[serverConfigBlocked]()
 	listInit(&p.list)
 	alloc.StrCopyZero16P(p.name[:], name)
 	if address != nil {

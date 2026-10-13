@@ -1,32 +1,20 @@
 package client
 
-import "unsafe"
+import (
+	"image"
+	"unsafe"
+)
 
+// DrawableFX is an effect attached to a drawable (see Drawable.Field_114 and legacy combatFX).
 type DrawableFX struct {
-	Field0  uint32      // 0, 0
-	Field4  uint32      // 1, 4
-	Field8  uint32      // 2, 8
-	Field12 uint32      // 3, 12
-	Field16 uint32      // 4, 16
-	Field20 uint32      // 5, 20
-	Field24 uint32      // 6, 24
-	Field28 uint32      // 7, 28
-	Field32 uint32      // 8, 32
-	Field36 uint32      // 9, 36
-	Field40 uint32      // 10, 40
-	Field44 uint32      // 11, 44
-	Field48 uint32      // 12, 48
-	Field52 uint32      // 13, 52
-	Field56 uint32      // 14, 56
-	Field60 uint32      // 15, 60
-	Next    *DrawableFX // 16, 64
-	Field68 uint32      // 17, 68
-	Field72 uint32      // 18, 72
-	Field76 uint32      // 19, 76
+	Kind, Field4                               uint32         // 0, 4
+	History                                    [6]image.Point // 8: last positions, newest first
+	Count                                      byte           // 56
+	_                                          [3]byte
+	Owner                                      *Drawable
+	Next, Previous, GlobalNext, GlobalPrevious *DrawableFX // Next is the link of Field_114
 }
 
 func (fx *DrawableFX) C() unsafe.Pointer {
 	return unsafe.Pointer(fx)
 }
-
-// Match the link written by the C attachment routine.

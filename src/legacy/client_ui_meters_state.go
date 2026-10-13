@@ -1,9 +1,11 @@
 package legacy
 
 import (
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"unsafe"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 type uiMeterRecord struct {
@@ -21,7 +23,7 @@ func uiMeterHide(w *gui.Window, hidden bool) int {
 	w.SetHidden(hidden)
 	return 0
 }
-func uiMeterPlayer() unsafe.Pointer   { return dword_8531A0_2576.C() }
+func uiMeterPlayer() *server.Player   { return dword_8531A0_2576 }
 func uiMeterColor(r, g, b int) uint32 { return uint32(nox_color_rgb_4344A0(r, g, b)) }
 func uiMeterMode() uint32             { return uint32(dword_5d4594_1096252) }
 
@@ -63,7 +65,7 @@ func sub_470C40(v int) int {
 }
 func uiMeterSetTotal(index int, playerOffset uintptr, current, maximum int) int {
 	if p := uiMeterPlayer(); p != nil {
-		*(*uint32)(unsafe.Add(p, playerOffset)) = uint32(maximum)
+		*(*uint32)(unsafe.Add(unsafe.Pointer(p), layoutServerPlayer.Off(playerOffset))) = uint32(maximum) // a 386 offset
 	}
 	uiMeters()[index].Maximum = uint32(maximum)
 	uiMeters()[index].Current = uint32(current)

@@ -1,8 +1,9 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 func mapThemeWallFloor(p, f uint32) uint32 {
@@ -14,7 +15,7 @@ func mapThemeWallFloor(p, f uint32) uint32 {
 	if !mapThemeNext(f) {
 		return 0
 	}
-	mapThemeCopy(row+60, mapThemeText())
+	mapThemeCopyAt(row, 60, mapThemeText())
 	*populationWord(row, 124) = *populationWord(p, 84)
 	*populationWord(p, 84) = row
 	*populationWord(p, 88)++
@@ -29,11 +30,11 @@ func mapThemeEdging(p uint32, kind int32, f uint32) uint32 {
 	if !mapThemeNext(f) {
 		return 0
 	}
-	mapThemeCopy(row+4, mapThemeText())
+	mapThemeCopyAt(row, 4, mapThemeText())
 	if !mapThemeNext(f) {
 		return 0
 	}
-	mapThemeCopy(row+64, mapThemeText())
+	mapThemeCopyAt(row, 64, mapThemeText())
 	mapThemeAppend(populationWord(p, 120), row, 124)
 	return 1
 }

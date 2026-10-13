@@ -1,24 +1,27 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/spell"
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func spellEffectSummonPosition(record, output unsafe.Pointer) int32 {
 	if record == nil {
 		return 0
 	}
-	u := spellEffectObject(record, 16)
+	u := layout.As[server.DurSpell](record).Caster16
 	if u == nil || output == nil {
 		return 0
 	}
-	pos := spellEffectPos(record, 52)
+	pos := layout.As[server.DurSpell](record).Pos2
 	if u.ObjClass&4 != 0 {
 		dx := float64(pos.X) - float64(u.PosVec.X)
 		dy := float64(pos.Y) - float64(u.PosVec.Y)
@@ -43,13 +46,13 @@ func spellEffectSummonPosition(record, output unsafe.Pointer) int32 {
 	return 1
 }
 func spellEffectSummonStart(record unsafe.Pointer) int32 {
-	u := spellEffectObject(record, 16)
-	guide := int32(*spellLifeWord(record, 4)) - 74
-	if u == nil || u.ObjFlags&0x8020 != 0 || *spellLifeWord(record, 20) != 0 {
+	u := layout.As[server.DurSpell](record).Caster16
+	guide := int32(layout.As[server.DurSpell](record).Spell) - 74
+	if u == nil || u.ObjFlags&0x8020 != 0 || layout.As[server.DurSpell](record).Flag20 != 0 {
 		return 1
 	}
 	if u.ObjClass&4 != 0 {
-		if controlFlags(4608) && *spellLifeWord(controlPlayer(u), 4244+int(guide)*4) == 0 {
+		if controlFlags(4608) && controlPlayer(u).BeastScrollLvl[int(guide)] == 0 {
 			resourcePriority(u, "Summon.c:NeedGuideToSummon")
 			return 1
 		}
@@ -69,11 +72,11 @@ func spellEffectSummonStart(record unsafe.Pointer) int32 {
 	if *seq >= 65000 {
 		*seq = 0
 	}
-	*controlHalf(record, 72) = uint16(typ)
-	*(*types.Pointf)(unsafe.Add(record, 74)) = pos
-	*controlByte(record, 82) = byte(u.Direction1)
-	*controlHalf(record, 83) = n
-	*controlByte(record, 85) = 0
+	*(*uint16)(unsafe.Pointer(summonByte(record, 72))) = uint16(typ)
+	*(*types.Pointf)(unsafe.Pointer(summonByte(record, 74))) = pos
+	*summonByte(record, 82) = byte(u.Direction1)
+	*(*uint16)(unsafe.Pointer(summonByte(record, 83))) = n
+	*summonByte(record, 85) = 0
 	duration := int32(memmap.PtrWord(record))
 	switch bookGuideSize(int32(guide)) {
 	case 1:
@@ -83,21 +86,21 @@ func spellEffectSummonStart(record unsafe.Pointer) int32 {
 	case 4:
 		duration = floatToInt32(float32(spellEffectTable("SummonDuration", 2)))
 	}
-	*spellLifeWord(record, 68) = uint32(duration) + GetServer().S().Frame()
+	layout.As[server.DurSpell](record).Frame68 = uint32(duration) + GetServer().S().Frame()
 	visibilityFXSummonStart(uint16(n), pos, byte(u.Direction1), uint16(typ), uint16(duration))
 	return 0
 }
 func spellEffectSummonFinish(record unsafe.Pointer) int32 {
-	owner := spellEffectObject(record, 16)
+	owner := layout.As[server.DurSpell](record).Caster16
 	if owner == nil || owner.ObjFlags&0x8020 != 0 {
 		return 1
 	}
-	if *spellLifeWord(record, 68)-1 != GetServer().S().Frame() {
+	if layout.As[server.DurSpell](record).Frame68-1 != GetServer().S().Frame() {
 		return 0
 	}
-	guide := int32(*spellLifeWord(record, 4)) - 74
+	guide := int32(layout.As[server.DurSpell](record).Spell) - 74
 	if owner.ObjClass&4 != 0 {
-		if controlFlags(512) && *spellLifeWord(controlPlayer(owner), 4244+int(guide)*4) == 0 {
+		if controlFlags(512) && controlPlayer(owner).BeastScrollLvl[int(guide)] == 0 {
 			resourcePriority(owner, "Summon.c:NeedGuideToSummon")
 			return 1
 		}
@@ -106,32 +109,32 @@ func spellEffectSummonFinish(record unsafe.Pointer) int32 {
 			return 1
 		}
 	}
-	u := Nox_xxx_unitDoSummonAt_5016C0(int(*controlHalf(record, 72)), spellEffectPos(record, 74), owner, server.Dir16(*controlByte(record, 82)))
+	u := Nox_xxx_unitDoSummonAt_5016C0(int(*(*uint16)(unsafe.Pointer(summonByte(record, 72)))), *(*types.Pointf)(unsafe.Pointer(summonByte(record, 74))), owner, server.Dir16(*summonByte(record, 82)))
 	if u != nil {
 		GetServer().S().Audio.EventObj(899, u, 0, 0)
 	}
-	*controlByte(record, 85) = 1
+	*summonByte(record, 85) = 1
 	return 1
 }
 func spellEffectSummonCancel(record unsafe.Pointer) {
-	if *controlByte(record, 85) == 0 {
-		visibilityFXSummonCancel(*controlHalf(record, 83))
-		GetServer().S().Audio.EventPos(900, spellEffectPos(record, 74), 0, 0)
+	if *summonByte(record, 85) == 0 {
+		visibilityFXSummonCancel(*(*uint16)(unsafe.Pointer(summonByte(record, 83))))
+		GetServer().S().Audio.EventPos(900, *(*types.Pointf)(durScratch(record, 74)), 0, 0)
 	}
 }
 func spellEffectCharmStart(record unsafe.Pointer) int32 {
 	s := GetServer().S()
-	source := spellEffectObject(record, 16)
-	target := spellEffectObject(record, 48)
-	level := int32(*spellLifeWord(record, 8))
-	if *spellLifeWord(record, 20) != 0 {
+	source := layout.As[server.DurSpell](record).Caster16
+	target := layout.As[server.DurSpell](record).Target48
+	level := int32(layout.As[server.DurSpell](record).Level)
+	if layout.As[server.DurSpell](record).Flag20 != 0 {
 		spellLifeApplyBuff(target, 3, int16(floatToInt32(float32(spellEffectScalar("ConfuseEnchantDuration")))), int8(level))
 		spellEffectAlert(source, target)
 		return 1
 	}
-	pos := spellEffectPos(record, 52)
-	target = s.Nox_xxx_spellFlySearchTarget(&pos, source, s.Spells.Flags(spell.ID(*spellLifeWord(record, 4))), 300, 0, source)
-	*controlPtr(record, 48) = target.CObj()
+	pos := layout.As[server.DurSpell](record).Pos2
+	target = s.Nox_xxx_spellFlySearchTarget(&pos, source, s.Spells.Flags(spell.ID(layout.As[server.DurSpell](record).Spell)), 300, 0, source)
+	*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.DurSpell](record).Target48)) = target.CObj()
 	if target == nil {
 		resourcePriority(source, "Summon.c:CharmNoCreatureCloseEnough")
 		s.Audio.EventObj(16, source, 0, 0)
@@ -142,12 +145,12 @@ func spellEffectCharmStart(record unsafe.Pointer) int32 {
 		if source.ObjClass&4 != 0 && !spellCharmAll {
 			if guide == 0 {
 				resourcePriority(source, "Summon.c:CreatureNotCharmable")
-				*controlPtr(record, 48) = nil
+				layout.As[server.DurSpell](record).Target48 = nil
 				s.Audio.EventObj(16, source, 0, 0)
 				return 1
 			}
-			if *spellLifeWord(controlPlayer(source), 4244+int(guide)*4) == 0 {
-				*controlPtr(record, 48) = nil
+			if controlPlayer(source).BeastScrollLvl[int(guide)] == 0 {
+				layout.As[server.DurSpell](record).Target48 = nil
 				resourcePriority(source, "Summon.c:NeedGuideToCharm")
 				s.Audio.EventObj(16, source, 0, 0)
 				return 1
@@ -163,19 +166,19 @@ func spellEffectCharmStart(record unsafe.Pointer) int32 {
 		case size == 4:
 			duration = floatToInt32(float32(spellEffectTable("CharmLargeDuration", level-1)))
 		}
-		*spellLifeWord(record, 68) = uint32(duration) + s.Frame()
+		layout.As[server.DurSpell](record).Frame68 = uint32(duration) + s.Frame()
 		spellLifeApplyBuff(target, 28, int16(uint16(duration)+1), 5)
 		spellLifeRayMessage((*server.DurSpell)(record))
 		return 0
 	}
-	*controlPtr(record, 48) = nil
+	layout.As[server.DurSpell](record).Target48 = nil
 	s.Audio.EventObj(16, source, 0, 0)
 	return 1
 }
 func spellEffectCharmFinish(record unsafe.Pointer) int32 {
 	s := GetServer().S()
-	source := spellEffectObject(record, 16)
-	u := spellEffectObject(record, 48)
+	source := layout.As[server.DurSpell](record).Caster16
+	u := layout.As[server.DurSpell](record).Target48
 	fail := func() int32 { s.Audio.EventObj(16, source, 0, 0); return 1 }
 	if u == nil || u.ObjFlags&0x8020 != 0 {
 		return fail()
@@ -187,7 +190,7 @@ func spellEffectCharmFinish(record unsafe.Pointer) int32 {
 		}
 		return fail()
 	}
-	if *spellLifeWord(record, 68)-1 != s.Frame() {
+	if layout.As[server.DurSpell](record).Frame68-1 != s.Frame() {
 		return 0
 	}
 	if !spellCharmAll {
@@ -215,12 +218,12 @@ func spellEffectCharmFinish(record unsafe.Pointer) int32 {
 	if spellLifeHasTeam(u) {
 		teamRuntimeLeave(u.TeamPtr(), int(u.NetCode))
 	}
-	*spellLifeWord(u.UpdateData, 1440) |= 0x80
+	u.UpdateDataMonster().StatusFlags |= 0x80
 	if controlFlags(4096) {
 		hp := resourceGetHP(u)
 		var max uint16
 		if def := u.UpdateDataMonster().MonsterDef; def != nil {
-			max = *controlHalf(unsafe.Pointer(def), 72)
+			max = *(*uint16)(unsafe.Pointer(&def.HealthQuest72))
 		} else {
 			max = s.Types.ByInd(int(u.TypeInd)).Health().Max
 		}
@@ -230,9 +233,9 @@ func spellEffectCharmFinish(record unsafe.Pointer) int32 {
 		}
 	}
 	if source.ObjClass&4 != 0 {
-		monsterOrder(source, u, int(*spellLifeWord(controlPlayer(source), 3648)))
+		monsterOrder(source, u, int(controlPlayer(source).SummonOrderAll))
 		u.ObjSubClass |= 0x180
-		ind := int(*controlByte(controlPlayer(source), 2064))
+		ind := int(controlPlayer(source).PlayerInd)
 		Nox_xxx_netReportAcquireCreature_4D91A0(ind, u)
 		s.Players.Nox_xxx_netMarkMinimapObject_417190(source.ControllingPlayer().PlayerIndex(), u, 1)
 		Nox_xxx_netSendSimpleObject2_4DF360(ind, u)
@@ -242,11 +245,11 @@ func spellEffectCharmFinish(record unsafe.Pointer) int32 {
 	} else {
 		monsterOrder(source, u, 4)
 	}
-	spellEffectAudio(int32(*spellLifeWord(record, 4)), 1, source)
+	spellEffectAudio(int32(layout.As[server.DurSpell](record).Spell), 1, source)
 	return 1
 }
 func spellEffectCharmCancel(record unsafe.Pointer) int32 {
-	u := spellEffectObject(record, 48)
+	u := layout.As[server.DurSpell](record).Target48
 	if u != nil && u.ObjFlags&0x8020 == 0 {
 		spellLifeBuffOff(u, 5)
 		return int32(spellLifeBuffOff(u, 28))
@@ -266,6 +269,10 @@ func spellEffectBanish(u *server.Object) {
 		it = next
 	}
 	visibilityFXPoint(129, u.PosVec)
-	nox_xxx_scriptCallByEventBlock_502490(unsafe.Add(u.UpdateData, 1264), nil, u.CObj(), 7)
+	nox_xxx_scriptCallByEventBlock_502490(unsafe.Pointer(&u.UpdateDataMonster().ScriptDeath), nil, u.CObj(), 7)
 	GetServer().DelayedDelete(u)
 }
+
+// summonByte returns byte off (72-87, as in the original) of the summon record that a summon spell keeps in its
+// duration spell (see durScratch).
+func summonByte(record unsafe.Pointer, off int) *byte { return (*byte)(durScratch(record, off)) }

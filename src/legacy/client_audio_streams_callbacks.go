@@ -17,7 +17,7 @@ func audioBridgeCallbackKey(id int) unsafe.Pointer {
 func audioStreamKnownCallback(fn, arg unsafe.Pointer) (int32, bool) {
 	switch fn {
 	case unsafe.Pointer(&audioStreamCallbackKeys[0]):
-		return audioStreamContextTick((*audioStreamContext)(arg)), true
+		return audioStreamContextTick((*AudioStreamContext)(arg)), true
 	case unsafe.Pointer(&audioStreamCallbackKeys[1]):
 		return audioStreamVoiceData((*audioStreamVoice)(arg)), true
 	case unsafe.Pointer(&audioStreamCallbackKeys[2]):
@@ -35,8 +35,7 @@ func audioStreamKnownCallback(fn, arg unsafe.Pointer) (int32, bool) {
 	case audioBridgeCallbackKey(3):
 		return int32(Sub_43EFD0(arg)), true
 	case audioBridgeCallbackKey(4):
-		p := *(**AudioSample)(unsafe.Add(arg, 272))
-		p.Smp.Stop()
+		AudioVoiceSample(arg).Smp.Stop()
 		return 0, true
 	case audioBridgeCallbackKey(5):
 		panic("abort")

@@ -1,10 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/server"
 	"strings"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func mapPaintSelectObject(name *byte) uint32 {
@@ -60,7 +62,7 @@ func mapPaintOrientObject(u *server.Object, dir int32) uint32 {
 	}
 	if u.ObjClass&2 != 0 {
 		angle := uint32(geometryDirection4Angle(int32(mapPaintDirection(dir))))
-		*(*uint32)(unsafe.Add(u.UpdateData, 376)) = angle
+		layout.As[server.MonsterUpdateData](u.UpdateData).Direction94 = angle
 		u.Direction1 = server.Dir16(angle)
 		return 1
 	}
@@ -80,17 +82,17 @@ func mapPaintOrientObject(u *server.Object, dir int32) uint32 {
 	default:
 		return 0
 	}
-	data := (*[4]uint32)(u.UpdateData)
-	data[3] = angle
-	data[1] = angle
-	data[2] = angle
+	data := u.UpdateDataDoor()
+	data.Dir = angle
+	data.BaseDir = angle
+	data.PrevDir = angle
 	return 1
 }
 func mapPaintFinishBook(u *server.Object, value byte) uint32 {
 	if u == nil || GetServer().S().Types.ByInd(int(u.TypeInd)).Xfer != xferIdentityKey(xferIDSpellReward) {
 		return 0
 	}
-	*(*byte)(u.UseData.Ptr) = value
+	u.UseDataSpellReward().Spell = value
 	return 1
 }
 func mapPaintDoor(r *mapRoom, pos *types.Pointf, span int32, vertical, double bool) uint32 {

@@ -1,13 +1,16 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/spell"
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/common/sound"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func sustainedHealTarget(d *server.DurSpell, u *server.Object) *server.Object {
@@ -77,7 +80,7 @@ func sustainedEnergyTick(p unsafe.Pointer) uint32 {
 	if !valid {
 		d.Target48 = nil
 		if u.ObjClass&4 != 0 {
-			t = spellEffectObject(u.UpdateData, 288)
+			t = layout.As[server.PlayerUpdateData](u.UpdateData).CursorObj
 			if t != nil && sustainedEnemy(u, t) && stateDistance(u, t) <= float64(radius) {
 				d.Target48 = t
 			}
@@ -86,7 +89,7 @@ func sustainedEnergyTick(p unsafe.Pointer) uint32 {
 			d.Target48 = sustainedEnergySearch(u.PosVec, radius, u, false)
 		}
 	}
-	old := spellEffectObject(p, 36)
+	old := durWordObject(layout.As[server.DurSpell](p).Field36)
 	if d.Target48 == nil {
 		if old != nil {
 			sustainedStopRay(d, old)
@@ -94,9 +97,9 @@ func sustainedEnergyTick(p unsafe.Pointer) uint32 {
 		}
 		return 0
 	}
-	value := float32(spellEffectTable("EnergyBoltDamage", int32(d.Level)-1) + float64(*temporaryFloat(p, 72)))
+	value := float32(spellEffectTable("EnergyBoltDamage", int32(d.Level)-1) + float64(*(*float32)(durScratch(p, 72))))
 	n := floatToInt32(value)
-	*temporaryFloat(p, 72) = float32(float64(value) - float64(n))
+	*(*float32)(durScratch(p, 72)) = float32(float64(value) - float64(n))
 	if d.Target48 != old {
 		if old != nil {
 			sustainedStopRay(d, old)
@@ -140,13 +143,13 @@ func sustainedFirewalk(p unsafe.Pointer) uint32 {
 		}
 	}
 	if d.Frame60 == d.Frame64 {
-		*(*types.Pointf)(unsafe.Add(p, 72)) = u.PosVec
-		*(*types.Pointf)(unsafe.Add(p, 80)) = u.PosVec
+		*(*types.Pointf)(durScratch(p, 72)) = u.PosVec
+		*(*types.Pointf)(durScratch(p, 80)) = u.PosVec
 		d.Frame64++
 		return 0
 	}
-	last := spellEffectPos(p, 72)
-	prev := spellEffectPos(p, 80)
+	last := *(*types.Pointf)(durScratch(p, 72))
+	prev := *(*types.Pointf)(durScratch(p, 80))
 	dx := float64(u.PosVec.X) - float64(last.X)
 	dy := float64(u.PosVec.Y) - float64(last.Y)
 	limit := 0
@@ -156,7 +159,7 @@ func sustainedFirewalk(p unsafe.Pointer) uint32 {
 			limit = 2
 		}
 	}
-	if math.Sqrt(dy*dy+dx*dx)-float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) > 15 {
+	if math.Sqrt(dy*dy+dx*dx)-float64(u.Shape.Circle.R) > 15 {
 		pos := last
 		for i := 0; i < 2; i++ {
 			id := *memmap.PtrUint32(0x5d4594, 2487888+uintptr(GetServer().S().Rand.Logic.IntClamp(0, limit))*4)
@@ -172,8 +175,8 @@ func sustainedFirewalk(p unsafe.Pointer) uint32 {
 				pos.Y = float32(float64(pos.Y) - float64(y)*0.5)
 			}
 		}
-		*(*types.Pointf)(unsafe.Add(p, 80)) = last
-		*(*types.Pointf)(unsafe.Add(p, 72)) = u.PosVec
+		*(*types.Pointf)(durScratch(p, 80)) = last
+		*(*types.Pointf)(durScratch(p, 72)) = u.PosVec
 	}
 	return 0
 }
@@ -183,14 +186,14 @@ func sustainedForceStart(p unsafe.Pointer) uint32 {
 	if d.Flag20 != 0 {
 		u = d.Obj24
 	} else if u.ObjClass&4 != 0 {
-		if item := spellEffectObject(u.UpdateData, 104); item != nil && item.ObjSubClass&0x200000 != 0 && *controlByte(item.UseData.Ptr, 96)&4 != 0 {
+		if item := layout.As[server.PlayerUpdateData](u.UpdateData).Field26; item != nil && item.ObjSubClass&0x200000 != 0 && item.UseDataWand().Flags&4 != 0 {
 			d.Flags88 |= 2
 		}
 	}
-	*controlHalf(p, 72) = uint16(u.Direction1)
+	*(*uint16)(durScratch(p, 72)) = uint16(u.Direction1)
 	if charge := sustainedNew("ForceOfNatureCharge"); charge != nil {
 		spellEffectCreate(charge, nil, u.PosVec)
-		*controlPtr(p, 76) = charge.CObj()
+		layout.As[server.DurSpell](p).Field76 = uintptr(charge.CObj())
 	}
 	return 0
 }
@@ -205,7 +208,7 @@ func sustainedForceTick(p unsafe.Pointer) uint32 {
 		return 1
 	}
 	if d.Frame68-7 == sustainedFrame() {
-		if charge := spellEffectObject(p, 76); charge != nil {
+		if charge := (*server.Object)(unsafe.Pointer(layout.As[server.DurSpell](p).Field76)); charge != nil {
 			sustainedDelete(charge)
 			d.Field76 = 0
 		}
@@ -221,18 +224,18 @@ func sustainedForceTick(p unsafe.Pointer) uint32 {
 		return 1
 	}
 	pos := d.Pos
-	dir := *controlHalf(p, 72)
+	dir := *(*uint16)(durScratch(p, 72))
 	distance := 0.0
 	if d.Flag20 == 0 {
 		pos = u.PosVec
 		dir = uint16(u.Direction1)
-		switch *spellLifeWord(u.CObj(), int(layoutServerObject.Off(172)) /* Shape.Kind */) {
+		switch *(*uint32)(unsafe.Pointer(&u.Shape.Kind)) {
 		case 1:
 			distance = 4
 		case 2:
-			distance = float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) + 4
+			distance = float64(u.Shape.Circle.R) + 4
 		case 3:
-			distance = math.Max(float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(184)) /* Shape.Box.W */)), float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(188)) /* Shape.Box.H */))) + 4
+			distance = math.Max(float64(u.Shape.Box.W), float64(u.Shape.Box.H)) + 4
 		default:
 			distance = 24
 		}
@@ -244,10 +247,10 @@ func sustainedForceTick(p unsafe.Pointer) uint32 {
 	}
 	spellEffectCreate(ball, u, dest)
 	if d.Flag20 == 1 {
-		*(*types.Pointf)(unsafe.Add(ball.CObj(), int(layoutServerObject.Off(80)) /* VelVec.X */)) = types.Pointf{}
+		ball.VelVec = types.Pointf{}
 	} else {
-		speed := *temporaryFloat(ball.CObj(), int(layoutServerObject.Off(544)) /* SpeedCur */)
-		*(*types.Pointf)(unsafe.Add(ball.CObj(), int(layoutServerObject.Off(80)) /* VelVec.X */)) = types.Ptf(vec.X*speed, vec.Y*speed)
+		speed := ball.SpeedCur
+		ball.VelVec = types.Ptf(vec.X*speed, vec.Y*speed)
 	}
 	ball.Direction1 = server.Dir16(dir)
 	ball.Direction2 = server.Dir16(dir)
@@ -256,17 +259,17 @@ func sustainedForceTick(p unsafe.Pointer) uint32 {
 }
 func sustainedForceCancel(p unsafe.Pointer) uint32 {
 	d := (*server.DurSpell)(p)
-	if charge := spellEffectObject(p, 76); charge != nil {
+	if charge := (*server.Object)(unsafe.Pointer(layout.As[server.DurSpell](p).Field76)); charge != nil {
 		sustainedDelete(charge)
 	}
 	u := d.Caster16
 	ret := controlRaw(u)
 	if u != nil && u.ObjClass&4 != 0 {
-		item := spellEffectObject(u.UpdateData, 104)
+		item := layout.As[server.PlayerUpdateData](u.UpdateData).Field26
 		ret = controlRaw(item)
 		if item != nil && item.ObjSubClass&0x200000 != 0 {
 			ret = memmap.PtrWord(item.UseData.Ptr)
-			*spellLifeWord(item.UseData.Ptr, 96) &= ^uint32(4)
+			item.UseDataWand().Flags &= ^uint32(4)
 		}
 	}
 	return ret
@@ -284,15 +287,13 @@ func sustainedManaBombStart(p unsafe.Pointer) uint32 {
 		for _, buff := range []int32{5, 14, 29} {
 			spellLifeApplyBuff(u, buff, int16(10*sustainedFPS()), 5)
 		}
-		d.Field80 = *spellLifeWord(u.CObj(), int(layoutServerObject.Off(120)) /* Mass */)
-		*spellLifeWord(u.CObj(), int(layoutServerObject.Off(120)) /* Mass */) = 1203982323
-		for off := 80; off <= 100; off += 4 {
-			*spellLifeWord(u.CObj(), off) = 0
-		}
+		d.Field80 = *(*uint32)(unsafe.Pointer(&u.Mass))
+		*(*uint32)(unsafe.Pointer(&u.Mass)) = 1203982323
+		u.VelVec, u.ForceVec, u.Pos24 = types.Pointf{}, types.Pointf{}, types.Pointf{}
 	}
 	if charge := spellEffectNew(id); charge != nil {
 		spellEffectCreate(charge, nil, d.Pos)
-		*controlPtr(p, 76) = charge.CObj()
+		layout.As[server.DurSpell](p).Field76 = uintptr(charge.CObj())
 	}
 	return 0
 }
@@ -303,7 +304,7 @@ func sustainedManaBombTick(p unsafe.Pointer) uint32 {
 		return 1
 	}
 	explode := d.Frame68-1 == sustainedFrame() || u != nil && u.ObjClass&4 != 0 && resourceGetMana(u) == 0
-	if charge := spellEffectObject(p, 76); charge != nil {
+	if charge := (*server.Object)(unsafe.Pointer(layout.As[server.DurSpell](p).Field76)); charge != nil {
 		remove := d.Frame68-sustainedFrame() < 10
 		if d.Flag20 == 0 && u != nil && u.ObjClass&4 != 0 {
 			remove = uint16(resourceGetMana(u)) < 15
@@ -340,7 +341,7 @@ func sustainedManaBombTick(p unsafe.Pointer) uint32 {
 }
 func sustainedManaBombCancel(p unsafe.Pointer) uint32 {
 	d := (*server.DurSpell)(p)
-	if charge := spellEffectObject(p, 76); charge != nil {
+	if charge := (*server.Object)(unsafe.Pointer(layout.As[server.DurSpell](p).Field76)); charge != nil {
 		sustainedDelete(charge)
 		d.Field76 = 0
 	}
@@ -349,7 +350,7 @@ func sustainedManaBombCancel(p unsafe.Pointer) uint32 {
 		for _, buff := range []int32{5, 14, 29} {
 			spellLifeBuffOff(u, buff)
 		}
-		*spellLifeWord(u.CObj(), int(layoutServerObject.Off(120)) /* Mass */) = d.Field80
+		*(*uint32)(unsafe.Pointer(&u.Mass)) = d.Field80
 	}
 	if d.Field84 == 0 {
 		return sustainedFX(163, d.Pos)
@@ -367,13 +368,13 @@ func sustainedTurnUndeadStart(p unsafe.Pointer) uint32 {
 	pos := u.PosVec
 	for dir := uint16(0); dir < 256; dir += 6 {
 		if killer := spellEffectNew(id); killer != nil {
-			*controlPtr(*controlPtr(killer.CObj(), int(layoutServerObject.Off(700)) /* CollideData */), 0) = p
+			killer.CollideDataUndeadKiller().Spell = memmap.PtrWord(p) // the duration spell, as a pointer word
 			spellEffectCreate(killer, d.Caster16, pos)
 			killer.Direction1 = server.Dir16(dir)
 			killer.Direction2 = server.Dir16(dir)
 			vec := sustainedDirection(dir)
-			*(*types.Pointf)(unsafe.Add(killer.CObj(), int(layoutServerObject.Off(80)) /* VelVec.X */)) = types.Ptf(vec.X*4, vec.Y*4)
-			*spellLifeWord(killer.CObj(), int(layoutServerObject.Off(112)) /* Float28 */) = 0
+			killer.VelVec = types.Ptf(vec.X*4, vec.Y*4)
+			*(*uint32)(unsafe.Pointer(&killer.Float28)) = 0
 		}
 	}
 	sustainedFX(160, pos)
@@ -383,7 +384,7 @@ func sustainedTurnUndeadTick() uint32 { return 0 }
 func sustainedTurnUndeadCancel(p unsafe.Pointer) uint32 {
 	id := stateType(2487928, "UndeadKiller")
 	for u := asObjectS(nox_server_getFirstObject_4DA790()); u != nil; u = asObjectS(nox_server_getNextObject_4DA7A0(asObjectC(u))) {
-		if uint32(u.TypeInd) == id && *controlPtr(*controlPtr(u.CObj(), int(layoutServerObject.Off(700)) /* CollideData */), 0) == p {
+		if uint32(u.TypeInd) == id && u.CollideDataUndeadKiller().SpellPtr() == p {
 			sustainedDelete(u)
 		}
 	}

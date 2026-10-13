@@ -11,6 +11,8 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	"github.com/brutusmcforce/opennox/libs/common"
 	"github.com/brutusmcforce/opennox/libs/datapath"
 	"github.com/brutusmcforce/opennox/libs/ifs"
@@ -420,7 +422,7 @@ func nox_xxx_findAutosaves_4A5150() {
 		legacy.Nox_xxx_wnd_46ABB0(v22, 0)
 		legacy.Nox_xxx_wnd_46ABB0(v23, 1)
 	}
-	if int32(*(*uint16)(unsafe.Add(wnames.WidgetData, 46))) != 0 { // TODO: check widget type
+	if int32((*gui.ScrollListBoxData)(wnames.WidgetData).Field_11_1) != 0 { // TODO: check widget type
 		wnames.Func94(gui.AsWindowEvent(0x4013, 0, 0))
 		wstyle.Func94(gui.AsWindowEvent(0x4013, 0, 0))
 	}
@@ -699,7 +701,7 @@ func nox_xxx_windowSelCharProc_4A5710(a1 *gui.Window, e gui.WindowEvent) gui.Win
 			nox_wnd_xxx_1307748.Func13Ptr = legacy.Get_nox_game_showSelClass_4A4840()
 		case 502:
 			v7 := winCharListNames.WidgetData
-			v10 := *(*int32)(unsafe.Add(v7, 48))
+			v10 := *(*int32)(unsafe.Pointer(&layout.As[gui.ScrollListBoxData](v7).Field_12))
 			if v10 == -1 {
 				break
 			}
@@ -753,7 +755,7 @@ func nox_xxx_windowSelCharProc_4A5710(a1 *gui.Window, e gui.WindowEvent) gui.Win
 			}
 		case 503:
 			v7 := winCharListNames.WidgetData
-			v5 := *(*int32)(unsafe.Add(v7, 48))
+			v5 := int32((*gui.ScrollListBoxData)(v7).Field_12)
 			if v5 == -1 {
 				break
 			}
@@ -900,7 +902,7 @@ func nox_savegame_sub_46C920(win1 *gui.Window, ev gui.WindowEvent) gui.WindowEve
 		clientPlaySoundSpecial(sound.SoundButtonPress, 100)
 		switch ev.Win.ID() {
 		case 501:
-			saveNum := *(*int32)(unsafe.Add(dword_5d4594_1082864.WidgetData, 48))
+			saveNum := int32((*gui.ScrollListBoxData)(dword_5d4594_1082864.WidgetData).Field_12)
 			if saveNum < 0 {
 				return nil
 			}
@@ -934,7 +936,7 @@ func nox_savegame_sub_46C920(win1 *gui.Window, ev gui.WindowEvent) gui.WindowEve
 			sub_46D6F0()
 			return nil
 		case 502:
-			v6 := *(*int32)(unsafe.Add(dword_5d4594_1082864.WidgetData, 48))
+			v6 := int32((*gui.ScrollListBoxData)(dword_5d4594_1082864.WidgetData).Field_12)
 			if v6 >= 0 && alloc.GoStringS(nox_savegame_arr_1064948[v6].PathBuf[:]) != "" {
 				if legacy.Nox_xxx_playerAnimCheck_4372B0() != 0 {
 					nox_savegame_sub_46CBD0()
@@ -965,7 +967,7 @@ func nox_savegame_sub_46C920(win1 *gui.Window, ev gui.WindowEvent) gui.WindowEve
 }
 
 func nox_savegame_sub_46CBD0() {
-	i := *(*int32)(unsafe.Add(dword_5d4594_1082864.WidgetData, 48))
+	i := int32((*gui.ScrollListBoxData)(dword_5d4594_1082864.WidgetData).Field_12)
 	if alloc.GoStringS(nox_savegame_arr_1064948[i].PathBuf[:]) == "" {
 		return
 	}

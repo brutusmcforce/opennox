@@ -1,13 +1,14 @@
 package legacy
 
 import (
+	"image"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"image"
-	"unsafe"
 )
 
 func serverOptionsDispatch(w *gui.Window, e gui.WindowEvent) gui.WindowEventResp {
@@ -36,7 +37,7 @@ func serverOptionsConstruct() int {
 	}
 	name := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 129760+4*uintptr(lang))))
 	w := Nox_new_window_from_file(name, serverOptionsDispatch)
-	serverOptionsRoot = uint32(serverOptionsPtr(w))
+	serverOptionsRoot = memmap.PtrWord(w.C())
 	if w == nil {
 		return 0
 	}
@@ -51,7 +52,7 @@ func serverOptionsConstruct() int {
 		off uintptr
 		id  uint
 	}{{1046512, 10101}, {1046496, 10114}, {1046500, 10183}, {1046504, 10197}, {1046508, 10199}, {1046524, 10150}, {1046516, 10134}, {1046520, 10135}, {1046536, 10153}} {
-		*serverOptionsWord(v.off) = uint32(serverOptionsPtr(w.ChildByID(v.id)))
+		*serverOptionsWord(v.off) = memmap.PtrWord(w.ChildByID(v.id).C())
 	}
 	w.ChildByID(10331).SetTooltipFunc(finalTooltipKey(tooltipTeamAssign))
 	w.ChildByID(10333).SetTooltipFunc(finalTooltipKey(tooltipTeamDamage))

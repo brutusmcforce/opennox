@@ -88,7 +88,11 @@ func (c *Client) DrawFlagOn(vp *noxrender.Viewport, dr *client.Drawable, weapons
 		for i := range weapons {
 			p := &weapons[i]
 			if p.Field0 == 1 {
-				obj.Union = *(*client.DrawableUnion)(unsafe.Pointer(&p.Field4))
+				item := (*client.DrawableUnionItem)(unsafe.Pointer(&obj.Union))
+				for j, m := range p.Field4 {
+					item.Modifiers[j] = (*server.ModifierEff)(m)
+				}
+				*(*uint32)(unsafe.Pointer(&item.Field_112_0)) = p.Field20
 				break
 			}
 		}

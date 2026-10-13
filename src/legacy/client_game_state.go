@@ -6,10 +6,11 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
 	"github.com/brutusmcforce/opennox/client"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var clientFadeObjects uint32 = 1
@@ -18,7 +19,7 @@ func clientGameLocalDrawable() *client.Drawable {
 	return LocalPlayerDrawable
 }
 func clientGameKeepDrawable(dr *client.Drawable) bool {
-	return dr == clientGameLocalDrawable() || dr.DrawFuncPtr == drawableDrawKey(drawKey_nox_thing_animate_draw) && dr.DrawData != nil && *(*uint32)(unsafe.Add(dr.DrawData, 12)) == 1
+	return dr == clientGameLocalDrawable() || dr.DrawFuncPtr == drawableDrawKey(drawKey_nox_thing_animate_draw) && dr.DrawData != nil && (*client.SpriteAnimationData)(dr.DrawData).Kind == 1
 }
 func clientGameRemoveDrawable(dr *client.Drawable, code uint16) {
 	if code&0x8000 != 0 {
@@ -29,7 +30,7 @@ func clientGameRemoveDrawable(dr *client.Drawable, code uint16) {
 }
 func clientGameRestoreLight(dr *client.Drawable) {
 	typ := GetClient().Cli().Things.TypeByInd(int(dr.TypeIDVal))
-	particleLightIntensity(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), typ.LightIntensity, true)
+	particleLightIntensity(dr, typ.LightIntensity, true)
 }
 
 // clientGameState handles complete case groups; unselected messages retain the C fallback.
@@ -138,11 +139,11 @@ func clientGameState(op netmsg.Op, data []byte) (int, bool) {
 		if !noxflags.HasGame(noxflags.GameHost) {
 			if w := worldSecretFind(int16(word(1))); w != nil && w.Flags4&4 != 0 {
 				if int(op) == 59 {
-					*(*byte)(unsafe.Add(w.Data, 22)) = 23
-					*(*byte)(unsafe.Add(w.Data, 21)) = 3
+					w.SecretData().Progress = server.SecretWallProgressMax
+					w.SecretData().State = server.SecretWallOpen
 				} else if w.Data != nil {
-					*(*byte)(unsafe.Add(w.Data, 22)) = 0
-					*(*byte)(unsafe.Add(w.Data, 21)) = 1
+					w.SecretData().Progress = 0
+					w.SecretData().State = server.SecretWallClosed
 				}
 			}
 		}
@@ -216,11 +217,11 @@ func clientGameState(op netmsg.Op, data []byte) (int, bool) {
 		}
 	case 92:
 		if dr := drawable(); dr != nil {
-			particleLightColor(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), int(data[3]), int(data[4]), int(data[5]))
+			particleLightColor(dr, int(data[3]), int(data[4]), int(data[5]))
 		}
 	case 93:
 		if dr := drawable(); dr != nil {
-			particleLightIntensity(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), math.Float32frombits(dword(3)), true)
+			particleLightIntensity(dr, math.Float32frombits(dword(3)), true)
 		}
 	case 94, 95:
 		if dr := drawable(); dr != nil {
@@ -233,7 +234,7 @@ func clientGameState(op netmsg.Op, data []byte) (int, bool) {
 		sub_467930(int(word(1)&0x7fff), int(data[3]), int(data[4]))
 	case 102:
 		if dr := clientGameLocalDrawable(); dr != nil {
-			*(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(120)) /* ObjFlags */)) = dword(1)
+			*(*uint32)(unsafe.Pointer(&dr.ObjFlags)) = dword(1)
 		}
 	case 104:
 		if local() {

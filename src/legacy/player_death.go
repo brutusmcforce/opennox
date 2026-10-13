@@ -2,15 +2,16 @@ package legacy
 
 import (
 	"encoding/binary"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
-func playerDeathWord(p unsafe.Pointer, off uintptr) *uint32 { return (*uint32)(unsafe.Add(p, off)) }
+func playerDeathWord(p unsafe.Pointer, off uintptr) *uint32 { return rawAt[uint32](p, int(off)) }
 func playerDeathNotify(u *server.Object) {
 	b := [3]byte{232, byte(u.NetCode), byte(u.NetCode >> 8)}
 	reliableEnqueue(255, b[:], nil, 0, 1)
@@ -31,10 +32,10 @@ func playerDeath(u *server.Object) {
 	}
 	var assist *server.Object
 	var info *server.Player
-	if pl.Field3600 != 0 && s.Frame()-*playerDeathWord(pl.C(), layoutServerPlayer.Off(3608) /* field3608 */) < 10*s.TickRate() {
+	if pl.Field3600 != 0 && s.Frame()-pl.Field3608 < 10*s.TickRate() {
 		info = s.Players.ByInd(ntype.PlayerInd(pl.Field3604))
 		if info != nil {
-			if *playerDeathWord(info.C(), layoutServerPlayer.Off(2092) /* Active */) != 0 && info.PlayerUnit != nil {
+			if info.Active != 0 && info.PlayerUnit != nil {
 				assist = objectLookupByNetCode(info.NetCodeVal)
 			} else {
 				info = nil
@@ -75,7 +76,7 @@ func playerDeath(u *server.Object) {
 	audio := sound.ID(321)
 	if u.Field131 == 16 {
 		audio = 299
-	} else if *(*byte)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(2252)) /* info */)) != 0 {
+	} else if pl.InfoBytes[67] != 0 {
 		audio = 331
 	}
 	s.Audio.EventObj(audio, u, 0, 0)
@@ -133,7 +134,7 @@ func playerDeath(u *server.Object) {
 			questRuntimeReset(u)
 			questDeathPenalty(u)
 			ud.Field80 = uint32(floatToInt32(float32(s.Balance.Float("QuestGameStartingExtraLives"))))
-			*(*byte)(unsafe.Add(unsafe.Pointer(ud), 452+uintptr(pl.PlayerIndex()))) = byte(ud.Field80)
+			ud.QuestLevels[pl.PlayerIndex()] = byte(ud.Field80)
 		}
 	}
 }

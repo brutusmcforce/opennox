@@ -2,12 +2,13 @@ package legacy
 
 import (
 	"encoding/binary"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/internal/netlist"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func reliableClientSend(to int, data []byte, related *server.Object, priority int) int {
@@ -24,7 +25,7 @@ func reliableDeliver(to byte, kind int) {
 	s := GetServer().S()
 	pl := s.Players.ByInd(ntype.PlayerInd(to))
 	hosting := noxflags.HasGame(noxflags.GameFlag(1))
-	if pl != nil && hosting && *(*byte)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(3680)) /* Field3680 */))&16 == 0 {
+	if pl != nil && hosting && *(*byte)(unsafe.Pointer(&pl.Field3680))&16 == 0 {
 		return
 	}
 	send := func(data []byte) bool {

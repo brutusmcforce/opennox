@@ -1,13 +1,11 @@
 package legacy
 
 import (
-	"unsafe"
-
-	"github.com/brutusmcforce/opennox/libs/console"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/console"
 )
 
 func Nox_cmd_ban(i int, t []string) bool {
@@ -30,7 +28,7 @@ func Nox_cmd_ban(i int, t []string) bool {
 	} else {
 		Nox_xxx_playerDisconnByPlrID_4DEB00(ntype.PlayerInd(p.PlayerInd))
 	}
-	serverConfigBlockedAdd(0, alloc.InternCString16(name), (*byte)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(2112)) /* SerialBuf */)))
+	serverConfigBlockedAdd(0, alloc.InternCString16(name), &p.SerialBuf[0])
 	consoleCommandCentered("banned", p.Name())
 	return true
 }

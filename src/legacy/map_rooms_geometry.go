@@ -1,10 +1,11 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
 )
 
 func mapRoomRandomX(r, t *mapRoom) float64 {
@@ -20,7 +21,7 @@ func mapRoomRandomReverseY(r, t *mapRoom) float64 {
 	return float64(t.Pos.Y) - float64(mapRoomRandomInt(0, r.Height-t.Height))*32.526913
 }
 func mapRoomAddExclusion(r *mapRoom, pos *types.Pointf, w, h float32) *mapRoomExclusion {
-	e := (*mapRoomExclusion)(mapRoomCalloc(1, 28))
+	e := mapRoomAlloc[mapRoomExclusion]()
 	if e != nil {
 		e.Min = *pos
 		e.Max = types.Ptf(w+pos.X, h+pos.Y)
@@ -263,7 +264,7 @@ func mapRoomHallCenter(r *mapRoom, out *types.Pointf) *mapRoom {
 	return r
 }
 func mapRoomNewHall(kind, width, length int32) *mapRoom {
-	r := (*mapRoom)(mapRoomCalloc(1, 376))
+	r := mapRoomAlloc[mapRoom]()
 	if r != nil {
 		r.Kind = kind
 		switch kind {

@@ -45,7 +45,7 @@ func tileRasterOffset(pos image.Point) (base unsafe.Pointer, offset, size, strid
 	stride = int(dword_5d4594_3798804)
 	x := uint32(dword_5d4594_3798836) + uint32(pos.X) - uint32(dword_5d4594_3798820)
 	y := uint32(dword_5d4594_3798840) + uint32(pos.Y) - uint32(dword_5d4594_3798824)
-	offset = int(uint32(stride)*y + (x << memmap.Uint8(0x973F18, 7696)))
+	offset = int(int32(uint32(stride)*y + (x << memmap.Uint8(0x973F18, 7696))))
 	if offset >= size {
 		offset -= size
 	}
@@ -64,8 +64,8 @@ func tileRasterTexture(pos image.Point, handle noxrender.ImageHandle) {
 	}
 	shift := memmap.Uint8(0x973F18, 7696)
 	for y := 0; y < 46; y++ {
-		left := int(memmap.Uint32(0x973CE0, 192+4*uintptr(y)) << shift)
-		n := int(memmap.Uint32(0x973CE0, 384+4*uintptr(y)) << shift)
+		left := int(int32(memmap.Uint32(0x973CE0, 192+4*uintptr(y)) << shift))
+		n := int(int32(memmap.Uint32(0x973CE0, 384+4*uintptr(y)) << shift))
 		at := (offset + y*stride + left) % size
 		first := min(n, size-at)
 		tileBufMark(at, first)
@@ -91,8 +91,8 @@ func tileRasterFill(pos image.Point, tile uint16) {
 	}
 	shift := memmap.Uint8(0x973F18, 7696)
 	for y := 0; y < 46; y++ {
-		left := int(memmap.Uint32(0x973CE0, 192+4*uintptr(y)) << shift)
-		n := int(memmap.Uint32(0x973CE0, 384+4*uintptr(y)) << shift)
+		left := int(int32(memmap.Uint32(0x973CE0, 192+4*uintptr(y)) << shift))
+		n := int(int32(memmap.Uint32(0x973CE0, 384+4*uintptr(y)) << shift))
 		at := (offset + y*stride + left) % size
 		first := min(n, size-at)
 		tileBufMark(at, first)

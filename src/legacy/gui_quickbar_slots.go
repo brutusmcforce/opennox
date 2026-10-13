@@ -4,9 +4,9 @@ import (
 	"image"
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/libs/strman"
-	"github.com/brutusmcforce/opennox/client/gui"
 )
 
 func quickbarText(id string) string {
@@ -141,7 +141,7 @@ func quickbarBuildTrap() {
 		}
 	}
 	if n == 0 {
-		if p := quickbarPlayer(); p != nil && *bookPlayerWord(p, 3832, 0) != 0 {
+		if p := quickbarPlayer(); p != nil && *bookPlayerWord(unsafe.Pointer(p), 3832, 0) != 0 {
 			Nox_xxx_printCentered_445490(quickbarText("TrapError"))
 			bookSound(925)
 		}

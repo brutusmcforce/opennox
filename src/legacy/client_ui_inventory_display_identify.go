@@ -4,11 +4,11 @@ import (
 	"image"
 	"unsafe"
 
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -67,7 +67,7 @@ func uiInventoryIdentify(pos image.Point) uint32 {
 	list := panel.ChildByID(9156)
 	list.Func94(&gui.RawEvent{Event: 16399})
 	add := func(text string) { uiInventoryListText(list, text) }
-	current, maximum := *(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(292)) /* Field_73_1 */)), *(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(294)) /* Field_73_2 */))
+	current, maximum := dr.Field_73_1, dr.Field_73_2
 	var text string
 	if noxflags.HasGame(2048) {
 		if maximum != 0 {
@@ -83,7 +83,7 @@ func uiInventoryIdentify(pos image.Point) uint32 {
 	}
 	add(text)
 	add(uiInventoryWideAt(1063656))
-	add(uiInventoryFormatInts("IdentifyWeight", int(*(*byte)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(298)) /* Weight */))), 0))
+	add(uiInventoryFormatInts("IdentifyWeight", int(dr.Weight), 0))
 	add(uiInventoryWideAt(1063660))
 	class, sub := uint32(dr.Class()), uint32(dr.SubClass())
 	modifiers := &GetServer().S().Modif
@@ -112,7 +112,7 @@ func uiInventoryIdentify(pos image.Point) uint32 {
 		selected := false
 		var def *server.Modifier
 		if p != nil && sub&2 != 0 {
-			mask := *(*uint32)(unsafe.Add(p, 4))
+			mask := p.WeaponEquip
 			if mask&4 != 0 {
 				selected = true
 				def = modifiers.Nox_xxx_getProjectileClassById413250(int(*arrow))
@@ -129,7 +129,7 @@ func uiInventoryIdentify(pos image.Point) uint32 {
 		if m := uiInventoryItemModifier(dr, 0); m != nil && m.Attack40.Fnc == modifierKey(modifierIDDamageMultiplierEffect) {
 			scale = m.Attack40.Valf
 		}
-		baseDamage := controlBoltDamage(*(*int32)(unsafe.Add(p, 2239)), def.C())
+		baseDamage := controlBoltDamage(*(*int32)(unsafe.Pointer(&p.InfoBytes[54])), def.C())
 		total := float32(baseDamage*float64(scale) + float64(electric) + float64(fire))
 		base := float64(def.DamageMin72)
 		if def.TypeInd == *bolt && noxflags.HasGame(2048) {
@@ -173,7 +173,7 @@ func uiInventoryIdentify(pos image.Point) uint32 {
 			first := true
 			for i := 2; i < 4; i++ {
 				if m := uiInventoryItemModifier(dr, i); m != nil {
-					desc := *(**uint16)(unsafe.Add(m.C(), int(layoutServerModifierEff.Off(16)) /* identdesc16 */))
+					desc := m.IdentDesc16
 					if desc != nil {
 						if first {
 							add(uiInventoryFormatLiteral(uiInventoryText("IdentifySpecialAttributes")))

@@ -52,7 +52,7 @@ func (c *Client) Nox_new_drawable_for_thing(typeID int) *client.Drawable {
 	}
 	draw := dr.DrawFuncPtr
 	if draw == legacy.Get_nox_thing_static_random_draw() {
-		v4 := c.srv.Rand.Other.Int(0, int(*(*uint8)(unsafe.Add(dr.DrawData, 8)))-1)
+		v4 := c.srv.Rand.Other.Int(0, int((*client.SpriteStaticRandomData)(dr.DrawData).Count)-1)
 		dr.SetFrameMB(v4)
 	} else if draw == legacy.Get_nox_thing_red_spark_draw() || draw == legacy.Get_nox_thing_blue_spark_draw() ||
 		draw == legacy.Get_nox_thing_yellow_spark_draw() || draw == legacy.Get_nox_thing_green_spark_draw() ||
@@ -125,7 +125,7 @@ func (c *Client) DestroyDrawable(code uint16) {
 	}
 	if dr.DrawFuncPtr == legacy.Get_nox_thing_animate_draw() {
 		if dd := dr.DrawData; dd != nil {
-			if *(*uint32)(unsafe.Add(dd, 12)) == 1 {
+			if (*client.SpriteAnimationData)(dd).Kind == 1 {
 				return
 			}
 		}
@@ -170,7 +170,7 @@ func sub_495F70(dr *client.Drawable) {
 	if dr != nil && !dr.HasFX(1) {
 		p := aclass.NewObject()
 		if p != nil {
-			p.Field0 = 1
+			p.Kind = 1
 			p.Field4 = 0
 			legacy.Sub_495FC0(p, dr)
 		}
@@ -245,18 +245,9 @@ func (c *Client) sub_459F70(dr *client.Drawable) {
 	}
 	dr.Field_106 = nil
 	dr.Field_107 = nil
-	if p := sub_452EB0(&dr.Field_124, &dr.Field_125, &dr.Field_126); p != nil {
+	if p := legacy.AudioHandleEvent(&dr.Audio); p != nil {
 		legacy.Sub_4523D0(p)
 	}
-}
-
-func sub_452EB0(a0 *unsafe.Pointer, a1, a2 *uint32) unsafe.Pointer {
-	p := *a0
-	if *a0 != nil && (*a2 != *(*uint32)(unsafe.Add(p, 36)) || *a1 != *(*uint32)(unsafe.Add(p, 280))) {
-		p = nil
-		*a0 = nil
-	}
-	return p
 }
 
 func (c *Client) sub_49BA70() {

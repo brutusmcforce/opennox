@@ -2,9 +2,10 @@ package legacy
 
 import (
 	"encoding/binary"
-	"github.com/brutusmcforce/opennox/server"
-	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func controlRewardNotify(u *server.Object, kind int32, target *server.Object, selector byte) int32 {
@@ -16,7 +17,7 @@ func controlRewardNotify(u *server.Object, kind int32, target *server.Object, se
 	}
 	msg := [5]byte{0xf0, byte(30 + kind), selector}
 	binary.LittleEndian.PutUint16(msg[3:], uint16(target.NetCode))
-	return int32(reliableEnqueue(int(*controlByte(controlPlayer(u), 2064)), msg[:], nil, 1, 0))
+	return int32(reliableEnqueue(int(controlPlayer(u).PlayerInd), msg[:], nil, 1, 0))
 }
 func controlLockedDoor(u *server.Object, key *int8, selector byte) {
 	if u == nil || u.ObjClass&4 == 0 || key == nil {
@@ -30,7 +31,7 @@ func controlLockedDoor(u *server.Object, key *int8, selector byte) {
 	msg := [52]byte{0xf0, 33}
 	copy(msg[2:], s)
 	msg[51] = selector
-	reliableEnqueue(int(*controlByte(controlPlayer(u), 2064)), msg[:], nil, 1, 0)
+	reliableEnqueue(int(controlPlayer(u).PlayerInd), msg[:], nil, 1, 0)
 }
 func controlRespawnNotify(u *server.Object, flag byte) int32 {
 	msg := [9]byte{0xe9}
@@ -49,7 +50,7 @@ func controlGuideLevel(u, target *server.Object) int32 {
 	if id == 0 {
 		return 0
 	}
-	return int32(*equipmentWord(controlPlayer(u), 4244+4*int(id)))
+	return int32(controlPlayer(u).BeastScrollLvl[int(id)])
 }
 func controlGuideDamage(u, target *server.Object, damage *int32) int32 {
 	level := controlGuideLevel(u, target)
@@ -66,11 +67,11 @@ func controlInversion(u, target *server.Object) int32 {
 			continue
 		}
 		for i := 2; i < 4; i++ {
-			mod := *controlPtr(it.InitData, i*4)
+			mod := it.InitDataModifier().Modifiers[i]
 			if mod == nil {
 				continue
 			}
-			fn := *controlPtr(mod, 88)
+			fn := mod.DefendCollide88.Fnc
 			if fn == nil || fn != modifierKey(modifierIDInversionEffect) {
 				continue
 			}
@@ -85,30 +86,29 @@ func controlInversion(u, target *server.Object) int32 {
 	return 0
 }
 func controlScheduledSpell(u, target *server.Object, back bool) int32 {
-	d := u.UpdateData
-	count := controlByte(d, 212)
+	d := u.UpdateDataPlayer()
+	count := (*byte)(unsafe.Pointer(&d.TrapSpellsCnt))
 	if *count == 0 {
 		return 0
 	}
-	off := 192
+	id := d.TrapSpells[0]
 	if back {
-		off = 188 + 4*int(*count)
+		id = d.TrapSpells[*count-1]
 	}
-	id := *equipmentWord(d, off)
 	reason := int32(spellLifeCantCast(u, int32(id), 0))
-	args := [3]uint32{controlRaw(target), math.Float32bits(float32(int32(*equipmentWord(d, 220)))), math.Float32bits(float32(int32(*equipmentWord(d, 224))))}
+	args := server.SpellAcceptArg{Obj: target, Pos: types.Pointf{X: float32(int32(d.Field55)), Y: float32(int32(d.Field56))}}
 	if reason != 0 {
-		nox_xxx_netInformTextMsg_4DA0F0(int32(*controlByte(controlPlayer(u), 2064)), 0, &reason)
+		nox_xxx_netInformTextMsg_4DA0F0(int32(controlPlayer(u).PlayerInd), 0, &reason)
 		nox_xxx_aud_501960(231, (*nox_object_t)(u.CObj()), 0, 0)
 	} else {
-		nox_xxx_castSpellByUser_4FDD20(int(int32(id)), (*nox_object_t)(u.CObj()), unsafe.Pointer(&args[0]))
+		nox_xxx_castSpellByUser_4FDD20(int(int32(id)), (*nox_object_t)(u.CObj()), unsafe.Pointer(&args))
 	}
 	// Front removal shifts and clears; back removal only decrements the count.
 	if !back {
 		for i := 1; i < int(*count); i++ {
-			*equipmentWord(d, 188+4*i) = *equipmentWord(d, 192+4*i)
+			d.TrapSpells[i-1] = d.TrapSpells[i]
 		}
-		*equipmentWord(d, 188+4*int(*count)) = 0
+		d.TrapSpells[*count-1] = 0
 	}
 	*count--
 	return 1

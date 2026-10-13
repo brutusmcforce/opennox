@@ -1,12 +1,13 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/object"
-	"github.com/brutusmcforce/opennox/libs/types"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func projectileDamage(t, owner, u *server.Object, damage, kind int32) int32 {
@@ -46,7 +47,7 @@ func projectileGeneric(u, t *server.Object) {
 	if name != "" {
 		damage = floatToInt32(float32(nox_xxx_gamedataGetFloat_419D40(internCStr(name))))
 	} else {
-		damage = int32(*equipmentWord(u.CollideData, 0))
+		damage = int32(u.CollideDataProjectile().Damage)
 	}
 	if t != nil {
 		if byte(projectileDamage(t, u.FindOwnerChainPlayer(), u, damage, 11)) == 0 {
@@ -58,7 +59,7 @@ func projectileGeneric(u, t *server.Object) {
 	GetServer().DelayedDelete(u)
 }
 func projectileGenericSpark(u, t *server.Object) {
-	damage := int32(*equipmentWord(u.CollideData, 0))
+	damage := int32(u.CollideDataProjectile().Damage)
 	if t != nil {
 		if byte(projectileDamage(t, u.FindOwnerChainPlayer(), u, damage, 11)) == 0 {
 			return
@@ -73,18 +74,19 @@ func projectileDamageField(u, t *server.Object) {
 	if t == nil || t.HealthData == nil {
 		return
 	}
-	damage := int32(*(*byte)(u.CollideData)) >> 1
-	if *(*byte)(u.CollideData) == 1 && GetServer().S().Frame()&1 != 0 {
+	cd := u.CollideDataDamage()
+	damage := int32(cd.Damage) >> 1
+	if cd.Damage == 1 && GetServer().S().Frame()&1 != 0 {
 		damage = 1
 	}
-	projectileDamage(t, u.FindOwnerChainPlayer(), u, damage, int32(*equipmentWord(u.CollideData, 4)))
+	projectileDamage(t, u.FindOwnerChainPlayer(), u, damage, int32(cd.DamageType))
 }
 func projectileManaDrain(u, t *server.Object) {
-	if t == nil || t.ObjClass&4 == 0 || *(*uint16)(unsafe.Add(t.UpdateData, 4)) == 0 {
+	if t == nil || t.ObjClass&4 == 0 || t.UpdateDataPlayer().ManaCur == 0 {
 		return
 	}
-	resourceSubMana(t, int32(*(*byte)(u.CollideData)))
-	stamp := (*uint16)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(542)) /* Field542 */))
+	resourceSubMana(t, int32(u.CollideDataManaDrain().Mana))
+	stamp := &u.Field542
 	core := GetServer().S()
 	if core.Frame()-uint32(int32(int16(*stamp))) > uint32(int32(core.TickRate())>>1) {
 		inventorySound(228, u, 0, 0)
@@ -95,9 +97,10 @@ func projectileBomb(u, t *server.Object) {
 	if noxflags.HasGame(2048) && GetServer().S().Players.FirstUnit().ObjFlags&2 != 0 {
 		return
 	}
-	nox_xxx_scriptCallByEventBlock_502490(unsafe.Add(u.UpdateData, 1272), t.CObj(), u.CObj(), 21)
+	md := u.UpdateDataMonster()
+	nox_xxx_scriptCallByEventBlock_502490(unsafe.Pointer(&md.ScriptCollision), t.CObj(), u.CObj(), 21)
 	if t != nil && t.ObjClass&6 != 0 && !Nox_xxx_unitsHaveSameTeam_4EC520(u, t) && t.ObjFlags&0x8000 == 0 {
-		*temporaryRefWord(u.UpdateData, 2176) = t
+		md.Field544 = t
 		resourceDamage(u, 999)
 	}
 }
@@ -137,7 +140,7 @@ func projectileSulphur(u, t *server.Object, n *types.Pointf) {
 		if Nox_xxx_unitsHaveSameTeam_4EC520(u, t) {
 			return
 		}
-		damage := int32(*equipmentWord(u.CollideData, 0))
+		damage := int32(u.CollideDataProjectile().Damage)
 		if noxflags.HasGame(4096) && u.Collide == collisionKey(collisionIdentityYellowStarShot) {
 			damage *= 3
 		}
@@ -147,7 +150,7 @@ func projectileSulphur(u, t *server.Object, n *types.Pointf) {
 	} else if n != nil {
 		collisionReflect(n, &u.VelVec)
 		x, y := projectileGrid(u.NewPos)
-		projectileWall(u, x, y, int32(*equipmentWord(u.CollideData, 0)), 11)
+		projectileWall(u, x, y, int32(u.CollideDataProjectile().Damage), 11)
 	}
 }
 func projectileSulphurTrail(u, t *server.Object, n *types.Pointf) {
@@ -170,13 +173,13 @@ func projectileDeathFragment(u, t *server.Object, n *types.Pointf) {
 }
 func projectileWallSpark(u, t *server.Object, n *types.Pointf) {
 	if t != nil {
-		if projectileDamage(t, u.FindOwnerChainPlayer(), u, int32(*equipmentWord(u.CollideData, 0)), 11) != 0 {
+		if projectileDamage(t, u.FindOwnerChainPlayer(), u, int32(u.CollideDataProjectile().Damage), 11) != 0 {
 			GetServer().DelayedDelete(u)
 		}
 	} else if n != nil {
 		collisionReflect(n, &u.VelVec)
 		x, y := projectileGrid(u.NewPos)
-		projectileWall(u, x, y, int32(*equipmentWord(u.CollideData, 0)), 11)
+		projectileWall(u, x, y, int32(u.CollideDataProjectile().Damage), 11)
 	}
 }
 func projectileSparkOwner(u, t *server.Object) {
@@ -186,15 +189,15 @@ func projectileSparkOwner(u, t *server.Object) {
 	}
 }
 func projectileSpark(u, t *server.Object, n *types.Pointf) {
-	switch *equipmentWord(u.UpdateData, 12) {
+	switch u.UpdateDataSpark().Stage {
 	case 4:
 		return
 	case 5:
 		if t != nil {
 			inventorySound(351, u, 0, 0)
 			GetServer().DelayedDelete(u)
-			*(*byte)(unsafe.Add(t.CObj(), int(layoutServerObject.Off(541)) /* Field541 */))++
-			*(*uint16)(unsafe.Add(t.CObj(), int(layoutServerObject.Off(542)) /* Field542 */)) = 1000
+			t.Field541++
+			t.Field542 = 1000
 			if t.ObjClass&4 != 0 {
 				gameplayTextPrivate(t, (*byte)(unsafe.Pointer(internCStr("objcoll.c:WebbingSlow"))), 0)
 			}
@@ -220,7 +223,7 @@ func projectileWeb(u, t *server.Object) {
 }
 func projectileFist(u, t *server.Object) {
 	if u.ZVal <= 0 && t != nil {
-		projectileDamage(t, u.FindOwnerChainPlayer(), u, int32(*equipmentWord(u.UpdateData, 0)), 2)
+		projectileDamage(t, u.FindOwnerChainPlayer(), u, int32(u.UpdateDataDamage().Damage), 2)
 	}
 }
 func projectileTeleportWake(u, t *server.Object) {
@@ -231,7 +234,7 @@ func projectileTeleportWake(u, t *server.Object) {
 		projectileFX(138, t)
 	}
 	inventorySound(147, t, 0, 0)
-	stateTeleport(t, (*types.Pointf)(u.CollideData))
+	stateTeleport(t, &u.CollideDataTeleportWake().Dest)
 	if !t.HasEnchant(0) {
 		projectileFX(137, t)
 	}
@@ -255,7 +258,7 @@ func projectileTrap(u, t *server.Object, gas bool) {
 	}
 	GetServer().CreateObjectAt(p, owner, u.PosVec)
 	if gas {
-		*equipmentWord(p.UpdateData, 0) = uint32(floatToInt32(float32(float64(nox_xxx_gamedataGetFloat_419D40(internCStr("ToxicCloudLifetime"))) * float64(int32(GetServer().S().TickRate())))))
+		p.UpdateDataToxicCloud().Life = uint32(floatToInt32(float32(float64(nox_xxx_gamedataGetFloat_419D40(internCStr("ToxicCloudLifetime"))) * float64(int32(GetServer().S().TickRate())))))
 		inventorySound(847, u, 0, 0)
 		GetServer().DelayedDelete(u)
 	} else {

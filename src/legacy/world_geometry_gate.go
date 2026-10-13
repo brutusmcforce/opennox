@@ -9,12 +9,12 @@ import (
 )
 
 func geometryGateBox(gate, u *server.Object, mode int32) {
-	ud := gate.UpdateData
+	ud := gate.UpdateDataDoor()
 	originX := (float64(gate.NewPos.Y) + float64(gate.NewPos.X)) * 0.70710677
 	originY := float32((float64(gate.NewPos.Y) - float64(gate.NewPos.X)) * 0.70710677)
 	center := geometryRotated(u.NewPos)
 	rect := geometryRotatedBounds(u, center)
-	direction := int32(*(*int16)(unsafe.Add(ud, 40)))
+	direction := int32(ud.Angle)
 	index := direction + 128
 	if index >= 256 {
 		index = direction - 128
@@ -72,7 +72,7 @@ func geometryGateBox(gate, u *server.Object, mode int32) {
 	}
 	geometryHit(u, gate, &normal)
 	s := GetServer().S()
-	*equipmentWord(ud, 44) = s.Frame()
+	ud.HitFrame = s.Frame()
 	if mode == 1 {
 		velocity := float32(-float64(normal.Y)*float64(u.VelVec.Y) - float64(normal.X)*float64(u.VelVec.X))
 		damp := math.Sqrt(float64(u.Mass) * float64(geometryWallForce()) * 4)
@@ -86,14 +86,14 @@ func geometryGateBox(gate, u *server.Object, mode int32) {
 		u.ObjFlags &^= 0x8000000
 	}
 	geometryActivate(gate)
-	if !gate.TeamPtr().Has() || *equipmentWord(ud, 12) != *equipmentWord(ud, 4) || gate.TeamPtr().SameAs(u.TeamPtr()) {
-		if mode == 0 && *(*byte)(unsafe.Add(ud, 1)) == 0 && (gate.ObjOwner == nil || gate.ObjOwner == u) {
+	if !gate.TeamPtr().Has() || ud.Dir != ud.BaseDir || gate.TeamPtr().SameAs(u.TeamPtr()) {
+		if mode == 0 && ud.KeyType == 0 && (gate.ObjOwner == nil || gate.ObjOwner == u) {
 			torqueIndex := index + 32
 			if torqueIndex >= 256 {
 				torqueIndex -= 256
 			}
 			torque := float64(depth) * float64(u.Mass)
-			angular := (*float32)(unsafe.Add(ud, 32))
+			angular := &ud.Torque
 			cross := float64(memmap.Int32(0x587000, uintptr(192088+8*torqueIndex)))*(float64(u.NewPos.Y)-float64(gate.NewPos.Y)) - float64(memmap.Int32(0x587000, uintptr(192092+8*torqueIndex)))*(float64(u.NewPos.X)-float64(gate.NewPos.X))
 			if cross <= 0 {
 				*angular = float32(torque + float64(*angular))

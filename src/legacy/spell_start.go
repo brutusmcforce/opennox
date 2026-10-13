@@ -1,10 +1,10 @@
 package legacy
 
 import (
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -52,7 +52,7 @@ func spellStartPixies(id spell.ID, owner, origin *server.Object, level int) int 
 		if u == nil {
 			continue
 		}
-		ud := u.UpdateData
+		ud := u.UpdateDataPixie()
 		var objOwner server.Obj
 		if owner != nil {
 			objOwner = owner
@@ -60,12 +60,12 @@ func spellStartPixies(id spell.ID, owner, origin *server.Object, level int) int 
 		GetServer().CreateObjectAt(u, objOwner, pos)
 		u.Direction1, u.Direction2 = server.Dir16(dir), server.Dir16(dir)
 		u.VelVec = types.Pointf{}
-		*temporaryRefWord(ud, 4) = core.Nox_xxx_spellFlySearchTarget(nil, u, 32, 600, 0, owner)
-		*temporaryRefWord(ud, 0) = owner
-		*equipmentWord(ud, 12) = uint32(id)
+		ud.Target = core.Nox_xxx_spellFlySearchTarget(nil, u, 32, 600, 0, owner)
+		ud.Owner = owner
+		ud.SpellID = uint32(id)
 		u.Pos39 = origin.PosVec
-		*equipmentWord(ud, 20) = core.Frame() + uint32(core.TickRate())*uint32(core.Rand.Logic.IntClamp(30, 90))
-		*equipmentWord(ud, 24) = core.Frame()
+		ud.Deadline = core.Frame() + uint32(core.TickRate())*uint32(core.Rand.Logic.IntClamp(30, 90))
+		ud.SeenOwner = core.Frame()
 	}
 	spellEffectAudio(int32(id), 0, origin)
 	return 1

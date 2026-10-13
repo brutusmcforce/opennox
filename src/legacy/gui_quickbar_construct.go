@@ -60,7 +60,7 @@ func quickbarRevealTrap() int {
 	if p == nil {
 		return 0
 	}
-	class := bookClass(p)
+	class := bookClass(unsafe.Pointer(p))
 	if class != 1 && class != 2 {
 		return class - 2
 	}
@@ -132,7 +132,7 @@ func quickbarCreate() int {
 	if p == nil {
 		return 0
 	}
-	class := bookClass(p)
+	class := bookClass(unsafe.Pointer(p))
 	draw := gui.WindowDrawFunc(quickbarDrawAbility)
 	if class != 0 {
 		draw = quickbarDrawSpell
@@ -165,7 +165,7 @@ func quickbarCreate() int {
 		right.DrawData().BgImageHnd = quickbarImage("QuickBarWarriorRight")
 		right.DrawData().HlImageHnd = quickbarImage("QuickBarWarriorRight")
 	} else if class == 1 || class == 2 {
-		unavailable := *bookPlayerWord(p, 3832, 0) == 0 &&
+		unavailable := *bookPlayerWord(unsafe.Pointer(p), 3832, 0) == 0 &&
 			(!noxflags.HasGame(noxflags.GameFlag(0x2000)) || noxflags.HasGame(noxflags.GameFlag(4096)) || questRuntimeWord(1556160) != 0 || questRuntimeWord(1556164) != 0)
 		if unavailable {
 			right.DrawData().BgImageHnd = quickbarImage("QuickBarWarriorRight")

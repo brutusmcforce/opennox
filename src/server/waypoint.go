@@ -396,8 +396,7 @@ func (s *Server) Nox_xxx_waypoint_579F00(out *types.Pointf, obj *Object) int {
 			continue
 		}
 		if noxflags.HasGame(noxflags.GameModeCTF) && flag != nil && obj != nil {
-			v7 := (*types.Pointf)(flag.UpdateData)
-			if s.MapTraceRayAt(*v7, wp.PosVec, nil, nil, 9) {
+			if s.MapTraceRayAt(flag.UpdateDataFlag().Home, wp.PosVec, nil, nil, 9) {
 				continue
 			}
 		}

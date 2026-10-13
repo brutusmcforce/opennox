@@ -1,10 +1,12 @@
 package legacy
 
 import (
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func inventoryPriMessage(u *server.Object, key string) {
@@ -48,28 +50,20 @@ func inventoryWeaponPickup(u, it *server.Object, arg, equip int) int {
 	if u.ObjClass&4 != 0 {
 		ud := u.UpdateData
 		equipped := 0
-		if *(*uint32)(unsafe.Add(ud, 104)) == 0 && sub_419E60(asObjectC(u)) == 0 && nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(it)) != 2 {
+		if layout.As[server.PlayerUpdateData](ud).Field26 == nil && sub_419E60(asObjectC(u)) == 0 && nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(it)) != 2 {
 			equipped = equipmentEquipWeapon(u, it, equip, 0)
 		}
 		if sub_419E60(asObjectC(u)) == 0 && nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(it)) == 2 {
-			flags := *(*uint32)(unsafe.Add(unsafe.Pointer(u.UpdateDataPlayer().Player), 4))
+			flags := u.UpdateDataPlayer().Player.WeaponEquip
 			if flags&0xC != 0 && flags&2 == 0 {
 				equipped = equipmentEquipWeapon(u, it, equip, 0)
 			}
 		}
 		if equipped == 0 {
-			offset := -1
 			if it.ObjClass&0x1000 != 0 && it.ObjSubClass&0x47F0000 != 0 {
-				offset = 108
+				equipmentReportWandCharges(u, it)
 			} else if it.ObjClass&0x1000000 != 0 && it.ObjSubClass&0x82 != 0 {
-				offset = 1
-			}
-			if offset >= 0 {
-				other := offset + 1
-				if offset == 1 {
-					other = 0
-				}
-				gameplayReportCharges(int(uint8(u.UpdateDataPlayer().Player.PlayerInd)), it, byte(*(*byte)(unsafe.Add(it.UseData.Ptr, offset))), byte(*(*byte)(unsafe.Add(it.UseData.Ptr, other))))
+				equipmentReportAmmoCharges(u, it)
 			}
 		}
 	}
@@ -80,26 +74,20 @@ func inventoryWeaponPickup(u, it *server.Object, arg, equip int) int {
 func inventoryAmmoPickup(u, it *server.Object, arg, equip int) int {
 	bits := uint32(nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(it)))
 	if u.ObjClass&4 != 0 && bits&0x82 != 0 {
-		data := unsafe.Slice((*byte)(it.UseData.Ptr), 3)
-		mods := unsafe.Slice((*uint32)(it.InitData), 4)
+		data := it.UseDataAmmo()
+		mods := layout.As[server.ModifierInitData](it.InitData).Modifiers
 		for old := u.InvFirstItem; old != nil; old = old.InvNextItem {
 			if old.TypeInd != it.TypeInd || old.ObjClass&0x1000000 == 0 || uint32(nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(old)))&bits == 0 {
 				continue
 			}
-			prev := unsafe.Slice((*byte)(old.UseData.Ptr), 3)
-			prevMods := unsafe.Slice((*uint32)(old.InitData), 4)
-			same := true
-			for i, v := range mods {
-				if prevMods[i] != v {
-					same = false
-				}
-			}
-			if !same || prev[2] != 0 || int(data[0])+int(prev[0]) > 250 {
+			prev := old.UseDataAmmo()
+			same := layout.As[server.ModifierInitData](old.InitData).Modifiers == mods
+			if !same || prev.Infinite != 0 || int(data.MaxCharges)+int(prev.MaxCharges) > 250 {
 				continue
 			}
-			prev[1] += data[1]
-			prev[0] += data[0]
-			gameplayReportCharges(int(uint8(u.UpdateDataPlayer().Player.PlayerInd)), old, byte(prev[1]), byte(prev[0]))
+			prev.Charges += data.Charges
+			prev.MaxCharges += data.MaxCharges
+			gameplayReportCharges(int(uint8(u.UpdateDataPlayer().Player.PlayerInd)), old, prev.Charges, prev.MaxCharges)
 			GetServer().DelayedDelete(it)
 			equipmentPickupSound(u, it)
 			return 1
@@ -123,8 +111,8 @@ func inventoryOblivionPickup(u, it *server.Object, arg, equip int) int {
 	return rv
 }
 func inventoryPlain(it *server.Object) bool {
-	for _, v := range unsafe.Slice((*uint32)(it.InitData), 4) {
-		if v != 0 {
+	for _, v := range layout.As[server.ModifierInitData](it.InitData).Modifiers {
+		if v != nil {
 			return false
 		}
 	}
@@ -163,7 +151,7 @@ func inventoryArmorPickup(u, it *server.Object, arg, equip int) int {
 			case it.ObjSubClass&2 == 0:
 				replace = true
 			case old == nil:
-				weapon := *(**server.Object)(unsafe.Add(u.UpdateData, 104))
+				weapon := *(**server.Object)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](u.UpdateData).Field26))
 				replace = weapon == nil || weapon.ObjSubClass&0x7FFE40C == 0
 			case uint32(old.TypeInd) == wood:
 				replace = inventoryPlain(old)

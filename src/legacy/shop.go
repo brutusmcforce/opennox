@@ -1,8 +1,10 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
@@ -24,11 +26,11 @@ func shopFreeItem(n *shopItem) {
 	alloc.AsClass(legacyGlobals.nox_alloc_tradeItems_2386496).FreeObjectFirst(unsafe.Pointer(n))
 }
 func shopInit() int {
-	legacyGlobals.nox_alloc_tradeSession_2386492 = alloc.NewClass("TradeSessions", 64, 64).UPtr()
+	legacyGlobals.nox_alloc_tradeSession_2386492 = alloc.NewClass("TradeSessions", unsafe.Sizeof(shopSession{}), 64).UPtr()
 	if legacyGlobals.nox_alloc_tradeSession_2386492 == nil {
 		return 0
 	}
-	legacyGlobals.nox_alloc_tradeItems_2386496 = alloc.NewClass("TradeItems", 16, 500).UPtr()
+	legacyGlobals.nox_alloc_tradeItems_2386496 = alloc.NewClass("TradeItems", unsafe.Sizeof(shopItem{}), 500).UPtr()
 	if legacyGlobals.nox_alloc_tradeItems_2386496 == nil {
 		shopFree()
 		return 0
@@ -151,7 +153,7 @@ func shopDetach(s *shopSession, u *server.Object) uint32 {
 		return memmap.PtrWord(u.CObj())
 	}
 	data := u.UpdateData
-	ptr := (**shopSession)(unsafe.Add(data, 280))
+	ptr := &layout.As[server.PlayerUpdateData](data).Trade70
 	if *ptr == s {
 		*ptr = nil
 	}

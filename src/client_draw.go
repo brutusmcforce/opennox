@@ -735,7 +735,7 @@ func (c *Client) nox_xxx_cliLight16_469140(dr *client.Drawable) {
 				dx := xx - common.GridStep*x
 				dx2 := dx * dx
 				if dist := dx2 + dy2; dist <= dlimit {
-					intens3 := sub_4C1C70(intens2+dword_587000_142328, 66*dist*int(memmap.Uint32(0x587000, 142324))/v36+0x10000)
+					intens3 := sub_4C1C70(intens2+dword_587000_142328, int(66*int32(dist)*int32(memmap.Uint32(0x587000, 142324))/int32(v36)+0x10000)) // 32-bit like the original
 					if intens3 > dword_587000_142328 {
 						c.sub_4695E0(x, y, dr.LightColor, 8*(intens3-dword_587000_142328), dr.Field_43 != 0)
 					}
@@ -769,8 +769,10 @@ func (c *Client) nox_xxx_cliLight16_469140(dr *client.Drawable) {
 	}
 }
 
+// sub_4C1C60 multiplies two 16.16 fixed-point numbers. Like the other light math, it keeps the
+// 32-bit results of the original on every architecture.
 func sub_4C1C60(a1, a2 int) int {
-	return int((int64(a1) * int64(a2)) >> 16)
+	return int(int32((int64(a1) * int64(a2)) >> 16))
 }
 
 func (c *Client) sub_4695E0(a1, a2 int, pcl noxrender.RGB, a4 int, flip bool) {
@@ -1332,5 +1334,5 @@ func sub_484DC0(a1, a2 image.Point, a3 []int) {
 }
 
 func sub_4C1C70(a1, a2 int) int {
-	return int((uint64(a1) << 16) / uint64(a2))
+	return int(int32((uint64(a1) << 16) / uint64(a2)))
 }

@@ -1,33 +1,35 @@
 package legacy
 
 import (
+	"image"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"image"
-	"unsafe"
 )
 
 func objectDoorDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	data := (*spriteAnimationData)(dr.DrawData)
 	Nox_xxx_drawObject_4C4770_draw(vp, dr, spriteFrameImage(data.Frames, int(dr.Field_74_4)))
-	b := unsafe.Slice((*byte)(dr.C()), 512)
-	if !noxflags.HasGame(noxflags.GameFlag(4096)) || b[432] != 1 {
+	door := layout.As[client.DrawableUnionDoor](unsafe.Pointer(&dr.Union))
+	if !noxflags.HasGame(noxflags.GameFlag(4096)) || door.Field_108_0 != 1 {
 		return 1
 	}
-	if *effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */) == 0 {
-		*(*unsafe.Pointer)(unsafe.Pointer(effectWord(dr, int(layoutClientDrawable.Off(440)) /* Union._ */))) = unsafe.Pointer(Nox_xxx_gLoadImg("DoorLockSilverSW").C())
-		*(*unsafe.Pointer)(unsafe.Pointer(effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */))) = unsafe.Pointer(Nox_xxx_gLoadImg("DoorLockSilverSE").C())
-		*(*unsafe.Pointer)(unsafe.Pointer(effectWord(dr, int(layoutClientDrawable.Off(444)) /* Union._ */))) = unsafe.Pointer(Nox_xxx_gLoadImg("DoorLockGoldSW").C())
-		*(*unsafe.Pointer)(unsafe.Pointer(effectWord(dr, int(layoutClientDrawable.Off(448)) /* Union._ */))) = unsafe.Pointer(Nox_xxx_gLoadImg("DoorLockGoldSE").C())
+	if door.Field_109 == nil {
+		door.Field_110 = noxrender.ImageHandle(Nox_xxx_gLoadImg("DoorLockSilverSW").C())
+		door.Field_109 = noxrender.ImageHandle(Nox_xxx_gLoadImg("DoorLockSilverSE").C())
+		door.Field_111 = noxrender.ImageHandle(Nox_xxx_gLoadImg("DoorLockGoldSW").C())
+		door.Field_112 = noxrender.ImageHandle(Nox_xxx_gLoadImg("DoorLockGoldSE").C())
 	}
 	p := vp.ToScreenPos(dr.PosVec).Sub(image.Pt(64, 79))
 	light := GetClient().Sub469920(dr.PosVec)
 	r := GetClient().R2()
 	r.Data().SetMultiply14(1)
 	r.SetColorMultAndIntensityRGB(byte(light[0]), byte(light[1]), byte(light[2]))
-	silver := b[433] == 1
+	silver := door.Field_108_1 == 1
 	slot := 436
 	switch dr.Field_74_4 {
 	case 0:
@@ -53,7 +55,8 @@ func objectDoorDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 			slot = 448
 		}
 	}
-	r.DrawImageAt(r.GetBag().AsImage(noxrender.ImageHandle(*(*unsafe.Pointer)(unsafe.Pointer(effectWord(dr, slot))))), p)
+	images := [4]noxrender.ImageHandle{door.Field_109, door.Field_110, door.Field_111, door.Field_112} // slots 436-448
+	r.DrawImageAt(r.GetBag().AsImage(images[(slot-436)/4]), p)
 	return 1
 }
 func objectArrowDraw(vp *noxrender.Viewport, dr *client.Drawable, weak bool) int {
@@ -74,7 +77,8 @@ func objectArrowDraw(vp *noxrender.Viewport, dr *client.Drawable, weak bool) int
 		if tail == nil {
 			return spriteSlaveDraw(vp, dr)
 		}
-		*effectWord(tail, int(layoutClientDrawable.Off(432)) /* Union._ */), *effectWord(tail, int(layoutClientDrawable.Off(436)) /* Union._ */) = uint32(dr.PosVec.X), uint32(dr.PosVec.Y)
+		u := (*client.DrawableUnionTail)(unsafe.Pointer(&tail.Union))
+		u.X, u.Y = uint32(dr.PosVec.X), uint32(dr.PosVec.Y)
 		effectLink(tail)
 		dr.Field_81, dr.Field_82 = uint32(dr.PosVec.X), uint32(dr.PosVec.Y)
 		GetClient().Cli().Objs.TransparentDecay(tail, int(gameFPS()/3))
@@ -100,7 +104,8 @@ func objectArrowTailDraw(vp *noxrender.Viewport, dr *client.Drawable, weak bool)
 	d.SetAlphaEnabled(true)
 	d.SetAlpha(128)
 	from := effectScreen(vp, dr).Sub(image.Pt(0, 4))
-	to := image.Pt(int(*effectWord(dr, int(layoutClientDrawable.Off(432)) /* Union._ */)), int(*effectWord(dr, int(layoutClientDrawable.Off(436)) /* Union._ */)))
+	u := (*client.DrawableUnionTail)(unsafe.Pointer(&dr.Union))
+	to := image.Pt(int(u.X), int(u.Y))
 	to = vp.ToScreenPos(to)
 	to.Y -= int(int16(dr.ZVal)) + int(int16(dr.ZVal2)) + 4
 	effectLine(from, to)
@@ -110,10 +115,14 @@ func objectArrowTailDraw(vp *noxrender.Viewport, dr *client.Drawable, weak bool)
 func objectShapeEdges(vp *noxrender.Viewport, dr *client.Drawable) [4]image.Point {
 	base := vp.ToScreenPos(dr.PosVec)
 	var p [4]image.Point
-	for i, off := range []int{64, 88, 72, 80} {
-		x := effectFloatInt(*(*float32)(unsafe.Add(dr.C(), off)))
-		y := effectFloatInt(*(*float32)(unsafe.Add(dr.C(), off+4)))
-		p[i] = base.Add(image.Pt(x, y))
+	box := &dr.Shape.Box
+	for i, c := range [4][2]float32{
+		{box.LeftTop, box.LeftBottom},     // 64
+		{box.RightBottom2, box.RightTop2}, // 88
+		{box.LeftBottom2, box.LeftTop2},   // 72
+		{box.RightTop, box.RightBottom},   // 80
+	} {
+		p[i] = base.Add(image.Pt(effectFloatInt(c[0]), effectFloatInt(c[1])))
 	}
 	return p
 }
@@ -125,7 +134,7 @@ func objectDrawEdges(p [4]image.Point, dx int) {
 	effectLine(p[1].Add(shift), p[2].Add(shift))
 }
 func objectPressureDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
-	colors := unsafe.Slice((*byte)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)), 6)
+	colors := &(*client.DrawableUnionPressurePlate)(unsafe.Pointer(&dr.Union)).Colors
 	if colors[0]|colors[1]|colors[2]|colors[3]|colors[4]|colors[5] == 0 {
 		return 1
 	}

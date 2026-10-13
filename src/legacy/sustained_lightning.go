@@ -1,11 +1,13 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func sustainedLightningStart(p unsafe.Pointer) uint32 {
@@ -17,7 +19,7 @@ func sustainedLightningStart(p unsafe.Pointer) uint32 {
 		GetServer().S().Spells.Dur.CancelFor(24, u)
 	}
 	if d.Flag20 == 0 && u.ObjClass&4 != 0 {
-		if item := spellEffectObject(u.UpdateData, 104); item != nil && item.ObjSubClass&0x40000 != 0 && *controlByte(item.UseData.Ptr, 96)&4 != 0 {
+		if item := layout.As[server.PlayerUpdateData](u.UpdateData).Field26; item != nil && item.ObjSubClass&0x40000 != 0 && item.UseDataWand().Flags&4 != 0 {
 			d.Field72 = int32(controlRaw(item))
 		}
 	}
@@ -79,13 +81,13 @@ func sustainedFreeSegments(d *server.DurSpell) {
 	}
 }
 func sustainedSpendCharge(u, item *server.Object) bool {
-	data := item.UseData.Ptr
-	charge := controlByte(data, 108)
+	data := item.UseDataWand()
+	charge := &data.Charges
 	if *charge == 0 {
 		return false
 	}
 	*charge--
-	*spellLifeWord(data, 112) = 100 * uint32(*charge) / uint32(*controlByte(data, 109))
+	data.Percent = 100 * uint32(*charge) / uint32(data.MaxCharges)
 	if u != nil && u.ObjClass&4 != 0 {
 		sustainedState(u, 22)
 		sustainedCharges(u, item)
@@ -130,7 +132,7 @@ func sustainedLightningTick(p unsafe.Pointer) uint32 {
 		*sustainedLightningArray(i) = 0
 	}
 	if u.ObjClass&4 != 0 {
-		t := spellEffectObject(u.UpdateData, 288)
+		t := layout.As[server.PlayerUpdateData](u.UpdateData).CursorObj
 		if t != nil && sustainedEnemy(u, t) && stateDistance(u, t) <= float64(radius) {
 			*sustainedGlobal(4) = controlRaw(t)
 		}
@@ -202,9 +204,9 @@ func sustainedLightningTick(p unsafe.Pointer) uint32 {
 	if sustainedLightningObject(0) == nil {
 		return 0
 	}
-	value := float32(spellEffectScalar("LightningDamage") + float64(*temporaryFloat(p, 76)))
+	value := float32(spellEffectScalar("LightningDamage") + float64(*(*float32)(durScratch(p, 76))))
 	damage := floatToInt32(value)
-	*temporaryFloat(p, 76) = float32(float64(value) - float64(damage))
+	*(*float32)(durScratch(p, 76)) = float32(float64(value) - float64(damage))
 	old := d.Sub104
 	for seg := d.Sub108; seg != nil; seg = seg.Next {
 		if old != nil {
@@ -231,7 +233,7 @@ func sustainedLightningTick(p unsafe.Pointer) uint32 {
 		}
 	}
 	if u.ObjClass&4 != 0 {
-		if item := spellEffectObject(p, 72); item != nil {
+		if item := durWordObject(uint32(layout.As[server.DurSpell](p).Field72)); item != nil {
 			if !sustainedSpendCharge(u, item) {
 				return 1
 			}
@@ -257,8 +259,8 @@ func sustainedLightningCancel(p unsafe.Pointer) uint32 {
 	sustainedFreeSegments(d.Sub104)
 	d.Sub104 = nil
 	var ret uint32
-	if item := spellEffectObject(p, 72); item != nil {
-		word := spellLifeWord(item.UseData.Ptr, 96)
+	if item := durWordObject(uint32(layout.As[server.DurSpell](p).Field72)); item != nil {
+		word := &item.UseDataWand().Flags
 		*word &^= 4
 		ret = *word
 	}
@@ -274,11 +276,11 @@ func sustainedPlasmaStart(p unsafe.Pointer) uint32 {
 	if u == nil || u.ObjClass&4 == 0 {
 		return 0
 	}
-	item := spellEffectObject(u.UpdateData, 104)
+	item := layout.As[server.PlayerUpdateData](u.UpdateData).Field26
 	if item == nil || item.ObjSubClass&0x4000000 == 0 {
 		return 1
 	}
-	if *controlByte(item.UseData.Ptr, 96)&4 != 0 {
+	if item.UseDataWand().Flags&4 != 0 {
 		d.Field72 = int32(controlRaw(item))
 		d.Flags88 |= 2
 	}
@@ -332,7 +334,7 @@ func sustainedPlasmaTick(p unsafe.Pointer) uint32 {
 		}
 	}
 	if d.Target48 == nil {
-		t = spellEffectObject(u.UpdateData, 288)
+		t = layout.As[server.PlayerUpdateData](u.UpdateData).CursorObj
 		*sustainedGlobal(1) = 0
 		if t != nil && sustainedEnemy(u, t) && stateDistance(u, t) <= 400 {
 			*sustainedGlobal(1) = controlRaw(t)
@@ -350,7 +352,7 @@ func sustainedPlasmaTick(p unsafe.Pointer) uint32 {
 			d.Target48 = nil
 		}
 	}
-	old := spellEffectObject(p, 36)
+	old := durWordObject(layout.As[server.DurSpell](p).Field36)
 	if d.Target48 == nil {
 		if old != nil {
 			sustainedStopRay(d, old)
@@ -382,16 +384,16 @@ func sustainedPlasmaTick(p unsafe.Pointer) uint32 {
 	if d.Field76 == 0 {
 		d.Frame68 = sustainedFrame() + uint32(sustainedScalarInt("PlasmaSearchTime"))
 	}
-	if item := spellEffectObject(p, 72); item != nil && !sustainedSpendCharge(u, item) {
+	if item := durWordObject(uint32(layout.As[server.DurSpell](p).Field72)); item != nil && !sustainedSpendCharge(u, item) {
 		return 1
 	}
 	return 0
 }
 func sustainedPlasmaCancel(p unsafe.Pointer) uint32 {
-	item := spellEffectObject(p, 72)
+	item := durWordObject(uint32(layout.As[server.DurSpell](p).Field72))
 	if item == nil {
 		return 0
 	}
-	*spellLifeWord(item.UseData.Ptr, 96) &= ^uint32(4)
+	item.UseDataWand().Flags &= ^uint32(4)
 	return memmap.PtrWord(item.UseData.Ptr)
 }

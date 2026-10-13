@@ -1,10 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/client/noxrender"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 var tileDrawCallback = func(pos image.Point, img noxrender.ImageHandle, tile uint16) { tileRasterTexture(pos, img) }
@@ -35,7 +37,7 @@ func tileCompositionCell(x, y int32, pos image.Point) {
 		off := 1 + 5*half
 		tile := uint16(cell[off])
 		def := &tileDefinitionsAll()[tile]
-		img := *(*noxrender.ImageHandle)(unsafe.Add(def.Data32, 4*uintptr(cell[off+1]+uint32(def.Field46))))
+		img := client.SpriteFrame((*noxrender.ImageHandle)(def.Data32), int(cell[off+1]+uint32(def.Field46)))
 		p := pos
 		if half == 1 {
 			p.Y += 23
@@ -240,10 +242,10 @@ func tileCompositionVertical(vp *noxrender.Viewport, view int) {
 }
 func tileCompositionOverlay(pos image.Point, edge *[5]uint32) {
 	def := &tileDefinitionsAll()[edge[0]]
-	tileImage := *(*noxrender.ImageHandle)(unsafe.Add(def.Data32, 4*uintptr(edge[1]+uint32(def.Field46))))
+	tileImage := client.SpriteFrame((*noxrender.ImageHandle)(def.Data32), int(edge[1]+uint32(def.Field46)))
 	table := edgeAssets[edge[2]].Data32
 	index := edge[3] + uint32(edgeAssets[edge[2]].Field46)
-	edgeImage := *(*noxrender.ImageHandle)(unsafe.Add(table, 4*uintptr(index)))
+	edgeImage := client.SpriteFrame((*noxrender.ImageHandle)(table), int(index))
 	*memmap.PtrUint32(0x5D4594, 2523980+4*uintptr(edge[2])) = 1
 	data := GetClient().R2().GetBag().AsImage(edgeImage).Pixdata()
 	if len(data) == 0 {
@@ -257,10 +259,10 @@ func tileCompositionOverlay(pos image.Point, edge *[5]uint32) {
 	data = data[2:]
 	base, offset, size, stride := tileRasterOffset(pos)
 	shift := memmap.Uint8(0x973F18, 7696)
-	src := int(memmap.Uint32(0x973CE0, 4*uintptr(first)) << shift)
+	src := int(int32(memmap.Uint32(0x973CE0, 4*uintptr(first)) << shift))
 	for y := first; y <= last; y++ {
 		count := int(memmap.Uint32(0x973CE0, 384+4*uintptr(y)))
-		left := int(memmap.Uint32(0x973CE0, 192+4*uintptr(y)) << shift)
+		left := int(int32(memmap.Uint32(0x973CE0, 192+4*uintptr(y)) << shift))
 		at := (offset + y*stride + left) % size
 		for count > 0 {
 			op, n := data[0], int(data[1])

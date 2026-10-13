@@ -1,6 +1,7 @@
 package server
 
 import (
+	"reflect"
 	"runtime"
 	"unsafe"
 
@@ -66,25 +67,25 @@ func init() {
 	RegisterObjectCreate("NoCreate", nil)
 	RegisterObjectCreate("PlayerCreate", nil)
 
-	RegisterObjectInit("NoInit", nil, 0)
-	RegisterObjectInit("ProjectileInit", nil, 0)
-	RegisterObjectInit("GruntInit", nil, 0)
-	RegisterObjectInit("SkeletonInit", nil, 0)
-	RegisterObjectInit("TowerInit", nil, 0)
-	RegisterObjectInit("RewardMarkerInit", nil, 220)
-	RegisterObjectInit("AnkhInit", nil, 5124)
+	RegisterObjectInit("NoInit", nil, NoData)
+	RegisterObjectInit("ProjectileInit", nil, NoData)
+	RegisterObjectInit("GruntInit", nil, NoData)
+	RegisterObjectInit("SkeletonInit", nil, NoData)
+	RegisterObjectInit("TowerInit", nil, NoData)
+	RegisterObjectInit("RewardMarkerInit", nil, DataOf[RewardMarkerInitData]())
+	RegisterObjectInit("AnkhInit", nil, DataOf[AnkhInitData]())
 
-	RegisterObjectUpdate("NoUpdate", nil, 0)
-	RegisterObjectUpdate("HomingProjectileUpdate", nil, 4)
-	RegisterObjectUpdate("SpikeBlockUpdate", nil, 2200)
-	RegisterObjectUpdate("TowerUpdate", nil, 8)
-	RegisterObjectUpdate("WeaponArmorUpdate", nil, 8)
-	RegisterObjectUpdate("DamageRoundoffUpdate", nil, 8) // used in demo instead of WeaponArmorUpdate
+	RegisterObjectUpdate("NoUpdate", nil, NoData)
+	RegisterObjectUpdate("HomingProjectileUpdate", nil, DataOf[HomingProjectileUpdateData]())
+	RegisterObjectUpdate("SpikeBlockUpdate", nil, RawData(2200))
+	RegisterObjectUpdate("TowerUpdate", nil, DataOf[TowerUpdateData]())
+	RegisterObjectUpdate("WeaponArmorUpdate", nil, DataOf[WeaponArmorUpdateData]())
+	RegisterObjectUpdate("DamageRoundoffUpdate", nil, DataOf[WeaponArmorUpdateData]()) // used in demo instead of WeaponArmorUpdate
 
-	RegisterObjectCollide("NoCollide", nil, 0)
+	RegisterObjectCollide("NoCollide", nil, NoData)
 
-	RegisterObjectUseC("AmmoUse", nil, 3)
-	RegisterObjectUseC("BowUse", nil, 1)
+	RegisterObjectUseC("AmmoUse", nil, DataOf[AmmoUseData]())
+	RegisterObjectUseC("BowUse", nil, DataOf[BowUseData]())
 }
 
 type ObjectParseFunc func(objt *ObjectType, args []string) error
@@ -92,6 +93,26 @@ type ObjectParseFunc func(objt *ObjectType, args []string) error
 type objectDefFunc struct {
 	Func     unsafe.Pointer
 	DataSize uintptr
+	DataType reflect.Type // nil for raw data
+}
+
+// DataDef describes the data block of an object function.
+type DataDef struct {
+	Size uintptr
+	Type reflect.Type // nil for raw data, which keeps the 32-bit layout of the original game on every platform
+}
+
+// NoData is used for object functions without data.
+var NoData DataDef
+
+// DataOf describes a data block that holds a T.
+func DataOf[T any]() DataDef {
+	return DataDef{Size: reflect.TypeFor[T]().Size(), Type: reflect.TypeFor[T]()}
+}
+
+// RawData describes a data block of size bytes accessed by offset.
+func RawData(size uintptr) DataDef {
+	return DataDef{Size: size}
 }
 
 type ObjectCreateFunc func(obj *Object)
@@ -119,23 +140,23 @@ var objectInitGoFuncs = make(map[unsafe.Pointer]ObjectInitFunc)
 // Argument-aware callbacks preserve the second initializer argument.
 var objectInitArgGoFuncs = make(map[unsafe.Pointer]func(*Object, unsafe.Pointer))
 
-func RegisterObjectInitGo(name string, cfnc unsafe.Pointer, fnc ObjectInitFunc, sz uintptr) {
+func RegisterObjectInitGo(name string, cfnc unsafe.Pointer, fnc ObjectInitFunc, sz DataDef) {
 	RegisterObjectInit(name, cfnc, sz)
 	objectInitGoFuncs[cfnc] = fnc
 }
 
-func RegisterObjectInit(name string, fnc unsafe.Pointer, sz uintptr) {
+func RegisterObjectInit(name string, fnc unsafe.Pointer, sz DataDef) {
 	if _, ok := initFuncs[name]; ok {
 		panic("already registered")
 	}
-	initFuncs[name] = objectDefFunc{Func: fnc, DataSize: sz}
+	initFuncs[name] = objectDefFunc{Func: fnc, DataSize: sz.Size, DataType: sz.Type}
 }
 
-func RegisterObjectUpdate(name string, fnc unsafe.Pointer, sz uintptr) {
+func RegisterObjectUpdate(name string, fnc unsafe.Pointer, sz DataDef) {
 	if _, ok := updateFuncs[name]; ok {
 		panic("already registered")
 	}
-	updateFuncs[name] = objectDefFunc{Func: fnc, DataSize: sz}
+	updateFuncs[name] = objectDefFunc{Func: fnc, DataSize: sz.Size, DataType: sz.Type}
 }
 
 type UpdateFunc func(obj *Object)
@@ -144,7 +165,7 @@ var objUpdate = ccall.NewFuncs(func(cfnc unsafe.Pointer) UpdateFunc {
 	return func(obj *Object) { panic("unregistered object update callback") }
 })
 
-func RegisterObjectUpdateGo(name string, cfnc unsafe.Pointer, fnc UpdateFunc, sz uintptr) {
+func RegisterObjectUpdateGo(name string, cfnc unsafe.Pointer, fnc UpdateFunc, sz DataDef) {
 	RegisterObjectUpdate(name, cfnc, sz)
 	objUpdate.Register(cfnc, fnc)
 }
@@ -174,14 +195,14 @@ type objectCollideGoEntry struct {
 
 var objectCollideGoFuncs = make(map[unsafe.Pointer]objectCollideGoEntry)
 
-func RegisterObjectCollideGo(name string, cfnc unsafe.Pointer, fnc CollideFunc, sz uintptr) {
+func RegisterObjectCollideGo(name string, cfnc unsafe.Pointer, fnc CollideFunc, sz DataDef) {
 	RegisterObjectCollide(name, cfnc, sz)
 	objectCollideGoFuncs[cfnc] = objectCollideGoEntry{call: fnc}
 }
 
 // RegisterObjectCollideNative binds a stable, non-executable identity to its Go
 // owner. The caller owns the identity's lifetime, including all stored copies.
-func RegisterObjectCollideNative(name string, key unsafe.Pointer, fnc CollideResultFunc, sz uintptr) {
+func RegisterObjectCollideNative(name string, key unsafe.Pointer, fnc CollideResultFunc, sz DataDef) {
 	if key == nil || fnc == nil {
 		panic("nil native collision identity or function")
 	}
@@ -192,11 +213,11 @@ func RegisterObjectCollideNative(name string, key unsafe.Pointer, fnc CollideRes
 	}
 }
 
-func RegisterObjectCollide(name string, fnc unsafe.Pointer, sz uintptr) {
+func RegisterObjectCollide(name string, fnc unsafe.Pointer, sz DataDef) {
 	if _, ok := collideFuncs[name]; ok {
 		panic("already registered")
 	}
-	collideFuncs[name] = objectDefFunc{Func: fnc, DataSize: sz}
+	collideFuncs[name] = objectDefFunc{Func: fnc, DataSize: sz.Size, DataType: sz.Type}
 }
 
 func RegisterObjectCollideParse(name string, fnc ObjectParseFunc) {
@@ -250,7 +271,7 @@ func (p UseFuncPtr) CallDiscard(obj, obj2 *Object) {
 
 // RegisterObjectUseNative binds a stable identity to both exact-result and
 // nonzero/boolean dispatch. The caller owns the identity and its stored copies.
-func RegisterObjectUseNative(name string, key unsafe.Pointer, fn UseResultFunc, sz uintptr) {
+func RegisterObjectUseNative(name string, key unsafe.Pointer, fn UseResultFunc, sz DataDef) {
 	if key == nil || fn == nil {
 		panic("nil native use identity or function")
 	}
@@ -264,18 +285,18 @@ var objUse = ccall.NewFuncs(func(cfnc unsafe.Pointer) UseFunc {
 	}
 })
 
-func RegisterObjectUseC(name string, cfnc unsafe.Pointer, sz uintptr) {
+func RegisterObjectUseC(name string, cfnc unsafe.Pointer, sz DataDef) {
 	if _, ok := useFuncs[name]; ok {
 		panic("already registered")
 	}
-	useFuncs[name] = objectDefFunc{Func: cfnc, DataSize: sz}
+	useFuncs[name] = objectDefFunc{Func: cfnc, DataSize: sz.Size, DataType: sz.Type}
 }
 
-func RegisterObjectUse(name string, cfnc unsafe.Pointer, fnc UseFunc, sz uintptr) {
+func RegisterObjectUse(name string, cfnc unsafe.Pointer, fnc UseFunc, sz DataDef) {
 	if _, ok := useFuncs[name]; ok {
 		panic("already registered")
 	}
-	useFuncs[name] = objectDefFunc{Func: cfnc, DataSize: sz}
+	useFuncs[name] = objectDefFunc{Func: cfnc, DataSize: sz.Size, DataType: sz.Type}
 	objUse.Register(cfnc, fnc)
 }
 
@@ -338,11 +359,11 @@ func RegisterObjectDamageSound(name string, fnc unsafe.Pointer) {
 	damageSoundFuncs[name] = fnc
 }
 
-func RegisterObjectDeath(name string, fnc unsafe.Pointer, sz uintptr) {
+func RegisterObjectDeath(name string, fnc unsafe.Pointer, sz DataDef) {
 	if _, ok := deathFuncs[name]; ok {
 		panic("already registered")
 	}
-	deathFuncs[name] = objectDefFunc{Func: fnc, DataSize: sz}
+	deathFuncs[name] = objectDefFunc{Func: fnc, DataSize: sz.Size, DataType: sz.Type}
 }
 
 type DeathFunc func(obj *Object)
@@ -353,7 +374,7 @@ var objDeath = ccall.NewFuncs(func(cfnc unsafe.Pointer) DeathFunc {
 	}
 })
 
-func RegisterObjectDeathGo(name string, cfnc unsafe.Pointer, fnc DeathFunc, sz uintptr) {
+func RegisterObjectDeathGo(name string, cfnc unsafe.Pointer, fnc DeathFunc, sz DataDef) {
 	RegisterObjectDeath(name, cfnc, sz)
 	objDeath.Register(cfnc, fnc)
 }

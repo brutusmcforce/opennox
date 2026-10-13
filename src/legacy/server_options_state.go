@@ -2,12 +2,13 @@ package legacy
 
 import (
 	"fmt"
-	"github.com/brutusmcforce/opennox/libs/strman"
+	"strings"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"strings"
-	"unsafe"
+	"github.com/brutusmcforce/opennox/libs/strman"
 )
 
 var serverOptionsRoot, serverOptionsMapsWindow, serverOptionsMapControls, serverOptionsLimitsPanel, serverOptionsTeamsPanel uint32
@@ -90,4 +91,8 @@ func serverOptionsVisible(hidden int) int {
 	}
 	return serverOptionsHidden(serverOptionsWindow(1046492), hidden)
 }
-func serverOptionsListHead() unsafe.Pointer { return memmap.PtrOff(0x5D4594, 1045956) }
+// serverOptionsRules lists the rule lines that were not understood, to write them back. The original kept the
+// list head at 0x5D4594+1045956, with room for a 12-byte node only: the option texts follow at +12.
+var serverOptionsRules legacyListNode
+
+func serverOptionsListHead() unsafe.Pointer { return unsafe.Pointer(&serverOptionsRules) }

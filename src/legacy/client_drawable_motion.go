@@ -1,10 +1,11 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/client"
-	"github.com/brutusmcforce/opennox/client/noxrender"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/noxrender"
 )
 
 func drawableStatePredicate(dr *client.Drawable) int {
@@ -38,11 +39,12 @@ func drawableMotionDamped(vp *noxrender.Viewport, dr *client.Drawable) int {
 	return 0
 }
 func drawableMotionTarget(dr *client.Drawable) int {
-	tx := int32(*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)))
-	ty := int32(*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(434)) /* Union._ */)))
+	u := (*client.DrawableUnionOrb)(unsafe.Pointer(&dr.Union))
+	tx := int32(u.Target[0])
+	ty := int32(u.Target[1])
 	x, y := int32(dr.PosVec.X), int32(dr.PosVec.Y)
 	dx, dy := tx-x, ty-y
-	speed := int32(*(*byte)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(443)) /* Union._ */)))
+	speed := int32(u.Speed)
 	distance := int32(screenDistance(dx, dy)) + 1
 	nx, ny := x+dx*speed/distance, y+dy*speed/distance
 	if distance <= 10 || (x-tx)*(nx-tx)+(y-ty)*(ny-ty) < 0 {

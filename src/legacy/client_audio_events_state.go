@@ -1,10 +1,11 @@
 package legacy
 
 import (
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/legacy/timer"
-	"unsafe"
 )
 
 var (
@@ -26,8 +27,8 @@ func audioEventCache() *audioStreamCache {
 func audioEventPool() *unsafe.Pointer {
 	return (*unsafe.Pointer)(memmap.WordPtr(*audioEventPoolWord))
 }
-func audioEventContext() *audioStreamContext {
-	return (*audioStreamContext)(memmap.WordPtr(*audioEventContextWord))
+func audioEventContext() *AudioStreamContext {
+	return (*AudioStreamContext)(memmap.WordPtr(*audioEventContextWord))
 }
 func audioEventGlobalTimers() *timer.TimerGroup {
 	return (*timer.TimerGroup)(legacyGlobals.dword_587000_127004)
@@ -56,7 +57,7 @@ func audioEventDefaults(m *audioEventMetadata) int32 {
 	}
 	return 0
 }
-func audioEventInit(ctx *audioStreamContext, cat *audioStreamCatalog) int32 {
+func audioEventInit(ctx *AudioStreamContext, cat *audioStreamCatalog) int32 {
 	for i := 0; i < 1023; i++ {
 		m := &audioEventMetadataTable[i]
 		audioEventDefaults(m)
@@ -66,7 +67,7 @@ func audioEventInit(ctx *audioStreamContext, cat *audioStreamCatalog) int32 {
 	*audioEventContextWord = memmap.PtrWord(unsafe.Pointer(ctx))
 	if cat != nil {
 		*audioEventCacheWord = memmap.PtrWord(unsafe.Pointer(audioStreamCacheNew(cat, 0x100000, 200, 0x2000)))
-		*audioEventPoolWord = memmap.PtrWord(unsafe.Pointer(audioStreamPoolNew(200, 576)))
+		*audioEventPoolWord = memmap.PtrWord(unsafe.Pointer(audioStreamPoolNew(200, int32(unsafe.Sizeof(audioEvent{})))))
 	}
 	if audioEventCache() == nil || cat == nil || ctx == nil || audioEventPool() == nil {
 		return 0

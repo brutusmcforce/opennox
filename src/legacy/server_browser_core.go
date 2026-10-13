@@ -2,11 +2,12 @@ package legacy
 
 import (
 	"fmt"
-	"github.com/brutusmcforce/opennox/libs/strman"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/strman"
 )
 
 func browserModeName(flags uint16) string {
@@ -29,8 +30,9 @@ func browserModeName(flags uint16) string {
 }
 func browserHit(point *[2]uint32, record unsafe.Pointer) bool {
 	// C converts the unsigned subtraction to double, including its wraparound.
-	x := float64(uint32(int32(*(*int16)(unsafe.Add(record, 44)))) - point[0])
-	y := float64(uint32(int32(*(*int16)(unsafe.Add(record, 46)))) - point[1])
+	rec := (*Nox_gui_server_ent_t)(record)
+	x := float64(uint32(int32(rec.Field_11_0)) - point[0])
+	y := float64(uint32(int32(rec.Field_11_2)) - point[1])
 	return math.Sqrt(y*y+x*x) <= memmap.Float64(0x581450, 9720)
 }
 func browserCount(point *[2]uint32, head *legacyListNode) int {
@@ -128,7 +130,7 @@ func nox_client_getServerAddr_43B300() uint32 {
 		return 0
 	}
 	// Preserve the established short/octal/hex IPv4 forms at this boundary.
-	return browserIPv4(GoStringP(unsafe.Add(browserUI.selected, 12)))
+	return browserIPv4(alloc.GoStringS((*Nox_gui_server_ent_t)(browserUI.selected).AddrBuf[:]))
 }
 
 func nox_client_getServerPort_43B320() int32 {
@@ -142,7 +144,7 @@ func sub_43B340() int32 {
 	if browserUI.hasSelection == 0 {
 		return 0
 	}
-	return int32(*(*uint16)(unsafe.Add(browserUI.selected, 163)))
+	return int32(*(*uint16)(unsafe.Pointer(&(*Nox_gui_server_ent_t)(browserUI.selected).FlagsVal)))
 }
 
 func sub_43B6D0() int32 { return int32(browserUI.transition) }

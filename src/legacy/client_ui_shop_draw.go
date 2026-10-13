@@ -189,7 +189,7 @@ func uiShopDrawStock() int {
 	objectRenderSaveClip()
 	x, top := int(int32(*uiShopWord(1098380))), int(int32(*uiShopWord(1098384)))
 	bottom := int(int32(*uiShopWord(1098392)))
-	uiRenderCopyRect(x, top, int(*uiShopWord(1098388)-*uiShopWord(1098380)), int(*uiShopWord(1098392)-*uiShopWord(1098384)))
+	uiRenderCopyRect(x, top, int(int32(*uiShopWord(1098388)-*uiShopWord(1098380))), int(int32(*uiShopWord(1098392)-*uiShopWord(1098384))))
 	y := int(int32(uint32(top) - *uiShopWord(1107036)))
 	height := nox_xxx_guiFontHeightMB_43F320(nil)
 	grid := uiShopGrid()

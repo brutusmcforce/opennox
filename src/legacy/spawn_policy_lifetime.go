@@ -3,9 +3,11 @@ package legacy
 import (
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/object"
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -25,9 +27,6 @@ type spawnPolicyMonsterListNode struct {
 	Distance   [32]float32
 	Next, Prev *spawnPolicyMonsterListNode
 }
-
-
-
 
 func spawnPolicySpawnClass() *alloc.Class {
 	return alloc.AsClass(unsafe.Pointer(legacyGlobals.nox_alloc_spawn_2386216))
@@ -103,15 +102,11 @@ func spawnPolicyUnlink(n *spawnPolicyNode) {
 	}
 }
 
-func spawnPolicyUpdateWord(u *server.Object, off uintptr) *uint32 {
-	return (*uint32)(unsafe.Add(u.UpdateData, off))
-}
-
 // spawnPolicyRegister is 50E030. It retains C inventory insertion: that engine
 // owns Inventory links and the historical null-Glyph behavior.
 func spawnPolicyRegister(generator, child *server.Object) int {
-	childData := child.UpdateData
-	if *(*unsafe.Pointer)(unsafe.Add(childData, 2196)) != nil {
+	childData := child.UpdateDataMonster()
+	if childData.SpawnNode != nil {
 		return 1
 	}
 	n := (*spawnPolicyNode)(spawnPolicySpawnClass().NewObject())
@@ -120,27 +115,25 @@ func spawnPolicyRegister(generator, child *server.Object) int {
 	}
 	spawnPolicyLink(n)
 	n.Object = child
-	*(*byte)(unsafe.Add(generator.UpdateData, 86))++
-	*(*unsafe.Pointer)(unsafe.Add(childData, 2196)) = unsafe.Pointer(n)
-	*(*unsafe.Pointer)(unsafe.Add(childData, 2192)) = unsafe.Pointer(generator)
+	layout.As[server.MonsterGenUpdateData](generator.UpdateData).Current++
+	childData.SpawnNode = unsafe.Pointer(n)
+	childData.Field548 = generator
 
 	if child.ObjSubClass&object.SubClass(0x2000) != 0 {
 		glyph := GetServer().S().NewObjectByTypeID("Glyph")
 		if glyph != nil {
-			gd := glyph.InitData
-			for i := uintptr(0); i < 3; i++ {
-				*(*uint32)(unsafe.Add(gd, 4*i)) = *spawnPolicyUpdateWord(child, 2044+4*i)
-			}
-			*(*uint32)(unsafe.Add(gd, 24)) = 0
-			*(*uint32)(unsafe.Add(gd, 28)) = *(*uint32)(unsafe.Pointer(&child.PosVec.X))
-			*(*uint32)(unsafe.Add(gd, 32)) = *(*uint32)(unsafe.Pointer(&child.PosVec.Y))
+			gd := glyph.InitDataGlyph()
+			spells := unsafe.Slice(&childData.Field511, 3) // the glyph spells of the monster
+			copy(gd.Spells[:3], spells)
+			gd.SpellArg.Obj = nil
+			gd.SpellArg.Pos = child.PosVec
 			var cnt byte
-			for i := uintptr(0); i < 3; i++ {
-				if *(*uint32)(unsafe.Add(gd, 4*i)) != 0 {
+			for i := 0; i < 3; i++ {
+				if gd.Spells[i] != 0 {
 					cnt++
 				}
 			}
-			*(*byte)(unsafe.Add(gd, 20)) = cnt
+			*(*byte)(unsafe.Pointer(&gd.SpellsCnt)) = cnt
 		}
 		inventoryInsert(child, glyph, 1)
 	}
@@ -153,16 +146,15 @@ func spawnPolicyRelease(child *server.Object) {
 	if child == nil {
 		return
 	}
-	data := child.UpdateData
-	if owner := *(**server.Object)(unsafe.Add(data, 2192)); owner != nil {
-		p := (*byte)(unsafe.Add(owner.UpdateData, 86))
-		*p = *p - 1
-		*(*unsafe.Pointer)(unsafe.Add(data, 2192)) = nil
+	data := layout.As[server.MonsterUpdateData](child.UpdateData)
+	if owner := data.Field548; owner != nil {
+		owner.UpdateDataMonsterGen().Current--
+		data.Field548 = nil
 	}
-	if p := *(**spawnPolicyNode)(unsafe.Add(data, 2196)); p != nil {
+	if p := (*spawnPolicyNode)(data.SpawnNode); p != nil {
 		spawnPolicyUnlink(p)
 		spawnPolicySpawnClass().FreeObjectFirst(unsafe.Pointer(p))
-		*(*unsafe.Pointer)(unsafe.Add(data, 2196)) = nil
+		data.SpawnNode = nil
 	}
 }
 
@@ -180,7 +172,7 @@ func spawnPolicyGlyphRelease(u *server.Object) {
 	if *glyph == 0 {
 		*glyph = uint32(GetServer().S().Types.IndByID("Glyph"))
 	}
-	if u.ObjClass&object.ClassMonster != 0 && u.ObjSubClass&object.SubClass(0x2000) != 0 && *(*unsafe.Pointer)(unsafe.Add(u.UpdateData, 2196)) != nil {
+	if u.ObjClass&object.ClassMonster != 0 && u.ObjSubClass&object.SubClass(0x2000) != 0 && u.UpdateDataMonster().SpawnNode != nil {
 		for it := u.InvFirstItem; it != nil; {
 			next := it.InvNextItem // C obtains next before delayed delete.
 			if uint32(it.TypeInd) == *glyph {

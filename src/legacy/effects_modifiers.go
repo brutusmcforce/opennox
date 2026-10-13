@@ -1,12 +1,13 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/spell"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func effectsInventory(u *server.Object, mask byte) int {
@@ -31,12 +32,12 @@ func effectsInventory(u *server.Object, mask byte) int {
 	return 0
 }
 func effectsEngageFlag(u *server.Object, mask byte, sound int) {
-	*(*byte)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(440)) /* Field110 */)) |= mask
+	*(*byte)(unsafe.Pointer(&u.Field110)) |= mask
 	inventorySound(sound, u, 0, 0)
 }
 func effectsDisengageFlag(u *server.Object, mask byte, sound int) {
 	if effectsInventory(u, mask) == 0 {
-		*(*byte)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(440)) /* Field110 */)) &^= mask
+		*(*byte)(unsafe.Pointer(&u.Field110)) &^= mask
 	}
 	inventorySound(sound, u, 0, 0)
 }
@@ -46,12 +47,12 @@ func effectsSpeed(m *server.ModifierEff, u *server.Object, engage bool) {
 	}
 	sound := 60
 	if engage {
-		*(*byte)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(440)) /* Field110 */)) |= 16
+		*(*byte)(unsafe.Pointer(&u.Field110)) |= 16
 		u.SpeedBonus = float32(float64(m.EngageFloat120) + float64(u.SpeedBonus))
 		sound = 59
 	} else {
 		if effectsInventory(u, 16) == 0 {
-			*(*byte)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(440)) /* Field110 */)) &^= 16
+			*(*byte)(unsafe.Pointer(&u.Field110)) &^= 16
 		}
 		u.SpeedBonus = float32(float64(u.SpeedBonus) - float64(m.EngageFloat120))
 	}
@@ -123,14 +124,14 @@ func effectsReplenish(m *server.ModifierEff, it *server.Object) {
 	if it.ObjClass&0x1000 == 0 {
 		return
 	}
-	data := unsafe.Slice((*byte)(it.UseData.Ptr), 110)
-	old, max := data[108], data[109]
-	data[108]++
-	if data[108] > max {
-		data[108] = max
+	data := it.UseDataWand()
+	old, max := data.Charges, data.MaxCharges
+	data.Charges++
+	if data.Charges > max {
+		data.Charges = max
 	}
-	if old != data[108] && it.InvHolder != nil && it.InvHolder.ObjClass&4 != 0 {
-		equipmentReportCharges(it.InvHolder, it, 108, 109)
+	if old != data.Charges && it.InvHolder != nil && it.InvHolder.ObjClass&4 != 0 {
+		equipmentReportWandCharges(it.InvHolder, it)
 	}
 }
 func effectsGrip(m *server.ModifierEff, value *int32, invert bool) int {

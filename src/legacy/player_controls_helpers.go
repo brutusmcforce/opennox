@@ -1,22 +1,22 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
-func controlByte(p unsafe.Pointer, n int) *byte          { return (*byte)(unsafe.Add(p, n)) }
-func controlHalf(p unsafe.Pointer, n int) *uint16        { return (*uint16)(unsafe.Add(p, n)) }
-func controlPtr(p unsafe.Pointer, n int) *unsafe.Pointer { return (*unsafe.Pointer)(unsafe.Add(p, n)) }
-func controlObject(p unsafe.Pointer, n int) *server.Object {
-	return (*server.Object)(*controlPtr(p, n))
+func controlByte(p unsafe.Pointer, n int) *byte          { return rawAt[byte](p, n) }
+func controlHalf(p unsafe.Pointer, n int) *uint16        { return rawAt[uint16](p, n) }
+func controlPlayer(u *server.Object) *server.Player {
+	return layout.As[server.PlayerUpdateData](u.UpdateData).Player
 }
-func controlPlayer(u *server.Object) unsafe.Pointer { return *controlPtr(u.UpdateData, 276) }
-func controlFlags(mask uint32) bool                 { return noxflags.HasGame(noxflags.GameFlag(mask)) }
-func controlRaw(u *server.Object) uint32            { return memmap.PtrWord(u.CObj()) }
+func controlFlags(mask uint32) bool      { return noxflags.HasGame(noxflags.GameFlag(mask)) }
+func controlRaw(u *server.Object) uint32 { return memmap.PtrWord(u.CObj()) }
 func controlRemoveGlyphs(u *server.Object) int32 {
 	typ := stateType(1565600, "Glyph")
 	for it := GetServer().S().Objs.List; it != nil; it = it.ObjNext {
@@ -53,12 +53,12 @@ func controlFindBall() *server.Object {
 	}
 	return nil
 }
-func controlNextObserver(pl unsafe.Pointer) *server.Object {
+func controlNextObserver(pl *server.Player) *server.Object {
 	if dword_5d4594_1565616 == 0 {
 		dword_5d4594_1565616 = uint32(GetServer().S().Types.IndByID("GameBall"))
 	}
 	players := &GetServer().S().Players
-	current := controlObject(pl, 3628)
+	current := pl.CameraFollowObj
 	var u *server.Object
 	if current != nil && current.ObjClass&4 != 0 {
 		u = players.NextUnit(current)
@@ -72,7 +72,7 @@ func controlNextObserver(pl unsafe.Pointer) *server.Object {
 	}
 	eligible := func(u *server.Object) bool {
 		p := players.ByID(int(u.NetCode))
-		return u.ObjFlags&0x20 == 0 && *controlByte(unsafe.Pointer(p), int(layoutServerPlayer.Off(3680)) /* Field3680 */)&1 == 0
+		return u.ObjFlags&0x20 == 0 && *(*byte)(unsafe.Pointer(&p.Field3680))&1 == 0
 	}
 	if u != nil && u.ObjClass&4 != 0 {
 		for u != nil && !eligible(u) {
@@ -105,25 +105,25 @@ func controlSlave(u *server.Object, next bool) *server.Object {
 		u = u.Field129
 	}
 	for ; u != nil; u = u.Field128 {
-		if u.ObjClass&2 != 0 && *controlByte(u.UpdateData, 1440)&0x80 != 0 {
+		if u.ObjClass&2 != 0 && u.UpdateDataMonster().StatusFlags&0x80 != 0 {
 			return u
 		}
 	}
 	return nil
 }
-func controlObserverSlave(pl unsafe.Pointer) *server.Object {
-	u := controlObject(pl, 3628)
+func controlObserverSlave(pl *server.Player) *server.Object {
+	u := pl.CameraFollowObj
 	if u != nil {
 		u = controlSlave(u, true)
 	} else {
-		u = controlSlave(controlObject(pl, 2056), false)
+		u = controlSlave(pl.PlayerUnit, false)
 	}
 	for ; u != nil; u = controlSlave(u, true) {
 		if u.ObjFlags&0x8020 == 0 {
 			return u
 		}
 	}
-	for u = controlSlave(controlObject(pl, 2056), false); u != nil; u = controlSlave(u, true) {
+	for u = controlSlave(pl.PlayerUnit, false); u != nil; u = controlSlave(u, true) {
 		if u.ObjFlags&0x8020 == 0 {
 			return u
 		}
@@ -154,11 +154,11 @@ func controlTransferChildren(u *server.Object) {
 }
 func controlBoltDamage(level int32, def unsafe.Pointer) float64 {
 	typ := stateType(1568264, "ArcherBolt")
-	base := float64(*controlHalf(def, 72))
-	if controlFlags(2048) && *equipmentWord(def, 4) == typ {
+	base := float64(layout.As[server.Modifier](def).DamageMin72)
+	if controlFlags(2048) && layout.As[server.Modifier](def).TypeInd == typ {
 		base = float64(nox_xxx_gamedataGetFloat_419D40(internCStr("BoltSoloDamageMin")))
 	}
-	return float64(level-int32(*controlHalf(def, 60)))*float64(*(*float32)(unsafe.Add(def, 64))) + base
+	return float64(level-int32(layout.As[server.Modifier](def).ReqStrength60))*float64(layout.As[server.Modifier](def).DamageCoeffOrArmor64) + base
 }
 func controlRespawnFlags() int8 {
 	s := GetServer().S()
@@ -195,28 +195,28 @@ func controlEquippedByCode(u *server.Object, code uint32) *server.Object {
 	return nil
 }
 func controlClearWaypoints(u *server.Object) {
-	for i := 0; i < 3; i++ {
-		ptr := controlPtr(u.UpdateData, 168+4*i)
-		if *ptr != nil {
-			GetServer().DelayedDelete((*server.Object)(*ptr))
+	ud := u.UpdateDataPlayer()
+	for i := range ud.Waypoints {
+		if ud.Waypoints[i] != nil {
+			GetServer().DelayedDelete(ud.Waypoints[i])
 		}
-		*ptr = nil
+		ud.Waypoints[i] = nil
 	}
-	*controlByte(u.UpdateData, 180) = 0
-	*controlByte(u.UpdateData, 181) = 0
+	*(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](u.UpdateData).Field45)) = 0
+	*(*byte)(unsafe.Add(unsafe.Pointer(&layout.As[server.PlayerUpdateData](u.UpdateData).Field45), 1)) = 0
 }
 func controlSetWaypoint(u *server.Object, x, y uint32) {
 	data := u.UpdateData
-	if *controlByte(controlPlayer(u), 3680)&3 != 0 {
+	if *(*byte)(unsafe.Pointer(&controlPlayer(u).Field3680))&3 != 0 {
 		return
 	}
-	ptr := controlPtr(data, 168+4*int(*controlByte(data, 180)))
+	ptr := &layout.As[server.PlayerUpdateData](data).Waypoints[*controlWaypointByte(data, 0)]
 	pos := *(*types.Pointf)(unsafe.Pointer(&[2]uint32{x, y}))
 	if *ptr != nil {
-		Nox_xxx_unitMove_4E7010((*server.Object)(*ptr), pos)
+		Nox_xxx_unitMove_4E7010(*ptr, pos)
 	} else {
 		it := GetServer().S().NewObjectByTypeID("PlayerWaypoint")
-		*ptr = it.CObj()
+		*ptr = it
 		GetServer().CreateObjectAt(it, u, pos)
 	}
 }
@@ -241,24 +241,26 @@ func controlSubStamina(u *server.Object, amount int32) int32 {
 	if u.ObjClass&6 == 0 {
 		return 1
 	}
-	off := 1128
-	if u.ObjClass&4 != 0 {
-		off = 91
+	isPlayer := u.ObjClass&4 != 0
+	var p *byte
+	if isPlayer {
+		p = &u.UpdateDataPlayer().Field22_3
+	} else {
+		p = &u.UpdateDataMonster().Field282_0
 	}
-	p := controlByte(u.UpdateData, off)
 	if int32(*p) < amount {
 		return 0
 	}
 	*p -= byte(amount)
-	if off == 91 {
-		gameplayReportStamina(int(*controlByte(controlPlayer(u), 2064)), u)
+	if isPlayer {
+		gameplayReportStamina(int(controlPlayer(u).PlayerInd), u)
 	}
 	return 1
 }
 func controlAdjustStamina(u *server.Object, amount int8) {
 	if u.ObjClass&4 != 0 {
-		*controlByte(u.UpdateData, 91) -= byte(amount)
-		gameplayReportStamina(int(*controlByte(controlPlayer(u), 2064)), u)
+		layout.As[server.PlayerUpdateData](u.UpdateData).Field22_3 -= byte(amount)
+		gameplayReportStamina(int(controlPlayer(u).PlayerInd), u)
 	}
 }
 func controlWeaponStamina(mask uint32) int32 {
@@ -270,15 +272,15 @@ func controlWeaponStamina(mask uint32) int32 {
 	return 10
 }
 func controlHasWaypoint(u *server.Object) bool {
-	return *controlPtr(u.UpdateData, 168+4*int(*controlByte(u.UpdateData, 181))) != nil
+	return layout.As[server.PlayerUpdateData](u.UpdateData).Waypoints[*controlWaypointByte(u.UpdateData, 1)] != nil
 }
 func controlCanMove(u *server.Object) bool {
 	d := u.UpdateData
-	if u.Buffs&(1<<25|1<<5) != 0 || controlFlags(4096) && *equipmentWord(d, 280) != 0 {
+	if u.Buffs&(1<<25|1<<5) != 0 || controlFlags(4096) && layout.As[server.PlayerUpdateData](d).Trade70 != nil {
 		return false
 	}
-	if *controlByte(d, 88) == 1 {
-		it := controlObject(d, 104)
+	if *(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](d).State)) == 1 {
+		it := layout.As[server.PlayerUpdateData](d).Field26
 		if it != nil && it.ObjClass&0x1000000 != 0 && it.ObjSubClass&8 != 0 {
 			return false
 		}
@@ -286,13 +288,13 @@ func controlCanMove(u *server.Object) bool {
 	return true
 }
 func controlCanAttack(u *server.Object) bool {
-	return u.Buffs&(1<<25) == 0 && *controlByte(u.UpdateData, 88) != 23
+	return u.Buffs&(1<<25) == 0 && *(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](u.UpdateData).State)) != 23
 }
 func controlAimsAtEnemy(u *server.Object) bool {
 	if u == nil {
 		return false
 	}
-	target := controlObject(u.UpdateData, 288)
+	target := layout.As[server.PlayerUpdateData](u.UpdateData).CursorObj
 	return target == nil || GetServer().S().IsEnemyTo(u, target) || controlFlags(4096)
 }
 func controlWeaponAnimation(mask uint32) int32 {
@@ -306,8 +308,8 @@ func controlWeaponAnimation(mask uint32) int32 {
 func controlActionState(u *server.Object) int32 {
 	d := u.UpdateData
 	pl := controlPlayer(u)
-	weapon := *equipmentWord(pl, 4)
-	switch *controlByte(d, 88) {
+	weapon := pl.WeaponEquip
+	switch *(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](d).State)) {
 	case 0:
 		return 4
 	case 1, 14, 22:
@@ -318,10 +320,10 @@ func controlActionState(u *server.Object) int32 {
 			return 45
 		}
 		if weapon&0x47f0000 != 0 {
-			return int32((^byte(*equipmentWord(controlObject(d, 104).UseData.Ptr, 96)) & 2) | 29)
+			return int32((^byte(layout.As[server.PlayerUpdateData](d).Field26.UseDataWand().Flags) & 2) | 29)
 		}
-		if (weapon == 0 || weapon == 1) && *controlByte(pl, 8) != 0 {
-			return int32(*controlByte(pl, 8))
+		if (weapon == 0 || weapon == 1) && *(*byte)(unsafe.Pointer(&pl.Field8)) != 0 {
+			return int32(*(*byte)(unsafe.Pointer(&pl.Field8)))
 		}
 		return controlWeaponAnimation(weapon)
 	case 2, 10:
@@ -367,14 +369,14 @@ func controlActionState(u *server.Object) int32 {
 	return 0
 }
 func controlBotState(u *server.Object) int8 {
-	d := *controlPtr(u.UpdateData, 292)
-	index := int8(*controlByte(d, 544))
+	d := u.UpdateDataPlayer().BotData
+	index := d.AIStackInd
 	if index == -1 {
 		return 13
 	}
-	switch *equipmentWord(d, 24*(int(index)+23)) {
+	switch d.AIStack[index].Action {
 	case 7, 8, 10, 13, 29:
-		if *equipmentWord(d, 1440)&0x4000 != 0 {
+		if d.StatusFlags&0x4000 != 0 {
 			return 5
 		}
 		return 0
@@ -396,4 +398,9 @@ func controlBotState(u *server.Object) int8 {
 		return 4
 	}
 	return 13
+}
+
+// controlWaypointByte returns byte i of the waypoint indexes of player data (0: next free, 1: current).
+func controlWaypointByte(ud unsafe.Pointer, i int) *byte {
+	return &(*[4]byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).Field45))[i]
 }

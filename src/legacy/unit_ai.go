@@ -1,7 +1,7 @@
 package legacy
 
 import (
-	"unsafe"
+	"image"
 
 	"github.com/brutusmcforce/opennox/server"
 )
@@ -10,10 +10,6 @@ var (
 	Nox_xxx_gameSetAudioFadeoutMb_501AC0 func(v int)
 	Nox_xxx_unitUpdateMonster_50A5C0     func(a1 *server.Object)
 )
-
-type Nox_player_polygon_check_data struct {
-	Field_0 [35]uint32
-}
 
 func nox_xxx_monsterPopAction_50A160(a1 *nox_object_t) int {
 	return asObjectS(a1).MonsterPopAction()
@@ -41,13 +37,19 @@ func Nox_xxx_unitIsDangerous_547120(a1 *server.Object, a2 *server.Object) {
 func Nox_xxx_checkIsKillable_528190(a1 *server.Object) int {
 	return int(visibilityKillable(a1))
 }
-func Nox_xxx_polygonIsPlayerInPolygon_4217B0(a1 unsafe.Pointer, a2 int) *Nox_player_polygon_check_data {
-	return (*Nox_player_polygon_check_data)(unsafe.Pointer(mapPolygonFind((*[2]int32)(a1), uint32(a2), false)))
+
+// PolygonLevelAt returns the level of the map polygon at pos, if there is one.
+func PolygonLevelAt(pos image.Point) (byte, bool) {
+	p := mapPolygonFind(&[2]int32{int32(pos.X), int32(pos.Y)}, 0, false)
+	if p == nil {
+		return 0, false
+	}
+	return p.Level, true
 }
 func Nox_xxx_mobAction_50A910(a1 *server.Object) {
 	monsterControlRefresh(a1)
 }
-func Nox_xxx_monsterGetSoundSet_424300(a1 *server.Object) unsafe.Pointer {
+func Nox_xxx_monsterGetSoundSet_424300(a1 *server.Object) *server.MonsterSoundSet {
 	return resourceMonsterSound(a1)
 }
 func Nox_xxx_monsterPlayHurtSound_532800(a1 *server.Object) {

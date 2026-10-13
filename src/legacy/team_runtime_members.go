@@ -6,9 +6,9 @@ import (
 
 	"fmt"
 
-	"github.com/brutusmcforce/opennox/libs/types"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -39,7 +39,7 @@ func teamRuntimeJoin(id server.TeamID, m *server.ObjectTeam, notify, code, reloc
 		t = s.Teams.Create(id)
 	}
 	m.ID = t.ID()
-	m.Field0 = *teamRuntimeWord(t, 44)
+	m.Field0 = t.Field_44
 	teamRuntimeSetFirst(t, m)
 	if code == ClientPlayerNetCode() {
 		teamUICTFSelect(byte(t.ID()))
@@ -50,7 +50,7 @@ func teamRuntimeJoin(id server.TeamID, m *server.ObjectTeam, notify, code, reloc
 			pl := s.Players.ByID(code)
 			if pl != nil {
 				if noxflags.HasGame(0x8000) {
-					statisticsParticipation(pl.C(), 1)
+					statisticsParticipation((*server.Player)(pl.C()), 1)
 				}
 				if u != nil && u.ObjClass&4 != 0 {
 					if relocate == 1 && !noxflags.HasGamePlay(2) && noxflags.HasGame(128) {
@@ -81,7 +81,7 @@ func teamRuntimeJoin(id server.TeamID, m *server.ObjectTeam, notify, code, reloc
 			}
 		}
 	}
-	*teamRuntimeWord(t, 48)++
+	t.Field_48++
 	for u := s.Players.FirstUnit(); u != nil; u = s.Players.NextUnit(u) {
 		if u.NetCode == uint32(code) {
 			teamRuntimeMembershipChanged(u)
@@ -102,7 +102,7 @@ func teamRuntimeLeave(m *server.ObjectTeam, code int) {
 		teamRuntimeSendID(159, 2, uint32(code))
 	}
 	teamRuntimeUnlink(t, m)
-	*teamRuntimeWord(t, 48)--
+	t.Field_48--
 	if (serverConfigSpecialMode() != 0 || noxflags.HasGame(0x8000)) && teamRuntimeCount(t) == 0 {
 		if noxflags.HasGame(96) || (noxflags.HasGame(16) && noxflags.HasGamePlay(4)) {
 			teamRuntimeSetGroup(t, 0)
@@ -124,7 +124,7 @@ func teamRuntimeSwitch(m *server.ObjectTeam, t *server.Team, code, relocate int)
 		teamUIPlayerTeam(code, int(t.ID()))
 	}
 	old := GetServer().S().Teams.ByID(m.ID)
-	*teamRuntimeWord(old, 48)--
+	old.Field_48--
 	teamRuntimeUnlink(old, m)
 	teamRuntimeJoin(t.ID(), m, 0, code, relocate)
 	if code == ClientPlayerNetCode() {

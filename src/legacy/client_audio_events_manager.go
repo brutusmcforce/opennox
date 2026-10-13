@@ -1,12 +1,13 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 func audioEventFromRank(n *legacyListNode) *audioEvent {
-	return (*audioEvent)(unsafe.Add(unsafe.Pointer(n), -12))
+	return (*audioEvent)(unsafe.Add(unsafe.Pointer(n), -int(unsafe.Offsetof(audioEvent{}.Rank))))
 }
 func audioEventRank(p *audioEvent) int32 {
 	m := p.Metadata
@@ -83,7 +84,7 @@ func audioEventBucketFirst(limit int32) *audioEventMetadata {
 	for i := int32(0); i < limit; i++ {
 		for j := uint32(0); j < 10; j++ {
 			if n := listNext(audioEventBucket(i, j)); n != nil {
-				return (*audioEventMetadata)(unsafe.Add(unsafe.Pointer(n), -112))
+				return (*audioEventMetadata)(unsafe.Add(unsafe.Pointer(n), -int(unsafe.Offsetof(audioEventMetadata{}.BucketNode))))
 			}
 		}
 	}

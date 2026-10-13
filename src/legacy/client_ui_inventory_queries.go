@@ -3,6 +3,9 @@ package legacy
 import (
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/server"
+
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/common/memmap"
 )
@@ -29,7 +32,7 @@ func uiInventoryDrawable(v uint32) *client.Drawable {
 	return (*client.Drawable)(memmap.WordPtr(v))
 }
 func uiInventoryNext(dr *client.Drawable) *client.Drawable {
-	return *(**client.Drawable)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(368)) /* NextPtr */))
+	return dr.NextPtr
 }
 func uiInventoryFindType(typ uint32) *uiInventoryCell {
 	grid := uiInventoryGrid()
@@ -106,7 +109,7 @@ func uiInventorySelectedWeapon() *client.Drawable {
 	if player == nil {
 		return nil
 	}
-	mask := *(*uint32)(unsafe.Add(player, 4))
+	mask := layout.As[server.Player](unsafe.Pointer(player)).WeaponEquip
 	for i := uint32(2); i < 27; i++ {
 		if mask&(1<<i) != 0 {
 			typ := GetServer().S().Weapons.Sub_415840(1 << i)

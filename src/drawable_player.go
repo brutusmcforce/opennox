@@ -7,8 +7,9 @@ import (
 	"slices"
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	noxcolor "github.com/brutusmcforce/opennox/libs/color"
-	"github.com/brutusmcforce/opennox/libs/types"
 
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/noxrender"
@@ -381,7 +382,7 @@ func sub_4B8CA0(earr *server.EquipArmorData, bit uint32) {
 	for i := 0; i < 4; i++ {
 		p := found.Field4[i]
 		if p != nil {
-			cl := *(*types.RGB)(unsafe.Add(p, 24))
+			cl := layout.As[server.ModifierEff](p).Color24
 			c.r.Data().SetMaterialRGB(int(inds[i]), int(cl.R), int(cl.G), int(cl.B))
 		}
 	}
@@ -436,7 +437,7 @@ func (c *Client) sub_4B8E10(earr *[server.PlayerWeaponCnt]server.EquipmentData, 
 	for i := 0; i < 4; i++ {
 		p := found.Field4[i]
 		if p != nil {
-			cl := *(*types.RGB)(unsafe.Add(p, 24))
+			cl := layout.As[server.ModifierEff](p).Color24
 			c.r.Data().SetMaterialRGB(int(inds[i]), int(cl.R), int(cl.G), int(cl.B))
 		}
 	}

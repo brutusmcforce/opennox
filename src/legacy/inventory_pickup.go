@@ -2,8 +2,8 @@ package legacy
 
 import (
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func inventoryPickup(u, it *server.Object, arg int) int {
@@ -66,26 +66,26 @@ func inventoryAnkhPickup(u, it *server.Object) int {
 	if u.ObjClass&4 == 0 {
 		return 0
 	}
-	*(*uint32)(unsafe.Add(u.UpdateData, 320))++
+	layout.As[server.PlayerUpdateData](u.UpdateData).Field80++
 	GetServer().DelayedDelete(it)
 	inventorySound(1004, u, 0, 0)
 	return 1
 }
 func inventoryCrownPickup(u, it *server.Object, arg int) int {
-	data := it.UpdateData
+	data := it.UpdateDataCrown()
 	if u.ObjClass&4 == 0 {
 		return 0
 	}
 	rv := inventoryPickup(u, it, arg)
 	if rv != 0 {
-		*(*uint32)(unsafe.Add(u.UpdateData, 264)) = GetServer().S().Frame()
+		layout.As[server.PlayerUpdateData](u.UpdateData).Field66 = GetServer().S().Frame()
 		GetServer().S().ObjSetOwner(u, it)
 		spellLifeApplyBuff(u, 30, 0, 5)
 		inventorySound(313, u, 0, 0)
 		inventoryMessage(10, u, uint32(u.TeamVal.ID))
 		playerStateUnmark(it, 1)
 	}
-	*(*uint32)(unsafe.Add(data, 4)) = 0
+	data.Pending = 0
 	return rv
 }
 func inventoryTreasurePickup(u, it *server.Object, arg int) int {

@@ -1,9 +1,9 @@
 package opennox
 
 import (
+	"image"
 	"math"
 	"time"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/libs/spell"
@@ -66,8 +66,7 @@ func (a *aiData) nox_xxx_mobActionDependency(u *server.Object) {
 			ok = st.ArgU32(0) > a.s.Frame()
 		case ai.DEPENDENCY_ALIVE:
 			obj := st.ArgObj(0)
-			h := obj.HealthData
-			if obj == nil || !obj.Class().HasAny(object.MaskUnits) || (h.Cur == 0) && h.Max != 0 {
+			if obj == nil || !obj.Class().HasAny(object.MaskUnits) || obj.HealthData.Cur == 0 && obj.HealthData.Max != 0 {
 				ok = false
 				ud.Field97 = 0
 				ud.Field101 = a.s.Frame() + a.s.SecToFrames(1)
@@ -435,12 +434,7 @@ func (a *aiData) shouldUnitListen(u *server.Object, lis *MonsterListen) bool {
 	}
 	if v12 := legacy.Sub_501C00(lis.pos, lis.obj); v12 != 0 {
 		pos := u.Pos()
-		cpi, free := alloc.Make([]int32{}, 2)
-		defer free()
-		cpi[0] = int32(pos.X)
-		cpi[1] = int32(pos.Y)
-		resp := legacy.Nox_xxx_polygonIsPlayerInPolygon_4217B0(unsafe.Pointer(&cpi[0]), 0)
-		if resp != nil && byte(v12) != *(*byte)(unsafe.Add(unsafe.Pointer(&resp.Field_0[32]), 2)) {
+		if level, ok := legacy.PolygonLevelAt(image.Pt(int(pos.X), int(pos.Y))); ok && byte(v12) != level {
 			return false
 		}
 	}
@@ -489,7 +483,7 @@ func monsterRegenerateHP(u *server.Object) {
 		return
 	}
 	s := u.Server()
-	if int(s.Frame()-u.Frame134) <= int(s.SecToFrames(1)) {
+	if int(int32(s.Frame()-u.Frame134)) <= int(s.SecToFrames(1)) {
 		return
 	}
 	h := u.HealthData
@@ -555,7 +549,7 @@ func nox_xxx_unitUpdateMonster_50A5C0(u *server.Object) {
 	if !u.Flags().HasAny(object.FlagDead | object.FlagDestroyed) {
 		if ud.StatusFlags.Has(object.MonStatusInjured) {
 			if v7 := legacy.Nox_xxx_monsterGetSoundSet_424300(u); v7 != nil {
-				s.Audio.EventObj(sound.ID(*(*uint32)(unsafe.Add(v7, 64))), u, 0, 0)
+				s.Audio.EventObj(sound.ID(v7.Sound(16)), u, 0, 0)
 			}
 			s.noxScript.ScriptCallback(&ud.ScriptIsHit, u.Obj130, u, server.NoxEventMonsterIsHit)
 			if noxflags.HasEngine(noxflags.EngineShowAI) {
@@ -563,7 +557,7 @@ func nox_xxx_unitUpdateMonster_50A5C0(u *server.Object) {
 				ai.Log.Printf("%d: HP = %d/%d\n", s.Frame(), cur, max)
 			}
 		}
-		if v8 := ud.Field130; v8 != 0 && int(s.Frame()-v8) >= int(s.SecToFrames(1)) {
+		if v8 := ud.Field130; v8 != 0 && int(int32(s.Frame()-v8)) >= int(s.SecToFrames(1)) {
 			legacy.Nox_xxx_monsterPlayHurtSound_532800(u)
 			ud.Field130 = 0
 		}

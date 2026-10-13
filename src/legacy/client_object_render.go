@@ -1,15 +1,16 @@
 package legacy
 
 import (
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"image"
+	"math"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/server"
-	"image"
-	"math"
-	"unsafe"
 )
 
 func objectRenderGhost(vp *noxrender.Viewport, dr *client.Drawable) byte {
@@ -73,10 +74,10 @@ func objectRenderDraw(vp *noxrender.Viewport, dr *client.Drawable, img noxrender
 			}
 		}
 	}
-	pos := effectScreen(vp, dr).Sub(image.Pt(int(*effectByte(dr, 0)), int(*effectByte(dr, 1))))
+	pos := effectScreen(vp, dr).Sub(image.Pt(int(*(*byte)(unsafe.Pointer(&dr.Field_0))), int(*(*byte)(unsafe.Add(unsafe.Pointer(&dr.Field_0), 1)))))
 	if memmap.Uint32(0x587000, 80808) != 0 && dr.ObjFlags&0x40000001 == 0 && dr.ObjClass&0x80 != 0 {
 		a := vp.ToScreenPos(dr.PosVec)
-		dir := int(*effectByte(dr, int(layoutClientDrawable.Off(299)) /* Field_74_4 */))
+		dir := int(dr.Field_74_4)
 		b := a.Add(image.Pt(int(memmap.Int32(0x587000, 196184+8*uintptr(dir))), int(memmap.Int32(0x587000, 196188+8*uintptr(dir)))))
 		mid := image.Pt((a.X+b.X)>>1, (a.Y+b.Y)>>1)
 		if dir < 24 && dir != 0 && (dir < 8 || dir > 16) {
@@ -167,7 +168,7 @@ func objectRenderDraw(vp *noxrender.Viewport, dr *client.Drawable, img noxrender
 			}
 			speed := dx
 			if dx != 0 || dy != 0 {
-				elapsed := int(dr.Field_5 - dr.Field_10)
+				elapsed := int(int32(dr.Field_5 - dr.Field_10))
 				if elapsed == 0 {
 					elapsed = 1
 				}
@@ -215,8 +216,8 @@ func objectRenderDraw(vp *noxrender.Viewport, dr *client.Drawable, img noxrender
 	if repeatBelow {
 		objectRenderRestoreClip()
 	}
-	*effectShort(dr, 2) = 1
-	*effectShort(dr, 4) = *memmap.PtrUint16(0x973F18, 88)
-	*effectShort(dr, 6) = *memmap.PtrUint16(0x973F18, 76)
+	*(*uint16)(unsafe.Add(unsafe.Pointer(&dr.Field_0), 2)) = 1
+	*(*uint16)(unsafe.Pointer(&dr.Field_1)) = *memmap.PtrUint16(0x973F18, 88)
+	*(*uint16)(unsafe.Add(unsafe.Pointer(&dr.Field_1), 2)) = *memmap.PtrUint16(0x973F18, 76)
 	dr.Field_2 = unsafe.Pointer(img)
 }

@@ -1,7 +1,7 @@
 # OpenNox end-to-end tests
 
-The test plays the game from the main menu through the first map of the Conjurer campaign (con01),
-and compares screenshots with the expected ones in [testdata](./testdata).
+The test plays the game from the main menu through the first map of the Conjurer campaign (con01), into Ix (con02),
+where it sits through the necromancer scene, then buys and sells an apple and repairs the staff at the barkeeper's shop, and compares screenshots with the expected ones in [testdata](./testdata).
 It needs the English GOG game data.
 
 Run it from the repository root with an OpenNox build:
@@ -10,10 +10,34 @@ Run it from the repository root with an OpenNox build:
 NOX_E2E="$PWD/e2e/e2e.yaml" opennox -data /path/to/Nox
 ```
 
-The test runs with a fake clock and fake audio, so it's deterministic and takes about 15 seconds:
+The test runs with a fake clock and fake audio, so it's deterministic and takes about 20 seconds:
 
 - The local config is ignored, and the window is fixed to 1024x768 (not resizable, not fullscreen).
 - Don't pass `-noaudio`: the test audio is already silent, and the campaign briefing waits for its narration to finish.
+
+A second scenario, [host.yaml](./host.yaml), hosts a multiplayer game: it opens the server list (the test has no
+network, so the list stays empty), hosts from the chat area, goes through the server options panels (rule files,
+spells, weapons, armor, general, access, teams) and starts an arena game on BluDeath:
+
+```bash
+NOX_E2E="$PWD/e2e/host.yaml" opennox -data /path/to/Nox
+```
+
+A multiplayer test runs two instances on loopback, a host ([mp-host.yaml](./mp-host.yaml)) and a client
+([mp-client.yaml](./mp-client.yaml)) that finds the host through `NOX_E2E_SERVERS`, joins and leaves observation
+mode. Then they fight: the host brings the client's player next to its own (`action: gather`, like the `tp` cheat,
+because the arena is a maze) and both attack the nearest player (`action: attack`) for a few rounds. The test checks
+that each player lost health or was killed by the other (`action: players` logs the health on the host), and that a
+kill was also announced to the client. Two processes don't share timing, so it checks the logs (join, leave, no panics) instead of
+comparing screens; both switch to real-time pace (`action: slow`) once networking starts:
+
+```bash
+scripts/e2e-multiplayer.sh path/to/opennox /path/to/Nox [work dir] [client binary]
+```
+
+The client uses the host's binary unless a fourth argument is given. A binary ending in `.exe` runs under Wine
+(set `WINEPREFIX` for a separate prefix), so Linux and Windows players can be tested together, e.g. a Linux host
+with `build/opennox.exe` as the client, and the reverse.
 
 Steps marked with `screen` are compared to the expected frames. On a mismatch, the test fails and writes
 `*_got.png` and `*_diff.png` next to the expected frame. Useful environment variables:
@@ -25,6 +49,8 @@ Steps marked with `screen` are compared to the expected frames. On a mismatch, t
 The expected frames were recorded on 2026-10-12. The original 2021 script covers the whole first map,
 up to the gate to the next one, and was re-routed where the current game no longer followed it
 (the elevator buttons, some runs between rooms, and the fights with the spider and the bat in the machine room).
+The con02 steps (shop: buy, sell, repair) were added on 2026-10-13. Note that an input step without `dt` happens in the same frame as the step before it, so a `screen` step right before
+an input shows the frame after that input; give the input a `dt` to capture the frame before it.
 
 Originally [github.com/opennox/opennox-e2e](https://github.com/opennox/opennox-e2e), now maintained here as part of OpenNox.
 

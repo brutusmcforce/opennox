@@ -2,9 +2,9 @@ package legacy
 
 import (
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func playerDeathTeam(u *server.Object) *server.Team {
@@ -17,7 +17,7 @@ func playerDeathStats(actor, target *server.Object) {
 	if Get_dword_5d4594_2650652() == 0 || actor == nil || target == nil || actor.UpdateData == nil || target.UpdateData == nil {
 		return
 	}
-	statisticsEvent(*(*unsafe.Pointer)(unsafe.Add(actor.UpdateData, 276)), *(*unsafe.Pointer)(unsafe.Add(target.UpdateData, 276)))
+	statisticsEvent(layout.As[server.PlayerUpdateData](actor.UpdateData).Player, layout.As[server.PlayerUpdateData](target.UpdateData).Player)
 }
 func playerDeathTeamDelta(team *server.Team, delta int) {
 	if team != nil {

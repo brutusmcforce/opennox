@@ -157,7 +157,7 @@ func monsterDefinitionParse(f *binfile.Binfile, name string) bool {
 			continue
 		}
 		offset := memmap.Uint32(0x587000, field+8)
-		dst := unsafe.Add(unsafe.Pointer(d), uintptr(offset))
+		dst := unsafe.Add(unsafe.Pointer(d), layoutServerMonsterDef.Off(uintptr(offset))) // a 386 offset
 		if kind == 7 {
 			if !monsterDefinitionToken(f, unsafe.Slice((*byte)(dst), 64)) && errors.Is(f.File.Err, errMonsterDefinitionToken) {
 				return false

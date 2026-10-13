@@ -2,14 +2,16 @@ package legacy
 
 import (
 	"encoding/binary"
+	"math"
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/client/noxrender"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/console"
 	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
 	"github.com/brutusmcforce/opennox/libs/strman"
-	"github.com/brutusmcforce/opennox/client"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"math"
-	"unsafe"
 )
 
 func clientSessionDrawable(code uint16) *client.Drawable {
@@ -97,16 +99,16 @@ func clientGameSession(ind int, op netmsg.Op, data []byte) int {
 		code := word(1)
 		if word(3) != 0 || code != 0 {
 			if dr := GetClient().Nox_xxx_spriteCreate_48E970(int(word(3)), code, int(word(5)), int(word(7))); dr != nil {
-				*(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(288)) /* Field_72 */)) = GetServer().S().Frame()
+				dr.Field_72 = GetServer().S().Frame()
 				dr.SetFrameMB(int(data[10]))
 				dir := (data[9] >> 4) & 7
 				if dir > 3 {
 					dir++
 				}
-				*(*byte)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(297)) /* AnimDir */)) = dir
-				if *(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(276)) /* AnimInd */)) != uint32(data[11]) {
-					*(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(316)) /* AnimStart */)) = GetServer().S().Frame()
-					*(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(276)) /* AnimInd */)) = uint32(data[11])
+				dr.AnimDir = dir
+				if dr.AnimInd != uint32(data[11]) {
+					dr.AnimStart = GetServer().S().Frame()
+					dr.AnimInd = uint32(data[11])
 				}
 			}
 			if int(code) == ClientPlayerNetCode() && Sub_416120(8) {
@@ -125,7 +127,7 @@ func clientGameSession(ind int, op netmsg.Op, data []byte) int {
 		return size
 	case 215:
 		if p := GetServer().S().Players.ByID(int(word(1))); p != nil {
-			*(*uint16)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(2148)) /* field2148 */)) = word(3)
+			*(*uint16)(unsafe.Pointer(&p.Field2148)) = word(3)
 		}
 		return size
 	case 223:
@@ -147,7 +149,7 @@ func clientGameSession(ind int, op netmsg.Op, data []byte) int {
 			dr = clientSessionDrawable(code)
 		}
 		if dr != nil {
-			*(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)) = uint32(data[3])
+			(*client.DrawableUnionBook)(unsafe.Pointer(&dr.Union)).Index = uint32(data[3])
 		}
 		return size
 	case 234:
@@ -182,20 +184,20 @@ func clientGameSession(ind int, op netmsg.Op, data []byte) int {
 		reliableACK(ind, dword(1))
 	case 178:
 		if dr := clientSessionDrawable(word(1)); dr != nil {
-			*(*byte)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(299)) /* Field_74_4 */)) = data[3]
+			dr.Field_74_4 = data[3]
 		}
 	case 179:
 		if dr := clientSessionDrawable(word(1)); dr != nil {
 			dr.SetActive()
-			particleLightIntensity(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), float32(16*int(data[3])/10), true)
+			particleLightIntensity(dr, float32(16*int(data[3])/10), true)
 			dr.SetFrameMB(8 * int(data[3]) / 50)
-			if *(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(308)) /* AnimFrameSlave */)) == 8 {
-				*(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(308)) /* AnimFrameSlave */)) = 7
+			if dr.AnimFrameSlave == 8 {
+				dr.AnimFrameSlave = 7
 			}
 		}
 	case 180:
 		if dr := clientSessionDrawable(word(1)); dr != nil {
-			flags := (*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(112)) /* ObjClass */))
+			flags := (*uint32)(unsafe.Pointer(&dr.ObjClass))
 			value := float32(0)
 			if data[3] != 0 {
 				*flags |= 0x80000
@@ -203,13 +205,13 @@ func clientGameSession(ind int, op netmsg.Op, data []byte) int {
 			} else {
 				*flags &^= 0x80000
 			}
-			particleLightIntensity(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(136)) /* LightFlags */), value, true)
+			particleLightIntensity(dr, value, true)
 			dr.SetFrameMB(int(data[3]))
-			*(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(288)) /* Field_72 */)) = GetServer().S().Frame()
+			dr.Field_72 = GetServer().S().Frame()
 		}
 	case 181:
 		if dr := GetClient().Nox_xxx_spriteCreate_48E970(int(word(3)), word(1)&0x7fff, int(word(5)), int(word(7))); dr != nil {
-			*(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(508)) /* Field_127 */)) = word(9)
+			*(*uint16)(unsafe.Pointer(&dr.Field_127)) = word(9)
 			dr.Field_117 = math.Float32bits(float32(int8(data[12])) * 0.0625)
 			dr.Field_118 = math.Float32bits(float32(int8(data[13])) * 0.0625)
 			dr.Field_119 = math.Float32bits(float32(int8(data[11])) * 0.0625)
@@ -394,7 +396,7 @@ func clientSessionBall(state byte) {
 		return
 	}
 	if w := teamUIWindow(1045636); w != nil {
-		*(*uint32)(unsafe.Add(w.C(), int(layoutGuiWindow.Off(60)) /* drawData.BgImageHnd */)) = uiMeterLoadImage(imageName)
+		w.DrawDataVal.BgImageHnd = noxrender.ImageHandle(Nox_xxx_gLoadImg(imageName).C())
 		sm := GetServer().S().Strings()
 		w.DrawData().SetTooltip(GetClient().Cli().Strings(), sm.GetStringInFile(strman.ID(key), "guifb.c"))
 	}

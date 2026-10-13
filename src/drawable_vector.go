@@ -91,7 +91,7 @@ func (c *Client) DrawAnimState(vp *noxrender.Viewport, dr *client.Drawable) int 
 	} else {
 		ind = int32((flags&0xff)>>2) & 2
 	}
-	ani := (*client.AnimationVector)(unsafe.Add(dd, 4+48*ind))
+	ani := &(*client.SpriteStateData)(dd).States[ind]
 	if ani.Kind == client.AnimLoop {
 		dr.AnimStart = c.Server.Frame()
 	}

@@ -2,12 +2,13 @@ package legacy
 
 import (
 	"encoding/binary"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func serverOptionsEvent(_ *gui.Window, event int, arg uintptr, value int) int {

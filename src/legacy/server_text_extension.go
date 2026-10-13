@@ -1,11 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/common/memmap"
+
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -44,12 +45,12 @@ func extensionPlayerName(record unsafe.Pointer, teamOut *int32) int {
 }
 
 func extensionWeaponRoll(u *server.Object, direction int8) int {
-	ud := u.UpdateData
-	pl := u.UpdateDataPlayer().Player
-	if *(*byte)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(3680)) /* Field3680 */))&3 != 0 || *(*byte)(unsafe.Add(ud, 88)) == 1 {
+	ud := u.UpdateDataPlayer()
+	pl := ud.Player
+	if *(*byte)(unsafe.Pointer(&pl.Field3680))&3 != 0 || ud.State == 1 {
 		return 0
 	}
-	current := *(**server.Object)(unsafe.Add(ud, 104))
+	current := ud.Field26 // the current weapon
 	next := func(it *server.Object) *server.Object { return it.InvNextItem }
 	// Without a current weapon, both directions search the forward inventory.
 	start := u.InvFirstItem
@@ -77,8 +78,8 @@ func extensionDropTrap(u *server.Object) int {
 		return 0
 	}
 	pl := u.UpdateDataPlayer().Player
-	pos := types.Pointf{X: *(*float32)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(3632)) /* Pos3632Vec.X */)), Y: *(*float32)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(3636)) /* Pos3632Vec.Y */))}
-	if *(*byte)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(3680)) /* Field3680 */))&3 != 0 || *(*byte)(unsafe.Add(u.UpdateData, 88)) == 1 {
+	pos := types.Pointf{X: pl.Pos3632Vec.X, Y: pl.Pos3632Vec.Y}
+	if *(*byte)(unsafe.Pointer(&pl.Field3680))&3 != 0 || *(*byte)(unsafe.Add(u.UpdateData, 88)) == 1 {
 		return 0
 	}
 	for it := u.InvFirstItem; it != nil; it = it.InvNextItem {

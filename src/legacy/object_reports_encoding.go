@@ -2,7 +2,8 @@ package legacy
 
 import (
 	"encoding/binary"
-	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/internal/netlist"
@@ -27,11 +28,13 @@ func objectReportBase(u *server.Object, op byte, size int) []byte {
 	binary.LittleEndian.PutUint16(b[7:], uint16(floatToInt32(u.PosVec.Y)))
 	return b
 }
-func objectReportHealth(to int, u *server.Object, offset int) {
+
+// objectReportHealth reports a health change of u to player to; prev holds the health last reported to each player.
+func objectReportHealth(to int, u *server.Object, prev *[32]uint16) {
 	if u.HealthData == nil || GetServer().S().Frame()-u.Frame134 <= 2 {
 		return
 	}
-	previous := (*uint16)(unsafe.Add(u.UpdateData, offset+2*to))
+	previous := &prev[to]
 	if current := u.HealthData.Cur; current != *previous {
 		gameplayReportHealthDelta(to, uint16(u.NetCode), int16(current-*previous))
 		*previous = u.HealthData.Cur
@@ -39,7 +42,7 @@ func objectReportHealth(to int, u *server.Object, offset int) {
 }
 func objectReportSimple(to int, u *server.Object) int {
 	if uint32(u.ObjClass)&0x20000 != 0 {
-		objectReportHealth(to, u, 96)
+		objectReportHealth(to, u, &u.UpdateDataMonsterGen().HealthPrev)
 	}
 	return bool2int(Nox_netlist_addToMsgListSrv(ntype.PlayerInd(to), objectReportBase(u, 47, 9)))
 }
@@ -54,7 +57,7 @@ func objectReportPhantom(to int, u *server.Object) int {
 }
 func objectReportMonster(to int, u *server.Object, health int) int {
 	if health != 0 {
-		objectReportHealth(to, u, 412)
+		objectReportHealth(to, u, &u.UpdateDataMonster().HealthGraph103)
 	}
 	b := objectReportBase(u, 48, 11)
 	ud := u.UpdateDataMonster()
@@ -75,26 +78,26 @@ func objectReportPlayer(viewer, u *server.Object, updates, health int) int {
 	ud := u.UpdateDataPlayer()
 	to := int(viewerData.Player.PlayerInd)
 	if health != 0 {
-		objectReportHealth(to, u, 12)
+		objectReportHealth(to, u, &ud.HealthPrev)
 	}
 	if viewer == u {
 		gameplayReportAnything(viewer)
 	}
-	*(*uint32)(unsafe.Add(unsafe.Pointer(viewerData.Player), 4452+4*int(ud.Player.PlayerInd))) = s.Frame()
+	viewerData.Player.Field4408[11+int(ud.Player.PlayerInd)] = s.Frame()
 	b := objectReportBase(u, 195, 12)
 	b[11] = byte(controlActionState(u))
 	b[10] = 255
 	switch ud.State {
 	case 1, 10, 2, 15, 16, 17, 14, 20, 18, 19, 21, 22, 24, 25, 27, 28, 29, 26, 30, 32:
-		b[10] = *(*byte)(unsafe.Add(u.UpdateData, 236))
+		b[10] = layout.As[server.PlayerUpdateData](u.UpdateData).Field59_0
 	}
-	if *(*uint16)(unsafe.Add(u.UpdateData, 160)) != 0 && s.Rand.Logic.IntClamp(0, 10) >= 8 {
+	if layout.As[server.PlayerUpdateData](u.UpdateData).Field40_0 != 0 && s.Rand.Logic.IntClamp(0, 10) >= 8 {
 		b[11], b[10] = 50, 255
 	}
 	if (ud.State == 3 || ud.State == 4) && u.Field131 == 16 {
 		b[11], b[10] = 51, 255
 	}
-	reaction := (*uint32)(unsafe.Add(u.UpdateData, 164))
+	reaction := &layout.As[server.PlayerUpdateData](u.UpdateData).Field41
 	if ud.State != 30 && *reaction != 0 {
 		frames, delay := s.PlayerAnimFrames(52)
 		elapsed := s.Frame() - *reaction

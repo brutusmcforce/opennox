@@ -1,12 +1,13 @@
 package legacy
 
 import (
+	"strings"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/internal/binfile"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"strings"
-	"unsafe"
 )
 
 func audioAssetSlot(id int32) *audioEventMetadata {
@@ -23,12 +24,12 @@ func audioAssetDelay(p *audioEventMetadata) int32 {
 }
 
 func audioAssetSample(catalog unsafe.Pointer, key *byte) int32 {
-	base := *(*unsafe.Pointer)(catalog)
-	lo, hi := uint32(0), *(*uint32)(unsafe.Add(catalog, 4))
+	cat := (*audioStreamCatalog)(catalog)
+	entries := unsafe.Slice(cat.Entries, cat.Count)
+	lo, hi := uint32(0), cat.Count
 	for lo < hi {
 		mid := (lo + hi) / 2
-		p := unsafe.Add(base, 36*uintptr(mid))
-		cmp := int(textCompareNarrow(key, (*byte)(p)))
+		cmp := int(textCompareNarrow(key, &entries[mid].Name[0]))
 		if cmp < 0 {
 			hi = mid
 		} else if cmp > 0 {

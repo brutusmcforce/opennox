@@ -1,9 +1,9 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
 )
 
 var audioEventDeviceUser = func(s ail.Sample) *AudioSample {
@@ -31,7 +31,7 @@ func audioEventSampleRefill(p *AudioSample) int32 {
 		if index != 0 {
 			scratch = p.Data2
 		}
-		var data, first uint32
+		var data, first uintptr
 		var total, firstLength int32
 		copied := false
 		if p.Field3 == 0 {
@@ -62,34 +62,34 @@ func audioEventSampleRefill(p *AudioSample) int32 {
 					if n != 0 {
 						if first != 0 {
 							if firstLength != 0 {
-								copy(unsafe.Slice(scratch, int(firstLength)), unsafe.Slice((*byte)(memmap.WordPtr(first)), int(firstLength)))
-								data = memmap.PtrWord(unsafe.Pointer(scratch))
+								copy(unsafe.Slice(scratch, int(firstLength)), unsafe.Slice((*byte)(unsafe.Pointer(first)), int(firstLength)))
+								data = uintptr(unsafe.Pointer(scratch))
 								first = 0
 								copied = true
 							}
-							copy(unsafe.Slice((*byte)(unsafe.Add(unsafe.Pointer(scratch), uintptr(uint32(total)))), int(n)), unsafe.Slice((*byte)(memmap.WordPtr(v.Data)), int(n)))
+							copy(unsafe.Slice((*byte)(unsafe.Add(unsafe.Pointer(scratch), uintptr(uint32(total)))), int(n)), unsafe.Slice((*byte)(unsafe.Pointer(v.Data)), int(n)))
 						} else if !copied {
 							first = v.Data
 							firstLength = n
 						} else {
-							copy(unsafe.Slice((*byte)(unsafe.Add(unsafe.Pointer(scratch), uintptr(uint32(total)))), int(n)), unsafe.Slice((*byte)(memmap.WordPtr(v.Data)), int(n)))
+							copy(unsafe.Slice((*byte)(unsafe.Add(unsafe.Pointer(scratch), uintptr(uint32(total)))), int(n)), unsafe.Slice((*byte)(unsafe.Pointer(v.Data)), int(n)))
 						}
 					}
 				}
 				v.Length -= uint32(n)
 				v.Remaining -= uint32(n)
-				v.Data += uint32(n)
+				v.Data += uintptr(n)
 				total += n
 				if p.Field3 != 0 {
 					break
 				}
 			}
 		}
-		audioEventDeviceLoad(p.Smp, uint32(index), unsafe.Slice((*byte)(memmap.WordPtr(data)), int(total)))
+		audioEventDeviceLoad(p.Smp, uint32(index), unsafe.Slice((*byte)(unsafe.Pointer(data)), int(total)))
 	}
 	return -1
 }
-func audioEventSampleFormat(p *audioStreamFormat) int32 {
+func audioEventSampleFormat(p *AudioStreamFormat) int32 {
 	if p.Encoding == 2 {
 		if p.Channels == 2 {
 			return 7

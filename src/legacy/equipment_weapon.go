@@ -1,8 +1,10 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func equipmentNPCDequipWeapon(u, it *server.Object) int {
@@ -10,7 +12,7 @@ func equipmentNPCDequipWeapon(u, it *server.Object) int {
 	if it.ObjClass&0x1001000 == 0 || it.ObjFlags&0x100 == 0 || !equipmentContains(u, it) {
 		return 0
 	}
-	*(*byte)(unsafe.Add(ud, 2068)) = 0
+	*(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](ud).Field517)) = 0
 	it.ObjFlags &^= 0x100
 	if u.ObjSubClass&0x10 != 0 {
 		equipmentNPCSync(u, it, 0)
@@ -19,7 +21,7 @@ func equipmentNPCDequipWeapon(u, it *server.Object) int {
 		equipmentDequipAmmo(u, 1, 1)
 	}
 	if it.ObjSubClass&2 == 0 {
-		*equipmentWord(ud, 2064) = 0
+		layout.As[server.MonsterUpdateData](ud).Field516 = nil
 	}
 	equipmentEffects(it, u, false)
 	spellLifeCancelWand(u, it)
@@ -50,10 +52,10 @@ func equipmentDequipWeapon(u, it *server.Object, report, broadcast int) int {
 		return 0
 	}
 	ud := u.UpdateData
-	if *(*byte)(unsafe.Add(ud, 88)) == 1 {
+	if *(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).State)) == 1 {
 		Nox_xxx_playerSetState_4FA020(u, 13)
 	}
-	active := *(**server.Object)(unsafe.Add(ud, 104))
+	active := *(**server.Object)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).Field26))
 	if active == nil || active != it && bits != 2 {
 		return 0
 	}
@@ -63,26 +65,26 @@ func equipmentDequipWeapon(u, it *server.Object, report, broadcast int) int {
 	spellLifeCancelWand(u, it)
 	if bits == 2 {
 		it.ObjFlags &^= 0x100
-		*equipmentWord(equipmentPlayer(u), 4) &^= 2
+		equipmentPlayer(u).WeaponEquip &^= 2
 		equipmentDequipReports(u, it, report, broadcast)
-	} else if active = *(**server.Object)(unsafe.Add(ud, 104)); active != nil {
+	} else if active = *(**server.Object)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).Field26)); active != nil {
 		active.ObjFlags &^= 0x100
-		*equipmentWord(equipmentPlayer(u), 4) &^= equipmentWeaponBits(active)
+		equipmentPlayer(u).WeaponEquip &^= equipmentWeaponBits(active)
 		if report != 0 {
 			gameplayReportDequipItem(int(uint8(u.UpdateDataPlayer().Player.PlayerInd)), active)
 		}
 		if broadcast != 0 {
 			gameplayReportDequipFlags(255, it)
 		}
-		*equipmentWord(ud, 104) = 0
+		layout.As[server.PlayerUpdateData](ud).Field26 = nil
 	}
 	equipmentEffects(it, u, false)
 	// Keep the community shield-selection behavior controlled by gameex bit 2.
 	if gameex_flags&2 != 0 {
 		equipmentSaveShield(u)
-		secondary := *(**server.Object)(unsafe.Add(u.UpdateData, 108))
+		secondary := *(**server.Object)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](u.UpdateData).Field27))
 		if secondary == nil || equipmentWeaponBits(secondary)&0x7ffe40c == 0 {
-			saved := *(**server.Object)(unsafe.Add(equipmentPlayer(u), 2500))
+			saved := (*server.Object)(equipmentPlayer(u).Weapon[7].Field4[1])
 			if saved != nil && byte(saved.ObjFlags) == 16 {
 				equipmentTryEquip(u, saved)
 			} else if found := equipmentFindShield(u); found != nil {
@@ -97,7 +99,7 @@ func equipmentNPCEquipWeapon(u, it *server.Object) int {
 	if it.ObjClass&0x1001000 == 0 || it.ObjFlags&0x100 != 0 || !equipmentContains(u, it) {
 		return 0
 	}
-	*(*byte)(unsafe.Add(ud, 2068)) = 0
+	*(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](ud).Field517)) = 0
 	if it.ObjSubClass&0xc == 0 {
 		equipmentDequipAmmo(u, 1, 1)
 	}
@@ -115,7 +117,7 @@ func equipmentNPCEquipWeapon(u, it *server.Object) int {
 		equipmentNPCSync(u, it, 1)
 	}
 	if it.ObjSubClass&2 == 0 {
-		*(*unsafe.Pointer)(unsafe.Pointer(equipmentWord(ud, 2064))) = it.CObj()
+		*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](ud).Field516)) = it.CObj()
 	}
 	equipmentEffects(it, u, true)
 	if equipmentWeaponBits(it)&0x7ffe40c != 0 {
@@ -164,32 +166,32 @@ func equipmentEquipWeapon(u, it *server.Object, report, broadcast int) int {
 	if !equipmentContains(u, it) {
 		return 0
 	}
-	if *(*byte)(unsafe.Add(ud, 88)) == 1 {
+	if *(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).State)) == 1 {
 		Nox_xxx_playerSetState_4FA020(u, 13)
 	}
 	if bits == 2 {
-		if *equipmentWord(equipmentPlayer(u), 4)&0xc == 0 && equipmentEquipBow(u) == 0 {
+		if equipmentPlayer(u).WeaponEquip&0xc == 0 && equipmentEquipBow(u) == 0 {
 			return equipmentAdmissionFail(u, "weapon.c:BowNotFound", broadcast)
 		}
 		equipmentDequipAmmo(u, 1, 1)
 	}
-	active := *(**server.Object)(unsafe.Add(ud, 104))
+	active := *(**server.Object)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).Field26))
 	if active != nil && bits != 2 && equipmentDequipWeapon(u, active, 1, 1) == 0 {
 		return 0
 	}
 	it.ObjFlags |= 0x100
-	*equipmentWord(equipmentPlayer(u), 4) |= bits
+	equipmentPlayer(u).WeaponEquip |= bits
 	gameplayReportEquip(int(uint8(u.UpdateDataPlayer().Player.PlayerInd)), it, int(report))
 	if bits != 2 {
-		*(*unsafe.Pointer)(unsafe.Pointer(equipmentWord(ud, 104))) = it.CObj()
+		*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).Field26)) = it.CObj()
 	}
 	if it.ObjClass&0x1000 != 0 && it.ObjSubClass&0x47f0000 != 0 {
-		equipmentReportCharges(u, it, 108, 109)
+		equipmentReportWandCharges(u, it)
 	} else if it.ObjClass&0x1000000 != 0 {
 		if bits&0x82 != 0 {
-			equipmentReportCharges(u, it, 1, 0)
+			equipmentReportAmmoCharges(u, it)
 		} else if bits&0xc != 0 {
-			*(*byte)(it.UseData.Ptr) = 0
+			it.UseDataBow().Reload = 0
 		}
 	}
 	equipmentEffects(it, u, true)
@@ -198,8 +200,17 @@ func equipmentEquipWeapon(u, it *server.Object, report, broadcast int) int {
 	}
 	return 1
 }
-func equipmentReportCharges(u, it *server.Object, a, b int) {
-	gameplayReportCharges(int(uint8(u.UpdateDataPlayer().Player.PlayerInd)), it, byte(*(*byte)(unsafe.Add(it.UseData.Ptr, a))), byte(*(*byte)(unsafe.Add(it.UseData.Ptr, b))))
+
+// equipmentReportAmmoCharges reports the charges of ammo (AmmoUse).
+func equipmentReportAmmoCharges(u, it *server.Object) {
+	data := it.UseDataAmmo()
+	gameplayReportCharges(int(uint8(u.UpdateDataPlayer().Player.PlayerInd)), it, data.Charges, data.MaxCharges)
+}
+
+// equipmentReportWandCharges reports the charges of a wand (WandUse, WandCastUse).
+func equipmentReportWandCharges(u, it *server.Object) {
+	data := it.UseDataWand()
+	gameplayReportCharges(int(uint8(u.UpdateDataPlayer().Player.PlayerInd)), it, data.Charges, data.MaxCharges)
 }
 func equipmentEquipBow(u *server.Object) int {
 	for it := u.InvFirstItem; it != nil; it = it.InvNextItem {

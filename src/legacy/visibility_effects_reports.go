@@ -3,7 +3,6 @@ package legacy
 import (
 	"encoding/binary"
 	"strings"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/server"
 )
@@ -13,7 +12,7 @@ func visibilitySpecialUpdate(viewer, u *server.Object) int {
 	if u == nil || ind >= 32 {
 		return 1
 	}
-	flags := (*uint32)(unsafe.Add(u.CObj(), 560+4*ind))
+	flags := &u.Field140[ind]
 	if *flags&0x0FFF0000 == 0 {
 		return 0
 	}

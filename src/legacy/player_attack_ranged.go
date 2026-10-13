@@ -1,11 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func attackWeaponBits(it *server.Object) uint32 {
@@ -43,7 +44,7 @@ func attackShotEffects(u, it, p *server.Object) int {
 			continue
 		}
 		if m.AttackPreHit52.Fnc == modifierKey(modifierIDRecoilEffect) {
-			*(*unsafe.Pointer)(unsafe.Add(p.InitData, 12)) = unsafe.Pointer(m)
+			p.InitDataModifier().Modifiers[3] = m
 		} else if m.Attack40.Fnc == modifierKey(modifierIDProjectileSpeedEffect) {
 			p.SpeedCur = float32(float64(m.Attack40.Valf) * float64(p.SpeedCur))
 		}
@@ -51,9 +52,9 @@ func attackShotEffects(u, it, p *server.Object) int {
 	return 0
 }
 func attackReportAmmo(u, it *server.Object) {
-	b := unsafe.Slice((*byte)(it.UseData.Ptr), 3)
-	player := *(*unsafe.Pointer)(unsafe.Add(u.UpdateData, 276))
-	gameplayReportCharges(int(*(*byte)(unsafe.Add(player, 2064))), it, byte(b[1]), byte(b[0]))
+	b := it.UseDataAmmo()
+	player := u.UpdateDataPlayer().Player
+	gameplayReportCharges(int(player.PlayerInd), it, b.Charges, b.MaxCharges)
 }
 func attackShoot(u, ammo, it *server.Object, kind uint32) int {
 	pos := attackMuzzle(u)
@@ -70,7 +71,7 @@ func attackShoot(u, ammo, it *server.Object, kind uint32) int {
 	}
 	p := GetServer().S().NewObjectByTypeID(name)
 	if p != nil {
-		*temporaryRefWord(p.CollideData, 4) = u
+		p.CollideDataProjectile().SetOwnerObj(u)
 		GetServer().CreateObjectAt(p, u, pos)
 		if ammo != nil {
 			Nox_xxx_modifSetItemAttrs_4E4990(p, ammo.InitDataModifier())
@@ -79,11 +80,11 @@ func attackShoot(u, ammo, it *server.Object, kind uint32) int {
 		attackProjectileVelocity(u, p)
 	}
 	if ammo != nil {
-		b := unsafe.Slice((*byte)(ammo.UseData.Ptr), 3)
-		if b[2] == 0 && u.ObjClass&4 != 0 {
-			b[1]--
+		b := ammo.UseDataAmmo()
+		if b.Infinite == 0 && u.ObjClass&4 != 0 {
+			b.Charges--
 			attackReportAmmo(u, ammo)
-			if b[1] == 0 {
+			if b.Charges == 0 {
 				GetServer().DelayedDelete(ammo)
 			}
 		}
@@ -97,7 +98,7 @@ func attackShoot(u, ammo, it *server.Object, kind uint32) int {
 }
 func attackBow(u, it *server.Object) int {
 	kind := attackWeaponBits(it)
-	b := (*byte)(it.UseData.Ptr)
+	b := &it.UseDataBow().Reload
 	quest := noxflags.HasGame(4096)
 	msg := func(s string) { nox_xxx_netPriMsgToPlayer_4DA2C0(asObjectC(u), (*int8)(internCStr(s)), 0) }
 	emptySound := func() {
@@ -117,8 +118,8 @@ func attackBow(u, it *server.Object) int {
 	}
 	for ammo := u.InvFirstItem; ammo != nil; ammo = ammo.InvNextItem {
 		if ammo.ObjFlags&0x100 != 0 && attackWeaponBits(ammo) == 2 {
-			a := unsafe.Slice((*byte)(ammo.UseData.Ptr), 3)
-			if a[1] != 0 || a[2] == 1 {
+			a := ammo.UseDataAmmo()
+			if a.Charges != 0 || a.Infinite == 1 {
 				attackShoot(u, ammo, it, kind)
 				return 1
 			}

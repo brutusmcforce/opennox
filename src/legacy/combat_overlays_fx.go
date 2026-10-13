@@ -6,20 +6,9 @@ import (
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
-	"unsafe"
 )
 
-type combatFX struct {
-	Kind, Field4                               uint32
-	History                                    [6]image.Point
-	Count                                      byte
-	Reserved                                   [3]byte
-	Owner                                      *client.Drawable
-	Next, Previous, GlobalNext, GlobalPrevious *combatFX
-}
-
-
-
+type combatFX = client.DrawableFX
 
 func combatFXHead() **combatFX { return &combatFXList }
 
@@ -36,12 +25,12 @@ func combatFXAttach(p *combatFX, dr *client.Drawable) {
 		p.GlobalNext.GlobalPrevious = p
 	}
 	*combatFXHead() = p
-	p.Next = (*combatFX)(dr.Field_114.C())
+	p.Next = dr.Field_114
 	p.Previous = nil
 	if p.Next != nil {
 		p.Next.Previous = p
 	}
-	dr.Field_114 = (*client.DrawableFX)(unsafe.Pointer(p))
+	dr.Field_114 = p
 }
 func combatFXDetach(p *combatFX) {
 	if p == nil {
@@ -61,11 +50,11 @@ func combatFXDetach(p *combatFX) {
 	if p.Previous != nil {
 		p.Previous.Next = p.Next
 	} else {
-		p.Owner.Field_114 = (*client.DrawableFX)(unsafe.Pointer(p.Next))
+		p.Owner.Field_114 = p.Next
 	}
 }
 func combatFXDraw(v *noxrender.Viewport, dr *client.Drawable) {
-	for p := (*combatFX)(dr.Field_114.C()); p != nil; {
+	for p := dr.Field_114; p != nil; {
 		next := p.Next
 		switch p.Kind {
 		case 1:

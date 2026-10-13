@@ -1,8 +1,9 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/libs/types"
 )
 
 func mapHallCount() *uint32       { return populationBlob(2491608) }
@@ -171,7 +172,7 @@ func mapHallBendSouth(a, b *mapRoom, p, q *[2]int32, w int32) uint32 {
 }
 
 func mapHallConnect(prefab uint32, dir int32, candidate *mapRoom) uint32 {
-	marker := (*[2]int32)(mapRoomPointer(prefab + 80 + uint32(dir)*16))
+	marker := (*[2]int32)(unsafe.Pointer(populationWord(prefab, 80+int(dir)*16)))
 	w := int32(*populationWord(prefab, 88+int(dir)*16))
 	room := populationRoom(*populationWord(prefab, 148))
 	var q [2]int32

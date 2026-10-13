@@ -3,7 +3,8 @@ package legacy
 import (
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/server"
@@ -16,11 +17,11 @@ func questRuntimeObserverDeadline() uint32 {
 	}
 	players := &GetServer().S().Players
 	for u := players.FirstUnit(); u != nil; u = players.NextUnit(u) {
-		d := u.UpdateData
-		p := *controlPtr(d, 276)
-		if *equipmentWord(p, 3680)&17 == 17 && *equipmentWord(p, 4792) == 1 && *controlPtr(d, 312) == nil && *controlPtr(d, 316) == nil {
-			Sub_4DF3C0((*server.Player)(p))
-			controlLeaveObserver(*controlPtr(d, 276))
+		d := u.UpdateDataPlayer()
+		p := d.Player
+		if p.Field3680&17 == 17 && p.Field4792 == 1 && d.Field78 == nil && d.Field79 == nil {
+			Sub_4DF3C0(p)
+			controlLeaveObserver(d.Player)
 			Nox_xxx_playerCameraUnlock_4E6040(u)
 		}
 	}
@@ -34,7 +35,7 @@ func questRuntimeSoulTimeout() uint32 {
 	}
 	any := false
 	for u := core.Players.FirstUnit(); u != nil; u = core.Players.NextUnit(u) {
-		if *controlPtr(u.UpdateData, 308) != nil {
+		if u.UpdateDataPlayer().Field77 != nil {
 			any = true
 		}
 	}
@@ -57,17 +58,17 @@ func questRuntimeGateReturn(u *server.Object) {
 		return
 	}
 	d := u.UpdateData
-	gate := controlObject(d, 316)
+	gate := (*server.Object)(layout.As[server.PlayerUpdateData](d).Field79)
 	if gate == nil {
 		return
 	}
-	destination := gate.CollideData
-	controlLeaveObserver(*controlPtr(d, 276))
+	destination := gate.CollideDataExit()
+	controlLeaveObserver((*server.Player)(layout.As[server.PlayerUpdateData](d).Player))
 	Nox_xxx_playerCameraUnlock_4E6040(u)
-	*controlPtr(d, 316) = nil
-	Nox_xxx_unitMove_4E7010(u, *(*types.Pointf)(unsafe.Add(destination, 80)))
+	*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](d).Field79)) = nil
+	Nox_xxx_unitMove_4E7010(u, destination.Dest)
 	GetServer().S().Audio.EventObj(sound.ID(312), u, 2, u.NetCode)
-	visibilityFXPoint(129, *(*types.Pointf)(unsafe.Add(destination, 80)))
+	visibilityFXPoint(129, destination.Dest)
 }
 func questRuntimeGateSet(next uint32) int8 {
 	p := memmap.PtrUint32(0x5D4594, 1556120)
@@ -78,7 +79,7 @@ func questRuntimeGateSet(next uint32) int8 {
 	}
 	core := GetServer().S()
 	for u := core.Players.FirstUnit(); u != nil; u = core.Players.NextUnit(u) {
-		if *equipmentWord(controlPlayer(u), 4792) != 0 && *controlPtr(u.UpdateData, 316) != nil {
+		if controlPlayer(u).Field4792 != 0 && layout.As[server.PlayerUpdateData](u.UpdateData).Field79 != nil {
 			questRuntimeGateReturn(u)
 		}
 	}
@@ -102,7 +103,7 @@ func questRuntimeWarpTick() {
 	}
 	inGate := 0
 	for u := core.Players.FirstUnit(); u != nil; u = core.Players.NextUnit(u) {
-		if *equipmentWord(controlPlayer(u), 4792) != 0 && *controlPtr(u.UpdateData, 316) != nil {
+		if controlPlayer(u).Field4792 != 0 && layout.As[server.PlayerUpdateData](u.UpdateData).Field79 != nil {
 			inGate++
 		}
 	}
@@ -110,7 +111,7 @@ func questRuntimeWarpTick() {
 		return
 	}
 	for u := core.Players.FirstUnit(); u != nil; u = core.Players.NextUnit(u) {
-		if *equipmentWord(controlPlayer(u), 4792) != 0 && *controlPtr(u.UpdateData, 316) != nil {
+		if controlPlayer(u).Field4792 != 0 && layout.As[server.PlayerUpdateData](u.UpdateData).Field79 != nil {
 			questRuntimeGateReturn(u)
 			text := "Gauntlet.c:WarpRestrictedMulti"
 			if count <= 1 {

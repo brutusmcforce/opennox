@@ -1,8 +1,9 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/strman"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/libs/strman"
 
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
@@ -42,7 +43,7 @@ var scoreboardData = struct {
 	(*uint32)(unsafe.Pointer(&dword_5d4594_1090120)),
 	(*uint32)(unsafe.Pointer(&nox_player_netCode_85319C)),
 	(**gui.Window)(unsafe.Pointer(&legacyGlobals.dword_5d4594_1090048)),
-	(**gui.Window)(unsafe.Pointer(&legacyGlobals.dword_5d4594_1090100)),
+	&legacyGlobals.dword_5d4594_1090100,
 	&dword_5d4594_1090108,
 	&dword_5d4594_1090112,
 }

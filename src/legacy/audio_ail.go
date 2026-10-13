@@ -1,10 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/memmap"
+
 	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
+	"github.com/brutusmcforce/opennox/legacy/timer"
 )
 
 var (
@@ -40,7 +42,7 @@ func Get_dword_587000_127004() unsafe.Pointer {
 }
 
 func Sub_43F0E0(v unsafe.Pointer) int {
-	return int(audioEventSampleFormat((*audioStreamFormat)(v)))
+	return int(audioEventSampleFormat((*AudioStreamFormat)(v)))
 }
 
 func Sub_43EE00(v *AudioSample) {
@@ -72,15 +74,15 @@ func Sub_453050() {
 }
 
 func Get_dword_5d4594_816376() ail.Driver {
-	return ail.Driver(dword_5d4594_816376)
+	return dword_5d4594_816376
 }
 
 func Set_dword_5d4594_816376(drv ail.Driver) {
-	dword_5d4594_816376 = uint32(drv)
+	dword_5d4594_816376 = drv
 }
 
-func Sub_486640(a1 unsafe.Pointer, a2 int) int {
-	return int(int32(audioStreamScaleVolume(a1, uint32(a2))))
+func Sub_486640(g *timer.TimerGroup, a2 int) int {
+	return int(int32(audioStreamScaleVolume(g, uint32(a2))))
 }
 
 func Get_dword_5d4594_805984() unsafe.Pointer {
@@ -96,7 +98,7 @@ func Set_dword_587000_81128(v unsafe.Pointer) {
 }
 
 func Sub_451850(a1 unsafe.Pointer, a2 unsafe.Pointer) {
-	audioEventInit((*audioStreamContext)(a1), (*audioStreamCatalog)(a2))
+	audioEventInit((*AudioStreamContext)(a1), (*audioStreamCatalog)(a2))
 }
 
 // RegisterMilesAudioDevice registers the Miles Sound System stream device.
@@ -127,22 +129,42 @@ func audioMilesDescriptor() *audioStreamDescriptor {
 }
 
 func Sub_487D00(a1 unsafe.Pointer) {
-	audioStreamByteRate((*audioStreamFormat)(a1))
+	audioStreamByteRate((*AudioStreamFormat)(a1))
 }
 
 func Sub_487150(a1 int, a2 unsafe.Pointer) unsafe.Pointer {
-	return unsafe.Pointer(audioStreamContextAcquire(int32(a1), (*audioStreamFormat)(a2)))
+	return unsafe.Pointer(audioStreamContextAcquire(int32(a1), (*AudioStreamFormat)(a2)))
 }
 
 func Sub_487790(a1 unsafe.Pointer, a2 int) int {
-	return int(audioStreamVoiceCreateMany((*audioStreamContext)(a1), int32(a2)))
+	return int(audioStreamVoiceCreateMany((*AudioStreamContext)(a1), int32(a2)))
 }
 
 // AudioVoiceFormat returns the format of a voice's buffer, or the format its context requested.
 func AudioVoiceFormat(p unsafe.Pointer) unsafe.Pointer {
 	v := (*audioStreamVoice)(p)
-	if f := *(*unsafe.Pointer)(unsafe.Add(unsafe.Pointer(v.Buffer), int(layoutLegacyAudioStreamBuffer.Off(20)) /* Format */)); f != nil {
+	if f := *(*unsafe.Pointer)(unsafe.Pointer(&v.Buffer.Format)); f != nil {
 		return f
 	}
 	return unsafe.Pointer(&v.Context.RequestedFormat)
+}
+
+// AudioVoiceSample returns the sample of an audio stream voice.
+func AudioVoiceSample(voice unsafe.Pointer) *AudioSample {
+	return (*AudioSample)((*audioStreamVoice)(voice).Sample)
+}
+
+// AudioVoiceEffective returns the effective volume, rate and pan timers of an audio stream voice.
+func AudioVoiceEffective(voice unsafe.Pointer) *timer.TimerGroup {
+	return &(*audioStreamVoice)(voice).Effective
+}
+
+// AudioVoiceSetSample sets the sample of an audio stream voice.
+func AudioVoiceSetSample(voice unsafe.Pointer, s *AudioSample) {
+	(*audioStreamVoice)(voice).Sample = unsafe.Pointer(s)
+}
+
+// AudioVoiceEndCallback returns the end callback of an audio stream voice.
+func AudioVoiceEndCallback(voice unsafe.Pointer) unsafe.Pointer {
+	return (*audioStreamVoice)(voice).EndCallback
 }

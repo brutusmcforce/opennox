@@ -5,14 +5,15 @@ import (
 	"image"
 	"unsafe"
 
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
-	"github.com/brutusmcforce/opennox/libs/datapath"
-	"github.com/brutusmcforce/opennox/libs/ifs"
-	"github.com/brutusmcforce/opennox/libs/strman"
 	"github.com/brutusmcforce/opennox/client/gui"
 	flags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"github.com/brutusmcforce/opennox/libs/datapath"
+	"github.com/brutusmcforce/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/strman"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var characterUI = struct {
@@ -25,7 +26,7 @@ var characterUI = struct {
 	modifiers                     [3]unsafe.Pointer // pants, shirt, shoes
 }{defaults: 1}
 
-func characterWord(w *gui.Window) *uint32 { return (*uint32)(unsafe.Add(w.C(), int(layoutGuiWindow.Off(32)) /* WidgetData */)) }
+func characterWord(w *gui.Window) *uint32 { return &w.Value }
 func characterColor(w *gui.Window) []byte {
 	v := *characterWord(w)
 	return unsafe.Slice(memmap.PtrUint8(0x5D4594, 1307796+3*uintptr((v>>16)+32*uint32(uint16(v)))), 3)
@@ -182,7 +183,7 @@ func characterSetup() uint32 {
 	return result
 }
 func characterQuickbar(mode int) uintptr {
-	class := *(*byte)(unsafe.Add(characterUI.classHost, 66))
+	class := (*server.PlayerInfo)(characterUI.classHost).PlayerClassVal
 	table := memmap.LoadPtr(0x587000, 170156+4*uintptr(class))
 	var count byte
 	result := uintptr(class)
@@ -229,7 +230,7 @@ func characterClassEvent(_ *gui.Window, ev gui.WindowEvent) gui.WindowEventResp 
 		if id >= 601 && id <= 603 {
 			uiWindowEnable(characterAcceptButton, 1)
 			cl := byte(id - 89)
-			*(*byte)(unsafe.Add(characterUI.classHost, 66)) = cl
+			(*server.PlayerInfo)(characterUI.classHost).PlayerClassVal = cl
 			key := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 170208+4*uintptr(cl))))
 			label := GetServer().S().Strings().GetStringInFile(strman.ID(key), "SelClass.c")
 			optionsSend(characterUI.classRoot.ChildByID(605), 16385, uintptr(unsafe.Pointer(alloc.InternCString16(label))), 0)
@@ -361,7 +362,7 @@ func characterColorEvent(_ *gui.Window, ev gui.WindowEvent) gui.WindowEventResp 
 			nox_game_decStateInd_43BDC0()
 			characterUI.defaults = 1
 			if characterCreateFile() != 0 {
-				characterSetMap(*(*byte)(unsafe.Add(characterUI.colorHost, 66)))
+				characterSetMap((*server.PlayerInfo)(characterUI.colorHost).PlayerClassVal)
 				Sub_4A24C0(0)
 				characterColorStart()
 				characterUI.colorAnim.Func13Ptr = nil
@@ -388,7 +389,7 @@ func characterPreview(w *gui.Window) int {
 		d.SetMaterial(v[2], c)
 	}
 	d.SetMaterial(3, skin)
-	sex := uintptr(*(*byte)(unsafe.Add(characterUI.colorHost, 67)))
+	sex := uintptr(bool2int((*server.PlayerInfo)(characterUI.colorHost).IsFemale()))
 	off := uintptr(24)
 	if characterUI.controls[10].Flags&8 != 0 {
 		off = 16
@@ -405,11 +406,11 @@ func characterPreview(w *gui.Window) int {
 	} {
 		mod := characterUI.modifiers[layer.mod]
 		for i := 1; i <= 6; i++ {
-			c := unsafe.Slice((*byte)(unsafe.Add(mod, 12+3*i)), 3)
+			c := unsafe.Slice((*byte)(unsafe.Add(mod, layoutServerModifier.Off(uintptr(12+3*i)))), 3)
 			d.SetMaterialRGB(i, int(c[0]), int(c[1]), int(c[2]))
 		}
 		for i, control := range layer.colors {
-			slot := *(*int32)(unsafe.Add(mod, layer.slots[i]))
+			slot := *(*int32)(unsafe.Add(mod, layoutServerModifier.Off(uintptr(layer.slots[i]))))
 			d.SetMaterial(int(slot), characterColor555(characterUI.controls[control]))
 		}
 		bookDrawImage(memmap.Uint32(0x973A20, 32+104*sex+4*uintptr(layer.bit)), p)
@@ -425,7 +426,7 @@ func characterCreateFile() int {
 	rec, free := alloc.Make([]byte{}, 1280)
 	defer free()
 	characterCopyName((*uint16)(unsafe.Pointer(&rec[1224])))
-	rec[1274] = *(*byte)(unsafe.Add(characterUI.colorHost, 66))
+	rec[1274] = (*server.PlayerInfo)(characterUI.colorHost).PlayerClassVal
 	rec[1276] = 1
 	skin := characterColor(characterUI.controls[0])
 	copy(rec[1204:1207], skin)

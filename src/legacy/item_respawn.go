@@ -58,8 +58,8 @@ func itemRespawnAdd(u *server.Object) uintptr {
 		p.attrs = *u.InitDataModifier()
 	}
 	if u.ObjClass&0x1000000 != 0 && GetServer().S().Weapons.Nox_xxx_weaponInventoryEquipFlags_415820(u)&0x82 != 0 {
-		d := (*[2]byte)(u.UseData.Ptr)
-		p.ammo = [2]byte{d[1], d[0]}
+		d := u.UseDataAmmo()
+		p.ammo = [2]byte{d.Charges, d.MaxCharges}
 	}
 	old := itemRespawnHead
 	p.next = old
@@ -103,9 +103,9 @@ func itemDropCrowns(owner *server.Object, stamp uint32) {
 	}
 	for u := owner.Field129; u != nil; u = u.Field128 {
 		if uint32(u.TypeInd) == *cache {
-			data := u.UpdateData
+			data := u.UpdateDataCrown()
 			inventoryCrownDrop(owner, u, &owner.PosVec)
-			*(*uint32)(unsafe.Add(data, 4)) = stamp
+			data.Pending = stamp
 		}
 	}
 }
@@ -151,8 +151,8 @@ func itemRespawnTick() {
 						if u.ObjClass&0x1000 != 0 {
 							effectsRecharge(u, 100)
 						} else if u.ObjClass&0x1000000 != 0 && s.Weapons.Nox_xxx_weaponInventoryEquipFlags_415820(u)&0x82 != 0 {
-							d := (*[2]byte)(u.UseData.Ptr)
-							d[1], d[0] = p.ammo[0], p.ammo[1]
+							d := u.UseDataAmmo()
+							d.Charges, d.MaxCharges = p.ammo[0], p.ammo[1]
 						}
 						if u.HealthData != nil {
 							Nox_xxx_unitSetHP_4E4560(u, u.HealthData.Max)
@@ -180,8 +180,8 @@ func itemRespawnTick() {
 				stateAttributes(next, &p.attrs)
 			}
 			if next.ObjClass&0x1000000 != 0 && s.Weapons.Nox_xxx_weaponInventoryEquipFlags_415820(next)&0x82 != 0 {
-				d := (*[2]byte)(next.UseData.Ptr)
-				d[1], d[0] = p.ammo[0], p.ammo[1]
+				d := next.UseDataAmmo()
+				d.Charges, d.MaxCharges = p.ammo[0], p.ammo[1]
 			}
 			s.Audio.EventObj(sound.ID(283), next, 0, 0)
 		}

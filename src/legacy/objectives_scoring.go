@@ -1,12 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
+	"math"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"math"
-	"unsafe"
 )
 
 func objectiveTeamCount(t *server.Team) int { return teamRuntimeCount(t) }
@@ -16,16 +16,16 @@ func objectiveScore(u *server.Object) {
 }
 func objectiveQuestScore(u *server.Object) {
 	if dword_5d4594_2650652 != 0 && u != nil && u.UpdateData != nil {
-		statisticsEvent(unsafe.Pointer(u.UpdateDataPlayer().Player), nil)
+		statisticsEvent((*server.Player)(unsafe.Pointer(u.UpdateDataPlayer().Player)), nil)
 	}
 }
 func objectiveBallCollide(u, t *server.Object) {
 	core := GetServer().S()
-	ud := u.UpdateData
+	ud := u.UpdateDataBall()
 	var team *server.Team
 	if t != nil {
 		team = core.Teams.ByID(t.TeamVal.ID)
-		if *temporaryRefWord(ud, 0) == t && team != nil && objectiveTeamCount(team) > 1 {
+		if ud.LastOwnerObj() == t && team != nil && objectiveTeamCount(team) > 1 {
 			last := memmap.PtrUint32(0x5d4594, 1568008)
 			if core.Frame()-*last > 45 {
 				gameplayTextPrivate(t, (*byte)(unsafe.Pointer(internCStr("objcoll.c:CantPickupBall"))), 0)
@@ -90,13 +90,13 @@ func objectiveCTFPickup(u, t *server.Object) {
 	color := byte(objectiveFlagID(u))
 	team := u.TeamVal.ID
 	if t.TeamVal.SameAs(&u.TeamVal) {
-		ud := u.UpdateData
+		ud := u.UpdateDataFlag()
 		epsilon := *memmap.PtrFloat64(0x581450, 10160)
-		if math.Abs(float64(u.PosVec.X)-float64(*temporaryFloat(ud, 0))) > epsilon || math.Abs(float64(u.PosVec.Y)-float64(*temporaryFloat(ud, 4))) > epsilon {
-			Nox_xxx_unitMove_4E7010(u, *(*types.Pointf)(ud))
+		if math.Abs(float64(u.PosVec.X)-float64(ud.Home.X)) > epsilon || math.Abs(float64(u.PosVec.Y)-float64(ud.Home.Y)) > epsilon {
+			Nox_xxx_unitMove_4E7010(u, ud.Home)
 			netcode := t.NetCode
 			gameplayTextInformationAll(4, unsafe.Pointer(&netcode))
-			*equipmentWord(ud, 8) = 0
+			ud.DropFrame = 0
 			matchRosterFlagState(byte(t.TeamVal.ID), 0, byte(color), 0)
 			return
 		}
@@ -105,7 +105,7 @@ func objectiveCTFPickup(u, t *server.Object) {
 				continue
 			}
 			limit := uint16(serverConfigScore(int16(32)))
-			data := flag.UpdateData
+			data := flag.UpdateDataFlag()
 			flagColor := objectiveFlagID(flag)
 			flagTeam := flag.TeamVal.ID
 			objectiveScore(t)
@@ -113,14 +113,14 @@ func objectiveCTFPickup(u, t *server.Object) {
 				tm := core.Teams.ByID(t.TeamVal.ID)
 				teamRuntimeLessons(tm, tm.Lessons+1)
 				if dword_5d4594_2650652 != 0 && playerUD != nil {
-					statisticsEvent(unsafe.Pointer((*server.PlayerUpdateData)(playerUD).Player), nil)
+					statisticsEvent((*server.Player)(unsafe.Pointer((*server.PlayerUpdateData)(playerUD).Player)), nil)
 				}
 			}
 			inventoryRemove(t, flag)
-			GetServer().CreateObjectAt(flag, nil, *(*types.Pointf)(data))
+			GetServer().CreateObjectAt(flag, nil, data.Home)
 			Nox_xxx_unitRaise_4E46F0(flag, 0)
 			playerStateMark(flag, 1)
-			*equipmentWord(data, 8) = 0
+			data.DropFrame = 0
 			matchRosterFlagState(byte(flagTeam), 0, byte(flagColor), 0)
 			inventoryMessage(5, t, uint32(flagColor))
 			if limit > 0 {
@@ -136,7 +136,7 @@ func objectiveCTFPickup(u, t *server.Object) {
 		}
 		return
 	}
-	ud := u.UpdateData
+	ud := u.UpdateDataFlag()
 	if u.InvHolder != nil {
 		return
 	}
@@ -154,11 +154,11 @@ func objectiveCTFPickup(u, t *server.Object) {
 	nox_xxx_servFinalizeDelObject_4DADE0(asObjectC(u))
 	flagColor := objectiveFlagID(u)
 	inventoryInsert(t, u, 1)
-	*equipmentWord(unsafe.Pointer((*server.PlayerUpdateData)(playerUD).Player), 4) |= 1
+	(*server.PlayerUpdateData)(playerUD).Player.WeaponEquip |= 1
 	gameplayReportEquipment(255, u)
 	inventoryMessage(6, t, uint32(flagColor))
 	playerStateUnmark(u, 1)
-	*equipmentWord(ud, 8) = 0
+	ud.DropFrame = 0
 	matchRosterFlagState(byte(team), 1, byte(color), uint16(t.NetCode))
 	objectivePickupBuffs(t)
 }
@@ -180,12 +180,12 @@ func objectiveHomeBase(base, ball *server.Object) int16 {
 	if int(ball.TypeInd) != ballID {
 		return int16(ball.TypeInd)
 	}
-	ud := ball.UpdateData
+	ud := ball.UpdateDataBall()
 	var baseTeam, ownerTeam *server.Team
 	if base.TeamVal.Has() {
 		baseTeam = core.Teams.ByID(base.TeamVal.ID)
 	}
-	owner := *temporaryRefWord(ud, 0)
+	owner := ud.LastOwnerObj()
 	if owner != nil && owner.TeamVal.Has() {
 		ownerTeam = core.Teams.ByID(owner.TeamVal.ID)
 	}
@@ -194,7 +194,7 @@ func objectiveHomeBase(base, ball *server.Object) int16 {
 	}
 	if baseTeam != nil {
 		teamRuntimeLessons(baseTeam, baseTeam.Lessons+1)
-		objectiveQuestScore(*temporaryRefWord(ud, 0))
+		objectiveQuestScore(ud.LastOwnerObj())
 		inventorySound(929, base, 0, 0)
 		objectivePointFX(154, ball)
 	}
@@ -247,16 +247,16 @@ func objectiveFlagBallScore(flag, target *server.Object) int16 {
 	if ball == nil {
 		return out
 	}
-	ud := ball.UpdateData
-	if owner := *temporaryRefWord(ud, 0); owner != nil && owner.ObjFlags&0x20 != 0 {
-		*temporaryRefWord(ud, 0) = nil
+	ud := ball.UpdateDataBall()
+	if owner := ud.LastOwnerObj(); owner != nil && owner.ObjFlags&0x20 != 0 {
+		ud.SetLastOwnerObj(nil)
 	}
 	team := core.Teams.Next(core.Teams.ByID(flag.TeamVal.ID))
 	if team == nil {
 		team = core.Teams.First()
 	}
 	out = int16(memmap.PtrWord(team.C()))
-	owner := *temporaryRefWord(ud, 0)
+	owner := ud.LastOwnerObj()
 	if owner == nil {
 		return out
 	}
@@ -293,12 +293,12 @@ func objectiveFlagBallScore(flag, target *server.Object) int16 {
 	for it := core.Objs.First(); it != nil; it = it.Next() {
 		if uint32(it.TypeInd) == uint32(dword_5d4594_1567988) {
 			if choice == 0 {
-				data := ball.UpdateData
+				data := ball.UpdateDataBall()
 				core.ObjClearOwner(ball)
 				objectiveRememberOwner(ball, nil)
 				teamRuntimeLeave(ball.TeamPtr(), int(ball.NetCode))
 				resourceRestoreHP(ball)
-				*(*uint64)(unsafe.Add(data, 8)) = uint64(uint32(PlatformTicks()))
+				data.ResetTicks = uint64(uint32(PlatformTicks()))
 				Nox_xxx_unitMove_4E7010(ball, it.PosVec)
 				Sub_4E8290(0, 0)
 				out = objectivePointFX(129, ball)

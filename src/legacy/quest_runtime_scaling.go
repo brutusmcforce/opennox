@@ -1,8 +1,9 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"math"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 func questRuntimeFloat(off uintptr) float64 { return float64(memmap.Float32(0x587000, off)) }
@@ -68,20 +69,20 @@ func questRuntimeScaleHealth() {
 					resourceSetHP(u, cur)
 					u.HealthData.Max = max
 				} else {
-					d := u.UpdateData
+					d := u.UpdateDataMonster()
 					hp := base.Max
-					if p := *controlPtr(d, 484); p != nil {
-						hp = *controlHalf(p, 72)
+					if p := d.MonsterDef; p != nil {
+						hp = uint16(p.HealthQuest72)
 					}
-					if int8(*controlByte(d, 1440)) >= 0 {
+					if int8(d.StatusFlags) >= 0 {
 						value := questRuntimeAbsHealth(float32(questRuntimeFloat(202036) * float64(hp)))
 						if value == 0 {
 							value = 1
 						}
 						resourceSetHP(u, value)
 						u.HealthData.Max = value
-						for i := 0; i < 32; i++ {
-							*controlHalf(d, 412+2*i) = u.HealthData.Cur
+						for i := range d.HealthGraph103 {
+							d.HealthGraph103[i] = u.HealthData.Cur
 						}
 					}
 				}

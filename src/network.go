@@ -237,22 +237,6 @@ func (s *Server) nox_xxx_netSendBySock_40EE10(conn *netstr.Conn, ind ntype.Playe
 	})
 }
 
-func sub_4168E0() unsafe.Pointer {
-	return nox_common_list_getFirstSafe_425890(legacy.ServerConfigAllowedHead())
-}
-
-func sub_4168F0(a1 unsafe.Pointer) unsafe.Pointer {
-	return nox_common_list_getNextSafe_4258A0(a1)
-}
-
-func sub_416900() unsafe.Pointer {
-	return nox_common_list_getFirstSafe_425890(legacy.ServerConfigBlockedHead())
-}
-
-func sub_416910(a1 unsafe.Pointer) unsafe.Pointer {
-	return nox_common_list_getNextSafe_4258A0(a1)
-}
-
 func noxnetCheckPassword(p *noxnet.MsgServerPass) netmsg.Message {
 	sst := getServerSettings()
 	expPass := alloc.GoString16((*uint16)(unsafe.Add(unsafe.Pointer(sst), 39)))
@@ -328,8 +312,8 @@ func noxnetJoinCheck(p *noxnet.MsgServerTryJoin, a4a bool, add func(pid ntype.Pl
 	}
 	if sst.Flags100&0x10 != 0 {
 		var found bool
-		for it := sub_4168E0(); it != nil; it = sub_4168F0(it) {
-			if strings.ToLower(alloc.GoString16((*uint16)(unsafe.Add(it, 12)))) == strings.ToLower(p.PlayerName) {
+		for _, name := range legacy.ServerConfigAllowedNames() {
+			if strings.ToLower(name) == strings.ToLower(p.PlayerName) {
 				found = true
 				break
 			}
@@ -338,13 +322,13 @@ func noxnetJoinCheck(p *noxnet.MsgServerTryJoin, a4a bool, add func(pid ntype.Pl
 			return &noxnet.MsgServerError{Err: noxnet.ErrClosed}
 		}
 	} else {
-		for it := sub_416900(); it != nil; it = sub_416910(it) {
-			if alloc.GoString((*byte)(unsafe.Add(it, 72))) == "0" {
-				if strings.ToLower(alloc.GoString16((*uint16)(unsafe.Add(it, 12)))) == strings.ToLower(p.PlayerName) {
+		for _, it := range legacy.ServerConfigBlocked() {
+			if it.Address == "0" {
+				if strings.ToLower(it.Name) == strings.ToLower(p.PlayerName) {
 					return &noxnet.MsgServerError{Err: noxnet.ErrBanned}
 				}
 			} else {
-				if strings.ToLower(alloc.GoString((*byte)(unsafe.Add(it, 72)))) == strings.ToLower(p.Serial) {
+				if strings.ToLower(it.Address) == strings.ToLower(p.Serial) {
 					return &noxnet.MsgServerError{Err: noxnet.ErrBanned}
 				}
 			}

@@ -16,7 +16,7 @@ func scoreboardDrawQuest() byte {
 		if p == nil || p.Field4792 == 0 {
 			continue
 		}
-		field := func(off uintptr) byte { return *(*byte)(unsafe.Add(unsafe.Pointer(p), off)) }
+		field := func(off uintptr) byte { return *(*byte)(unsafe.Add(unsafe.Pointer(p), layoutServerPlayer.Off(off))) } // off is a 386 offset
 		color := byte(4)
 		if r.Flags&1 != 0 {
 			color = 9

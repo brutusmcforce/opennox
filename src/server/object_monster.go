@@ -161,7 +161,7 @@ type MonsterUpdateData struct {
 	Field120_2            uint8                // 120, 482
 	Field120_3            uint8                // 120, 483
 	MonsterDef            *MonsterDef          // 121, 484
-	SoundSet122           unsafe.Pointer       // 122, 488
+	SoundSet122           *MonsterSoundSet     // 122, 488
 	Field123              uint32               // 123, 492
 	Field124              uint32               // 124, 496
 	Field125              uint32               // 125, 500
@@ -183,28 +183,13 @@ type MonsterUpdateData struct {
 	Field282_0            uint8                // 282, 1128, TODO: current stamina?
 	Field282_1            uint8                // 282, 1129
 	Field282_2            uint16               // 282, 1130
-	Field283              uint32               // 283, 1132
-	Field284              uint32               // 284, 1136
-	Field285              uint32               // 285, 1140
-	Field286              uint32               // 286, 1144
-	Field287              uint32               // 287, 1148
-	Field288              uint32               // 288, 1152
-	Field289              uint32               // 289, 1156
-	Field290              uint32               // 290, 1160
-	Field291              uint32               // 291, 1164
-	Field292              uint32               // 292, 1168
-	Field293              uint32               // 293, 1172
-	Field294              uint32               // 294, 1176
-	Field295              uint32               // 295, 1180
-	Field296              uint32               // 296, 1184
-	Field297              uint32               // 297, 1188
-	Field298              uint32               // 298, 1192
+	Field283              [16]*Object          // 283, 1132
 	CurrentEnemy          *Object              // 299, 1196
 	Field300              uint32               // 300, 1200
 	Field301              uint32               // 301, 1204
 	Field302              uint32               // 302, 1208
 	Field303              uint32               // 303, 1212
-	Field304              uint32               // 304, 1216
+	Field304              *Object              // 304, 1216
 	Field305              uint32               // 305, 1220
 	ScriptLookingForEnemy ScriptCallback       // 306, 1224
 	ScriptEnemySighted    ScriptCallback       // 308, 1232
@@ -411,7 +396,7 @@ type MonsterUpdateData struct {
 	Field513              uint32               // 513, 2052
 	Field514              uint32               // 514, 2056, TODO: weapon damage type?
 	Field515              uint32               // 515, 2060
-	Field516              uint32               // 516, 2064
+	Field516              *Object              // 516, 2064
 	Field517              uint32               // 517, 2068
 	Field518              uint32               // 518, 2072
 	Color                 [6]Color3            // 519, 2076
@@ -428,11 +413,11 @@ type MonsterUpdateData struct {
 	Field543_1            byte                 // 543, 2173
 	Field543_2            uint16               // 543, 2174
 	Field544              *Object              // 544, 2176, TODO: correct type?
-	Field545              uint32               // 545, 2180
+	BotPlayerData         *PlayerUpdateData    // 545, 2180: player data of a bot (see BotData)
 	Field546              uint32               // 546, 2184
 	Field547              uint32               // 547, 2188
 	Field548              *Object              // 548, 2192
-	Field549              uint32               // 549, 2196
+	SpawnNode             unsafe.Pointer       // 549, 2196: the spawn policy node of a generated monster (legacy)
 }
 
 func (ud *MonsterUpdateData) GetAIStack() []AIStackItem {

@@ -3,7 +3,6 @@ package legacy
 import (
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func spellLifeHasBuff(u *server.Object, buff int32) bool {
@@ -103,8 +102,8 @@ func spellLifeUpdateBuffs(u *server.Object) {
 		if i == 7 {
 			u.ObjFlags &^= 0x40
 		} else if i == 16 {
-			*spellLifeWord(u.CObj(), int(layoutServerObject.Off(520)) /* Obj130 */) = 0
-			*spellLifeWord(u.CObj(), int(layoutServerObject.Off(524)) /* Field131 */) = 13
+			u.Obj130 = nil
+			u.Field131 = 13
 			resourceDamage(u, 9999999)
 			GetServer().S().Audio.EventObj(779, u, 0, 0)
 			if u.ObjClass&4 != 0 {
@@ -116,6 +115,6 @@ func spellLifeUpdateBuffs(u *server.Object) {
 		u.BuffsPower[i] = 0
 	}
 	if spellLifeHasBuff(u, 9) {
-		*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(544)) /* SpeedCur */)) = float32(float64(*(*float32)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(544)) /* SpeedCur */))) * 1.25)
+		u.SpeedCur = float32(float64(u.SpeedCur) * 1.25)
 	}
 }

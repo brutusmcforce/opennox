@@ -1,38 +1,48 @@
 package legacy
 
 import (
+	"math"
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"math"
-	"unsafe"
 )
 
-func temporaryRefWord(p unsafe.Pointer, off int) **server.Object {
-	return (**server.Object)(unsafe.Add(p, off))
+// dataObj reads an object reference kept in raw object data (data that keeps the 32-bit layout of the
+// original game) as a pointer word.
+func dataObj(p unsafe.Pointer, off int) *server.Object {
+	return (*server.Object)(memmap.WordPtr(*(*uint32)(unsafe.Add(p, off))))
 }
-func temporaryFloat(p unsafe.Pointer, off int) *float32 { return (*float32)(unsafe.Add(p, off)) }
+
+// setDataObj writes an object reference to raw object data (see dataObj).
+func setDataObj(p unsafe.Pointer, off int, obj *server.Object) {
+	*(*uint32)(unsafe.Add(p, off)) = memmap.PtrWord(unsafe.Pointer(obj))
+}
+func temporaryFloat(p unsafe.Pointer, off int) *float32 { return rawAt[float32](p, off) }
 func temporarySpark(pos, vel types.Pointf, stage, life int32, z float32, owner *server.Object) *server.Object {
 	core := GetServer().S()
 	u := core.NewObjectByTypeID("Spark")
 	if u == nil {
 		return nil
 	}
-	cd, ud := u.CollideData, u.UpdateData
+	cd, ud := u.CollideDataProjectile(), u.UpdateDataSpark()
 	var creator server.Obj
 	if owner != nil {
 		creator = owner
 	}
 	GetServer().CreateObjectAt(u, creator, pos)
 	u.Field34 = core.Frame()
-	*equipmentWord(ud, 0) = uint32(life)
-	*equipmentWord(ud, 4) = uint32(life)
-	*equipmentWord(ud, 12) = uint32(stage)
+	ud.MaxLife = uint32(life)
+	ud.Life = uint32(life)
+	ud.Stage = uint32(stage)
 	class := uint32(u.ObjClass)&^0x2000 | 0x80000
 	// The original expression converts the flag word's float interpretation.
-	flags := uint32(effectsTruncWord(float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(16)) /* ObjFlags */)))) & 0xff7fffbf
+	flags := uint32(effectsTruncWord(float64(*(*float32)(unsafe.Pointer(&u.ObjFlags))))) & 0xff7fffbf
 	u.ObjClass = object.Class(class)
 	u.ObjFlags = object.Flags(flags)
 	collision := uint32(0)
@@ -52,7 +62,7 @@ func temporarySpark(pos, vel types.Pointf, stage, life int32, z float32, owner *
 	case 4:
 		u.ObjClass = object.Class(class &^ 0x80000)
 	}
-	*equipmentWord(cd, 0) = collision
+	cd.Damage = collision
 	Nox_xxx_unitRaise_4E46F0(u, 28)
 	u.Field27 = z
 	u.Field29 = math.Float32bits(heightRate)
@@ -60,14 +70,15 @@ func temporarySpark(pos, vel types.Pointf, stage, life int32, z float32, owner *
 	return u
 }
 func temporarySparkUpdate(u *server.Object) {
-	life := equipmentWord(u.UpdateData, 4)
+	ud := u.UpdateDataSpark()
+	life := &ud.Life
 	if int32(*life) <= 0 {
 		GetServer().DelayedDelete(u)
 		return
 	}
 	*life--
 	u.Float28 = math.Float32frombits(1064514355)
-	if *equipmentWord(u.UpdateData, 12) == 4 {
+	if ud.Stage == 4 {
 		u.Float28 = 1
 	}
 }
@@ -93,7 +104,7 @@ func temporaryTrail(u *server.Object) *server.Object {
 	return out
 }
 func temporaryLifetime(u *server.Object) {
-	if GetServer().S().Frame()-u.Field32 > *equipmentWord(u.UpdateData, 0) {
+	if GetServer().S().Frame()-u.Field32 > u.UpdateDataLifetime().Lifetime {
 		u.ObjFlags |= 0x8000
 		if u.Death != nil {
 			u.CallDeath()
@@ -105,7 +116,7 @@ func temporaryLifetime(u *server.Object) {
 func temporarySpellFly(u *server.Object) {
 	core := GetServer().S()
 	ud := u.UpdateData
-	target := temporaryRefWord(ud, 4)
+	target := (**server.Object)(unsafe.Pointer(&layout.As[server.SpellProjectileUpdateData](ud).Field4))
 	key := "UnTargetedSpellLifetime"
 	if *target != nil {
 		key = "TargetedSpellLifetime"
@@ -116,8 +127,7 @@ func temporarySpellFly(u *server.Object) {
 		Sub_4E71F0(u)
 		return
 	}
-	for _, off := range []int{0, 8} {
-		p := temporaryRefWord(ud, off)
+	for _, p := range []**server.Object{&layout.As[server.SpellProjectileUpdateData](ud).Field0, &layout.As[server.SpellProjectileUpdateData](ud).Field8} {
 		if *p != nil && (*p).ObjFlags&0x20 != 0 {
 			*p = nil
 		}
@@ -126,7 +136,7 @@ func temporarySpellFly(u *server.Object) {
 		*target = nil
 	}
 	if *target == nil && (core.Frame()-u.Field34 > uint32(int32(core.TickRate())>>2) || u.Field34 == u.Field32) {
-		*target = core.Nox_xxx_spellFlySearchTarget(nil, u, core.Spells.Flags(spell.ID(*equipmentWord(ud, 12))), 600, 0, *temporaryRefWord(ud, 0))
+		*target = core.Nox_xxx_spellFlySearchTarget(nil, u, core.Spells.Flags(spell.ID(layout.As[server.SpellProjectileUpdateData](ud).Spell12)), 600, 0, layout.As[server.SpellProjectileUpdateData](ud).Field0)
 		u.Field34 = core.Frame()
 	}
 	epsilon := math.Float64frombits(uint64(qword_581450_10176))
@@ -167,7 +177,7 @@ func temporaryAntiSpell(u *server.Object) {
 		GetServer().DelayedDelete(u)
 		return
 	}
-	target := temporaryRefWord(u.UpdateData, 4)
+	target := &u.UpdateDataMissile().Target
 	if *target != nil && (*target).ObjFlags&0x20 != 0 {
 		*target = nil
 		frame = core.Frame()
@@ -207,12 +217,12 @@ func temporaryAntiSpell(u *server.Object) {
 }
 func temporaryMagicMissile(u *server.Object) uint32 {
 	core := GetServer().S()
-	ud := u.UpdateData
-	caster := *temporaryRefWord(ud, 0)
+	ud := u.UpdateDataMissile()
+	caster := ud.Owner
 	if caster.ObjFlags&0x20 != 0 || core.Frame()-u.Field32 > 3*uint32(core.TickRate()) {
 		return u.CallCollideResult(0, 0)
 	}
-	target := temporaryRefWord(ud, 4)
+	target := &ud.Target
 	if *target != nil && (*target).ObjFlags&0x8020 != 0 {
 		*target = nil
 	}
@@ -251,25 +261,24 @@ func temporaryMagicMissile(u *server.Object) uint32 {
 }
 func temporaryChakram(u *server.Object) {
 	core := GetServer().S()
-	ud := u.UpdateData
+	ud := u.UpdateDataChakram()
 	it := u.InvFirstItem
 	if it == nil || it.ObjFlags&0x20 != 0 {
 		GetServer().DelayedDelete(u)
 		return
 	}
-	prior := temporaryRefWord(ud, 12)
+	prior := &ud.Prior
 	if *prior != nil && (*prior).ObjFlags&0x20 != 0 {
 		*prior = nil
 	}
-	target := temporaryRefWord(ud, 8)
-	returning := (*byte)(unsafe.Add(ud, 24))
+	target := &ud.Target
+	returning := &ud.Returning
 	owner := u.ObjOwner
 	if owner == nil || owner.ObjFlags&0x20 != 0 {
 		*returning = 1
 		*target = nil
 	} else {
-		*temporaryFloat(ud, 16) = owner.PosVec.X
-		*temporaryFloat(ud, 20) = owner.PosVec.Y
+		ud.OwnerPos = owner.PosVec
 		if !core.MapTraceVision(u, owner) {
 			*target = nil
 		} else if *returning == 0 {
@@ -282,8 +291,8 @@ func temporaryChakram(u *server.Object) {
 				*target = nil
 				*returning = 1
 			} else {
-				x := float64(*temporaryFloat(ud, 16)) - float64(u.PosVec.X)
-				yd := float64(*temporaryFloat(ud, 20)) - float64(u.PosVec.Y)
+				x := float64(ud.OwnerPos.X) - float64(u.PosVec.X)
+				yd := float64(ud.OwnerPos.Y) - float64(u.PosVec.Y)
 				y := float32(yd)
 				length := float32(math.Sqrt(yd*float64(y)+x*x) + math.Float64frombits(uint64(qword_581450_10176)))
 				u.VelVec.X = float32(x * float64(u.SpeedCur) / float64(length))

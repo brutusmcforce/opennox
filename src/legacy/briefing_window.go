@@ -219,7 +219,7 @@ func briefingShow(chapter, begin int, mode byte) int {
 			dword_5d4594_831224 = 1
 		}
 	} else if chapter != 254 {
-		seen := (*uint32)(unsafe.Add(p.C(), 4408+4*chapter))
+		seen := &p.Field4408[chapter]
 		if *seen != 0 {
 			parent.Capture(false)
 			dword_5d4594_831256 = 1

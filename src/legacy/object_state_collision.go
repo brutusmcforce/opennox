@@ -1,35 +1,35 @@
 package legacy
 
 import (
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func stateCloseDoor(u *server.Object, p unsafe.Pointer) {
-	if u.ObjClass&0x80 != 0 && *equipmentWord(u.UpdateData, 16) == *equipmentWord(p, 0) && *equipmentWord(u.UpdateData, 20) == *equipmentWord(p, 4) {
-		*(*byte)(unsafe.Add(u.UpdateData, 1)) = 0
+	if u.ObjClass&0x80 != 0 && u.UpdateDataDoor().GridX == *equipmentWord(p, 0) && u.UpdateDataDoor().GridY == *equipmentWord(p, 4) {
+		u.UpdateDataDoor().KeyType = 0
 		if bool(nox_common_gameFlags_check_40A5C0(4096)) {
 			stateDoorNotify(u)
 		}
 	}
 }
 func stateDoorNotify(u *server.Object) int32 {
-	*(*byte)(unsafe.Add(u.UpdateData, 48)) = 1
+	u.UpdateDataDoor().Notified = 1
 	return int32(questRuntimeCodeMessage(255, u))
 }
 func stateMonsterCollision(u, t *server.Object) unsafe.Pointer {
-	return nox_xxx_scriptCallByEventBlock_502490(unsafe.Add(u.UpdateData, 1272), t.CObj(), u.CObj(), 22)
+	return nox_xxx_scriptCallByEventBlock_502490(unsafe.Pointer(&layout.As[server.MonsterUpdateData](u.UpdateData).ScriptCollision), t.CObj(), u.CObj(), 22)
 }
 func stateMimicCollision(u, t *server.Object) unsafe.Pointer {
 	if t != nil && t.ObjFlags&0x8000 == 0 && t.ObjClass&6 != 0 && nox_xxx_unitIsEnemyTo_5330C0(asObjectC(u), asObjectC(t)) != 0 && !u.MonsterActionIsScheduled(15) {
 		if st := u.MonsterPushAction(43); st != nil {
-			*equipmentWord(unsafe.Pointer(st), int(layoutServerAIStackItem.Off(4)) /* Args[0] */) = GetServer().S().Frame()
+			st.SetArgs(GetServer().S().Frame())
 		}
 		if st := u.MonsterPushAction(15); st != nil {
-			*equipmentWord(unsafe.Pointer(st), int(layoutServerAIStackItem.Off(4)) /* Args[0] */) = *equipmentWord(t.CObj(), int(layoutServerObject.Off(56)) /* PosVec.X */)
-			*equipmentWord(unsafe.Pointer(st), int(layoutServerAIStackItem.Off(8)) /* Args[1] */) = *equipmentWord(t.CObj(), int(layoutServerObject.Off(60)) /* PosVec.Y */)
-			*equipmentWord(unsafe.Pointer(st), int(layoutServerAIStackItem.Off(12)) /* Args[2] */) = GetServer().S().Frame()
+			st.SetArgs(t.PosVec, GetServer().S().Frame())
 		}
 	}
 	return stateMonsterCollision(u, t)
@@ -45,7 +45,7 @@ func stateChargeImpact(u, t *server.Object) bool {
 		}
 	}
 	if class&0x80 != 0 {
-		return *(*byte)(unsafe.Add(t.UpdateData, 1)) != 0
+		return t.UpdateDataDoor().KeyType != 0
 	}
 	return t.ObjFlags&9 == 0 && class&1 == 0
 }
@@ -72,8 +72,8 @@ func stateCharge(u, t *server.Object) {
 		}
 		stateChargeStun(u)
 	} else {
-		wall := *(*unsafe.Pointer)(unsafe.Add(u.UpdateData, 296))
-		if wall != nil && nox_xxx_wallFlags(int(*(*byte)(unsafe.Add(wall, 1))))&5 == 0 {
+		wall := (*server.Wall)(layout.As[server.PlayerUpdateData](u.UpdateData).Field74)
+		if wall != nil && nox_xxx_wallFlags(int(wall.Tile1))&5 == 0 {
 			stateChargeMoveBack(u)
 			return
 		}

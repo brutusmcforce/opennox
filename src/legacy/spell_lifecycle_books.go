@@ -1,12 +1,14 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/libs/spell"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 type spellLifeBook struct {
@@ -23,6 +25,10 @@ type spellLifeBook struct {
 	Next, Prev    *spellLifeBook
 }
 
+// NewSpellLifeBookPool allocates the pool behind spellLifeBookPool.
+func NewSpellLifeBookPool() unsafe.Pointer {
+	return alloc.NewClass("magicEntityClass", unsafe.Sizeof(spellLifeBook{}), 64).UPtr()
+}
 func spellLifeBookPool() alloc.ClassT[spellLifeBook] {
 	return alloc.AsClassT[spellLifeBook](legacyGlobals.nox_alloc_magicEnt_1569668)
 }
@@ -52,12 +58,10 @@ func spellLifeReset(mode, imaginary int32) int32 {
 	spellLifeSetBookHead(nil)
 	for u := s.Players.FirstUnit(); u != nil; u = s.Players.NextUnit(u) {
 		p := u.UpdateData
-		*controlByte(p, 188) = 0
-		*spellLifeWord(p, 216) = 0
-		for off := 192; off <= 208; off += 4 {
-			*spellLifeWord(p, off) = 0
-		}
-		*controlByte(p, 212) = 0
+		layout.As[server.PlayerUpdateData](p).Field47_0 = 0
+		layout.As[server.PlayerUpdateData](p).SpellCastStart = 0
+		layout.As[server.PlayerUpdateData](p).TrapSpells = [5]uint32{}
+		*(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](p).TrapSpellsCnt)) = 0
 	}
 	if imaginary != 0 && Nox_setImaginaryCaster() == 0 {
 		return 0
@@ -65,7 +69,7 @@ func spellLifeReset(mode, imaginary int32) int32 {
 	return 1
 }
 func spellLifeInform(u *server.Object, code int32) {
-	gameplayTextInformation(int(int32(*controlByte(controlPlayer(u), 2064))), 0, unsafe.Pointer(&code))
+	gameplayTextInformation(int(int32(controlPlayer(u).PlayerInd)), 0, unsafe.Pointer(&code))
 }
 func spellLifeBookError(u *server.Object, code int32, audio int) int32 {
 	spellLifeInform(u, code)
@@ -87,15 +91,15 @@ func spellLifeInsertBook(u *server.Object, list unsafe.Pointer, n, delay, self i
 	}
 	ud := u.UpdateData
 	pl := controlPlayer(u)
-	if *spellLifeWord(ud, 280) != 0 {
+	if layout.As[server.PlayerUpdateData](ud).Trade70 != nil {
 		return 0
 	}
 	for _, v := range words {
-		if v != 0 && *spellLifeWord(pl, 3696+4*int(v)) == 0 {
+		if v != 0 && pl.SpellLvl[int(v)] == 0 {
 			return 0
 		}
 	}
-	if *spellLifeWord(ud, 216) != 0 {
+	if layout.As[server.PlayerUpdateData](ud).SpellCastStart != 0 {
 		return 0
 	}
 	trap := false
@@ -108,7 +112,7 @@ func spellLifeInsertBook(u *server.Object, list unsafe.Pointer, n, delay, self i
 		if spellLifeCheckMana(u, list, n) == 0 {
 			return spellLifeBookError(u, 12, 232)
 		}
-		if *controlByte(pl, 2251) == 2 {
+		if pl.InfoBytes[66] == 2 {
 			if !bool(nox_xxx_checkSummonedCreaturesLimit_500D70(asObjectC(u), 5)) {
 				return spellLifeBookError(u, 4, 231)
 			}
@@ -116,7 +120,7 @@ func spellLifeInsertBook(u *server.Object, list unsafe.Pointer, n, delay, self i
 			if int32(count) >= int32(int64(nox_xxx_gamedataGetFloat_419D40(internCStr("MaxBomberCount")))) {
 				return spellLifeBookError(u, 5, 231)
 			}
-		} else if int32(*controlByte(ud, 244)) >= int32(int64(nox_xxx_gamedataGetFloat_419D40(internCStr("MaxTrapCount")))) {
+		} else if int32(*(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).CurTraps))) >= int32(int64(nox_xxx_gamedataGetFloat_419D40(internCStr("MaxTrapCount")))) {
 			return spellLifeBookError(u, 5, 231)
 		}
 		for i := int32(0); i < n; i++ {
@@ -137,8 +141,8 @@ func spellLifeInsertBook(u *server.Object, list unsafe.Pointer, n, delay, self i
 		}
 	}
 	Nox_xxx_playerSetState_4FA020(u, 2)
-	*controlByte(ud, 188) = 1
-	*spellLifeWord(ud, 216) = GetServer().S().Frame()
+	layout.As[server.PlayerUpdateData](ud).Field47_0 = 1
+	layout.As[server.PlayerUpdateData](ud).SpellCastStart = GetServer().S().Frame()
 	p := spellLifeBookPool().NewObject()
 	if p == nil {
 		return 0
@@ -186,10 +190,10 @@ func spellLifeCastBooks() {
 		if u.ObjClass&4 != 0 {
 			ud = u.UpdateData
 		}
-		id := int32(*spellLifeWord(unsafe.Pointer(p), 8+4*int(p.Index)))
+		id := int32(*(*uint32)(unsafe.Pointer(&p.Spells[int(p.Index)])))
 		if p.Phoneme == 0 {
 			msg := [2]byte{112, byte(id)}
-			nox_netlist_addToMsgListCli_40EBC0(int(int32(*controlByte(*controlPtr(ud, 276), 2064))), 1, (*uint8)(unsafe.Pointer(&msg[0])), 2)
+			nox_netlist_addToMsgListCli_40EBC0(int(int32(layout.As[server.Player](unsafe.Pointer(layout.As[server.PlayerUpdateData](ud).Player)).PlayerInd)), 1, (*uint8)(unsafe.Pointer(&msg[0])), 2)
 		}
 		if p.Tree.Ind != id {
 			settings := unsafe.Pointer((unsafe.Pointer)(unsafe.Pointer(serverConfigSettings())))
@@ -199,7 +203,7 @@ func spellLifeCastBooks() {
 			}
 			p.Tree = p.Tree.Next(ph)
 			if u.ObjClass&4 != 0 {
-				*controlPtr(ud, 184) = p.Tree.C()
+				*(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).SpellPhonemeLeaf)) = p.Tree.C()
 			}
 			p.Phoneme++
 			p.Frame = s.Frame() + p.Delay
@@ -207,11 +211,11 @@ func spellLifeCastBooks() {
 			continue
 		}
 		// The source reads one word beyond Spells for index 4: the queue/index bytes.
-		nextID := int32(*spellLifeWord(unsafe.Pointer(p), 12+4*int(p.Index)))
+		nextID := int32(*(*uint32)(unsafe.Pointer(&p.Spells[1+int(p.Index)])))
 		if p.Queued != 0 && id != 34 && u.ObjClass&4 != 0 {
 			allowed := true
-			for i := 0; i < int(*controlByte(ud, 212)); i++ {
-				if int32(*spellLifeWord(ud, 192+4*i)) == id {
+			for i := 0; i < int(*(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).TrapSpellsCnt))); i++ {
+				if int32(layout.As[server.PlayerUpdateData](ud).TrapSpells[i]) == id {
 					spellLifeInform(u, 6)
 					allowed = false
 				}
@@ -220,9 +224,9 @@ func spellLifeCastBooks() {
 				if spellLifeSpendMana(u, id, 2) < 0 {
 					spellLifeBookError(u, 11, 232)
 				} else {
-					i := *controlByte(ud, 212)
-					*controlByte(ud, 212) = i + 1
-					*spellLifeWord(ud, 192+4*int(i)) = uint32(id)
+					i := *(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).TrapSpellsCnt))
+					*(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).TrapSpellsCnt)) = i + 1
+					layout.As[server.PlayerUpdateData](ud).TrapSpells[int(i)] = uint32(id)
 				}
 			}
 		}
@@ -233,17 +237,17 @@ func spellLifeCastBooks() {
 		}
 		if u.ObjClass&4 != 0 {
 			pl := controlPlayer(u)
-			*spellLifeWord(ud, 220) = *spellLifeWord(pl, 2284)
-			*spellLifeWord(ud, 224) = *spellLifeWord(pl, 2288)
+			layout.As[server.PlayerUpdateData](ud).Field55 = pl.CursorVec.X
+			layout.As[server.PlayerUpdateData](ud).Field56 = pl.CursorVec.Y
 			if p.Self != 0 {
-				*controlPtr(pl, 3640) = u.CObj()
+				*(*unsafe.Pointer)(unsafe.Pointer(&pl.Obj3640)) = u.CObj()
 			} else {
-				*controlPtr(pl, 3640) = *controlPtr(ud, 288)
+				*(*unsafe.Pointer)(unsafe.Pointer(&pl.Obj3640)) = *(*unsafe.Pointer)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).CursorObj))
 			}
 			GetServer().PlayerSpell(u)
-			*spellLifeWord(ud, 216) = 0
-			*controlByte(ud, 188) = 0
-			*controlByte(ud, 212) = 0
+			layout.As[server.PlayerUpdateData](ud).SpellCastStart = 0
+			layout.As[server.PlayerUpdateData](ud).Field47_0 = 0
+			*(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).TrapSpellsCnt)) = 0
 		} else {
 			Nox_xxx_castSpellByUser_4FDD20(int(id), u, nil)
 		}
@@ -258,8 +262,8 @@ func spellLifeCounterBooks(u *server.Object, radius float32) {
 		dy := float64(owner.PosVec.Y) - float64(u.PosVec.Y)
 		if !same && math.Sqrt(dx*dx+dy*dy)+0.1 < float64(radius) && nox_xxx_mapCheck_537110(asObjectC(u), asObjectC(owner)) != 0 {
 			if owner.ObjClass&4 != 0 {
-				*spellLifeWord(owner.UpdateData, 216) = 0
-				*controlByte(owner.UpdateData, 188) = 0
+				layout.As[server.PlayerUpdateData](owner.UpdateData).SpellCastStart = 0
+				layout.As[server.PlayerUpdateData](owner.UpdateData).Field47_0 = 0
 				spellLifeInform(owner, 15)
 				GetServer().S().Audio.EventObj(231, owner, 0, 0)
 				Nox_xxx_playerSetState_4FA020(owner, 13)

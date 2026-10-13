@@ -160,7 +160,7 @@ func mapThemeDecorSet(p, f uint32) uint32 {
 			if !read() {
 				return 0
 			}
-			mapThemeCopy(item+4, mapThemeText())
+			mapThemeCopyAt(item, 4, mapThemeText())
 			if !read() {
 				return 0
 			}
@@ -190,7 +190,7 @@ func mapThemeDecorSet(p, f uint32) uint32 {
 			if !read() {
 				return 0
 			}
-			mapThemeCopy(item+4, mapThemeText())
+			mapThemeCopyAt(item, 4, mapThemeText())
 		}
 		*populationWord(item, 88) = *populationWord(set, 8)
 		*populationWord(set, 8) = item

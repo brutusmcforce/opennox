@@ -1,11 +1,13 @@
 package legacy
 
 import (
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func damagePlayer(u, source, weapon *server.Object, amount, kind int32) int32 {
@@ -31,24 +33,29 @@ func damagePlayer(u, source, weapon *server.Object, amount, kind int32) int32 {
 	var coeff float32
 	if player {
 		data := unsafe.Pointer(u.UpdateDataPlayer().Player)
-		weapons = *equipmentWord(data, 4)
-		armor = *equipmentWord(data, 0)
-		coeff = *(*float32)(unsafe.Add(ud, 228))
-		if *(*byte)(unsafe.Add(data, int(layoutServerPlayer.Off(3680)) /* Field3680 */))&1 != 0 {
+		weapons = layout.As[server.Player](data).WeaponEquip
+		armor = layout.As[server.Player](data).ArmorEquip
+		coeff = *(*float32)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).Field57))
+		if *(*byte)(unsafe.Pointer(&layout.As[server.Player](data).Field3680))&1 != 0 {
 			return 0
 		}
 	} else if u.ObjClass&2 != 0 && u.ObjSubClass&0x10 != 0 {
-		weapons = *equipmentWord(ud, 2056)
-		armor = *equipmentWord(ud, 2060)
-		coeff = *(*float32)(unsafe.Add(ud, 2072))
+		weapons = layout.As[server.MonsterUpdateData](ud).Field514
+		armor = layout.As[server.MonsterUpdateData](ud).Field515
+		coeff = *(*float32)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](ud).Field518))
 	} else {
 		return 0
 	}
-	flagOff, kindOff := 2188, 2184
+	// the last damage record: whether it is set and the damage source kind
+	var flagAt, kindAt *uint32
 	if player {
-		flagOff, kindOff = 304, 300
+		pd := layout.As[server.PlayerUpdateData](ud)
+		flagAt, kindAt = &pd.Field76, &pd.Field75
+	} else {
+		md := layout.As[server.MonsterUpdateData](ud)
+		flagAt, kindAt = &md.Field547, &md.Field546
 	}
-	*equipmentWord(ud, flagOff) = 0
+	*flagAt = 0
 	if player && Nox_xxx_playerGetPossess_4DDF30(u) != nil {
 		Nox_xxx_playerObserveClear_4DDEF0(u)
 	}
@@ -93,12 +100,18 @@ func damagePlayer(u, source, weapon *server.Object, amount, kind int32) int32 {
 			}
 		}
 		if weapon != nil && weapon != source || weapon == nil && (kind == 10 || kind == 2) {
-			*equipmentWord(ud, flagOff) = 1
-			*equipmentWord(ud, kindOff) = uint32(actual.TypeInd)
+			*flagAt = 1
+			*kindAt = uint32(actual.TypeInd)
 		}
 		front := stateFront(&u.PosVec, int32(int16(u.Direction1)), &actual.PrevPos)&1 != 0
 		if kind != 15 && eligible && front {
-			state := *(*byte)(unsafe.Add(ud, 88))
+			var state byte
+			if player {
+				state = *(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](ud).State))
+			} else {
+				// the original reads the same offset (88) of the monster data
+				state = *(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](ud).Path[9].Y))
+			}
 			shield := (player && state == 16 || !player && monsterControlHead(u) == 21) && armor&0x3000000 != 0
 			if !shield && weapons&0x400 == 0 && state == 1 && controlActionState(u) == 45 && armor&0x3000000 != 0 && gameex_flags&0x10 != 0 {
 				shield = true
@@ -171,9 +184,9 @@ func damagePlayer(u, source, weapon *server.Object, amount, kind int32) int32 {
 	case 2:
 		damageFraction(u, &n, float32((1-float64(coeff)*.5)*float64(amount)))
 		damageInventory(u, source, weapon, amount-n, math.Float32frombits(2))
-		if *equipmentWord(ud, flagOff) == 0 {
-			*equipmentWord(ud, flagOff) = 2
-			*equipmentWord(ud, kindOff) = 2
+		if *flagAt == 0 {
+			*flagAt = 2
+			*kindAt = 2
 		}
 	case 4, 5, 6, 14, 15, 16:
 		recordKind = true
@@ -182,9 +195,9 @@ func damagePlayer(u, source, weapon *server.Object, amount, kind int32) int32 {
 		damageInventory(u, source, weapon, amount, float32(kind))
 		recordKind = true
 	}
-	if recordKind && *equipmentWord(ud, flagOff) == 0 {
-		*equipmentWord(ud, flagOff) = 2
-		*equipmentWord(ud, kindOff) = math.Float32bits(float32(kind))
+	if recordKind && *flagAt == 0 {
+		*flagAt = 2
+		*kindAt = math.Float32bits(float32(kind))
 	}
 	if amount > 0 && n == 0 {
 		n = 1

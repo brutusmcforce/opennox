@@ -12,7 +12,7 @@ import (
 
 func motionSentryUpdate(u *server.Object) uint32 {
 	result := uint32(u.ObjFlags)
-	data := (*[3]float32)(u.UpdateData)
+	data := u.UpdateDataSentryGlobe()
 	if int32(result) >= 0 {
 		u.Field125 = nil
 		u.InvNextItem = motionObject(motionSentryHead)
@@ -28,13 +28,13 @@ func motionSentryUpdate(u *server.Object) uint32 {
 	}
 	if u.ObjFlags&0x1000000 != 0 {
 		start := u.PosVec
-		end := types.Pointf{X: float32(math.Cos(float64(data[0]))*600 + float64(start.X)), Y: float32(math.Sin(float64(data[0]))*600 + float64(start.Y))}
+		end := types.Pointf{X: float32(math.Cos(float64(data.Angle))*600 + float64(start.X)), Y: float32(math.Sin(float64(data.Angle))*600 + float64(start.Y))}
 		var hit types.Pointf
 		if !GetServer().S().MapTraceRayAt(start, end, &hit, nil, 5) {
 			end = hit
 		}
 		u.Pos39 = end
-		data[0] = float32(float64(data[2]) + float64(data[0]))
+		data.Angle = float32(float64(data.Speed) + float64(data.Angle))
 		// Keep comparison order for unordered coordinates, as in the C rectangle.
 		min, max := start, end
 		if start.X >= end.X {
@@ -46,7 +46,7 @@ func motionSentryUpdate(u *server.Object) uint32 {
 		ray := [4]float32{start.X, start.Y, end.X, end.Y}
 		GetServer().S().Map.EachObjInRect(types.Rectf{Min: min, Max: max}, func(t *server.Object) bool { motionSentryContact(t, u, &ray); return true })
 	} else {
-		data[0] = data[1]
+		data.Angle = data.BaseAngle
 	}
 	return result
 }
@@ -86,8 +86,8 @@ func motionSentryReport(player int32) {
 				motionSentryPacket(player, u)
 			}
 		} else {
-			d := (*[3]uint32)(u.UpdateData)
-			d[0] = d[1]
+			d := u.UpdateDataSentryGlobe()
+			d.Angle = d.BaseAngle
 		}
 		p = motionAddress(u.InvNextItem)
 	}

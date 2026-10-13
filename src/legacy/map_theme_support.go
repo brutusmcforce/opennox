@@ -11,8 +11,9 @@ import (
 
 // Theme records remain owned by the shared C allocator while the rest of the
 // map generator consumes them. Numeric conversion preserves the libc boundaries.
-func mapThemeAlloc(n, size uint32) uint32 { return mapRoomRaw(legacyCalloc(uintptr(n), uintptr(size))) }
-func mapThemeFree(p uint32)               { legacyFree(mapRoomPointer(p)) }
+// They are indexed with pointer word arithmetic (base + 60*i), so they are word regions (see mapRoomCalloc).
+func mapThemeAlloc(n, size uint32) uint32 { return mapRoomRaw(mapRoomCalloc(n, uintptr(size))) }
+func mapThemeFree(p uint32)               { mapRoomRelease(mapRoomPointer(p)) }
 func mapThemeTemplate() *uint32           { return (*uint32)(unsafe.Pointer(&dword_5d4594_2487524)) }
 
 var mapThemeClock = func() uint32 { return uint32(time.Now().Unix()) }

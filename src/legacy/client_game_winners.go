@@ -2,11 +2,11 @@ package legacy
 
 import (
 	"encoding/binary"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func clientGameScoreLimit() uint32 {
@@ -49,7 +49,7 @@ func clientGameTeamScore(winner *server.Team) {
 			if tm == winner {
 				tm.Lessons = int(limit)
 			} else if uint32(tm.Lessons) >= limit {
-				tm.Lessons = int(limit - 1)
+				tm.Lessons = int(int32(limit - 1))
 			}
 		}
 	}
@@ -128,7 +128,7 @@ func clientGameWinner(kind byte, data []byte) int {
 				if id != localCode {
 					message += text("DM_Loss", p.Name())
 					mode = 1
-				} else if *(*byte)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(2252)) /* info */)) == 0 {
+				} else if p.InfoBytes[67] == 0 {
 					message += text("DM_MaleVictory")
 				} else {
 					message += text("DM_FemaleVictory")

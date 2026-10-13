@@ -41,13 +41,13 @@ func Set_nox_client_spriteUnderCursorXxx_1096644(dr *client.Drawable) {
 	interactionUsableCursorDrawable = dr.C()
 }
 func Sub_495B50(fx *client.DrawableFX) {
-	combatFXDetach((*combatFX)(fx.C()))
+	combatFXDetach(fx)
 }
 func Sub_4523D0(p unsafe.Pointer) {
 	audioEventDelete((*audioEvent)(p))
 }
 func Sub_495FC0(p *client.DrawableFX, dr *client.Drawable) {
-	combatFXAttach((*combatFX)(p.C()), dr)
+	combatFXAttach(p, dr)
 }
 func Sub_49C520(dr *client.Drawable) int {
 	return bool2int(presentationRayContains(dr))

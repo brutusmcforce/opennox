@@ -1,10 +1,13 @@
 package legacy
 
 import (
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"unsafe"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func uiInventoryValidCell(col, row int) bool { return col >= 0 && col < 4 && row >= 0 && row < 21 }
@@ -102,7 +105,7 @@ func uiInventoryAlterWeapon() {
 		return
 	}
 	player := uiMeterPlayer()
-	if player == nil || *(*uint32)(unsafe.Add(playerDr.C(), int(layoutClientDrawable.Off(276)) /* AnimInd */)) == 34 {
+	if player == nil || playerDr.AnimInd == 34 {
 		return
 	}
 	if int32(geometryRectInt((*[2]int32)(unsafe.Pointer(memmap.PtrOff(0x5D4594, 1062572))), (*[4]int32)(unsafe.Pointer(memmap.PtrOff(0x587000, 136336))))) == 1 {
@@ -121,7 +124,7 @@ func uiInventoryAlterWeapon() {
 		}
 		return
 	}
-	mask := *(*uint32)(unsafe.Add(player, 4))
+	mask := layout.As[server.Player](unsafe.Pointer(player)).WeaponEquip
 	for bit := uint32(1); bit < 27; bit++ {
 		if bit == 1 || mask&(1<<bit) == 0 {
 			continue

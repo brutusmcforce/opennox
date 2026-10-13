@@ -4,7 +4,6 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/types"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/unit/ai"
 	"github.com/brutusmcforce/opennox/server"
@@ -90,7 +89,7 @@ func navigationMove(u *server.Object) {
 			ud.Field135 = core.Frame()
 		}
 		if status == 0 && pathTakeStatus() == 0 && head.Args[2] == 0 {
-			monsterCalcDir(u, (*float32)(unsafe.Pointer(&head.Args[0])))
+			monsterCalcDir(u, head.ArgPos(0))
 			u.MonsterPopAction()
 		}
 		if retry {
@@ -175,7 +174,8 @@ func navigationFlee(u *server.Object) {
 	}
 	move := ud.Field2 != 0 || uint32(frame-ud.Field70) <= 10
 	if !move {
-		count := GetServer().Nox_xxx_generateRetreatPath_50CA00(ud.Path[:], u, (*types.Pointf)(unsafe.Pointer(&head.Args[0])))
+		target := head.ArgPos(0)
+		count := GetServer().Nox_xxx_generateRetreatPath_50CA00(ud.Path[:], u, &target)
 		ud.Field2 = uint32(count)
 		ud.Field70 = core.Frame()
 		ud.Field67 = 0

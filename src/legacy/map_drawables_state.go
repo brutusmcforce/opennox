@@ -35,11 +35,31 @@ func (r mapDrawableReader) skip(n int32) {
 	cryptfile.Global().Seek(int64(n), io.SeekCurrent)
 	*r.count += uint32(n)
 }
+
+// field reads or writes n bytes of the drawable at 386 offset off in one cryptfile call
+// (the CRC depends on the chunking), translating the bytes to the current layout.
 func (r mapDrawableReader) field(d *client.Drawable, off, n int) {
-	r.bytes(unsafe.Slice((*byte)(unsafe.Add(d.C(), off)), n))
+	buf := make([]byte, n)
+	gather := func(scatter bool) {
+		layoutClientDrawable.Runs(uintptr(off), uintptr(n), func(off386, cur, cnt uintptr) {
+			if off386 >= 432 && off386 < 452 { // union bytes stay union-relative (see effectAt)
+				cur = unsafe.Offsetof(d.Union) + off386 - 432
+			}
+			field := unsafe.Slice((*byte)(unsafe.Add(d.C(), cur)), cnt)
+			part := buf[off386-uintptr(off) : off386-uintptr(off)+cnt]
+			if scatter {
+				copy(field, part)
+			} else {
+				copy(part, field)
+			}
+		})
+	}
+	gather(false)
+	r.bytes(buf)
+	gather(true)
 }
 func mapDrawableTeam(d *client.Drawable) {
-	teamRuntimeJoin(d.TeamVal.ID, d.TeamPtr(), 0, int(*effectWord(d, int(layoutClientDrawable.Off(128)) /* NetCode32 */)), 0)
+	teamRuntimeJoin(d.TeamVal.ID, d.TeamPtr(), 0, int(d.NetCode32), 0)
 }
 func mapDrawableOld(typ int, inner, outer int16, r mapDrawableReader) *client.Drawable {
 	id, flags := r.u32(), r.u32()
@@ -81,9 +101,9 @@ func mapDrawableOld(typ int, inner, outer int16, r mapDrawableReader) *client.Dr
 	if d == nil {
 		return nil
 	}
-	*effectWord(d, int(layoutClientDrawable.Off(120)) /* ObjFlags */) = *effectWord(d, int(layoutClientDrawable.Off(120)) /* ObjFlags */)&0xEEBF7E9D | flags
-	*effectWord(d, int(layoutClientDrawable.Off(280)) /* Flags70Val */) = *effectWord(d, int(layoutClientDrawable.Off(280)) /* Flags70Val */)&0xFFFFFFA1 | extra
-	*effectWord(d, int(layoutClientDrawable.Off(128)) /* NetCode32 */) = id
+	*(*uint32)(unsafe.Pointer(&d.ObjFlags)) = *(*uint32)(unsafe.Pointer(&d.ObjFlags))&0xEEBF7E9D | flags
+	d.Flags70Val = d.Flags70Val&0xFFFFFFA1 | extra
+	d.NetCode32 = id
 	d.TeamVal.ID = server.TeamID(team)
 	if !noxflags.HasGame(noxflags.GameHost) && team != 0 && (uint32(d.Class())&0x10000000 == 0 || !noxflags.HasGame(noxflags.GameFlag(128))) {
 		mapDrawableTeam(d)
@@ -106,16 +126,16 @@ func mapDrawableBase(typ int, outer int16, r mapDrawableReader) *client.Drawable
 	if d == nil {
 		return nil
 	}
-	*effectWord(d, int(layoutClientDrawable.Off(128)) /* NetCode32 */) = id
+	d.NetCode32 = id
 	if r.u8() != 0 {
 		flags := r.u32()
-		*effectWord(d, int(layoutClientDrawable.Off(120)) /* ObjFlags */) = *effectWord(d, int(layoutClientDrawable.Off(120)) /* ObjFlags */)&0xEEBF7E9D | flags
+		*(*uint32)(unsafe.Pointer(&d.ObjFlags)) = *(*uint32)(unsafe.Pointer(&d.ObjFlags))&0xEEBF7E9D | flags
 		r.skip(int32(r.u8()))
 		d.TeamVal.ID = server.TeamID(r.u8())
 		r.u8()
 		r.skip(4 * int32(r.u16()))
 		extra := r.u32()
-		*effectWord(d, int(layoutClientDrawable.Off(280)) /* Flags70Val */) = *effectWord(d, int(layoutClientDrawable.Off(280)) /* Flags70Val */)&0xFFFFFFA1 | extra
+		d.Flags70Val = d.Flags70Val&0xFFFFFFA1 | extra
 		if inner >= 63 {
 			r.skip(2)
 			n := r.u32()

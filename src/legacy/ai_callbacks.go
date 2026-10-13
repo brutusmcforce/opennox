@@ -13,7 +13,9 @@ import (
 	"unsafe"
 )
 
+// monsterLoadCallback sets the callback field of a monster definition at 386 offset field.
 func monsterLoadCallback(def unsafe.Pointer, name string, table, field uintptr) bool {
+	field = layoutServerMonsterDef.Off(field)
 	if strings.EqualFold(name, "NULL") {
 		*(*unsafe.Pointer)(unsafe.Add(def, field)) = nil
 		return true
@@ -308,7 +310,7 @@ func monsterDeathTroll(u *server.Object) {
 	if t == nil {
 		return
 	}
-	data := (*uint32)(t.UpdateData)
+	data := &t.UpdateDataToxicCloud().Life
 	GetServer().CreateObjectAt(t, u, u.PosVec)
 	core.Audio.EventObj(644, u, 0, 0)
 	lifetime := float32(core.Balance.Float("SmallToxicCloudLifetime") * float64(int32(core.TickRate())))
@@ -334,7 +336,7 @@ func monsterDropLoot(u *server.Object, name string, mods [4]string, ammo int) {
 		Nox_xxx_modifSetItemAttrs_4E4990(t, data)
 	}
 	if ammo != 0 && t.Class()&0x1000000 != 0 && t.SubClass()&0x82 != 0 {
-		*(*byte)(unsafe.Add(t.UseData.Ptr, 1)) = byte(ammo)
+		t.UseDataAmmo().Charges = byte(ammo)
 	}
 	if t.Class()&0x2000000 != 0 {
 		equipmentArmorDropSound(t)

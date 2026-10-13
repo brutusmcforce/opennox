@@ -19,7 +19,7 @@ It should print the version you installed.
 2. Run MSYS2 shell (search for `MSYS2 MSYS` shortcut in Start menu).
 3. Update default packages: `pacman -Syu`. Confirm by typing `Y`, when asked. 
    If it asks for a restart and closes after the update, reopen the shell and update again.
-4. Install dependencies: `pacman -S --needed git base-devel mingw-w64-i686-toolchain mingw-w64-i686-SDL2 mingw-w64-i686-openal`
+4. Install dependencies: `pacman -S --needed git base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-SDL2 mingw-w64-x86_64-openal`
    (confirm by selection with Enter, then confirms installation with typing `Y`).
 5. Add Go compiler to MSYS2 `PATH` variable: `echo 'export PATH="/c/Program Files/Go/bin/:$PATH"' >> ~/.bashrc`
 6. Restart the shell again to apply `PATH` changes.
@@ -48,7 +48,7 @@ We will assume the project is unpacked to `C:\Dev\opennox` for this guide. Prefe
 
 ## Building
 
-Run MINGW32 shell (search for `MSYS2 MINGW32` or `MSYS2 MinGW x86` shortcut in Start menu).
+Run MINGW64 shell (search for `MSYS2 MINGW64` or `MSYS2 MinGW x64` shortcut in Start menu).
 
 NOTE: This is a different shell shortcut, not the one used for updates!
 
@@ -73,12 +73,12 @@ Once finished, it should produce `opennox.exe` and `opennox-server.exe` binaries
 
 #### gcc not found
 
-Make sure you start the `MSYS2 MINGW32` shell, not `MSYS2 MSYS` (or any other).
+Make sure you start the `MSYS2 MINGW64` shell, not `MSYS2 MSYS` (or any other).
 
 #### Cannot find OpenAL32
 
 1. Go to MSYS2 installation directory (`C:\msys64` by default).
-2. Open folder `mingw32\lib`.
+2. Open folder `mingw64\lib`.
 3. Find files `libopenal.a` and `libopenal.dll.a`.
 4. Make a copy of both files with a new names: `libopenal32.a` and `libopenal32.dll.a`.
 5. Rebuild the project.
@@ -109,8 +109,8 @@ You also need a few DLLs for these binaries to work.
 2. Copy following binaries from `C:\Dev\opennox\src`:
    - `opennox.exe`
    - `opennox-server.exe`
-3. Copy following DLLs from `C:\msys64\mingw32\bin`:
-   - `libgcc_s_dw2-1.dll`
+3. Copy following DLLs from `C:\msys64\mingw64\bin`:
+   - `libgcc_s_seh-1.dll`
    - `libopenal-1.dll`
    - `libstdc++-6.dll`
    - `libwinpthread-1.dll`

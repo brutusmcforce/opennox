@@ -116,8 +116,7 @@ func mapPaintFloorCell(x, y int32, p *[8]int32, side, merge int32) uint32 {
 				}
 			}
 			def := &tileDefinitionsAll()[tile]
-			raw := unsafe.Slice((*byte)(unsafe.Pointer(def)), 60)
-			w, h := int32(raw[52]), int32(raw[53])
+			w, h := int32(def.Field52), int32(def.Field53) // the variation grid size
 			a, b := (dy+dx)%w, (adjust+dy-dx)%h
 			if a < 0 {
 				a += w

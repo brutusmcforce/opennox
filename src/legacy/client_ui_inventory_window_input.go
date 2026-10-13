@@ -1,10 +1,11 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/client/gui"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client/gui"
+	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
 func uiInventorySourceCell() *uiInventoryCell {
@@ -207,7 +208,7 @@ func uiInventoryMainEvents(w *gui.Window, event int, a, b uintptr) int {
 					uiInventoryMainWindow().Capture(false)
 					var mods unsafe.Pointer
 					if uint32(dr.Class())&0x13001000 != 0 {
-						mods = unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)
+						mods = unsafe.Pointer(&dr.Union)
 					}
 					uiAmountPrice(0, 0)
 					uiAmountShow((*uint16)(unsafe.Pointer(internWStr(uiInventoryText("DropLabel")))), screen.X, screen.Y, dr.NetCode32, dr.TypeIDVal, mods, uint32(count+1), 0, uiAmountNativeKey(uiAmountDrop), nil)
@@ -317,7 +318,7 @@ func uiInventoryMainEvents(w *gui.Window, event int, a, b uintptr) int {
 		if event == 20 {
 			off += 4
 		}
-		uiInventoryMainWindow().Func94(&gui.RawEvent{Event: 16391, Arg1: uintptr(memmap.Uint32(0x5D4594, off))})
+		uiInventoryMainWindow().Func94(&gui.RawEvent{Event: 16391, Arg1: uintptr(memmap.LoadPtr(0x5D4594, off))}) // the up/down button window
 		return 1
 	default:
 		return bool2int(uiInventoryMode() == 5)

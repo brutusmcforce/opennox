@@ -69,6 +69,7 @@ var (
 	reliablePoolPtr unsafe.Pointer // was 0x5D4594+1565508
 
 	projectileChakramOwner *server.Object // was 0x5D4594+1567840
+	projectileChakramPrior *server.Object // was 0x5D4594+1567932
 	projectileChakramObj   *server.Object // was 0x5D4594+1567924
 
 	questEligibilityReplenish  [4]unsafe.Pointer // was 0x5D4594+1568308

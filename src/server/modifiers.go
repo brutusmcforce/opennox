@@ -19,7 +19,7 @@ import (
 )
 
 func init() {
-	RegisterObjectInit("ModifierInit", nil, unsafe.Sizeof(ModifierInitData{}))
+	RegisterObjectInit("ModifierInit", nil, DataOf[ModifierInitData]())
 }
 
 type ModifierInitData struct {
@@ -176,10 +176,10 @@ type ModifierEffFnc struct {
 
 type ModifierEff struct { // obj_412ae0_t
 	name0             *byte          // 0, 0
-	ind4              uint32         // 1, 4
+	Ind4              uint32         // 1, 4
 	desc8             *uint16        // 2, 8
 	secdesc12         *uint16        // 3, 12
-	identdesc16       *uint16        // 4, 16
+	IdentDesc16       *uint16        // 4, 16
 	Price20           int32          // 5, 20
 	Color24           types.RGB      // 6, 24
 	_                 byte           // 6, 27
@@ -211,7 +211,7 @@ func (p *ModifierEff) Name() string {
 }
 
 func (p *ModifierEff) Index() int {
-	return int(p.ind4)
+	return int(p.Ind4)
 }
 
 func (p *ModifierEff) Desc() string {
@@ -338,7 +338,7 @@ func (s *serverModifiers) nox_xxx_parseWeaponOrArmorDef412D40(head **Modifier, a
 func (s *serverModifiers) nox_xxx_parseModifDesc_412AE0(typ int, arr []modifiers.Effect) error {
 	for _, v := range arr {
 		p, _ := alloc.New(ModifierEff{})
-		p.ind4 = s.cnt
+		p.Ind4 = s.cnt
 		s.cnt++
 
 		p.prev140 = nil
@@ -358,7 +358,7 @@ func (s *serverModifiers) nox_xxx_parseModifDesc_412AE0(typ int, arr []modifiers
 			p.secdesc12, _ = alloc.CString16(s.sm.GetStringInFile(strman.ID(v.SecondDesc), "Modifier.c"))
 		}
 		if v.IdentifyDesc != "" {
-			p.identdesc16, _ = alloc.CString16(s.sm.GetStringInFile(strman.ID(v.IdentifyDesc), "Modifier.c"))
+			p.IdentDesc16, _ = alloc.CString16(s.sm.GetStringInFile(strman.ID(v.IdentifyDesc), "Modifier.c"))
 		}
 		p.Price20 = int32(v.Price)
 		p.Color24 = types.RGB{R: byte(v.Color.R), G: byte(v.Color.G), B: byte(v.Color.B)}
@@ -446,7 +446,7 @@ func (s *serverModifiers) Nox_xxx_modifGetDescById413330(a1 int) *ModifierEff {
 	}
 	for _, head := range s.types {
 		for it := head; it != nil; it = it.next136 {
-			if it.ind4 == uint32(a1) {
+			if it.Ind4 == uint32(a1) {
 				return it
 			}
 		}
@@ -461,7 +461,7 @@ func (s *serverModifiers) Nox_xxx_modifGetIdByName413290(name string) int {
 	for _, head := range s.types {
 		for it := head; it != nil; it = it.next136 {
 			if alloc.GoString(it.name0) == name {
-				return int(it.ind4)
+				return int(it.Ind4)
 			}
 		}
 	}
@@ -604,7 +604,7 @@ func ModEffectParseFloat(_ *ModifierEff, p ModParseTarg, s string) bool {
 }
 
 func (s *Server) Nox_xxx_fireEffect_4E0550(a1 unsafe.Pointer, a2, src, targ *Object) {
-	v5 := *(*float32)(unsafe.Add(a1, 56))
+	v5 := (*ModifierEff)(a1).AttackPreHit52.Valf
 	if targ != nil {
 		targ.CallDamage(src, a2, int(v5), object.DamageExplosion)
 		s.Nox_xxx_netSparkExplosionFx_5231B0(targ.PosVec, byte(int8(int64(float64(v5)*10.0))))

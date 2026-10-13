@@ -12,8 +12,8 @@ import (
 func worldCollideTicks() uint64  { return uint64(uint32(PlatformTicks())) }
 func worldCollideClock() *uint64 { return (*uint64)(unsafe.Pointer(&qword_5d4594_1567940)) }
 func worldCollideDoor(a, b *server.Object) {
-	d := a.UpdateData
-	if b == nil || *equipmentWord(d, 12) != *equipmentWord(d, 4) {
+	d := a.UpdateDataDoor()
+	if b == nil || d.Dir != d.BaseDir {
 		return
 	}
 	if owner := a.ObjOwner; owner != nil {
@@ -33,7 +33,7 @@ func worldCollideDoor(a, b *server.Object) {
 			return
 		}
 	}
-	keyType := *controlByte(d, 1)
+	keyType := d.KeyType
 	if keyType == 0 {
 		return
 	}
@@ -64,12 +64,12 @@ func worldCollideDoor(a, b *server.Object) {
 		}
 		return
 	}
-	x, y := int32(*equipmentWord(d, 16)), int32(*equipmentWord(d, 20))
-	*controlByte(d, 1) = 0
+	x, y := int32(d.GridX), int32(d.GridY)
+	d.KeyType = 0
 	cx, cy := float64(23*x), float64(23*y)
 	rect := types.Rectf{Min: types.Ptf(float32(cx-34), float32(cy-34)), Max: types.Ptf(float32(cx+34), float32(cy+34))}
 	var adjacent [2]int32
-	switch *equipmentWord(d, 4) {
+	switch d.BaseDir {
 	case 0:
 		adjacent = [2]int32{x - 1, y - 1}
 	case 8:

@@ -17,7 +17,7 @@ func initMusic() {
 	var (
 		dword_5d4594_816368      *uint32            = (*uint32)(&dword_5d4594_816368)
 		dword_5d4594_816372      *uint32            = (*uint32)(&dword_5d4594_816372)
-		dword_5d4594_816376      *ail.Driver        = (*ail.Driver)(unsafe.Pointer(&dword_5d4594_816376))
+		dword_5d4594_816376      *ail.Driver        = &dword_5d4594_816376
 		dword_587000_93156       *uint32            = (*uint32)(&dword_587000_93156)
 		dword_587000_93160       *uint32            = (*uint32)(&dword_587000_93160)
 		dword_5d4594_816340      *uint32            = (*uint32)(&dword_5d4594_816340)

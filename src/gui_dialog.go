@@ -3,7 +3,6 @@ package opennox
 import (
 	"image"
 	"strings"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/client/keybind"
 	"github.com/brutusmcforce/opennox/libs/noxfont"
@@ -361,11 +360,11 @@ func guiOpenNPCDialogRaw(title string, snd sound.ID, pic string, flags server.Di
 	sub_46AEE0(v10, v11)
 	legacy.Nox_xxx_wnd_46ABB0(v10, 1)
 	v10.SetHidden(false)
-	*(*uint32)(unsafe.Add(unsafe.Pointer(v10), int(layoutGuiWindow.Off(4*5)) /* Off.Y */)) = 95
+	v10.Off.Y = 95
 	v13 := root.ChildByID(3907)
 	legacy.Nox_xxx_wnd_46ABB0(v13, 1)
 	v13.SetHidden(false)
-	*(*uint32)(unsafe.Add(unsafe.Pointer(v13), int(layoutGuiWindow.Off(4*5)) /* Off.Y */)) = 65
+	v13.Off.Y = 65
 	if flags&0x2 != 0 {
 		v14 := root.ChildByID(3906)
 		v15 := c.Strings().GetStringInFile("Dialog.wnd:Next", "GUIDlg.c")

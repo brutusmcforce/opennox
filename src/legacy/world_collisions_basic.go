@@ -4,11 +4,13 @@ import (
 	"math"
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
+
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/sound"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -40,7 +42,7 @@ func worldCollideMass(a, b *server.Object) {
 	b.VelVec.X = bx
 }
 func worldCollidePickup(a, b *server.Object) uint32 {
-	if b != nil && b.ObjClass&2 == 0 && GetServer().S().Frame()-a.Field32 >= uint32(int32(GetServer().S().TickRate())>>1) && (b.ObjClass&4 == 0 || *controlByte(b.UpdateData, 240)&1 != 0) {
+	if b != nil && b.ObjClass&2 == 0 && GetServer().S().Frame()-a.Field32 >= uint32(int32(GetServer().S().TickRate())>>1) && (b.ObjClass&4 == 0 || *(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](b.UpdateData).Field60))&1 != 0) {
 		return uint32(bool2int(Nox_xxx_inventoryServPlace_4F36F0(b, a, 1, 1)))
 	}
 	return controlRaw(b)
@@ -55,12 +57,12 @@ func worldCollideAudio(a, b *server.Object) {
 	if b != nil && b.ObjClass&4 != 0 {
 		if frame := GetServer().S().Frame(); frame > a.Field34+30 {
 			a.Field34 = frame
-			worldCollideSound(int32(*equipmentWord(a.CollideData, 0)), a)
+			worldCollideSound(int32(a.CollideDataAudioEvent().Sound), a)
 		}
 	}
 }
 func worldCollidePentagram(a *server.Object) uint32 {
-	*equipmentWord(a.UpdateData, 4) = 1
+	layout.As[server.TransporterUpdateData](a.UpdateData).Active = 1
 	return controlRaw(a)
 }
 func worldCollideSign(a, b *server.Object) {
@@ -69,7 +71,7 @@ func worldCollideSign(a, b *server.Object) {
 	}
 }
 func worldCollideTrap(a, b *server.Object) {
-	d := a.CollideData
+	d := a.CollideDataHole()
 	if b == nil || b.ObjClass&0x80 != 0 {
 		return
 	}
@@ -87,29 +89,29 @@ func worldCollideTrap(a, b *server.Object) {
 		}
 		if collisionContains(&a.PosVec, (*[11]float32)(unsafe.Pointer(&a.Shape)), &b.PosVec) {
 			b.ObjFlags |= 0x60000
-			b.Field41 = math.Float32bits(float32(int32(*equipmentWord(d, 8))))
-			b.Field42 = math.Float32bits(float32(int32(*equipmentWord(d, 12))))
+			b.Field41 = math.Float32bits(float32(d.Dest.X))
+			b.Field42 = math.Float32bits(float32(d.Dest.Y))
 			b.Pos39 = a.PosVec
 		}
 		return
 	}
-	if *equipmentWord(d, 24) == 0 && (b.ObjClass&4 == 0 || !GetServer().S().Abils.IsActive(b, server.Ability(4))) {
-		if delay := *controlHalf(d, 20); delay != 0 {
-			*equipmentWord(d, 16) = GetServer().S().Frame() + uint32(delay)
+	if d.Triggered == 0 && (b.ObjClass&4 == 0 || !GetServer().S().Abils.IsActive(b, server.Ability(4))) {
+		if delay := d.Delay; delay != 0 {
+			d.Frame = GetServer().S().Frame() + uint32(delay)
 		}
-		GetServer().NoxScriptC().ScriptCallback((*server.ScriptCallback)(d), b, a, server.ScriptEventType(20))
-		*equipmentWord(d, 24) = 1
+		GetServer().NoxScriptC().ScriptCallback(&d.Script, b, a, server.ScriptEventType(20))
+		d.Triggered = 1
 	}
 }
 func worldCollideTeleport(a, b *server.Object) {
-	d := a.CollideData
+	d := a.CollideDataTeleport()
 	if b == nil || b.ObjClass&0x80 != 0 {
 		return
 	}
 	visibilityFXPoint(138, b.PosVec)
 	worldCollideSound(147, b)
-	b.Field41 = math.Float32bits(float32(int32(*equipmentWord(d, 0))))
-	b.Field42 = math.Float32bits(float32(int32(*equipmentWord(d, 4))))
+	b.Field41 = math.Float32bits(float32(d.Dest.X))
+	b.Field42 = math.Float32bits(float32(d.Dest.Y))
 	stateTeleport(b, (*types.Pointf)(unsafe.Pointer(&b.Field41)))
 	visibilityFXPoint(137, b.PosVec)
 	worldCollideSound(147, b)
@@ -118,7 +120,7 @@ func worldCollideSpellAward(a, b *server.Object) uint32 {
 	if b == nil {
 		return 0
 	}
-	return uint32(Nox_xxx_spellGrantToPlayer_4FB550(b, spell.ID(int32(*equipmentWord(a.CollideData, 0))), 1, 0, 0))
+	return uint32(Nox_xxx_spellGrantToPlayer_4FB550(b, spell.ID(int32(a.CollideDataAwardSpell().Spell)), 1, 0, 0))
 }
 func worldCollideUndead(a, b *server.Object, normal bool) {
 	if b == nil {
@@ -130,24 +132,24 @@ func worldCollideUndead(a, b *server.Object, normal bool) {
 	if b.ObjClass&2 == 0 || b.ObjSubClass&0x40 == 0 {
 		return
 	}
-	pool := *controlPtr(a.CollideData, 0)
+	pool := (*server.DurSpell)(a.CollideDataUndeadKiller().SpellPtr()) // the duration spell (see sustainedTurnUndeadStart)
 	hp := uint32(uint16(resourceGetHP(b)))
-	available := int32(*equipmentWord(pool, 72))
+	available := pool.Field72 // the remaining hit points to drain
 	if available <= int32(hp) {
 		if available != 0 {
 			b.CallDamage(a.FindOwnerChainPlayer(), a, int(available), object.DamageType(6))
 			GetServer().DelayedDelete(a)
-			*equipmentWord(pool, 72) -= uint32(available)
+			pool.Field72 -= available
 		} else {
 			GetServer().DelayedDelete(a)
 		}
 	} else {
 		b.CallDamage(a.FindOwnerChainPlayer(), a, int(hp), object.DamageType(6))
-		*equipmentWord(pool, 72) = uint32(available) - hp
+		pool.Field72 = available - int32(hp)
 	}
 }
 func worldCollideGenerator(a, b *server.Object) {
 	if b != nil && b.ObjClass&4 != 0 {
-		GetServer().NoxScriptC().ScriptCallback((*server.ScriptCallback)(unsafe.Add(a.UpdateData, 72)), b, a, server.ScriptEventType(19))
+		GetServer().NoxScriptC().ScriptCallback(a.UpdateDataMonsterGen().ScriptAt(72), b, a, server.ScriptEventType(19))
 	}
 }

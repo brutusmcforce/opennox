@@ -3,13 +3,14 @@ package legacy
 import (
 	"encoding/binary"
 	"fmt"
+	"image"
+	"strconv"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"image"
-	"strconv"
-	"unsafe"
 )
 
 var serverPanelsRefreshCallbacks = [4]func() int{nil, serverPanelsSpellRefresh, serverPanelsObjectRefresh, serverPanelsObjectRefresh}
@@ -20,7 +21,7 @@ func serverPanelsParseNumber(text string) int {
 }
 func serverPanelsAdvancedOpen(settings unsafe.Pointer) int {
 	w := Nox_new_window_from_file("advanced.wnd", serverPanelsAdvancedProc)
-	*serverPanelsWord(1316708) = uint32(serverOptionsPtr(w))
+	*serverPanelsWord(1316708) = memmap.PtrWord(w.C())
 	if w == nil {
 		return 0
 	}
@@ -125,7 +126,7 @@ func serverPanelsAdvancedRefresh(settings unsafe.Pointer) int {
 }
 func serverPanelsAdvancedServerOpen() int {
 	w := Nox_new_window_from_file(serverPanelsResource(180048), serverPanelsAdvancedServerProc)
-	*serverPanelsWord(1316972) = uint32(serverOptionsPtr(w))
+	*serverPanelsWord(1316972) = memmap.PtrWord(w.C())
 	if w == nil {
 		return 0
 	}

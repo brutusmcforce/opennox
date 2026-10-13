@@ -17,6 +17,7 @@ import (
 	ns4 "github.com/brutusmcforce/opennox/noxscript/ns/v4"
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/common/unit/ai"
@@ -217,7 +218,7 @@ func (s *serverObjects) SetObjects(list *Object) { // nox_set_server_objects_4DA
 
 func (s *serverObjects) Init(cnt int) bool {
 	s.alloc = alloc.NewClassT("objectMemClass", Object{}, cnt)
-	s.alloc.Keep(36) // NetCode
+	s.alloc.Keep(unsafe.Offsetof(Object{}.NetCode))
 	if cnt == 0 {
 		s.alloc.ResetStats()
 		return true
@@ -344,12 +345,14 @@ func (s *serverObjects) NewObject(t *ObjectType) *Object {
 		data, _ := alloc.Make([]byte{}, t.InitDataSize)
 		obj.InitData = unsafe.Pointer(&data[0])
 		copy(data, unsafe.Slice((*byte)(t.InitData), t.InitDataSize))
+		layout.TrackLike(obj.InitData, t.InitData)
 	}
 	obj.Collide = t.Collide
 	if t.CollideDataSize != 0 {
 		data, _ := alloc.Make([]byte{}, t.CollideDataSize)
 		obj.CollideData = unsafe.Pointer(&data[0])
 		copy(data, unsafe.Slice((*byte)(t.CollideData), t.CollideDataSize))
+		layout.TrackLike(obj.CollideData, t.CollideData)
 	}
 	obj.Xfer = t.Xfer
 	obj.Use = t.Use
@@ -357,12 +360,14 @@ func (s *serverObjects) NewObject(t *ObjectType) *Object {
 		data, _ := alloc.Make([]byte{}, t.UseDataSize)
 		copy(data, unsafe.Slice((*byte)(t.UseData.Ptr), t.UseDataSize))
 		obj.UseData.SetPtr(unsafe.Pointer(&data[0]))
+		layout.TrackLike(unsafe.Pointer(&data[0]), t.UseData.Ptr)
 	}
 	obj.Update = t.Update
 	if t.UpdateDataSize != 0 {
 		data, _ := alloc.Make([]byte{}, t.UpdateDataSize)
 		obj.UpdateData = unsafe.Pointer(&data[0])
 		copy(data, unsafe.Slice((*byte)(t.UpdateData), t.UpdateDataSize))
+		layout.TrackLike(obj.UpdateData, t.UpdateData)
 	}
 	obj.Pickup = t.Pickup
 	obj.Drop = t.Drop
@@ -373,7 +378,7 @@ func (s *serverObjects) NewObject(t *ObjectType) *Object {
 	obj.DeathData = t.DeathData
 	obj.ScriptPickup.Func = -1
 	if noxflags.HasGame(noxflags.GameFlag22|noxflags.GameFlag23) && (obj.Class().HasAny(0x20A02) || obj.Xfer == s.XFerInvLight || obj.Weight != 0xff) {
-		obj.Field189, _ = alloc.Malloc(2572)
+		obj.Field189, _ = alloc.Malloc(unsafe.Sizeof(ObjectEditorData{}))
 	}
 	if t.Create != nil {
 		objectCreateFuncs.Get(t.Create)(obj)
@@ -670,7 +675,7 @@ type Object struct {
 	Update        unsafe.Pointer             // 186, 744; func(*Object)
 	UpdateData    unsafe.Pointer             // 187, 748
 	Field188      uint32                     // 188, 752
-	Field189      unsafe.Pointer             // 189, 756
+	Field189      unsafe.Pointer             // 189, 756; *ObjectEditorData, see EditorData
 	ScriptVars    unsafe.Pointer             // 190, 760; []uint32
 	ScriptPickup  ScriptCallback             // 191, 764
 	serverHandle  uintptr                    // EXT
@@ -1080,6 +1085,13 @@ func (obj *Object) UpdateDataObelisk() *ObeliskUpdateData {
 	return updateDataAs[ObeliskUpdateData](obj)
 }
 
+func (obj *Object) UpdateDataDoor() *DoorUpdateData {
+	if !obj.Class().Has(object.ClassDoor) {
+		panic(obj.Class().String())
+	}
+	return updateDataAs[DoorUpdateData](obj)
+}
+
 func (obj *Object) SetUse(cfnc unsafe.Pointer, data UseData) {
 	obj.Use.Ptr = cfnc
 	obj.UseData.Set(data)
@@ -1269,7 +1281,7 @@ func (obj *Object) Strength() int {
 	case cl.Has(object.ClassPlayer):
 		ud := obj.UpdateDataPlayer()
 		pl := ud.Player
-		return int(*(*uint32)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(2239)) /* info */)))
+		return int(*(*uint32)(unsafe.Pointer(&pl.InfoBytes[54])))
 	case cl.Has(object.ClassMonster):
 		ud := obj.UpdateDataMonster()
 		sub := obj.SubClass().AsMonster()
@@ -1291,7 +1303,7 @@ func (obj *Object) SetStrength(v int) {
 		ud := obj.UpdateDataPlayer()
 		pl := ud.Player
 		// TODO: do we need to update any cheksums?
-		*(*uint32)(unsafe.Add(pl.C(), int(layoutServerPlayer.Off(2239)) /* info */)) = uint32(v)
+		*(*uint32)(unsafe.Pointer(&pl.InfoBytes[54])) = uint32(v)
 	case cl.Has(object.ClassMonster):
 		ud := obj.UpdateDataMonster()
 		sub := obj.SubClass().AsMonster()
@@ -1624,7 +1636,7 @@ func (obj *Object) ZombieStayDown() {
 }
 
 func (obj *Object) IsLocked() bool {
-	return obj.Class().Has(object.ClassDoor) && (*(*uint8)(unsafe.Add(obj.UpdateData, 1))) != 0
+	return obj.Class().Has(object.ClassDoor) && obj.UpdateDataDoor().KeyType != 0
 }
 
 func (obj *Object) Lock(lock bool) {
@@ -1635,7 +1647,7 @@ func (obj *Object) Lock(lock bool) {
 	if lock {
 		flag, snd = 5, sound.SoundLock
 	}
-	*(*uint8)(unsafe.Add(obj.UpdateData, 1)) = flag
+	obj.UpdateDataDoor().KeyType = flag
 	obj.Server().Audio.EventObj(snd, obj, 0, 0)
 }
 
@@ -1929,27 +1941,27 @@ func (s *Server) Sub4DE4D0(a1 int) {
 func (s *Server) AttachPending() {
 	for it := s.Objs.Pending; it != nil; it = it.Next() {
 		if it.Class().Has(object.ClassElevator) {
-			ud := it.UpdateData
+			ud := it.UpdateDataElevator()
 			// find elevator shaft and attach them to each other
 			for it2 := s.Objs.Pending; it2 != nil; it2 = it2.Next() {
 				if it2.Class().Has(object.ClassElevatorShaft) {
-					ud2 := it2.UpdateData
-					if *(*uint32)(unsafe.Add(ud, 8)) == it2.Extent {
-						*(**Object)(unsafe.Add(ud, 4)) = it2
-						*(**Object)(unsafe.Add(ud2, 4)) = it
+					ud2 := it2.UpdateDataElevatorShaft()
+					if ud.PartnerExtent == it2.Extent {
+						ud.Partner = it2
+						ud2.Partner = it
 						break
 					}
 				}
 			}
 		}
 		if it.Class().Has(object.ClassTransporter) {
-			ud := it.UpdateData
-			*(**Object)(unsafe.Add(ud, 12)) = nil
+			ud := it.UpdateDataTransporter()
+			ud.Destination = nil
 			// if transporter target is set - attach to it
-			if ext := *(*uint32)(unsafe.Add(ud, 16)); ext != 0 {
+			if ext := ud.DestExtent; ext != 0 {
 				for it2 := s.Objs.Pending; it2 != nil; it2 = it2.Next() {
 					if it2.Class().Has(object.ClassTransporter) && ext == it2.Extent {
-						*(**Object)(unsafe.Add(ud, 12)) = it2
+						ud.Destination = it2
 						break
 					}
 				}

@@ -3,23 +3,20 @@ package legacy
 import (
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/types"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
 )
-
-func generatorScript(ud unsafe.Pointer, off uintptr) *server.ScriptCallback {
-	return (*server.ScriptCallback)(unsafe.Add(ud, off))
-}
 
 func generatorDeath(u *server.Object) {
 	core := GetServer().S()
 	// C calls both quest services before any script/audio side effect.
 	Sub_4D71E0(int(core.Frame()))
 	Sub_4D7520(0)
-	GetServer().NoxScriptC().ScriptCallback(generatorScript(u.UpdateData, 56), u.Obj130, u, server.NoxEventGeneratorDead)
+	GetServer().NoxScriptC().ScriptCallback(u.UpdateDataMonsterGen().ScriptAt(56), u.Obj130, u, server.NoxEventGeneratorDead)
 	core.Audio.EventObj(1000, u, 0, 0)
 	visibilityFXGeneratorBreak(u.PosVec, 200)
 
@@ -39,7 +36,7 @@ func generatorDeath(u *server.Object) {
 // generatorCopy is the private owner of the old 54F2B0 policy. The retained
 // inventory/modifier/NPC-equip engines stay on their current C boundaries.
 func generatorCopy(src, dst *server.Object) {
-	copy(unsafe.Slice((*byte)(dst.UpdateData), 2200), unsafe.Slice((*byte)(src.UpdateData), 2200))
+	*layout.As[server.MonsterUpdateData](dst.UpdateData) = *layout.As[server.MonsterUpdateData](src.UpdateData)
 	if src.ObjSubClass&0x10 != 0 {
 		for it := src.InvFirstItem; it != nil; it = it.InvNextItem {
 			clone := GetServer().S().NewObjectByTypeInd(int(it.TypeInd))
@@ -102,14 +99,14 @@ func generatorSpawn(gen *server.Object, point *types.Pointf, src *server.Object)
 		child.HealthData.Max = 1
 	}
 	if uint32(child.TypeInd) == *beholder {
-		*(*uint32)(unsafe.Add(child.UpdateData, 1504)) = 0
+		child.UpdateDataMonster().Field376 = 0
 	}
 	if spawnPolicyRegister(gen, child) == 0 {
 		return uint32(nox_xxx_objectFreeMem_4E38A0(asObjectC(child)))
 	}
 
 	GetServer().CreateObjectAt(child, nil, pos)
-	GetServer().NoxScriptC().ScriptCallback(generatorScript(gen.UpdateData, 64), child, gen, server.NoxEventGeneratorSpawn)
+	GetServer().NoxScriptC().ScriptCallback(gen.UpdateDataMonsterGen().ScriptAt(64), child, gen, server.NoxEventGeneratorSpawn)
 	dir, freeDir := alloc.New(types.Pointf{})
 	*dir = pos.Sub(gen.PosVec)
 	geometryNormalize((*types.Pointf)(unsafe.Pointer(unsafe.Pointer(dir))))

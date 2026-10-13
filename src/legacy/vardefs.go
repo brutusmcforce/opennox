@@ -1,8 +1,9 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
 
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
@@ -136,7 +137,7 @@ func Get_dword_5d4594_1090120() int {
 	return int(dword_5d4594_1090120)
 }
 func Get_dword_5d4594_1090100() *gui.Window {
-	return AsWindowP(memmap.WordPtr(legacyGlobals.dword_5d4594_1090100))
+	return legacyGlobals.dword_5d4594_1090100
 }
 func Get_dword_5d4594_814624() unsafe.Pointer {
 	return browserUI.selected

@@ -1,13 +1,14 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/libs/strman"
+	"image"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"image"
-	"unsafe"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/strman"
 )
 
 func bookDrawImage(handle uint32, pos image.Point) {
@@ -55,7 +56,7 @@ func bookIconTooltip(w *gui.Window) int {
 }
 func bookIconEvents(w *gui.Window, event int, pos image.Point) int {
 	dr := LocalPlayerDrawable
-	if dr != nil && *(*byte)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(120)) /* ObjFlags */))&2 != 0 {
+	if dr != nil && *(*byte)(unsafe.Pointer(&dr.ObjFlags))&2 != 0 {
 		return 1
 	}
 	p, mode := bookPlayer, *bookWord(1046868)

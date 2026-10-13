@@ -3,9 +3,9 @@ package legacy
 import (
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/spell"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -35,19 +35,19 @@ func itemXferObelisk(u *server.Object) int {
 	return objectXferFinish(r, u, v, saved)
 }
 func itemXferGenerator(u *server.Object) int {
-	p := u.UpdateData
+	p := u.UpdateDataMonsterGen()
 	r, v, saved, ok := itemXferPositiveStart(u, 63)
 	if !ok {
 		return 0
 	}
 	for i, n := 0, int(r.byte(3)); i < n; i++ {
-		r.raw(unsafe.Add(p, 80+i), 1)
+		r.raw(unsafe.Pointer(&p.Rates[i]), 1)
 	}
-	r.raw(unsafe.Add(p, 86), 1)
-	r.raw(unsafe.Add(p, 87), 1)
-	r.raw(unsafe.Add(p, 88), 4)
-	for _, pair := range [][2]int{{48, 1920}, {56, 2048}, {72, 2176}, {64, 2304}} {
-		objectXferScript(unsafe.Add(p, pair[0]), objectXferScriptName(u, pair[1]))
+	r.raw(unsafe.Pointer(&p.Current), 1)
+	r.raw(unsafe.Pointer(&p.Max), 1)
+	r.raw(unsafe.Pointer(&p.Frame88), 4)
+	for _, pair := range [][2]int{{48, server.ScriptNameGen52}, {56, server.ScriptNameGen60}, {72, server.ScriptNameGen76}, {64, server.ScriptNameGen68}} {
+		objectXferScript(unsafe.Pointer(p.ScriptAt(pair[0])), objectXferScriptName(u, pair[1]))
 	}
 	if r.read() {
 		for row, rows := 0, int(r.byte(0)); row < rows; row++ {
@@ -65,13 +65,13 @@ func itemXferGenerator(u *server.Object) int {
 					GetServer().S().Objs.FreeObject(ch)
 					return 0
 				}
-				*(**server.Object)(unsafe.Add(p, 4*(row*4+col))) = ch
+				p.Field0[row*4+col] = ch
 			}
 		}
 	} else {
 		r.byte(3)
 		for row := 0; row < 3; row++ {
-			children := unsafe.Slice((**server.Object)(unsafe.Add(p, 16*row)), 4)
+			children := p.Field0[4*row : 4*row+4]
 			count := byte(0)
 			for _, ch := range children {
 				if ch != nil {
@@ -92,24 +92,23 @@ func itemXferGenerator(u *server.Object) int {
 	}
 	if v >= 62 {
 		for i, n := 0, int(r.byte(3)); i < n; i++ {
-			r.raw(unsafe.Add(p, 83+i), 1)
+			r.raw(unsafe.Pointer(&p.Field83[i]), 1)
 		}
 	}
 	if v >= 63 {
-		r.raw(unsafe.Add(p, 92), 4)
+		r.raw(unsafe.Pointer(&p.Flags92), 4)
 	}
 	return objectXferFinish(r, u, v, saved)
 }
 func itemXferRewardMarker(u *server.Object) int {
-	p := u.InitData
+	p := u.InitDataRewardMarker()
 	r, v, saved, ok := itemXferPositiveStart(u, 63)
 	if !ok {
 		return 0
 	}
-	r.raw(p, 4)
-	r.raw(unsafe.Add(p, 4), 4)
-	for group, spec := range [][2]int{{8, 137}, {145, 6}, {151, 41}} {
-		mask := unsafe.Slice((*byte)(unsafe.Add(p, spec[0])), spec[1])
+	r.raw(unsafe.Pointer(&p.Categories), 4)
+	r.raw(unsafe.Pointer(&p.Explicit), 4)
+	for group, mask := range [][]byte{p.Spells[:], p.Abilities[:], p.Guides[:]} {
 		count := uint16(0)
 		for _, b := range mask {
 			if b == 1 {
@@ -156,14 +155,14 @@ func itemXferRewardMarker(u *server.Object) int {
 			}
 		}
 	}
-	for _, off := range []int{196, 192, 200, 204, 208} {
-		r.raw(unsafe.Add(p, off), 4)
+	for _, f := range []*uint32{&p.Field196, &p.Field192, &p.Field200, &p.Field204, &p.Field208} {
+		r.raw(unsafe.Pointer(f), 4)
 	}
 	if v >= 62 {
-		r.raw(unsafe.Add(p, 212), 4)
+		r.raw(unsafe.Pointer(&p.Chance), 4)
 	}
 	if v >= 63 {
-		r.raw(unsafe.Add(p, 216), 1)
+		r.raw(unsafe.Pointer(&p.Flags), 1)
 	}
 	return objectXferFinish(r, u, v, saved)
 }

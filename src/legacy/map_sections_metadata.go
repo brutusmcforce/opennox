@@ -53,13 +53,13 @@ func mapSectionMetadata(kind int, region *[8]uint32) uint32 {
 			point := [2]uint32{uint32(w.X5), uint32(w.Y6)}
 			mapSectionIO(unsafe.Pointer(&point), 8)
 			if kind == 2 {
-				p := w.Data
-				mapSectionIO(unsafe.Add(p, 16), 4)
-				mapSectionIO(unsafe.Add(p, 20), 1)
-				mapSectionIO(unsafe.Add(p, 21), 1)
-				mapSectionIO(unsafe.Add(p, 22), 1)
-				mapSectionIO(unsafe.Add(p, 24), 4)
-				mapSectionIO(unsafe.Add(p, 28), 4)
+				p := w.SecretData()
+				mapSectionIO(unsafe.Pointer(&p.OpenDelay), 4)
+				mapSectionIO(unsafe.Pointer(&p.Flags), 1)
+				mapSectionIO(unsafe.Pointer(&p.State), 1)
+				mapSectionIO(unsafe.Pointer(&p.Progress), 1)
+				mapSectionIO(unsafe.Pointer(&p.Timer), 4)
+				mapSectionIO(unsafe.Pointer(&p.OpenSent), 4)
 			}
 		})
 		return 1
@@ -70,20 +70,20 @@ func mapSectionMetadata(kind int, region *[8]uint32) uint32 {
 	}
 	generation := noxflags.HasGame(noxflags.GameFlag(0x400000))
 	for i := int32(0); ; i++ {
-		var data *[8]uint32
+		var data *server.SecretWallData
 		var x, y int32
 		if kind == 2 {
-			data = (*[8]uint32)(mapRoomCalloc(1, 32))
-			mapSectionIO(unsafe.Pointer(&data[1]), 8)
-			mapSectionIO(unsafe.Pointer(&data[4]), 4)
-			mapSectionIO(unsafe.Pointer(&data[5]), 1)
+			data = server.AsSecretWallData(mapRoomCalloc(1, unsafe.Sizeof(server.SecretWallData{})))
+			mapSectionIO(unsafe.Pointer(&data.GridX), 8) // GridX, GridY
+			mapSectionIO(unsafe.Pointer(&data.OpenDelay), 4)
+			mapSectionIO(unsafe.Pointer(&data.Flags), 1)
 			if version >= 2 {
-				mapSectionIO(unsafe.Add(unsafe.Pointer(data), 21), 1)
-				mapSectionIO(unsafe.Add(unsafe.Pointer(data), 22), 1)
-				mapSectionIO(unsafe.Pointer(&data[6]), 4)
-				mapSectionIO(unsafe.Pointer(&data[7]), 4)
+				mapSectionIO(unsafe.Pointer(&data.State), 1)
+				mapSectionIO(unsafe.Pointer(&data.Progress), 1)
+				mapSectionIO(unsafe.Pointer(&data.Timer), 4)
+				mapSectionIO(unsafe.Pointer(&data.OpenSent), 4)
 			}
-			x, y = int32(data[1]), int32(data[2])
+			x, y = int32(data.GridX), int32(data.GridY)
 		} else {
 			var point [2]uint32
 			mapSectionIO(unsafe.Pointer(&point), 8)
@@ -95,7 +95,7 @@ func mapSectionMetadata(kind int, region *[8]uint32) uint32 {
 			y += b[1] - memmap.Int32(0x5D4594, 739984)
 		}
 		if data != nil {
-			data[1], data[2] = uint32(x), uint32(y)
+			data.GridX, data.GridY = uint32(x), uint32(y)
 		}
 		var w *server.Wall
 		if generation {
@@ -124,14 +124,14 @@ func mapSectionMetadata(kind int, region *[8]uint32) uint32 {
 				w.Field10 = uint16(*index)
 				*index++
 				w.Data = unsafe.Pointer(data)
-				data[3] = mapRoomRaw(w.C())
-				if byte(data[5]>>8) == 0 {
-					if data[5]&8 != 0 {
-						data[7] = 0xffffffff
-						data[5] = data[5]&0xff0000ff | 3<<8 | 23<<16
+				data.Wall = mapRoomRaw(w.C())
+				if data.State == 0 {
+					if data.Flags&8 != 0 {
+						data.OpenSent = 0xffffffff
+						data.State, data.Progress = server.SecretWallOpen, server.SecretWallProgressMax
 					} else {
-						data[7] = 0
-						data[5] = data[5]&0xff0000ff | 1<<8
+						data.OpenSent = 0
+						data.State, data.Progress = server.SecretWallClosed, 0
 					}
 				}
 				if !generation {

@@ -45,10 +45,10 @@ func unitItemName(u *server.Object) *uint16 {
 	var out []uint16
 	appendText := func(p *uint16) { out = append(out, unsafe.Slice(p, alloc.StrLen(p))...) }
 	appendText(memmap.PtrUint16(0x5D4594, 1567732))
-	mods := (*[4]unsafe.Pointer)(u.InitData)
+	mods := &(*server.ModifierInitData)(u.InitData).Modifiers
 	for i := 0; i < 2; i++ {
 		if mods[i] != nil {
-			if p := *(**uint16)(unsafe.Add(mods[i], 8)); p != nil {
+			if p := mods[i].DescPtr(); p != nil {
 				appendText(p)
 				out = append(out, ' ')
 			}
@@ -59,11 +59,11 @@ func unitItemName(u *server.Object) *uint16 {
 	}
 	for i := 2; i < 4; i++ {
 		if mods[i] != nil {
-			off := 8
+			p := mods[i].DescPtr()
 			if i == 3 {
-				off = 12
+				p = mods[i].SecondaryDescPtr()
 			}
-			if p := *(**uint16)(unsafe.Add(mods[i], off)); p != nil {
+			if p != nil {
 				out = append(out, ' ')
 				appendText(p)
 			}

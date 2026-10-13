@@ -3,8 +3,11 @@ package alloc
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"time"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 
 	"github.com/brutusmcforce/opennox/libs/log"
 	"github.com/brutusmcforce/opennox/libs/platform"
@@ -21,11 +24,15 @@ func AsClassT[T comparable](p unsafe.Pointer) ClassT[T] {
 }
 
 func NewClassT[T comparable](name string, typ T, cnt int) ClassT[T] {
-	return ClassT[T]{Class: NewClass(name, unsafe.Sizeof(typ), cnt)}
+	c := NewClass(name, unsafe.Sizeof(typ), cnt)
+	c.typ = reflect.TypeFor[T]()
+	return ClassT[T]{Class: c}
 }
 
 func NewDynamicClassT[T comparable](name string, typ T, cnt int) ClassT[T] {
-	return ClassT[T]{Class: NewDynamicClass(name, unsafe.Sizeof(typ), cnt)}
+	c := NewDynamicClass(name, unsafe.Sizeof(typ), cnt)
+	c.typ = reflect.TypeFor[T]()
+	return ClassT[T]{Class: c}
 }
 
 type ClassT[T comparable] struct {
@@ -126,6 +133,7 @@ func (obj *object) Dead() {
 type Class struct {
 	h      unsafe.Pointer
 	name   string
+	typ    reflect.Type // nil for untyped classes
 	size   uintptr
 	cnt    int
 	byPtr  map[unsafe.Pointer]*object
@@ -312,6 +320,7 @@ func (al *Class) NewObject() unsafe.Pointer {
 		al.active.max = al.active.n
 	}
 	obj.Zero()
+	layout.Track(obj.ptr, al.size, al.typ, al.name)
 	return obj.ptr
 }
 
@@ -324,6 +333,7 @@ func (al *Class) FreeObjectFirst(p unsafe.Pointer) {
 		log.Printf("alloc(%s): FreeObjectFirst(%p) (dynamic: %v)", al.name, p, obj.expires != 0)
 	}
 	al.active.Remove(obj)
+	layout.Untrack(p)
 	if obj.expires != 0 {
 		obj.expires = (platform.Ticks() + 10*time.Second).Truncate(time.Millisecond)
 		al.dynamic.AddFirst(obj)
@@ -342,6 +352,7 @@ func (al *Class) FreeObjectLast(p unsafe.Pointer) {
 		log.Printf("alloc(%s): FreeObjectLast(%p) (dynamic: %v)", al.name, p, obj.expires != 0)
 	}
 	al.active.Remove(obj)
+	layout.Untrack(p)
 	if obj.expires != 0 {
 		obj.expires = (platform.Ticks() + 10*time.Second).Truncate(time.Millisecond)
 		al.dynamic.AddLast(obj)

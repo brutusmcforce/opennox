@@ -177,7 +177,8 @@ func pathActuallyMove(u *server.Object) bool {
 }
 func pathSetMove(u *server.Object) bool {
 	ud := u.UpdateDataMonster()
-	target := (*types.Pointf)(unsafe.Pointer(&ud.AIStackHead().Args[0]))
+	pos := ud.AIStackHead().ArgPos(0)
+	target := &pos
 	dx, dy := float64(target.X)-float64(u.PosVec.X), float64(target.Y)-float64(u.PosVec.Y)
 	if math.Sqrt(dy*dy+dx*dx)+memmap.Float64(0x581450, 10288) <= 8 {
 		return true

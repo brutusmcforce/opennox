@@ -2,11 +2,12 @@ package legacy
 
 import (
 	"fmt"
-	"github.com/brutusmcforce/opennox/libs/spell"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"unsafe"
+	"github.com/brutusmcforce/opennox/libs/spell"
 )
 
 // windowArg returns the window passed in an event argument.
@@ -143,7 +144,7 @@ func browserDetails(record unsafe.Pointer) {
 	title := func(key string) { add(serverPanelsText("noxworld.c", key), 14) }
 	separator := func(off uintptr) { optionsSend(w, 16397, uintptr(memmap.PtrOff(0x587000, off)), ^uintptr(0)) }
 	title("Name")
-	name := browserCappedString(unsafe.Add(record, 120), 255)
+	name := browserCappedString(unsafe.Pointer(&(*Nox_gui_server_ent_t)(record).ServerNameBuf[0]), 255)
 	if name == "" {
 		name = fmt.Sprintf("%s:%d", rec.Addr(), rec.Port())
 	}
@@ -165,7 +166,7 @@ func browserDetails(record unsafe.Pointer) {
 	}
 	separator(89580)
 	title("Map")
-	add(browserNarrowText(browserCappedString(unsafe.Add(record, 111), 255)), -1)
+	add(browserNarrowText(browserCappedString(unsafe.Pointer(&(*Nox_gui_server_ent_t)(record).MapNameBuf[0]), 255)), -1)
 	separator(89636)
 	if uint16(rec.Flags())&0xc000 != 0 {
 		key := "Clan"

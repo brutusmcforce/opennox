@@ -1,11 +1,13 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func damageBall(source, u *server.Object, amount int32) {
@@ -24,7 +26,7 @@ func damageBall(source, u *server.Object, amount int32) {
 		nox_xxx_objectApplyForce_52DF80((*float32)(unsafe.Pointer(&u.PosVec)), asObjectC(it), 30)
 		nox_xxx_unitClearOwner_4EC300(asObjectC(it))
 		objectiveRememberOwner(it, u)
-		ind := *(*byte)(unsafe.Add(source.CObj(), int(layoutServerObject.Off(52)) /* TeamVal.ID */))
+		ind := *(*byte)(unsafe.Pointer(&source.TeamVal.ID))
 		if it.TeamVal.Has() {
 			t := nox_xxx_getTeamByID_418AB0(int(ind))
 			if t != nil {
@@ -38,9 +40,9 @@ func damageBall(source, u *server.Object, amount int32) {
 	}
 }
 func damageSetSource(u, source *server.Object, kind int32) {
-	*(*unsafe.Pointer)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(520)) /* Obj130 */)) = source.CObj()
-	*equipmentWord(u.CObj(), int(layoutServerObject.Off(524)) /* Field131 */) = uint32(kind)
-	*equipmentWord(u.CObj(), int(layoutServerObject.Off(536)) /* Frame134 */) = GetServer().S().Frame()
+	*(*unsafe.Pointer)(unsafe.Pointer(&u.Obj130)) = source.CObj()
+	u.Field131 = uint32(kind)
+	u.Frame134 = GetServer().S().Frame()
 }
 func damageDefault(u, source, weapon *server.Object, amount, kind int32) int32 {
 	if u == nil {
@@ -54,9 +56,9 @@ func damageDefault(u, source, weapon *server.Object, amount, kind int32) int32 {
 		return 1
 	}
 	if u.ObjClass&2 != 0 {
-		*equipmentWord(u.UpdateData, 2188) = 0
+		layout.As[server.MonsterUpdateData](u.UpdateData).Field547 = 0
 		if kind == 1 || kind == 12 || kind == 7 || kind == 14 || kind == 6 {
-			*equipmentWord(u.UpdateData, 1440) |= 0x80000
+			*(*uint32)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](u.UpdateData).StatusFlags)) |= 0x80000
 		}
 	}
 	actual := weapon
@@ -122,14 +124,14 @@ func damageDefault(u, source, weapon *server.Object, amount, kind int32) int32 {
 			amount = 1
 		}
 		if u.ObjClass&4 != 0 {
-			*(*uint16)(unsafe.Add(u.UpdateData, 160)) = 2
+			layout.As[server.PlayerUpdateData](u.UpdateData).Field40_0 = 2
 		} else if u.ObjClass&2 != 0 && u.ObjSubClass&0x10 != 0 {
-			*(*byte)(unsafe.Add(u.UpdateData, 2094)) = 2
+			layout.As[server.MonsterUpdateData](u.UpdateData).Field523_2 = 2
 		}
 	}
 	if source == nil {
-		*equipmentWord(u.CObj(), int(layoutServerObject.Off(528)) /* Pos132.X */) = 0
-		*equipmentWord(u.CObj(), int(layoutServerObject.Off(532)) /* Pos132.Y */) = 0
+		*(*uint32)(unsafe.Pointer(&u.Pos132.X)) = 0
+		*(*uint32)(unsafe.Pointer(&u.Pos132.Y)) = 0
 		if kind == 12 {
 			spellLifeBuffOff(u, int32(0))
 		}
@@ -138,11 +140,11 @@ func damageDefault(u, source, weapon *server.Object, amount, kind int32) int32 {
 		if weapon != nil && weapon.ObjClass&0x1001000 == 0 {
 			from = weapon
 		}
-		*equipmentWord(u.CObj(), int(layoutServerObject.Off(528)) /* Pos132.X */) = *equipmentWord(from.CObj(), int(layoutServerObject.Off(72)) /* PrevPos.X */)
-		*equipmentWord(u.CObj(), int(layoutServerObject.Off(532)) /* Pos132.Y */) = *equipmentWord(from.CObj(), int(layoutServerObject.Off(76)) /* PrevPos.Y */)
+		*(*uint32)(unsafe.Pointer(&u.Pos132.X)) = *(*uint32)(unsafe.Pointer(&from.PrevPos.X))
+		*(*uint32)(unsafe.Pointer(&u.Pos132.Y)) = *(*uint32)(unsafe.Pointer(&from.PrevPos.Y))
 		if u.ObjClass&2 != 0 && (weapon != nil && weapon != source || weapon == nil && (kind == 10 || kind == 2)) {
-			*equipmentWord(u.UpdateData, 2188) = 1
-			*equipmentWord(u.UpdateData, 2184) = uint32(actual.TypeInd)
+			layout.As[server.MonsterUpdateData](u.UpdateData).Field547 = 1
+			layout.As[server.MonsterUpdateData](u.UpdateData).Field546 = uint32(actual.TypeInd)
 		}
 		spellLifeBuffOff(u, int32(0))
 	}
@@ -154,10 +156,10 @@ func damageDefault(u, source, weapon *server.Object, amount, kind int32) int32 {
 	}
 	damageSetSource(u, actual, kind)
 	if u.ObjClass&2 != 0 {
-		*equipmentWord(u.UpdateData, 1440) |= 0x200
-		if *equipmentWord(u.UpdateData, 2188) == 0 {
-			*equipmentWord(u.UpdateData, 2188) = 2
-			*equipmentWord(u.UpdateData, 2184) = uint32(kind)
+		*(*uint32)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](u.UpdateData).StatusFlags)) |= 0x200
+		if layout.As[server.MonsterUpdateData](u.UpdateData).Field547 == 0 {
+			layout.As[server.MonsterUpdateData](u.UpdateData).Field547 = 2
+			layout.As[server.MonsterUpdateData](u.UpdateData).Field546 = uint32(kind)
 		}
 	}
 	if weapon != nil && weapon.ObjClass&0x1001000 != 0 {
@@ -168,14 +170,14 @@ func damageDefault(u, source, weapon *server.Object, amount, kind int32) int32 {
 		if source != nil && source.ObjClass&2 != 0 && source.UpdateData != nil {
 			set := resourceMonsterSound(source)
 			if set != nil {
-				sound := *(*int32)(unsafe.Add(set, 32))
+				sound := int32(set.Sound(8))
 				if sound != 0 && nox_xxx_getSevenDwords3_501940(int32(sound)) > 0 {
 					play = false
 				}
 			}
 		}
 		if play {
-			fn := *(*unsafe.Pointer)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(720)) /* DamageSound */))
+			fn := u.DamageSound
 			if fn != nil {
 				u.CallDamageSound(actual)
 			} else {
@@ -196,7 +198,7 @@ func damageDefault(u, source, weapon *server.Object, amount, kind int32) int32 {
 	}
 	damageBall(source, u, *value)
 	if u.ObjClass&4 != 0 && *value >= 20 {
-		state := *(*byte)(unsafe.Add(u.UpdateData, 88))
+		state := *(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](u.UpdateData).State))
 		if state != 1 && state != 15 {
 			nox_xxx_playerSetState_4FA020(asObjectC(u), 30)
 		}
@@ -263,7 +265,7 @@ func damageArmor(u, source, weapon *server.Object, amount, kind int32) int32 {
 	if u.ObjClass&0x2000000 == 0 || u.InvHolder == nil && kind != 12 {
 		return 0
 	}
-	if kind == 2 && *(*byte)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(24)) /* Material */))&0x10 != 0 {
+	if kind == 2 && *(*byte)(unsafe.Pointer(&u.Material))&0x10 != 0 {
 		amount *= 2
 	}
 	if amount == 0 {
@@ -283,7 +285,7 @@ func damageSkeleton(u, source, weapon *server.Object, amount, kind int32) int32 
 		if actual == nil {
 			actual = source
 		}
-		if stateFront(&u.PosVec, int32(int16(u.Direction1)), &actual.PrevPos)&1 != 0 && monsterControlHead(u) == 21 && uint32(*(*byte)(unsafe.Add(u.UpdateData, 481))) > uint32(*(*byte)(unsafe.Add(u.UpdateData, 480))>>1) {
+		if stateFront(&u.PosVec, int32(int16(u.Direction1)), &actual.PrevPos)&1 != 0 && monsterControlHead(u) == 21 && uint32(u.UpdateDataMonster().Field120_1) > uint32(u.UpdateDataMonster().Field120_0>>1) {
 			inventorySound(878, u, 0, 0)
 			return 1
 		}
@@ -291,12 +293,11 @@ func damageSkeleton(u, source, weapon *server.Object, amount, kind int32) int32 
 	return damageDefault(u, source, weapon, amount, kind)
 }
 func damageGenerator(u, source, weapon *server.Object, amount, kind int32) int32 {
-	ud := u.UpdateData
 	if u.ObjFlags&0x8020 != 0 {
 		return 0
 	}
 	frame := GetServer().S().Frame()
-	if frame-*equipmentWord(u.CObj(), int(layoutServerObject.Off(536)) /* Frame134 */) > 20 || frame%30 == 0 {
+	if frame-u.Frame134 > 20 || frame%30 == 0 {
 		pos := u.PosVec
 		if weapon != nil {
 			pos.X = float32(float64(weapon.PosVec.X) - float64(u.PosVec.X) + 0.0099999998)
@@ -311,18 +312,18 @@ func damageGenerator(u, source, weapon *server.Object, amount, kind int32) int32
 	old := u.HealthData.Cur
 	result := damageDefault(u, source, weapon, amount, kind)
 	if u.HealthData.Cur < old {
-		nox_xxx_scriptCallByEventBlock_502490(unsafe.Add(ud, 48), source.CObj(), u.CObj(), 23)
+		nox_xxx_scriptCallByEventBlock_502490(unsafe.Pointer(u.UpdateDataMonsterGen().ScriptAt(48)), source.CObj(), u.CObj(), 23)
 	}
 	if u.ObjFlags&0x8020 == 0 {
 		hp := int32(u.HealthData.Cur)
 		if hp <= floatToInt32(float32(float64(u.HealthData.Max)*.333)) {
-			if *equipmentWord(u.CObj(), int(layoutServerObject.Off(20)) /* Field5 */)&0x100 != 0 {
+			if u.Field5&0x100 != 0 {
 				nox_xxx_unitUnsetXStatus_4E4780(asObjectC(u), 256)
 			}
-			if *equipmentWord(u.CObj(), int(layoutServerObject.Off(20)) /* Field5 */)&0x200 == 0 {
+			if u.Field5&0x200 == 0 {
 				nox_xxx_unitSetXStatus_4E4800(asObjectC(u), 512)
 			}
-		} else if hp <= floatToInt32(float32(float64(u.HealthData.Max)*.66600001)) && *equipmentWord(u.CObj(), int(layoutServerObject.Off(20)) /* Field5 */)&0x100 == 0 {
+		} else if hp <= floatToInt32(float32(float64(u.HealthData.Max)*.66600001)) && u.Field5&0x100 == 0 {
 			nox_xxx_unitSetXStatus_4E4800(asObjectC(u), 256)
 		}
 	}

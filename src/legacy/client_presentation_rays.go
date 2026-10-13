@@ -2,8 +2,10 @@ package legacy
 
 import (
 	"encoding/binary"
-	"github.com/brutusmcforce/opennox/client"
 	"image"
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client"
 )
 
 func presentationRays() []*client.Drawable {
@@ -63,16 +65,17 @@ func presentationRayAdd(event *[7]byte) {
 	if dr == nil {
 		return
 	}
-	*effectByte(dr, int(layoutClientDrawable.Off(432)) /* Union._ */) = 1
-	*effectWord(dr, int(layoutClientDrawable.Off(433)) /* Union._ */) = uint32(event[2])
-	*effectWord(dr, int(layoutClientDrawable.Off(437)) /* Union._ */) = uint32(fromCode)
-	*effectWord(dr, int(layoutClientDrawable.Off(441)) /* Union._ */) = uint32(toCode)
+	u := (*client.DrawableUnionRay)(unsafe.Pointer(&dr.Union))
+	u.ByCode = 1
+	*u.ArgWord() = uint32(event[2])
+	*u.FromCode() = uint32(fromCode)
+	*u.ToCode() = uint32(toCode)
 	presentationRays()[slot] = dr
 }
 func presentationRayRemove(event *[7]byte) {
 	from, to := uint32(binary.LittleEndian.Uint16(event[3:])), uint32(binary.LittleEndian.Uint16(event[5:]))
 	for i, dr := range presentationRays() {
-		if dr != nil && *effectWord(dr, int(layoutClientDrawable.Off(437)) /* Union._ */) == from && *effectWord(dr, int(layoutClientDrawable.Off(441)) /* Union._ */) == to {
+		if dr != nil && *(*client.DrawableUnionRay)(unsafe.Pointer(&dr.Union)).FromCode() == from && *(*client.DrawableUnionRay)(unsafe.Pointer(&dr.Union)).ToCode() == to {
 			GetClient().Nox_xxx_spriteDeleteStatic_45A4E0_drawable(dr)
 			presentationRays()[i] = nil
 			return

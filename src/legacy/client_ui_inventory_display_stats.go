@@ -5,11 +5,12 @@ import (
 	"strconv"
 	"unsafe"
 
-	noxcolor "github.com/brutusmcforce/opennox/libs/color"
-	"github.com/brutusmcforce/opennox/libs/player"
+	"golang.org/x/image/font"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"golang.org/x/image/font"
+	noxcolor "github.com/brutusmcforce/opennox/libs/color"
+	"github.com/brutusmcforce/opennox/libs/player"
 )
 
 func uiInventoryStats(pos image.Point) {
@@ -23,10 +24,10 @@ func uiInventoryStats(pos image.Point) {
 	if p == nil {
 		return
 	}
-	class := *(*byte)(unsafe.Add(p, 2251))
+	class := p.InfoBytes[66]
 	stats := *GetServer().S().Players.ClassStats(player.Class(class))
 	warrior := *GetServer().S().Players.ClassStats(0)
-	attr := func(off uintptr) uint32 { return *(*uint32)(unsafe.Add(p, off)) }
+	attr := func(off uintptr) uint32 { return *(*uint32)(unsafe.Add(unsafe.Pointer(p), layoutServerPlayer.Off(off))) } // off is a 386 offset
 	textColor := func(c uint32) { r.Data().SetTextColor(noxcolor.RGBA5551(c)) }
 	text := func(face font.Face, s string, x, y, width int) {
 		r.DrawStringWrapped(face, s, image.Rect(x, y, x+width, y))
@@ -40,7 +41,7 @@ func uiInventoryStats(pos image.Point) {
 	textColor(white)
 	fill(uint32(nox_color_black_2650656), pos.X+11, y, 200, 200)
 	y += 2*height + 3
-	level := int(*(*int8)(unsafe.Add(p, 3684)))
+	level := int(*(*int8)(unsafe.Pointer(&p.Level)))
 	text(normal, uiInventoryFormatInts("StatsLevel", level, 0), x, y, 200)
 	y += height + 1
 	if noxflags.HasGame(2048) {
@@ -131,7 +132,7 @@ func uiInventoryStats(pos image.Point) {
 		for col := 0; col < 4; col++ {
 			cell := &uiInventoryGrid()[col*21+row]
 			if cell.Count != 0 {
-				weight += int(cell.Count) * int(*(*byte)(unsafe.Add(cell.Drawable.C(), int(layoutClientDrawable.Off(298)) /* Weight */)))
+				weight += int(cell.Count) * int(cell.Drawable.Weight)
 			}
 		}
 	}
@@ -139,7 +140,7 @@ func uiInventoryStats(pos image.Point) {
 	s = uiInventoryText("DollWeight")
 	width = r.GetStringSizeWrapped(normal, s, 0).X
 	text(normal, uiInventoryText("DollWeight"), x+armorWidth-width, y, 0)
-	capacity := int(*(*uint16)(unsafe.Add(p, 3652)))
+	capacity := int(*(*uint16)(unsafe.Pointer(&p.Field3652)))
 	if weight > capacity {
 		white = memmap.Uint32(0x85B3FC, 940)
 	}

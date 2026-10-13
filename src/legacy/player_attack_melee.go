@@ -1,12 +1,14 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/libs/types"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 type attackRecord struct {
@@ -73,9 +75,9 @@ func attackHit(t *server.Object, r *attackRecord) {
 		u = r.Owner
 		var anim byte
 		if u.ObjClass&4 != 0 {
-			anim = *(*byte)(unsafe.Add(*(*unsafe.Pointer)(unsafe.Add(u.UpdateData, 276)), 8))
+			anim = *(*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](u.UpdateData).Player.Field8))
 		} else {
-			anim = *(*byte)(unsafe.Add(u.UpdateData, 2068))
+			anim = *(*byte)(unsafe.Pointer(&u.UpdateDataMonster().Field517))
 		}
 		if anim == 25 {
 			GetServer().ApplyForce(t, u.PosVec, 20)

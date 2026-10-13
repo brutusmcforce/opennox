@@ -1,13 +1,15 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"encoding/binary"
-	"github.com/brutusmcforce/opennox/libs/types"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/sound"
-	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func sustainedGlobal(i int) *uint32 {
@@ -66,8 +68,8 @@ func sustainedShieldFX(u, source *server.Object) {
 	visibilityFXShield(u, pos)
 }
 func sustainedCharges(u, item *server.Object) {
-	data := item.UseData.Ptr
-	gameplayReportCharges(int(*controlByte(controlPlayer(u), 2064)), item, byte(*controlByte(data, 108)), byte(*controlByte(data, 109)))
+	data := item.UseDataWand()
+	gameplayReportCharges(int(controlPlayer(u).PlayerInd), item, data.Charges, data.MaxCharges)
 }
 func sustainedTagPacket(u, target *server.Object, mode byte) uint32 {
 	var b [7]byte
@@ -76,7 +78,7 @@ func sustainedTagPacket(u, target *server.Object, mode byte) uint32 {
 	binary.LittleEndian.PutUint16(b[3:], target.TypeInd)
 	b[5] = mode
 	b[6] = 1
-	return uint32(reliableEnqueue(int(*controlByte(controlPlayer(u), 2064)), b[:], nil, 1, 0))
+	return uint32(reliableEnqueue(int(layout.As[server.Player](unsafe.Pointer(controlPlayer(u))).PlayerInd), b[:], nil, 1, 0))
 }
 func sustainedTagStart(p unsafe.Pointer) uint32 {
 	d := (*server.DurSpell)(p)
@@ -89,7 +91,7 @@ func sustainedTagStart(p unsafe.Pointer) uint32 {
 		return 1
 	}
 	d.Frame68 = sustainedFrame() + d.Level*uint32(sustainedScalarInt("TagDurationPerLevel"))
-	nox_xxx_netMarkMinimapObject_417190(int(int32(*controlByte(controlPlayer(u), 2064))), asObjectC(t), 1)
+	nox_xxx_netMarkMinimapObject_417190(int(int32(layout.As[server.Player](unsafe.Pointer(controlPlayer(u))).PlayerInd)), asObjectC(t), 1)
 	sustainedTagPacket(u, t, 1)
 	return 0
 }
@@ -109,7 +111,7 @@ func sustainedTagCancel(p unsafe.Pointer) uint32 {
 		ret = controlRaw(t)
 		if t != nil {
 			if t.ObjClass&4 == 0 {
-				nox_xxx_netUnmarkMinimapObj_417300(int(int32(*controlByte(controlPlayer(u), 2064))), asObjectC(t), 1)
+				nox_xxx_netUnmarkMinimapObj_417300(int(int32(controlPlayer(u).PlayerInd)), asObjectC(t), 1)
 			}
 			ret = sustainedTagPacket(u, t, 2)
 		}
@@ -158,14 +160,14 @@ func sustainedMoonglowStart(p unsafe.Pointer) uint32 {
 		return 1
 	}
 	light := sustainedNew("Moonglow")
-	*controlPtr(p, 72) = light.CObj()
+	d.Field72 = int32(memmap.PtrWord(light.CObj())) // a pointer word
 	if light == nil {
 		return 1
 	}
 	pl := controlPlayer(u)
 	pos := types.Ptf(2944, 2944)
-	if *controlByte(pl, 3680)&0x10 != 0 {
-		pos = types.Ptf(float32(int32(*spellLifeWord(pl, 2284))), float32(int32(*spellLifeWord(pl, 2288))))
+	if *(*byte)(unsafe.Pointer(&layout.As[server.Player](unsafe.Pointer(pl)).Field3680))&0x10 != 0 {
+		pos = types.Ptf(float32(int32(layout.As[server.Player](unsafe.Pointer(pl)).CursorVec.X)), float32(int32(layout.As[server.Player](unsafe.Pointer(pl)).CursorVec.Y)))
 	}
 	spellEffectCreate(light, u, pos)
 	spellLifeApplyBuff(u, 1, dur, int8(d.Level))
@@ -180,7 +182,7 @@ func sustainedMoonglowCancel(p unsafe.Pointer) uint32 {
 	if u.ObjClass&4 != 4 {
 		return spellLifeBuffOff(u, 15)
 	}
-	if light := spellEffectObject(p, 72); light != nil {
+	if light := (*server.Object)(memmap.WordPtr(uint32(d.Field72))); light != nil {
 		sustainedDelete(light)
 	}
 	d.Field72 = 0

@@ -1,10 +1,12 @@
 package legacy
 
 import (
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func monsterAutoSpells(u *server.Object) int16 {
@@ -20,7 +22,9 @@ func monsterAutoSpells(u *server.Object) int16 {
 		ids[i] = *memmap.PtrUint32(0x5D4594, 2491624+uintptr(4*i))
 	}
 	ud := (*server.MonsterUpdateData)(u.UpdateData)
-	put := func(off uintptr, value uint32) { *(*uint32)(unsafe.Add(u.UpdateData, off)) = value }
+	put := func(off uintptr, value uint32) { // off is a 386 offset
+		*(*uint32)(unsafe.Add(u.UpdateData, layoutServerMonsterUpdateData.Off(off))) = value
+	}
 	ret := int16(u.TypeInd)
 	switch uint32(u.TypeInd) {
 	case ids[0]:
@@ -100,7 +104,7 @@ func monsterAutoSpells(u *server.Object) int16 {
 		put(2040, 3)
 		put(1660, 0x40000000)
 	}
-	*(*byte)(unsafe.Add(u.UpdateData, 2036)) = 1
+	*(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](u.UpdateData).Field509)) = 1
 	return ret
 }
 
@@ -130,31 +134,32 @@ func createWeapon(u *server.Object) int32 {
 	if d != nil && u.HealthData != nil {
 		creationScaleDurability(u, d)
 	}
-	setMod := func(off uintptr, name string) {
+	setMod := func(slot int, name string) {
 		// Both the initialization buffer and modifier descriptors are C-owned.
 		// Store address bits without a Go write barrier: the old slot may still
 		// contain uninitialized bytes, which must not be scanned as a Go pointer.
-		*(*uintptr)(unsafe.Add(init, off)) = uintptr(unsafe.Pointer(core.Modif.Nox_xxx_modifGetDescById413330(core.Modif.Nox_xxx_modifGetIdByName413290(name))))
+		mods := &layout.As[server.ModifierInitData](init).Modifiers
+		*(*uintptr)(unsafe.Pointer(&mods[slot])) = uintptr(unsafe.Pointer(core.Modif.Nox_xxx_modifGetDescById413330(core.Modif.Nox_xxx_modifGetIdByName413290(name))))
 	}
 	if uint32(u.TypeInd) == *memmap.PtrUint32(0x5D4594, 2491660) {
-		setMod(8, "Lightning4")
+		setMod(2, "Lightning4")
 	} else if uint32(u.TypeInd) == *memmap.PtrUint32(0x5D4594, 2491664) {
-		setMod(8, "Vampirism2")
-		setMod(12, "Lightning3")
+		setMod(2, "Vampirism2")
+		setMod(3, "Lightning3")
 	}
 	if u.Class()&0x1000000 != 0 {
 		if u.SubClass()&0x82 != 0 {
-			data := (*[3]byte)(u.UseData.Ptr)
+			data := u.UseDataAmmo()
 			name := "DefaultAmmoAmount"
 			if noxflags.HasGame(4096) {
 				name = "DefaultAmmoAmountQuest"
 			}
 			n := byte(int32(float32(core.Balance.Float(name))))
-			data[1] = n
-			data[2] = 0
-			data[0] = n
+			data.Charges = n
+			data.Infinite = 0
+			data.MaxCharges = n
 		} else if u.SubClass()&0xc != 0 {
-			*(*byte)(u.UseData.Ptr) = 0
+			u.UseDataBow().Reload = 0
 		}
 	}
 	if !noxflags.HasGame(4096) {
@@ -162,15 +167,15 @@ func createWeapon(u *server.Object) int32 {
 	}
 	result := int32(u.Class())
 	if u.Class()&0x1000 != 0 && u.SubClass()&0x47f0000 != 0 {
-		data := (*[110]byte)(u.UseData.Ptr)
+		data := u.UseDataWand()
 		scale := float64(float32(core.Balance.Float("QuestStaffChargeMultiplier")))
 		// Doubling stays in x87's double-precision register until the product spill.
 		if u.SubClass()&0x40000 != 0 {
 			scale += scale
 		}
-		data[109] = byte(int32(float32(float64(data[109]) * scale)))
-		result = int32(float32(float64(data[108]) * scale))
-		data[108] = byte(result)
+		data.MaxCharges = byte(int32(float32(float64(data.MaxCharges) * scale)))
+		result = int32(float32(float64(data.Charges) * scale))
+		data.Charges = byte(result)
 	}
 	return result
 }
@@ -189,7 +194,7 @@ func diePolyp(u *server.Object) {
 	id := monsterCache(2491672, "ToxicCloud")
 	t := core.NewObjectByTypeInd(int(id))
 	if t != nil {
-		data := (*uint32)(t.UpdateData)
+		data := &t.UpdateDataToxicCloud().Life
 		GetServer().CreateObjectAt(t, nil, u.PosVec)
 		*data = uint32(int32(float32(core.Balance.Float("ToxicCloudLifetime") * float64(int32(core.TickRate())))))
 	}
@@ -206,23 +211,20 @@ func createObelisk(u *server.Object) int32 {
 func createAnim(u *server.Object) { u.SetXStatus(2) }
 
 func createTrigger(u *server.Object) *byte {
-	data := unsafe.Slice((*byte)(u.UpdateData), 60)
-	copy(data[54:], []byte{90, 90, 90, 10, 10, 10})
+	u.UpdateDataTrigger().Colors = [6]byte{90, 90, 90, 10, 10, 10}
 	return (*byte)(u.UpdateData)
 }
 
 func createMonsterGenerator(u *server.Object) *uint32 {
-	data := unsafe.Slice((*uint32)(u.UpdateData), 24)
-	data[23] = 2
-	for _, i := range []int{13, 15, 19, 17} {
-		data[i] = 0xffffffff
-	}
+	ud := u.UpdateDataMonsterGen()
+	ud.Flags92 = 2
+	ud.FuncInd52, ud.FuncInd60, ud.FuncInd76, ud.FuncInd68 = 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff
 	return (*uint32)(u.UpdateData)
 }
 
 func createRewardMarker(u *server.Object) *uint32 {
-	data := unsafe.Slice((*uint32)(u.InitData), 54)
-	data[0] = 255
-	data[53] = 0
-	return (*uint32)(u.InitData)
+	data := u.InitDataRewardMarker()
+	data.Categories = 255
+	data.Chance = 0
+	return &data.Categories
 }

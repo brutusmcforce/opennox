@@ -2,9 +2,10 @@ package legacy
 
 import (
 	"fmt"
-	"github.com/brutusmcforce/opennox/client/noxrender"
 	"image"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client/noxrender"
 
 	"github.com/brutusmcforce/opennox/client"
 	"github.com/brutusmcforce/opennox/client/gui"
@@ -188,7 +189,7 @@ func uiAmountShow(title *uint16, x, y int, code, typ uint32, mods unsafe.Pointer
 	uiTradeSetText(uiAmountWindow().ChildByID(3606), title)
 	dr.ObjFlags |= 0x40000000
 	if mods != nil {
-		copy(unsafe.Slice((*byte)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)), 20), unsafe.Slice((*byte)(mods), 20))
+		*(*client.DrawableUnionItem)(unsafe.Pointer(&dr.Union)) = *(*client.DrawableUnionItem)(mods) // the item modifiers of the source drawable
 	}
 	uiAmountAccept = accept
 	uiAmountCancelFunc = cancel

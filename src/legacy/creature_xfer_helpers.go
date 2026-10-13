@@ -3,6 +3,8 @@ package legacy
 import (
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/internal/cryptfile"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
@@ -27,14 +29,14 @@ func creatureXferDefaults(u *server.Object) {
 	if def == nil {
 		return
 	}
-	if *(*byte)(unsafe.Add(p, 1445)) == 0 {
+	if *(*byte)(unsafe.Add(unsafe.Pointer(&layout.As[server.MonsterUpdateData](p).Field361), 1)) == 0 {
 		health := uint16(def.Health68)
 		u.HealthData.Cur = health
 		u.HealthData.Max = health
 		u.HealthData.Field2 = health
 	}
-	status := (*uint32)(unsafe.Add(p, 1440))
-	if *(*byte)(unsafe.Add(p, 1444)) == 1 {
+	status := (*uint32)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](p).StatusFlags))
+	if *(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](p).Field361)) == 1 {
 		*status = uint32(def.StatusFlags92)
 	} else {
 		const replace = uint32(0x3fffff &^ 0x19c40)
@@ -43,13 +45,13 @@ func creatureXferDefaults(u *server.Object) {
 	if *status&0x20 == 0 {
 		*status &^= 0x1800
 	}
-	if *(*byte)(unsafe.Add(p, 1340)) == 1 {
-		*(*float32)(unsafe.Add(p, 1336)) = def.RetreatRatio80
+	if *(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](p).Field335)) == 1 {
+		layout.As[server.MonsterUpdateData](p).RetreatLevel = def.RetreatRatio80
 	}
-	if *(*byte)(unsafe.Add(p, 1348)) == 1 {
-		*(*float32)(unsafe.Add(p, 1344)) = def.ResumeRatio84
+	if *(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](p).Field337)) == 1 {
+		layout.As[server.MonsterUpdateData](p).ResumeLevel = def.ResumeRatio84
 	}
-	if *(*byte)(unsafe.Add(p, 2036)) == 1 {
+	if *(*byte)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](p).Field509)) == 1 {
 		monsterAutoSpells(u)
 	}
 }
@@ -83,22 +85,23 @@ func creatureXferEquipment(u *server.Object) int {
 
 func creatureXferPostload(u *server.Object) uint32 {
 	p := u.UpdateData
-	for i := 0; i <= int(*(*int8)(unsafe.Add(p, 544))); i++ {
-		entry := unsafe.Add(p, 552+24*i)
-		id := *(*uint32)(entry)
+	md := layout.As[server.MonsterUpdateData](p)
+	for i := 0; i <= int(md.AIStackInd); i++ {
+		st := &md.AIStack[i]
+		id := st.Action
 		count := int32(*memmap.PtrUint32(0x587000, 255604+uintptr(16*id)))
 		for j := int32(0); j < count; j++ {
-			arg := (*uint32)(unsafe.Add(entry, 4+8*j))
+			arg := &st.Args[2*j] // loaded as the low 32 bits (see creatureXferArgument)
 			kind := *memmap.PtrUint32(0x587000, 255608+uintptr(16*id+4*uint32(j)))
 			switch kind {
 			case 1:
 				if *arg != 0 {
-					*(*uintptr)(unsafe.Pointer(arg)) = uintptr(unsafe.Pointer(objectLookupByScriptID(*arg))) // AI action arguments are uintptr
+					*arg = uintptr(unsafe.Pointer(objectLookupByScriptID(uint32(*arg))))
 				}
 			case 2:
 				if *arg != 0 {
 					wp := GetServer().S().WPs.ByInd(int(*arg))
-					*(*uintptr)(unsafe.Pointer(arg)) = uintptr(unsafe.Pointer(wp))
+					*arg = uintptr(unsafe.Pointer(wp))
 				}
 			}
 		}
@@ -116,7 +119,7 @@ func creatureXferVoice(u *server.Object) uint32 {
 		if u == nil || u.ObjClass&2 == 0 {
 			return 0
 		}
-		*(*unsafe.Pointer)(unsafe.Add(u.UpdateData, 488)) = set
+		layout.As[server.MonsterUpdateData](u.UpdateData).SoundSet122 = set
 		return 1
 	}
 	set := Nox_xxx_monsterGetSoundSet_424300(u)
@@ -127,7 +130,7 @@ func creatureXferVoice(u *server.Object) uint32 {
 		}
 		return 1
 	}
-	name := *(**byte)(set)
+	name := set.Name
 	n := r.byte(byte(len(alloc.GoString(name))))
 	if _, err := r.cf.ReadWrite(unsafe.Slice(name, int(n))); err != nil {
 		return 0

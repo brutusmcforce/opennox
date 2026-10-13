@@ -2,18 +2,21 @@ package legacy
 
 import (
 	"fmt"
-	"github.com/brutusmcforce/opennox/client/gui"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"image"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client/gui"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func uiMeterWindow(parent *gui.Window, flags gui.StatusFlags, x, y, width, height int, index int, event gui.WindowFunc, draw gui.WindowDrawFunc, tooltip unsafe.Pointer) *gui.Window {
 	w := GetClient().Cli().GUI.NewWindowRaw(parent, flags, x, y, width, height, nil)
 	w.SetAllFuncs(event, draw, tooltip)
 	if index >= 0 {
-		w.WidgetData = unsafe.Pointer(uintptr(index))
+		w.Value = uint32(index)
 	}
 	return w
 }
@@ -37,8 +40,8 @@ func sub_471160(p *gui.Window, x, y, width, height int) int {
 	uiMeterWindowTooltip(m[5].Window, "ToolTipCharges")
 	m[6].Window.SetAllFuncs(nil, uiMeterLabelDrawCallback, nil)
 	uiMeterWindowTooltip(m[6].Window, "ToolTipCharges")
-	m[5].Window.WidgetData = unsafe.Pointer(uintptr(5))
-	m[6].Window.WidgetData = unsafe.Pointer(uintptr(6))
+	m[5].Window.Value = 5
+	m[6].Window.Value = 6
 	return int(uintptr(m[5].Window.C()))
 }
 func uiMeterInit() int {
@@ -83,7 +86,7 @@ func uiMeterInit() int {
 	uiMeterSlot(0).Image = nil
 	uiMeterSlot(0).Type = 0
 	m := uiMeters()
-	if *(*byte)(unsafe.Add(player, 2251)) != 0 {
+	if layout.As[server.Player](unsafe.Pointer(player)).InfoBytes[66] != 0 {
 		mana := uiMeterWindow(main, 8, 62, 166, 28, 30, 1, uiMeterPotionInputCallback, uiMeterPotionDrawCallback, nil)
 		dword_5d4594_1090828 = memmap.PtrWord(mana.C())
 		uiMeterWindowTooltip(mana, "ManaSlotTT")

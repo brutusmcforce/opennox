@@ -1,10 +1,11 @@
 package legacy
 
 import (
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 var teamRuntimeFlagCount uint32
@@ -16,7 +17,7 @@ func teamRuntimeFirst(t *server.Team) *server.ObjectTeam {
 	if t == nil {
 		return nil
 	}
-	return (*server.ObjectTeam)(memmap.WordPtr(*teamRuntimeWord(t, 44)))
+	return (*server.ObjectTeam)(memmap.WordPtr(t.Field_44))
 }
 func teamRuntimeNext(m *server.ObjectTeam) *server.ObjectTeam {
 	if m == nil {
@@ -25,7 +26,7 @@ func teamRuntimeNext(m *server.ObjectTeam) *server.ObjectTeam {
 	return (*server.ObjectTeam)(memmap.WordPtr(m.Field0))
 }
 func teamRuntimeSetFirst(t *server.Team, m *server.ObjectTeam) {
-	*teamRuntimeWord(t, 44) = memmap.PtrWord(m.C()) // a list of words: members link through ObjectTeam.Field0
+	t.Field_44 = memmap.PtrWord(m.C()) // a list of words: members link through ObjectTeam.Field0
 }
 func teamRuntimeSetName(t *server.Team, name *uint16, flag uint32) {
 	if t == nil {
@@ -42,11 +43,11 @@ func teamRuntimeSetName(t *server.Team, name *uint16, flag uint32) {
 	}
 	copy(buf[:20], text[:])
 	buf[20] = 0
-	*teamRuntimeWord(t, layoutServerTeam.Off(68) /* field_68 */) = flag
+	t.Field_68 = flag
 }
 func teamRuntimeSetGroup(t *server.Team, group uint32) {
 	if t != nil {
-		*teamRuntimeWord(t, layoutServerTeam.Off(60) /* field_60 */) = group
+		t.Field_60 = group
 	}
 }
 func teamRuntimeObject(code int) *server.ObjectTeam {
@@ -101,7 +102,7 @@ func teamRuntimeLeast() *server.Team {
 func teamRuntimeAvailable() *server.Team {
 	s := GetServer().S()
 	for t := s.Teams.First(); t != nil; t = s.Teams.Next(t) {
-		if *teamRuntimeWord(t, layoutServerTeam.Off(60) /* field_60 */) == 0 {
+		if t.Field_60 == 0 {
 			return t
 		}
 	}
@@ -120,7 +121,7 @@ func teamRuntimeGroupCount() int8 {
 	s := GetServer().S()
 	var n byte
 	for t := s.Teams.First(); t != nil; t = s.Teams.Next(t) {
-		if *teamRuntimeWord(t, layoutServerTeam.Off(60) /* field_60 */) != 0 {
+		if t.Field_60 != 0 {
 			n++
 		}
 	}
@@ -179,7 +180,7 @@ func teamRuntimeClearPlayers(t *server.Team) {
 			teamUIPlayerTeam(int(pl.NetCodeVal), 0)
 			teamRuntimeUnlink(t, m)
 			if m.ID == 0 {
-				*teamRuntimeWord(t, 48)--
+				t.Field_48--
 			}
 		}
 	}

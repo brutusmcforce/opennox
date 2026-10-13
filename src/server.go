@@ -479,8 +479,9 @@ func (s *Server) updateRemotePlayers() error {
 
 func (s *Server) nox_xxx_secretWallCheckUnits_517F00(rect types.Rectf, fnc func(it unsafe.Pointer)) {
 	for it := nox_xxx_wallSecretGetFirstWall_410780(); it != nil; it = nox_xxx_wallSecretNext_410790(it) {
-		x := float64(*(*int32)(unsafe.Add(it, 4)) * common.GridStep)
-		y := float64(*(*int32)(unsafe.Add(it, 8)) * common.GridStep)
+		sw := server.AsSecretWallData(it)
+		x := float64(int32(sw.GridX) * common.GridStep)
+		y := float64(int32(sw.GridY) * common.GridStep)
 		if x > float64(rect.Min.X) && x < float64(rect.Max.X) &&
 			y > float64(rect.Min.Y) && y < float64(rect.Max.Y) {
 			fnc(it)
@@ -598,9 +599,10 @@ func (s *Server) sub_519760(u *server.Object, rect types.Rectf) {
 func (s *Server) sub_519660(it unsafe.Pointer, u *server.Object) {
 	pl := u.ControllingPlayer()
 	v2 := uint32(1 << pl.Index())
-	isSet := (v2 & *(*uint32)(unsafe.Add(it, 28))) != 0
+	sw := server.AsSecretWallData(it)
+	isSet := (v2 & sw.OpenSent) != 0
 	var exp bool
-	switch *(*uint8)(unsafe.Add(it, 21)) {
+	switch sw.State {
 	case 1, 4:
 		exp = false
 	case 2, 3:
@@ -609,13 +611,13 @@ func (s *Server) sub_519660(it unsafe.Pointer, u *server.Object) {
 		exp = u != nil
 	}
 	if isSet != exp {
-		wl := s.Walls.GetWallAtGrid(image.Pt(int(*(*uint32)(unsafe.Add(it, 4))), int(*(*uint32)(unsafe.Add(it, 8)))))
+		wl := s.Walls.GetWallAtGrid(image.Pt(int(sw.GridX), int(sw.GridY)))
 		if exp {
 			legacy.Sub_4DF120(wl.C())
-			*(*uint32)(unsafe.Add(it, 28)) |= v2
+			sw.OpenSent |= v2
 		} else {
 			legacy.Sub_4DF180(wl.C())
-			*(*uint32)(unsafe.Add(it, 28)) &^= v2
+			sw.OpenSent &^= v2
 		}
 	}
 }
@@ -1148,7 +1150,7 @@ func (s *Server) nox_xxx_mapSwitchLevel_4D12E0(a1 bool) {
 	for _, pu := range s.Players.ListUnits() {
 		ud := pu.UpdateDataPlayer()
 		legacy.Sub_4F7950(pu)
-		ud.Field74 = 0
+		ud.Field74 = nil
 		asObjectS(pu).Freeze(false)
 		ud.Field40_0 = 0
 		if ud.Trade70 != nil {

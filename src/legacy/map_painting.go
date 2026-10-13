@@ -1,9 +1,10 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
 )
 
 const (
@@ -121,9 +122,9 @@ func mapPaintWallDirection(v int32) uint32 {
 }
 func mapPaintLayout(d unsafe.Pointer) unsafe.Pointer {
 	n := mapRoomRandomInt(0, *mapRoomWord(d, 88)-1)
-	p := *mapRoomRef(d, 84)
+	p := mapRoomRef(d, 84)
 	for ; n != 0; n-- {
-		p = *mapRoomRef(p, 124)
+		p = mapRoomRef(p, 124)
 	}
 	return p
 }

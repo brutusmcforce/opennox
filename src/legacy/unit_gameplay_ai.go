@@ -1,15 +1,17 @@
 package legacy
 
 import (
+	"strings"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/ntype"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/common/unit/ai"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"github.com/brutusmcforce/opennox/server"
-	"strings"
-	"unsafe"
 )
 
 func unitActionName(id int32, restricted bool) *byte {
@@ -45,7 +47,7 @@ func unitActionIndex(name string, restricted bool) int32 {
 }
 func unitLocalOrder(player int, order int32) int {
 	pl := GetServer().S().Players.ByInd(ntype.PlayerInd(player))
-	*equipmentWord(unsafe.Pointer(pl), int(layoutServerPlayer.Off(3648)) /* SummonOrderAll */) = uint32(order)
+	pl.SummonOrderAll = uint32(order)
 	return gameplayReportCreature(player, byte(order))
 }
 func unitHurtSound(u *server.Object) {
@@ -53,17 +55,17 @@ func unitHurtSound(u *server.Object) {
 		return
 	}
 	core := GetServer().S()
-	next := equipmentWord(u.UpdateData, 532)
+	next := &layout.As[server.MonsterUpdateData](u.UpdateData).Field133
 	if core.Frame() >= *next {
 		fps := uint32(core.TickRate())
 		*next = core.Frame() + uint32(core.Rand.Logic.IntClamp(int(int32(2*fps)), int(int32(4*fps))))
 		if set := resourceMonsterSound(u); set != nil {
-			core.Audio.EventObj(sound.ID(*equipmentWord(set, 8)), u, 0, 0)
+			core.Audio.EventObj(sound.ID(set.Sound(2)), u, 0, 0)
 		}
 	}
 }
 func unitDamageTimer(u *server.Object) {
-	stamp := equipmentWord(u.UpdateData, 520)
+	stamp := &layout.As[server.MonsterUpdateData](u.UpdateData).Field130
 	if *stamp == 0 {
 		*stamp = GetServer().S().Frame()
 	}

@@ -2,12 +2,13 @@ package legacy
 
 import (
 	"fmt"
+	"image"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"image"
-	"unsafe"
 )
 
 func browserPopup(parent *gui.Window, point *[2]uint32, head *legacyListNode) *gui.Window {
@@ -24,7 +25,7 @@ func browserPopup(parent *gui.Window, point *[2]uint32, head *legacyListNode) *g
 	}
 	// The retired raw slot has no producer. Preserve its nil parser callback;
 	// inheriting the native parent handler would change existing popup behavior.
-	if *(*unsafe.Pointer)(unsafe.Add(parent.C(), int(layoutGuiWindow.Off(376)) /* field94 */)) != nil {
+	if parent.Field94 != nil {
 		panic("unregistered raw popup callback")
 	}
 	w := Nox_new_window_from_file("proxlist.wnd", nil)
@@ -46,12 +47,12 @@ func browserPopup(parent *gui.Window, point *[2]uint32, head *legacyListNode) *g
 	data.Field_8 = down.C()
 	slider.Field100Ptr.SizeVal = image.Pt(16, 10)
 	for i := uint32(0); i < uint32(browserUI.popupCount); i++ {
-		p := browserPopupItems[i]
-		name := browserCappedString(unsafe.Add(p, 120), 15)
+		p := (*Nox_gui_server_ent_t)(browserPopupItems[i])
+		name := browserCappedString(unsafe.Pointer(&p.ServerNameBuf[0]), 15)
 		if name == "" {
-			name = fmt.Sprintf("%s:%d", alloc.GoString((*byte)(unsafe.Add(p, 12))), *(*uint16)(unsafe.Add(p, 109)))
+			name = fmt.Sprintf("%s:%d", alloc.GoStringS(p.AddrBuf[:]), *(*uint16)(unsafe.Pointer(&p.PortVal)))
 		}
-		browserText(list, fmt.Sprintf("%s   %dms", browserNarrowText(name), *(*int32)(unsafe.Add(p, 96))), -1)
+		browserText(list, fmt.Sprintf("%s   %dms", browserNarrowText(name), p.PingVal), -1)
 	}
 	return w
 }

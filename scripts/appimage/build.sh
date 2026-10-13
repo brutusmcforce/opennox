@@ -1,7 +1,7 @@
 #!/bin/sh
-# Builds build/opennox-bundle-i386.AppImage from build/opennox and build/opennox-server.
-# Runs in a 32-bit Debian container from the repository root, see .github/workflows/build-and-release.yml:
-#   docker run --rm --platform linux/386 -v "$PWD:/w" -w /w debian:bookworm scripts/appimage/build.sh
+# Builds build/opennox-bundle-x86_64.AppImage from build/opennox and build/opennox-server.
+# Runs in a 64-bit (amd64) Debian container from the repository root, see .github/workflows/build-and-release.yml:
+#   docker run --rm --platform linux/amd64 -v "$PWD:/w" -w /w debian:bookworm scripts/appimage/build.sh
 # The AppImage bundles SDL2, OpenAL and their dependencies from Debian 12, the same system the binaries are built on.
 set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -11,9 +11,9 @@ CACHE="$ROOT/gocache/appimage"
 
 # update the versions and checksums together
 APPIMAGETOOL_VERSION=1.9.1
-APPIMAGETOOL_SHA256=7ad9ff47c203aae0149b18f6df9e3018b2e2f470ea644a0413e3ded39e9e3bdb
+APPIMAGETOOL_SHA256=ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
 RUNTIME_VERSION=20251108
-RUNTIME_SHA256=e72ea0b140a0a16e680713238a6f30aad278b62c4ca17919c554864124515498
+RUNTIME_SHA256=2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d
 
 # paths relative to the XDG directories
 OPENNOX_CFG="opennox/opennox.yml"
@@ -32,11 +32,11 @@ download() {
 	echo "$2  $3" | sha256sum -c -
 }
 mkdir -p "$CACHE"
-TOOL="$CACHE/appimagetool-$APPIMAGETOOL_VERSION-i686.AppImage"
-RUNTIME="$CACHE/runtime-$RUNTIME_VERSION-i686"
-download "https://github.com/AppImage/appimagetool/releases/download/$APPIMAGETOOL_VERSION/appimagetool-i686.AppImage" \
+TOOL="$CACHE/appimagetool-$APPIMAGETOOL_VERSION-x86_64.AppImage"
+RUNTIME="$CACHE/runtime-$RUNTIME_VERSION-x86_64"
+download "https://github.com/AppImage/appimagetool/releases/download/$APPIMAGETOOL_VERSION/appimagetool-x86_64.AppImage" \
 	"$APPIMAGETOOL_SHA256" "$TOOL"
-download "https://github.com/AppImage/type2-runtime/releases/download/$RUNTIME_VERSION/runtime-i686" \
+download "https://github.com/AppImage/type2-runtime/releases/download/$RUNTIME_VERSION/runtime-x86_64" \
 	"$RUNTIME_SHA256" "$RUNTIME"
 chmod +x "$TOOL"
 
@@ -50,7 +50,7 @@ done
 # SDL2, OpenAL and everything they link to (ldd lists all of it), except the libraries that must come from the
 # user's system: glibc, and the graphics libraries that belong to the driver.
 for lib in libSDL2-2.0.so.0 libopenal.so.1; do
-	path="/usr/lib/i386-linux-gnu/$lib"
+	path="/usr/lib/x86_64-linux-gnu/$lib"
 	echo "$path"
 	ldd "$path" | sed -n 's/.* => \(\/[^ ]*\) .*/\1/p'
 done | sort -u | while read -r path; do
@@ -128,8 +128,8 @@ cp "$ROOT/res/opennox_256.png" "$APPDIR/opennox.png"
 
 echo "Building the AppImage..."
 # appimagetool is an AppImage itself, and containers have no FUSE
-ARCH=i686 "$TOOL" --appimage-extract-and-run -n --runtime-file "$RUNTIME" \
-	"$APPDIR" "$BUILD/opennox-bundle-i386.AppImage"
+ARCH=x86_64 "$TOOL" --appimage-extract-and-run -n --runtime-file "$RUNTIME" \
+	"$APPDIR" "$BUILD/opennox-bundle-x86_64.AppImage"
 rm -rf "$APPDIR"
 chmod -R a+rX "$CACHE" "$BUILD"
-echo "Done: $BUILD/opennox-bundle-i386.AppImage"
+echo "Done: $BUILD/opennox-bundle-x86_64.AppImage"

@@ -3,12 +3,14 @@ package legacy
 import (
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/spell"
-	"github.com/brutusmcforce/opennox/libs/things"
-	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/common/layout"
+
 	flags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/libs/things"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -88,7 +90,7 @@ func monsterCastRelated(u *server.Object) bool {
 	return monsterSelectSpell(u, u, 0x80000000, &d.Field370_0, &d.Field370_2, &d.Field371, true)
 }
 func monsterMagicMissile(t, u *server.Object) {
-	if t.Class()&1 != 0 && t.SubClass()&2 != 0 && *(**server.Object)(unsafe.Add(t.UpdateData, 4)) == u {
+	if t.Class()&1 != 0 && t.SubClass()&2 != 0 && *(**server.Object)(unsafe.Pointer(&layout.As[server.SpellProjectileUpdateData](t.UpdateData).Field4)) == u {
 		*memmap.PtrUint32(0x5D4594, 2489156) = 1
 	}
 }
@@ -178,12 +180,12 @@ func monsterHealSomeone(u *server.Object) bool {
 	u.MonsterCast(41, (*server.Object)(memmap.WordPtr(dword_5d4594_2489160)))
 	return true
 }
-func monsterCastSpell(id int, u *server.Object, args *[3]uint32) {
+func monsterCastSpell(id int, u *server.Object, args *server.SpellAcceptArg) {
 	d := u.UpdateDataMonster()
 	if d.StatusFlags&0x20000 != 0 {
 		controlMorphToPlayer((*server.Object)(unsafe.Pointer(u.CObj())))
 	}
-	monsterCalcDir(u, (*float32)(unsafe.Pointer(&args[1])))
+	monsterCalcDir(u, args.Pos)
 	Nox_xxx_castSpellByUser_4FDD20(id, u, unsafe.Pointer(args))
 	if d.StatusFlags&0x20000 != 0 {
 		controlMorphFromPlayer((*server.Object)(unsafe.Pointer(u.CObj())))
@@ -200,13 +202,13 @@ func monsterActionCast(u *server.Object, mode int) {
 			return
 		}
 		// The cast engine can pass these words through C and back into Go.
-		args, freeArgs := alloc.New([3]uint32{})
+		args, freeArgs := alloc.New(server.SpellAcceptArg{})
 		defer freeArgs()
 		if mode == 1 {
-			*args = [3]uint32{0, uint32(head.Args[2]), uint32(head.Args[3])}
+			args.Pos = head.ArgPos(2)
 		} else {
-			args[0] = uint32(head.Args[2])
-			monsterCastRecoil(u, head.ArgObj(2), (*types.Pointf)(unsafe.Pointer(&args[1])))
+			args.Obj = head.ArgObj(2)
+			monsterCastRecoil(u, args.Obj, &args.Pos)
 		}
 		if !u.HasEnchant(29) {
 			monsterCastSpell(int(head.Args[0]), u, args)

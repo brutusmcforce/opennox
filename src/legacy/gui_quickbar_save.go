@@ -1,12 +1,13 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/spell"
-	"github.com/brutusmcforce/opennox/internal/cryptfile"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/server"
 	"strings"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/internal/cryptfile"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/spell"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func quickbarSaveRows(b *quickbarRecord, rows, slots int, class byte) int {
@@ -53,9 +54,9 @@ func quickbarSave() int {
 	}
 	var class [1]byte
 	if p := quickbarPlayer(); p != nil {
-		class[0] = byte(bookClass(p))
+		class[0] = byte(bookClass(unsafe.Pointer(p)))
 	} else {
-		class[0] = *(*byte)(unsafe.Add(unsafe.Pointer(Nox_xxx_getHostInfoPtr_431770()), 66))
+		class[0] = Nox_xxx_getHostInfoPtr_431770().PlayerClassVal
 	}
 	file.ReadWrite(class[:])
 	quickbarSaveRows(quickbarMain(), 5, 5, class[0])

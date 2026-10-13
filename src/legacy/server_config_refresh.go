@@ -3,9 +3,10 @@ package legacy
 import (
 	"bytes"
 	"encoding/binary"
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"unsafe"
 )
 
 var serverConfigRecordDirty int32

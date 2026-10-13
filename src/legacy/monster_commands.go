@@ -1,17 +1,18 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/unit/ai"
+	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func monsterControlHead(u *server.Object) uint32 {
 	ud := u.UpdateDataMonster()
 	// The legacy empty-head read is a raw word before the first stack item.
-	return *(*uint32)(unsafe.Add(u.UpdateData, 552+24*int(ud.AIStackInd)))
+	return *(*uint32)(unsafe.Add(u.UpdateData, layoutServerMonsterUpdateData.Off(uintptr(552+24*int(ud.AIStackInd)))))
 }
 func monsterControlEnsure(u *server.Object, action uint32) *server.AIStackItem {
 	if u.ObjClass&2 != 0 && monsterControlHead(u) != action {
@@ -105,7 +106,7 @@ func monsterControlFight(u, t *server.Object) {
 		return
 	}
 	u.ClearActionStack()
-	u.UpdateDataMonster().Field304 = motionAddress(t)
+	u.UpdateDataMonster().Field304 = t
 	visibilityFrameCopy(true)
 	u.MonsterPushAction(ai.ACTION_REPORT, 15)
 	u.MonsterPushAction(ai.ACTION_FIGHT, t.PosVec, GetServer().S().Frame())

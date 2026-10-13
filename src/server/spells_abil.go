@@ -2,7 +2,6 @@ package server
 
 import (
 	"strconv"
-	"unsafe"
 )
 
 type ExecAbilityClass struct {
@@ -99,7 +98,7 @@ func (a *serverAbilities) Sub4FC030(u *Object, abil Ability) int {
 	}
 	for it := ad.ExecList; it != nil; it = it.Next {
 		if it.Abil == abil {
-			return int(it.Frame - a.s.Frame())
+			return int(int32(it.Frame - a.s.Frame()))
 		}
 	}
 	return -1
@@ -118,8 +117,8 @@ func (a *serverAbilities) Sub4FC440(u *Object, abil Ability) {
 	}
 }
 
-func (a *serverAbilities) GetCooldown(a1 unsafe.Pointer, abil Ability) int {
-	pl := a.s.Players.ByID(int(*(*int32)(unsafe.Add(a1, 36))))
+func (a *serverAbilities) GetCooldown(u *Object, abil Ability) int {
+	pl := a.s.Players.ByID(int(u.NetCode))
 	if pl == nil {
 		return 0
 	}
@@ -130,8 +129,8 @@ func (a *serverAbilities) GetCooldown(a1 unsafe.Pointer, abil Ability) int {
 	return ad.Cooldowns[abil]
 }
 
-func (a *serverAbilities) SetCooldown(a1 unsafe.Pointer, abil Ability, cd int) {
-	pl := a.s.Players.ByID(int(*(*int32)(unsafe.Add(a1, 36))))
+func (a *serverAbilities) SetCooldown(u *Object, abil Ability, cd int) {
+	pl := a.s.Players.ByID(int(u.NetCode))
 	if pl == nil {
 		return
 	}

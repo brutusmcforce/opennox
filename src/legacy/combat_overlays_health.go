@@ -86,7 +86,7 @@ func combatHealthDraw(v *noxrender.Viewport, dr *client.Drawable) {
 			}
 			text := strconv.Itoa(amount)
 			pos := v.ToScreenPos(dr.PosVec)
-			pos.Y += int(2*(p.Stamp-seq)) - int(int16(dr.ZVal)) - int(int64(dr.ZSizeMax))
+			pos.Y += int(int32(2*(p.Stamp-seq))) - int(int16(dr.ZVal)) - int(int64(dr.ZSizeMax))
 			pos.X -= r.GetStringSizeWrapped(face, text, 0).X / 2
 			r.Data().SetTextColor(noxcolor.RGBA5551(nox_color_black_2650656))
 			for _, off := range []image.Point{{-1, -1}, {-1, 1}, {1, -1}, {1, 1}} {

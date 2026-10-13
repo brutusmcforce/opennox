@@ -62,6 +62,27 @@ func RegisterFallback(name string, fnc SearchFunc) {
 	fallback[name] = fnc
 }
 
+// UseOnlyServers restricts server discovery to the given addresses, which are still pinged (for tests).
+func UseOnlyServers(addrs []netip.AddrPort) {
+	backends = map[string]SearchFunc{"list": func(ctx context.Context, log *slog.Logger, out chan<- Server) error {
+		for _, addr := range addrs {
+			s := Server{
+				Source:   "list",
+				Priority: priorityStatic,
+				IP:       addr.Addr(),
+				Game:     lobby.Game{Address: addr.Addr().String(), Port: int(addr.Port())},
+			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case out <- s:
+			}
+		}
+		return nil
+	}}
+	fallback = make(map[string]SearchFunc)
+}
+
 func isTimeout(err error) bool {
 	return err != nil && (errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded))
 }

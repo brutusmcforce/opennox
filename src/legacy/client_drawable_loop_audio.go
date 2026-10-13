@@ -1,9 +1,10 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/client"
 	"math"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client"
 )
 
 func clientDrawableLoopAudio(source, listener *client.Drawable) {
@@ -35,7 +36,7 @@ func clientDrawableLoopAudio(source, listener *client.Drawable) {
 			}
 		}
 	}
-	handle := (*audioEventHandle)(unsafe.Pointer(&source.Field_124))
+	handle := (*audioEventHandle)(unsafe.Pointer(&source.Audio))
 	current := audioEventHandleGet(handle)
 	if volume != 0 {
 		if current != nil {

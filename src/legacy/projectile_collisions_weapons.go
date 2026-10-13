@@ -1,12 +1,13 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func projectileBoltDamage(strength int32, d *server.Modifier) float64 {
@@ -18,7 +19,7 @@ func projectileArrow(u, t *server.Object) {
 	if def == nil {
 		return
 	}
-	cd := u.CollideData
+	cd := u.CollideDataProjectile()
 	if u.ObjOwner == t && t != nil {
 		return
 	}
@@ -47,10 +48,10 @@ func projectileArrow(u, t *server.Object) {
 	if t.ObjFlags&0x8000 != 0 {
 		return
 	}
-	r := attackRecord{Weapon: u, Owner: *temporaryRefWord(cd, 4), Pos: u.PosVec, Type: 11, Radius: u.Shape.Circle.R, Damage: float32(projectileBoltDamage(strength, def))}
+	r := attackRecord{Weapon: u, Owner: cd.OwnerObj(), Pos: u.PosVec, Type: 11, Radius: u.Shape.Circle.R, Damage: float32(projectileBoltDamage(strength, def))}
 	attackItemEffects(u, r.Owner, &r)
 	if u.ObjOwner != t {
-		attackPreEffects(t, *temporaryRefWord(cd, 4), u, &r)
+		attackPreEffects(t, cd.OwnerObj(), u, &r)
 	}
 	damage := effectsTruncWord(float64(r.Damage) + math.Float64frombits(uint64(qword_581450_9544)))
 	accepted := byte(projectileDamage(t, u.FindOwnerChainPlayer(), u, damage, int32(r.Type)))
@@ -67,11 +68,11 @@ func projectileArrow(u, t *server.Object) {
 	GetServer().DelayedDelete(u)
 }
 func projectileMonsterArrow(u, t *server.Object) {
-	off := 4
+	cd := u.CollideDataMonsterArrow()
+	damage := int32(cd.Damage)
 	if noxflags.HasGame(2048) {
-		off = 0
+		damage = int32(cd.DamageCoop)
 	}
-	damage := int32(*equipmentWord(u.CollideData, off))
 	if t != nil {
 		if t.ObjFlags&0x8000 != 0 {
 			return
@@ -91,7 +92,7 @@ func projectileChakramCandidate(t *server.Object, pos *types.Pointf) {
 	if uint32(effectsTruncWord(float64(math.Float32frombits(uint32(t.ObjFlags)))))&0x8020 != 0 || t.HasEnchant(0) {
 		return
 	}
-	if t == projectileChakramOwner || uintptr(t.CObj()) == uintptr(memmap.Uint32(0x5d4594, 1567932)) {
+	if t == projectileChakramOwner || t == projectileChakramPrior {
 		return
 	}
 	u := projectileChakramObj
@@ -108,7 +109,7 @@ func projectileChakramCandidate(t *server.Object, pos *types.Pointf) {
 }
 func projectileChakramSelect(u *server.Object) *server.Object {
 	dword_5d4594_1567928 = 0
-	*memmap.PtrUint32(0x5d4594, 1567932) = *equipmentWord(u.UpdateData, 12)
+	projectileChakramPrior = u.UpdateDataChakram().Prior
 	projectileChakramOwner = u.ObjOwner
 	projectileChakramObj = u
 	*memmap.PtrUint32(0x5d4594, 1567836) = 1259902592
@@ -116,7 +117,7 @@ func projectileChakramSelect(u *server.Object) *server.Object {
 	GetServer().S().Map.EachObjInRect(rect, func(t *server.Object) bool { projectileChakramCandidate(t, &u.PosVec); return true })
 	t := objectFromWord(uint32(int32(dword_5d4594_1567928)))
 	if t != nil {
-		*(*byte)(unsafe.Add(u.UpdateData, 24)) = 2
+		u.UpdateDataChakram().Returning = 2
 		dx, dy := float64(t.PosVec.X)-float64(u.PosVec.X), float64(t.PosVec.Y)-float64(u.PosVec.Y)
 		y := float32(dy)
 		length := float32(math.Sqrt(dy*float64(y)+dx*dx) + math.Float64frombits(uint64(qword_581450_10176)))
@@ -139,7 +140,7 @@ func projectileChakramFallback(u *server.Object) {
 	Nox_xxx_moveUpdateSpecial_517970(u)
 }
 func projectileChakram(u, t *server.Object, n *types.Pointf) {
-	ud := u.UpdateData
+	ud := u.UpdateDataChakram()
 	it := u.InvFirstItem
 	if it == nil || it.ObjFlags&0x20 != 0 {
 		GetServer().DelayedDelete(u)
@@ -148,8 +149,8 @@ func projectileChakram(u, t *server.Object, n *types.Pointf) {
 	if t == nil || t.Material&0x30 != 0 {
 		projectileFX(150, u)
 	}
-	count := (*byte)(unsafe.Add(ud, 4))
-	mode := (*byte)(unsafe.Add(ud, 24))
+	count := &ud.Bounces
+	mode := &ud.Returning
 	if t == nil {
 		if n == nil {
 			return
@@ -174,7 +175,7 @@ func projectileChakram(u, t *server.Object, n *types.Pointf) {
 		}
 		if *count == 0 && advance {
 			*mode = 0
-			*temporaryRefWord(ud, 8) = u.ObjOwner
+			ud.Target = u.ObjOwner
 			return
 		}
 		projectileChakramSelect(u)
@@ -183,7 +184,7 @@ func projectileChakram(u, t *server.Object, n *types.Pointf) {
 	if t == u.ObjOwner {
 		inventoryRemove(u, it)
 		inventoryInsert(u.ObjOwner, it, 1)
-		if owner := u.ObjOwner; owner != nil && owner.ObjClass&4 != 0 && *temporaryRefWord(owner.UpdateData, 104) == nil {
+		if owner := u.ObjOwner; owner != nil && owner.ObjClass&4 != 0 && owner.UpdateDataPlayer().Field26 == nil {
 			equipmentEquipWeapon(owner, it, 1, 1)
 		}
 		inventorySound(892, u, 0, 0)
@@ -209,7 +210,7 @@ func projectileChakram(u, t *server.Object, n *types.Pointf) {
 	attackPreEffects(t, owner, u, &r)
 	projectileDamage(t, owner, u, effectsTruncWord(float64(r.Damage)+math.Float64frombits(uint64(qword_581450_9544))), 0)
 	if t.ObjFlags&0x8020 == 0 {
-		*temporaryRefWord(ud, 12) = t
+		ud.Prior = t
 	}
 	if *count != 0 {
 		damageReflect(u, t)
@@ -233,7 +234,7 @@ func projectileChakram(u, t *server.Object, n *types.Pointf) {
 		return
 	}
 	if *count == 0 && advance {
-		*temporaryRefWord(ud, 8) = owner
+		ud.Target = owner
 		*mode = 0
 		return
 	}

@@ -1,27 +1,28 @@
 package legacy
 
 import (
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
-func worldAngleQueue(ud unsafe.Pointer) {
-	if *equipmentWord(ud, 28) == 0 {
-		*equipmentWord(ud, 36) = uint32(collisionAngleHead)
-		collisionAngleHead = memmap.PtrWord(ud)
-		*equipmentWord(ud, 28) = 1
+func worldAngleQueue(ud *server.DoorUpdateData) {
+	if ud.AngleQueued == 0 {
+		ud.AngleNext = uint32(collisionAngleHead)
+		collisionAngleHead = memmap.PtrWord(unsafe.Pointer(ud))
+		ud.AngleQueued = 1
 	}
 }
 func worldAngle(u *server.Object, delta int16) {
-	p := (*uint16)(unsafe.Add(u.UpdateData, 40))
+	ud := u.UpdateDataDoor()
 	// The original unsigned-short loops reduce the wrapped sum to its low byte.
-	*p = uint16(uint16(*p)+uint16(delta)) & 255
-	worldAngleQueue(u.UpdateData)
+	ud.Angle = int16(uint16(uint16(ud.Angle)+uint16(delta)) & 255)
+	worldAngleQueue(ud)
 }
 func worldDoor(u *server.Object) byte {
-	ud := u.UpdateData
-	desired, prior, current := int32(*equipmentWord(ud, 4)), int32(*equipmentWord(ud, 8)), int32(*equipmentWord(ud, 12))
+	ud := u.UpdateDataDoor()
+	desired, prior, current := int32(ud.BaseDir), int32(ud.PrevDir), int32(ud.Dir)
 	sound := func(closed bool) {
 		id := 237
 		if !closed {
@@ -64,15 +65,15 @@ func worldDoor(u *server.Object) byte {
 		sound(false)
 		GetServer().S().Objs.RemoveFromUpdatable(u)
 	}
-	current = int32(*equipmentWord(ud, 12))
-	if *equipmentWord(ud, 8) != uint32(current) {
+	current = int32(ud.Dir)
+	if ud.PrevDir != uint32(current) {
 		u.NeedSync()
-		current = int32(*equipmentWord(ud, 12))
-		*equipmentWord(ud, 8) = uint32(current)
+		current = int32(ud.Dir)
+		ud.PrevDir = uint32(current)
 	}
 	core := GetServer().S()
-	if u.ObjFlags&0x1000000 != 0 && core.Frame()-*equipmentWord(ud, 44) > uint32(int32(core.TickRate())>>1) {
-		desired = int32(*equipmentWord(ud, 4))
+	if u.ObjFlags&0x1000000 != 0 && core.Frame()-ud.HitFrame > uint32(int32(core.TickRate())>>1) {
+		desired = int32(ud.BaseDir)
 		if current != desired {
 			diff := current - desired
 			if diff < 0 {
@@ -91,13 +92,13 @@ func worldDoor(u *server.Object) byte {
 func worldAnimate(u *server.Object, frame int) {
 	stateAnimation(u, uint32(int32(frame)))
 }
-func worldScript(u *server.Object, offset int, caller *server.Object, event int) {
-	GetServer().NoxScriptC().ScriptCallback((*server.ScriptCallback)(unsafe.Add(u.UpdateData, offset)), caller, u, server.ScriptEventType(event))
+func worldScript(u *server.Object, cb *server.ScriptCallback, caller *server.Object, event int) {
+	GetServer().NoxScriptC().ScriptCallback(cb, caller, u, server.ScriptEventType(event))
 }
 func worldToggle(u *server.Object) byte {
-	ud := u.UpdateData
-	bits := equipmentWord(ud, 0)
-	state := (*byte)(unsafe.Add(ud, 8))
+	ud := u.UpdateDataTrigger()
+	bits := &ud.Flags
+	state := &ud.State
 	core := GetServer().S()
 	if u.ObjFlags&0x1000000 == 0 {
 		*bits &^= 9
@@ -111,17 +112,17 @@ func worldToggle(u *server.Object) byte {
 	switch *state {
 	case 0:
 		if core.Frame() > u.Field34 && *bits&1 != 0 {
-			inventorySound(int(*equipmentWord(ud, 36)), u, 0, 0)
+			inventorySound(int(ud.SoundOn), u, 0, 0)
 			worldAnimate(u, 1)
-			worldScript(u, 20, *temporaryRefWord(ud, 4), 10)
+			worldScript(u, &ud.ScriptActivate, ud.ActivatorObj(), 10)
 			*state = 3
 			u.Field34 = core.Frame() + uint32(core.TickRate())
 		}
 	case 1:
 		if core.Frame() > u.Field34 && *bits&1 != 0 {
-			inventorySound(int(*equipmentWord(ud, 40)), u, 0, 0)
+			inventorySound(int(ud.SoundOff), u, 0, 0)
 			worldAnimate(u, 0)
-			worldScript(u, 28, nil, 11)
+			worldScript(u, &ud.ScriptDeactivate, nil, 11)
 			*state = 0
 			if *bits&2 != 0 {
 				*state = 5
@@ -144,9 +145,9 @@ func worldToggle(u *server.Object) byte {
 }
 func worldTrigger(u *server.Object) byte {
 	core := GetServer().S()
-	ud := u.UpdateData
-	bits := equipmentWord(ud, 0)
-	state := (*byte)(unsafe.Add(ud, 8))
+	ud := u.UpdateDataTrigger()
+	bits := &ud.Flags
+	state := &ud.State
 	trigger, plate := memmap.PtrUint32(0x5d4594, 2488680), memmap.PtrUint32(0x5d4594, 2488676)
 	if *trigger == 0 {
 		*trigger = uint32(core.Types.IndByID("Trigger"))
@@ -167,16 +168,16 @@ func worldTrigger(u *server.Object) byte {
 	}
 	if *state == 0 {
 		if *bits&1 != 0 {
-			inventorySound(int(*equipmentWord(ud, 36)), u, 0, 0)
+			inventorySound(int(ud.SoundOn), u, 0, 0)
 			worldAnimate(u, 1)
-			worldScript(u, 20, *temporaryRefWord(ud, 4), 8)
+			worldScript(u, &ud.ScriptActivate, ud.ActivatorObj(), 8)
 			*state = 1
 			u.Field34 = delay + core.Frame()
 		}
 	} else if *state == 1 && core.Frame() > u.Field34 && *bits&1 == 0 {
-		inventorySound(int(*equipmentWord(ud, 40)), u, 0, 0)
+		inventorySound(int(ud.SoundOff), u, 0, 0)
 		worldAnimate(u, 0)
-		worldScript(u, 28, nil, 9)
+		worldScript(u, &ud.ScriptDeactivate, nil, 9)
 		*state = 0
 		if *bits&2 != 0 {
 			*state = 5
@@ -217,8 +218,8 @@ func worldSwitch(u *server.Object) byte {
 	return byte(u.ObjFlags)
 }
 func worldTrapDoor(u *server.Object) uint32 {
-	data := u.CollideData
-	stamp := equipmentWord(data, 16)
+	data := u.CollideDataHole()
+	stamp := &data.Frame
 	core := GetServer().S()
 	if u.ObjFlags&0x1000000 != 0 {
 		result := u.Field5
@@ -232,7 +233,7 @@ func worldTrapDoor(u *server.Object) uint32 {
 				u.SetXStatus(8)
 			}
 		} else {
-			*equipmentWord(data, 24) = 0
+			data.Triggered = 0
 		}
 		return result
 	}
@@ -248,7 +249,7 @@ func worldTrapDoor(u *server.Object) uint32 {
 }
 func worldPhantom(u *server.Object) {
 	ud := u.UpdateData
-	owner := *temporaryRefWord(ud, 0)
+	owner := dataObj(ud, 0)
 	x := float64(owner.PosVec.X) - float64(*temporaryFloat(ud, 4))
 	yd := float64(owner.PosVec.Y) - float64(*temporaryFloat(ud, 8))
 	y := float32(yd)

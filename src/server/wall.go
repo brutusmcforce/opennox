@@ -719,7 +719,7 @@ type Wall struct {
 	NextByPos16 *Wall          // 4, 16
 	Next20      *Wall          // 5, 20
 	NextByY24   *Wall          // 6, 24
-	Data        unsafe.Pointer // 7, 28, TODO: union? *Object ?
+	Data        unsafe.Pointer // 7, 28: door *Object (wall.FlagDoor) or *SecretWallData (wall.FlagSecret)
 	Field32     uint32         // 8, 32
 }
 
@@ -764,8 +764,8 @@ func (w *Wall) IsEnabled() bool {
 	if w == nil {
 		return false
 	}
-	v3 := *(*byte)(unsafe.Add(w.Data, 21))
-	return v3 == 1 || v3 == 2
+	v3 := w.SecretData().State
+	return v3 == SecretWallClosed || v3 == SecretWallClosing
 }
 
 func (w *Wall) Flags() wall.Flags {
@@ -845,7 +845,7 @@ func (s *Server) Sub_57B500(pos image.Point, flags byte) int8 {
 		return -1
 	}
 	if !wl.Flags4.Has(wall.FlagDoor) {
-		if flags&0x40 == 0 && wl.Flags4.Has(wall.FlagWindow) || wl.Flags4.Has(wall.FlagSecret) && int32(*(*uint8)(unsafe.Add(wl.Data, 22))) > 11 {
+		if flags&0x40 == 0 && wl.Flags4.Has(wall.FlagWindow) || wl.Flags4.Has(wall.FlagSecret) && int32(wl.SecretData().Progress) > 11 {
 			return -1
 		}
 		return int8(wl.Dir0)
@@ -857,9 +857,9 @@ func (s *Server) Sub_57B500(pos image.Point, flags byte) int8 {
 	if obj == nil {
 		return -1
 	}
-	ud := obj.UpdateData // TODO: which one? door?
+	ud := obj.UpdateDataDoor()
 	if flags&0x8 != 0 {
-		if *(*uint8)(unsafe.Add(ud, 1)) == 0 {
+		if ud.KeyType == 0 {
 			return -1
 		}
 		if s.Doors.keyHolderSet && s.DoorCheckKey(s.Doors.keyHolder, obj) != nil {
@@ -870,8 +870,8 @@ func (s *Server) Sub_57B500(pos image.Point, flags byte) int8 {
 	if int32(int8(flags)) >= 0 && obj.SubClass().Has(0x4) {
 		return -1
 	}
-	ang := *(*uint32)(unsafe.Add(ud, 12))
-	if ang != *(*uint32)(unsafe.Add(ud, 4)) {
+	ang := ud.Dir
+	if ang != ud.BaseDir {
 		return -1
 	}
 	dp := DoorSize(byte(ang))
@@ -1077,7 +1077,7 @@ func (s *Server) mapTraceRayImpl(pi image.Point, p1, p2 types.Pointf, flags MapT
 	} else {
 		wl = s.Walls.GetWallAtGrid(pi)
 	}
-	if wl == nil || flags.Has(MapTraceFlag8) && wl.Flags4.Has(wall.FlagSecret) && *(*byte)(unsafe.Add(wl.Data, 20))&0x2 != 0 {
+	if wl == nil || flags.Has(MapTraceFlag8) && wl.Flags4.Has(wall.FlagSecret) && wl.SecretData().Flags&0x2 != 0 {
 		return nil
 	}
 	flags2 := s.Walls.DefByInd(int(wl.Tile1)).Flags32

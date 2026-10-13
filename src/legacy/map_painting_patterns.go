@@ -1,8 +1,9 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/libs/types"
 )
 
 func mapPaintRoomFloor(config unsafe.Pointer, r *mapRoom, layout unsafe.Pointer) uint32 {
@@ -83,7 +84,7 @@ func mapPaintRoomFloor(config unsafe.Pointer, r *mapRoom, layout unsafe.Pointer)
 			}
 		}
 	}
-	for pat := *mapRoomRef(layout, 120); pat != nil; pat = *mapRoomRef(pat, 124) {
+	for pat := mapRoomRef(layout, 120); pat != nil; pat = mapRoomRef(pat, 124) {
 		if size[0] <= 0 || size[1] <= 0 {
 			break
 		}

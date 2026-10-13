@@ -1,7 +1,7 @@
 package opennox
 
 import (
-	"unsafe"
+	"github.com/brutusmcforce/opennox/common/layout"
 
 	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/libs/player"
@@ -694,39 +694,39 @@ func sub_4F9ED0(u *server.Object) {
 func nox_xxx_updatePixie_53CD20(u *server.Object) {
 	s := u.Server()
 	ss := noxServer
-	ud := unsafe.Slice((*uint32)(u.UpdateData), 7)
+	ud := u.UpdateDataPixie()
 	if memmap.Uint32(0x5D4594, 2488696) == 0 {
 		dt := s.Balance.Float("PixieReturnTimeout")
 		*memmap.PtrUint32(0x5D4594, 2488696) = s.SecToFramesF(dt)
 	}
 
-	if deadline := ud[5]; deadline != 0 && s.Frame() > deadline {
+	if deadline := ud.Deadline; deadline != 0 && s.Frame() > deadline {
 		asObjectS(u).Delete()
 		return
 	}
 
-	if targ := asObjectS(*(**server.Object)(unsafe.Pointer(&ud[1]))); targ != nil {
+	if targ := asObjectS(ud.Target); targ != nil {
 		if targ.Flags().HasAny(object.FlagDestroyed | object.FlagDead) {
-			ud[1] = 0
+			ud.Target = nil
 		}
 	}
 	owner := u.ObjOwner
 	if u.Flags().Has(object.FlagEnabled) {
 		if s.Frame()-u.Field34 > s.TickRate()/4 {
 			targ := s.PixieFindTarget(u)
-			*(**server.Object)(unsafe.Pointer(&ud[1])) = targ
+			ud.Target = targ
 			if targ == owner {
-				ud[1] = 0
+				ud.Target = nil
 			}
 			u.Field34 = s.Frame()
 		}
 	} else {
-		ud[1] = 0
+		ud.Target = nil
 	}
 	if owner != nil && owner.Class().HasAny(object.ClassPlayer) && owner.Flags().HasAny(object.FlagNoUpdate) {
-		ud[1] = 0
+		ud.Target = nil
 	}
-	if targ := asObjectS(*(**server.Object)(unsafe.Pointer(&ud[1]))); targ != nil {
+	if targ := asObjectS(ud.Target); targ != nil {
 		server.PixieIdleAnimate(u, targ.Pos().Sub(u.Pos()), 32)
 	} else {
 		s.Map.EachMissileInCircle(u.PosVec, 200.0, func(it *server.Object) bool {
@@ -757,11 +757,11 @@ func nox_xxx_updatePixie_53CD20(u *server.Object) {
 	u.ForceVec = u.Direction2.Vec().Mul(u.SpeedCur)
 	if (s.Frame()&8 == 0) && owner != nil {
 		if s.MapTraceVision(u, owner) {
-			ud[6] = s.Frame()
+			ud.SeenOwner = s.Frame()
 		}
-		if s.Frame()-ud[6] > memmap.Uint32(0x5D4594, 2488696) {
+		if s.Frame()-ud.SeenOwner > memmap.Uint32(0x5D4594, 2488696) {
 			ss.nox_xxx_teleportPixie_4FD050(u, owner)
-			ud[6] = s.Frame()
+			ud.SeenOwner = s.Frame()
 		}
 	}
 }
@@ -782,7 +782,7 @@ func (s *Server) nox_xxx_teleportAllPixies_4FD090(u *server.Object) {
 		if it.Flags().HasAny(object.FlagDead) {
 			continue
 		}
-		if *(*uint32)(unsafe.Add(it.UpdateData, 4)) == 0 {
+		if layout.As[server.PixieUpdateData](it.UpdateData).Target == nil {
 			s.nox_xxx_teleportPixie_4FD050(it, u)
 		}
 	}
@@ -891,11 +891,11 @@ func nox_xxx_updatePlayerObserver_4E62F0(a1p *server.Object) {
 					}
 				}
 			}
-			if ud.Field79 != 0 {
+			if ud.Field79 != nil {
 				legacy.Sub_4D7480(u.SObj())
 				continue
 			}
-			if ud.Field78 != 0 {
+			if ud.Field78 != nil {
 				s.PlayerLeaveMonsterObserver(pl)
 				it.Active = false
 				continue

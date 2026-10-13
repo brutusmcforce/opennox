@@ -2,7 +2,6 @@ package server
 
 import (
 	"image"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/common"
 	"github.com/brutusmcforce/opennox/libs/object"
@@ -523,8 +522,7 @@ func (s *Server) MapTraceVision(obj1, obj2 *Object) bool {
 	pos := obj1.Pos()
 	pos2 := obj2.Pos()
 	if int8(obj2.Class()) < 0 && obj2.SubClass().Has(0x4) { // TODO: door?
-		ud := obj2.UpdateData
-		val := *(*uint32)(unsafe.Add(ud, 12))
+		val := obj2.UpdateDataDoor().Dir
 		sz := DoorSize(byte(val))
 		pos2.X = float32(float64(sz.X/2) + float64(pos2.X))
 		pos2.Y = float32(float64(sz.Y/2) + float64(pos2.Y))
@@ -540,9 +538,8 @@ func (s *Server) MapTraceVision(obj1, obj2 *Object) bool {
 			return true
 		}
 		if int8(it.Class()) < 0 { // TODO: door?
-			ud := it.UpdateData
 			if !it.SubClass().Has(4) {
-				val := *(*uint32)(unsafe.Add(ud, 12))
+				val := it.UpdateDataDoor().Dir
 				sz := DoorSize(byte(val))
 				p := it.Pos()
 				p2 := p.Sub(types.Ptf(float32(sz.X)*0.125, float32(sz.Y)*0.125))

@@ -2,10 +2,11 @@ package legacy
 
 import (
 	"encoding/binary"
-	"github.com/brutusmcforce/opennox/common/flags"
+	"unsafe"
+
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func questRuntimeDeadlinePtr() *uint32  { return (*uint32)(unsafe.Pointer(&dword_5d4594_1556144)) }
@@ -63,6 +64,6 @@ func questRuntimeHighestMessage(to int, stage uint16) int {
 	return gameplayReportSend(to, []byte{240, 29, byte(stage), byte(stage >> 8)}, false, 1)
 }
 func questRuntimeCodeMessage(to int, u *server.Object) int {
-	code := *controlHalf(unsafe.Pointer(u), int(layoutServerObject.Off(40)) /* Extent */)
+	code := *(*uint16)(unsafe.Pointer(&u.Extent))
 	return gameplayReportSend(to, []byte{240, 15, byte(code), byte(code >> 8)}, false, 1)
 }

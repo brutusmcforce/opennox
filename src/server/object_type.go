@@ -16,6 +16,7 @@ import (
 	"github.com/brutusmcforce/opennox/libs/things"
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
@@ -358,12 +359,12 @@ func (s *serverObjTypes) ReadObjectType(thg *things.Thing) error {
 		ud.ScriptLookingForEnemy.Func = -1
 		ud.ScriptDeath.Func = -1
 	} else if typ.Class().Has(object.ClassTrigger) {
-		ud := unsafe.Slice((*int32)(typ.UpdateData), 9)
-		ud[4] = -1
-		ud[6] = -1
-		ud[8] = -1
+		ud := typ.UpdateDataTrigger()
+		ud.ScriptCollide.Func = -1
+		ud.ScriptActivate.Func = -1
+		ud.ScriptDeactivate.Func = -1
 	} else if typ.Class().Has(object.ClassHole) {
-		*(*int32)(unsafe.Add(typ.CollideData, 4)) = -1
+		typ.CollideDataHole().Script.Func = -1
 	}
 	if typ.Class().HasAny(object.ClassWeapon | object.ClassArmor | object.ClassPlayer | object.ClassMonster) {
 		if typ.health == nil {
@@ -582,7 +583,7 @@ func (s *Server) Sub_4F40A0(obj *Object) int8 {
 		return -1
 	}
 	if noxflags.HasGame(noxflags.GameFlag22 | noxflags.GameFlag23) {
-		v3 := alloc.GoString((*byte)(obj.Field189))
+		v3 := alloc.GoString((*byte)(obj.EditorData().ScriptName(ScriptNamePickup)))
 		if v3 != "" {
 			return -1
 		}
@@ -824,6 +825,7 @@ func (t *ObjectType) parseInit(d *things.ProcFunc) error {
 		return nil
 	}
 	data, _ := alloc.Malloc(def.DataSize)
+	layout.Track(data, def.DataSize, def.DataType, "init:"+d.Name)
 	t.InitData = data
 	if parse, ok := initParseFuncs[d.Name]; ok {
 		if err := parse(t, d.Args); err != nil {
@@ -834,7 +836,7 @@ func (t *ObjectType) parseInit(d *things.ProcFunc) error {
 }
 
 func objectDirectionInitParse(objt *ObjectType, args []string) error {
-	p := unsafe.Slice((*int32)(objt.InitData), 2)
+	p := (*DirectionInitData)(objt.InitData)
 	if len(args) != 2 {
 		return errors.New("expected two values")
 	}
@@ -846,8 +848,8 @@ func objectDirectionInitParse(objt *ObjectType, args []string) error {
 	if err != nil {
 		return err
 	}
-	p[0] = int32(v1)
-	p[1] = int32(v2)
+	p.DX = int32(v1)
+	p.DY = int32(v2)
 	return nil
 }
 
@@ -868,6 +870,7 @@ func (t *ObjectType) parseUpdate(d *things.ProcFunc) error {
 		return nil
 	}
 	data, _ := alloc.Malloc(def.DataSize)
+	layout.Track(data, def.DataSize, def.DataType, "update:"+d.Name)
 	t.UpdateData = data
 	if parse, ok := updateParseFuncs[d.Name]; ok {
 		if err := parse(t, d.Args); err != nil {
@@ -894,6 +897,7 @@ func (t *ObjectType) parseCollide(d *things.ProcFunc) error {
 		return nil
 	}
 	data, _ := alloc.Malloc(def.DataSize)
+	layout.Track(data, def.DataSize, def.DataType, "collide:"+d.Name)
 	t.CollideData = data
 	if parse, ok := collideParseFuncs[d.Name]; ok {
 		if err := parse(t, d.Args); err != nil {
@@ -920,6 +924,7 @@ func (t *ObjectType) parseUse(d *things.ProcFunc) error {
 		return nil
 	}
 	data, _ := alloc.Malloc(def.DataSize)
+	layout.Track(data, def.DataSize, def.DataType, "use:"+d.Name)
 	t.UseData.SetPtr(data)
 	if parse, ok := useParseFuncs[d.Name]; ok {
 		if err := parse(t, d.Args); err != nil {
@@ -961,6 +966,7 @@ func (t *ObjectType) parseDeath(d *things.ProcFunc) error {
 		return nil
 	}
 	data, _ := alloc.Malloc(def.DataSize)
+	layout.Track(data, def.DataSize, def.DataType, "death:"+d.Name)
 	t.DeathData = data
 	if parse, ok := deathParseFuncs[d.Name]; ok {
 		if err := parse(t, d.Args); err != nil {
@@ -1032,10 +1038,10 @@ type MonsterAnim struct {
 	sound   uint32  // 0, 0
 	data4   [4]byte // 1, 4
 	field8  byte    // 2, 8
-	frames  byte    // 2, 9
-	field10 byte    // 2, 10
+	Frames  byte    // 2, 9
+	Delay   byte    // 2, 10
 	field11 byte    // 2, 11
-	loop    uint32  // 3, 12
+	Loop    uint32  // 3, 12
 }
 
 func (t *ObjectType) parseDraw(d things.Draw) error {
@@ -1052,13 +1058,13 @@ func (t *ObjectType) parseDraw(d things.Draw) error {
 				return errors.New("unexpected animation index")
 			}
 			ani := MonsterAnim{
-				sound:   uint32(sound.ByName(st.Sound)),
-				frames:  st.FramesPerDir,
-				field10: st.Field10,
+				sound:  uint32(sound.ByName(st.Sound)),
+				Frames: st.FramesPerDir,
+				Delay:  st.Field10,
 			}
 			switch st.Kind {
 			case things.AnimationLoop, things.AnimationLoopAndFade:
-				ani.loop = 1
+				ani.Loop = 1
 			}
 			anims[st.Type] = ani
 		}

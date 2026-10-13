@@ -1,10 +1,12 @@
 package legacy
 
 import (
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func playerFileInventory(u *server.Object) int {
@@ -168,7 +170,7 @@ func playerFileInventory(u *server.Object) int {
 			r.word(selectedID(uint32(sub_4678B0())))
 			r.word(selectedID(uint32(sub_4678C0())))
 		}
-		tail := (*byte)(unsafe.Add(data, 244))
+		tail := (*byte)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](data).CurTraps))
 		if version < 3 {
 			*tail = 0
 		} else {

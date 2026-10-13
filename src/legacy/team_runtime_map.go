@@ -1,10 +1,11 @@
 package legacy
 
 import (
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func teamRuntimeScan() bool {
@@ -161,14 +162,14 @@ func teamRuntimeCrown() int {
 		u = next
 	}
 	for t := s.Teams.First(); t != nil; t = s.Teams.Next(t) {
-		*teamRuntimeWord(t, layoutServerTeam.Off(76) /* field_76 */) = 0
+		t.Field_76 = nil
 	}
 	n := 0
 	for u := s.Objs.List; u != nil; {
 		next := u.ObjNext
 		if uint32(u.TypeInd) == typ {
 			n++
-			*(*uint32)(unsafe.Add(u.UpdateData, 4)) = 0
+			u.UpdateDataCrown().Pending = 0
 			bound := u.TeamVal.ID != 0
 			if bound != noxflags.HasGamePlay(4) {
 				GetServer().DelayedDelete(u)
@@ -176,7 +177,7 @@ func teamRuntimeCrown() int {
 			} else if !bound {
 				playerStateMark(u, 1)
 			} else if t := s.Teams.ByID(u.TeamVal.ID); t != nil {
-				*(*unsafe.Pointer)(unsafe.Pointer(teamRuntimeWord(t, layoutServerTeam.Off(76) /* field_76 */))) = u.CObj()
+				*(*unsafe.Pointer)(unsafe.Pointer(&t.Field_76)) = u.CObj()
 				playerStateMark(u, 1)
 			}
 		}

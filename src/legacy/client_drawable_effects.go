@@ -1,11 +1,13 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/client"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 	"image"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client"
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
 
 var drawableSummonSpark uint32
@@ -23,8 +25,8 @@ func drawableSummonStart(owner int16, pos [2]uint16, typ uint16, dir byte, value
 	inner.PosVec = image.Pt(int(pos[0]), int(pos[1]))
 	inner.AnimDir = byte(geometryDirection4Index(int32(dir)))
 	inner.AnimInd = 8
-	*(**client.Drawable)(unsafe.Add(outer.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)) = inner
-	*(*uint32)(unsafe.Add(outer.C(), int(layoutClientDrawable.Off(436)) /* Union._ */)) = uint32(uint16(owner))<<16 | uint32(uint16(value))
+	summon := layout.As[client.DrawableUnionSummon](unsafe.Pointer(&outer.Union))
+	summon.Child, summon.Duration, summon.Owner = inner, uint16(value), uint16(owner)
 	frame := GetServer().S().Frame()
 	outer.AnimStart = frame
 	return frame
@@ -38,11 +40,11 @@ func drawableSummonStop(owner int16) {
 		drawableSummonSpark = uint32(effectType("BlueSpark"))
 	}
 	for dr := GetClient().Cli().Objs.List1; dr != nil; dr = dr.NextPtr {
-		if dr.TypeIDVal != *typ || *(*uint16)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(438)) /* Union._ */)) != uint16(owner) {
+		if dr.TypeIDVal != *typ || layout.As[client.DrawableUnionSummon](unsafe.Pointer(&dr.Union)).Owner != uint16(owner) {
 			continue
 		}
 		effectCreatePointSparks(int(drawableSummonSpark), 50, 1000, 30, dr.PosVec.X, dr.PosVec.Y)
-		GetClient().Nox_xxx_spriteDelete_45A4B0(*(**client.Drawable)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)))
+		GetClient().Nox_xxx_spriteDelete_45A4B0(layout.As[client.DrawableUnionSummon](unsafe.Pointer(&dr.Union)).Child)
 		GetClient().Nox_xxx_spriteDeleteStatic_45A4E0_drawable(dr)
 		return
 	}
@@ -62,7 +64,7 @@ func drawableShieldLoad() int {
 }
 func drawableShieldScan(dr *client.Drawable, code uint32) {
 	for i := 0; i < 9; i++ {
-		if dr.TypeIDVal == *memmap.PtrUint32(0x5D4594, 1313748+4*uintptr(i)) && *(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)) == code {
+		if dr.TypeIDVal == *memmap.PtrUint32(0x5D4594, 1313748+4*uintptr(i)) && (*client.DrawableUnionShield)(unsafe.Pointer(&dr.Union)).Owner == code {
 			drawableShieldFound = 1
 		}
 	}
@@ -100,7 +102,7 @@ func drawableShield(code uint32, dir int) uintptr {
 	}
 	dr := effectSpawn(int(*memmap.PtrUint32(0x5D4594, 1313748+4*uintptr(dir))), pos.Add(image.Pt(0, 3)))
 	if dr != nil {
-		*(*uint32)(unsafe.Add(dr.C(), int(layoutClientDrawable.Off(432)) /* Union._ */)) = code
+		(*client.DrawableUnionShield)(unsafe.Pointer(&dr.Union)).Owner = code
 	}
 	return uintptr(dr.C())
 }

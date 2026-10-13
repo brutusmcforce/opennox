@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"sync"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/client/keybind"
 
@@ -152,14 +151,14 @@ func (g *GUI) NewWindowRaw(parent *Window, status StatusFlags, px, py, w, h int,
 	win.SizeVal.X = w
 	win.SizeVal.Y = h
 	win.SetPos(image.Point{X: px, Y: py})
-	win.drawData.tooltip[0] = 0
+	win.DrawDataVal.tooltip[0] = 0
 	win.SetDraw(nil)
 	win.SetFunc93(nil)
 	win.SetFunc94(fnc94)
 	if fnc94 != nil {
 		fnc94(win, WindowInit{})
 	}
-	win.field92 = 0
+	win.Field92 = 0
 	return win
 }
 
@@ -402,7 +401,7 @@ func (g *GUI) destroyWindow(win *Window) {
 
 	ext := win.ext()
 	destroy := ext.Func94
-	if destroy == nil && win.field94 != nil && uintptr(win.field94) != deadWord {
+	if destroy == nil && win.Field94 != nil && uintptr(win.Field94) != deadWord {
 		panic("unregistered raw window destroy callback")
 	}
 	// Disable ordinary callbacks immediately, preserving deferred cleanup.
@@ -470,11 +469,11 @@ func (g *GUI) drawWindowBorder(win *Window) {
 		case StyleCheckBox, StyleVertSlider, StyleHorizSlider:
 			return
 		case StyleScrollListBox:
-			ptr := win.WidgetData
+			ptr := (*ScrollListBoxData)(win.WidgetData)
 			dsx := 0
 			dy := 0
-			if *(*uint32)(unsafe.Add(ptr, 12)) != 0 {
-				p1 := *(**Window)(unsafe.Add(ptr, 36))
+			if ptr.Field_3 != 0 {
+				p1 := (*Window)(ptr.Field_9)
 				p2 := p1.Field100()
 				dsx = p2.Size().Y
 			}
@@ -495,7 +494,7 @@ func (g *GUI) drawWindowBorder(win *Window) {
 				x += tsz.X + 6
 				sx -= tsz.X + 6
 			}
-			v14 := int(int16(*(*uint16)(unsafe.Add(ptr, 1042))))
+			v14 := int((*EntryFieldData)(ptr).Field_1042)
 			if int32(v14) > 0 && sx > v14 {
 				sx = v14
 				x = v9 + sz.X - v14
@@ -533,7 +532,7 @@ func (b *Borders) Draw(r *noxrender.NoxRender, x, y, w, h int) {
 		x1 += 10
 	}
 	if x1 < x5 {
-		v10 := int(uint32(x1) + (uint32(x5-x1+1) & 0xFFFFFFFE) - 10)
+		v10 := int(int32(uint32(x1) + (uint32(x5-x1+1) & 0xFFFFFFFE) - 10))
 		r.DrawImage16(b.HorizontalShort, image.Pt(v10, y1))
 		r.DrawImage16(b.HorizontalShort, image.Pt(v10, y3))
 	}
@@ -551,7 +550,7 @@ func (b *Borders) Draw(r *noxrender.NoxRender, x, y, w, h int) {
 		y4 += 10
 	}
 	if y4 < y3 {
-		v16 := int(uint32(y4) + (uint32(y3-y4+1) & 0xFFFFFFFE) - 10)
+		v16 := int(int32(uint32(y4) + (uint32(y3-y4+1) & 0xFFFFFFFE) - 10))
 		r.DrawImage16(b.VerticalShort, image.Pt(x6, v16))
 		r.DrawImage16(b.VerticalShort, image.Pt(x5, v16))
 	}

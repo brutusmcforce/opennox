@@ -1,12 +1,12 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/server"
 	"image"
 	"math"
-	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func temporaryAreaDamage(u *server.Object, outer, inner float32, damage, kind int) {
@@ -60,7 +60,7 @@ func temporaryWaterCandidate(t *server.Object, pos types.Pointf) {
 		return
 	}
 	x, y := float64(pos.X)-float64(t.PosVec.X), float64(pos.Y)-float64(t.PosVec.Y)
-	if math.Sqrt(y*y+x*x)-float64(*temporaryFloat(t.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */)) <= 40 {
+	if math.Sqrt(y*y+x*x)-float64(t.Shape.Circle.R) <= 40 {
 		GetServer().DelayedDelete(t)
 		*memmap.PtrUint32(0x5d4594, 2488664) = 1
 	}
@@ -107,7 +107,7 @@ func temporaryDeathFragment(u *server.Object) {
 }
 func temporaryCursor(owner *server.Object) types.Pointf {
 	p := equipmentPlayer(owner)
-	return types.Ptf(float32(int32(*equipmentWord(p, 2284))), float32(int32(*equipmentWord(p, 2288))))
+	return types.Ptf(float32(int32(p.CursorVec.X)), float32(int32(p.CursorVec.Y)))
 }
 func temporaryMoonglow(u *server.Object) {
 	owner := u.ObjOwner
@@ -151,14 +151,14 @@ func temporaryFist(u *server.Object) {
 	if u.ZVal <= 0 && int32(u.ObjFlags) >= 0 {
 		inventorySound(48, u, 0, 0)
 		temporaryScorch(u)
-		radius := float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */))
+		radius := float64(u.Shape.Circle.R)
 		x := float32(radius + float64(u.PosVec.X))
 		u.ObjFlags |= 0x80000000
 		pos := types.Ptf(x, u.PosVec.Y)
 		visibilityFXPoint(138, pos)
-		pos = types.Ptf(float32(float64(u.PosVec.X)-float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */))), u.PosVec.Y)
+		pos = types.Ptf(float32(float64(u.PosVec.X)-float64(u.Shape.Circle.R)), u.PosVec.Y)
 		visibilityFXPoint(138, pos)
-		pos = types.Ptf(u.PosVec.X, float32(float64(*temporaryFloat(u.CObj(), int(layoutServerObject.Off(176)) /* Shape.Circle.R */))+float64(u.PosVec.Y)))
+		pos = types.Ptf(u.PosVec.X, float32(float64(u.Shape.Circle.R)+float64(u.PosVec.Y)))
 		visibilityFXPoint(138, pos)
 		gameplayReportEarthquake(&u.PosVec, 30)
 	}
@@ -171,7 +171,7 @@ func temporaryFist(u *server.Object) {
 }
 func temporaryFlameCleanse(u *server.Object) {
 	core := GetServer().S()
-	if core.Frame() >= u.Field34 || !core.MapTraceRayAt(*(*types.Pointf)(unsafe.Add(u.CObj(), int(layoutServerObject.Off(156)) /* Pos39.X */)), u.PosVec, nil, nil, 65) || core.Frame()-u.Field32 > 3 && u.PrevPos == u.PosVec {
+	if core.Frame() >= u.Field34 || !core.MapTraceRayAt(u.Pos39, u.PosVec, nil, nil, 65) || core.Frame()-u.Field32 > 3 && u.PrevPos == u.PosVec {
 		GetServer().DelayedDelete(u)
 	}
 }
@@ -185,7 +185,7 @@ func temporaryMeteorShower(u *server.Object) {
 	if u.Field34 > frame {
 		return
 	}
-	data := u.UpdateData
+	data := u.UpdateDataDamage()
 	rng := core.Rand.Logic
 	dir := rng.IntClamp(0, 255)
 	r := rng.FloatClamp(4, 12)
@@ -196,7 +196,7 @@ func temporaryMeteorShower(u *server.Object) {
 	if spatialRay(&ray) {
 		m := core.NewObjectByTypeID("Meteor")
 		if m != nil {
-			*equipmentWord(m.UpdateData, 0) = *equipmentWord(data, 0)
+			m.UpdateDataDamage().Damage = data.Damage
 			GetServer().CreateObjectAt(m, u, end)
 			m.Field5 |= 0x20
 			Nox_xxx_unitRaise_4E46F0(m, 255)
@@ -209,7 +209,7 @@ func temporaryMeteorExplode(u *server.Object) {
 	if !(u.ZVal <= 0) {
 		return
 	}
-	damage := equipmentWord(u.UpdateData, 0)
+	damage := &u.UpdateDataDamage().Damage
 	inventorySound(87, u, 0, 0)
 	temporaryScorch(u)
 	gameplayReportEarthquake(&u.PosVec, 10)
@@ -243,7 +243,7 @@ func temporaryCloudCandidate(t, u *server.Object, small bool) {
 }
 func temporaryCloud(u *server.Object, small bool) {
 	core := GetServer().S()
-	life := equipmentWord(u.UpdateData, 0)
+	life := &u.UpdateDataToxicCloud().Life
 	if u.Field34 < core.Frame() {
 		radius := float32(75)
 		if small {

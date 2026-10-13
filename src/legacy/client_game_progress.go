@@ -1,13 +1,16 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/server"
 	"encoding/binary"
+	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client"
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/layout"
+	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
 	"github.com/brutusmcforce/opennox/libs/strman"
-	noxflags "github.com/brutusmcforce/opennox/common/flags"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"unsafe"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 var clientGameMapFrame uint32
@@ -69,8 +72,8 @@ func clientGameProgress(op netmsg.Op, data []byte) (int, bool) {
 				for _, pair := range [][2]int{{2247, 3}, {2243, 5}, {2235, 9}, {2239, 11}} {
 					*(*uint32)(unsafe.Add(p.C(), pair[0])) = uint32(word(pair[1]))
 				}
-				*(*uint16)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(3652)) /* field3652 */)) = word(7)
-				*(*byte)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(3684)) /* Level */)) = data[13]
+				*(*uint16)(unsafe.Pointer(&p.Field3652)) = word(7)
+				p.Level = data[13]
 			}
 			nox_xxx_inventoryNameSignInit_4671E0()
 		}
@@ -100,7 +103,7 @@ func clientGameProgress(op netmsg.Op, data []byte) (int, bool) {
 		}
 	case 85:
 		if p := GetServer().S().Players.ByID(int(code)); p != nil {
-			fields := unsafe.Slice((*uint32)(unsafe.Add(p.C(), int(layoutServerPlayer.Off(2152)) /* Field2152 */)), 3)
+			fields := unsafe.Slice(&p.Field2152, 3)
 			if !noxflags.HasGame(noxflags.GameHost) && gameFrame() > fields[2] {
 				fields[0], fields[1], fields[2] = uint32(word(3)), uint32(word(5)), gameFrame()
 			}
@@ -114,9 +117,9 @@ func clientGameProgress(op netmsg.Op, data []byte) (int, bool) {
 		sub_4624D0(int32(code))
 	case 101:
 		if dr := GetClient().Cli().Objs.ByNetCode(word(1)); dr != nil {
-			old := *effectWord(dr, int(layoutClientDrawable.Off(280)) /* Flags70Val */)
+			old := dr.Flags70Val
 			status := dword(3)
-			*effectWord(dr, int(layoutClientDrawable.Off(280)) /* Flags70Val */) = status
+			dr.Flags70Val = status
 			if dr.Class()&0x20000 != 0 {
 				if old&0x400 == 0 && status&0x400 != 0 {
 					objectGeneratorCountdown(dr)
@@ -130,9 +133,10 @@ func clientGameProgress(op netmsg.Op, data []byte) (int, bool) {
 	case 103:
 		if dr := GetClient().Cli().Objs.ByNetCode(word(1)); dr != nil {
 			for i := 0; i < 4; i++ {
-				*drawableModifier(dr, i) = nox_xxx_modifGetDescById_413330(int32(data[3+i]))
+				*drawableModifier(dr, i) = GetServer().S().Modif.Nox_xxx_modifGetDescById413330(int(data[3+i]))
 			}
-			*effectWord(dr, int(layoutClientDrawable.Off(448)) /* Union._ */) = 0xffffffff
+			du := layout.As[client.DrawableUnionItem](unsafe.Pointer(&dr.Union))
+			du.Field_112_0, du.Field_112_2 = -1, -1
 		}
 	case 108:
 		typ := word(3)

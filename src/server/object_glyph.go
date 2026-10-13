@@ -1,9 +1,7 @@
 package server
 
-import "unsafe"
-
 func init() {
-	RegisterObjectInit("GlyphInit", nil, unsafe.Sizeof(GlyphInitData{}))
+	RegisterObjectInit("GlyphInit", nil, DataOf[GlyphInitData]())
 }
 
 type GlyphInitData struct {

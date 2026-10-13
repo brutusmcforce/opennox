@@ -1,13 +1,14 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/libs/types"
-	"github.com/brutusmcforce/opennox/common/memmap"
-	"github.com/brutusmcforce/opennox/legacy/common/alloc"
-	"github.com/brutusmcforce/opennox/server"
 	"math"
 	"strings"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/types"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 func stateDistance(u, t *server.Object) float64 {
@@ -18,8 +19,8 @@ func stateDistance(u, t *server.Object) float64 {
 		case 2:
 			d -= float64(o.Shape.Circle.R)
 		case 3:
-			w := float64(*(*float32)(unsafe.Add(o.CObj(), int(layoutServerObject.Off(184)) /* Shape.Box.W */))) * .5
-			h := float32(float64(*(*float32)(unsafe.Add(o.CObj(), int(layoutServerObject.Off(188)) /* Shape.Box.H */))) * .5)
+			w := float64(o.Shape.Box.W) * .5
+			h := float32(float64(o.Shape.Box.H) * .5)
 			if w <= float64(h) {
 				w = float64(h)
 			}

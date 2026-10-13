@@ -55,7 +55,7 @@ func nox_xxx_XFerDefault4F49A0(cf *cryptfile.CryptFile, v1 *server.Object, a2 un
 	return nil
 }
 
-func nox_xxx_XFer_ReadShopItem_52A840(a1 unsafe.Pointer, a2 int) {
+func nox_xxx_XFer_ReadShopItem_52A840(e *server.ShopStockEntry, a2 int) {
 	s := noxServer
 	cf := cryptfile.Global()
 	if a2 < 50 {
@@ -63,13 +63,13 @@ func nox_xxx_XFer_ReadShopItem_52A840(a1 unsafe.Pointer, a2 int) {
 		_, _ = cf.ReadU32()
 	}
 	b1, _ := cf.ReadU8()
-	*(*uint8)(unsafe.Add(a1, 4)) = b1
+	e.Count = b1
 
 	tname, _ := cf.ReadString8()
 	var typ *server.ObjectType
 	if tname != "" {
 		typ = s.Types.ByID(tname)
-		*(*int32)(unsafe.Add(a1, 0)) = int32(typ.Ind())
+		e.Type = uint32(typ.Ind())
 	}
 	if a2 >= 47 {
 		name, _ := cf.ReadString8()
@@ -83,7 +83,7 @@ func nox_xxx_XFer_ReadShopItem_52A840(a1 unsafe.Pointer, a2 int) {
 			default:
 				v4 = int(spell.ParseID(name))
 			}
-			*(*uint32)(unsafe.Add(a1, 8)) = uint32(v4)
+			e.Reward = uint32(v4)
 		}
 	}
 	var mods [4]*server.ModifierEff
@@ -98,18 +98,15 @@ func nox_xxx_XFer_ReadShopItem_52A840(a1 unsafe.Pointer, a2 int) {
 		}
 	}
 
-	*(*unsafe.Pointer)(unsafe.Add(a1, 12)) = mods[0].C()
-	*(*unsafe.Pointer)(unsafe.Add(a1, 16)) = mods[1].C()
-	*(*unsafe.Pointer)(unsafe.Add(a1, 20)) = mods[2].C()
-	*(*unsafe.Pointer)(unsafe.Add(a1, 24)) = mods[3].C()
+	e.Modifiers = mods
 }
 
-func nox_xxx_XFer_WriteShopItem_52A5F0(a1 unsafe.Pointer) {
+func nox_xxx_XFer_WriteShopItem_52A5F0(e *server.ShopStockEntry) {
 	cf := cryptfile.Global()
-	cf.WriteU8(*(*uint8)(unsafe.Add(a1, 4)))
-	typ := noxServer.Types.ByInd(int(*(*int32)(unsafe.Add(a1, 0))))
+	cf.WriteU8(e.Count)
+	typ := noxServer.Types.ByInd(int(int32(e.Type)))
 	cf.WriteString8(typ.ID())
-	pind := int(*(*int32)(unsafe.Add(a1, 8)))
+	pind := int(int32(e.Reward))
 	var pname string
 	switch typ.Xfer {
 	case legacy.Get_nox_xxx_XFerFieldGuide_4F6390():
@@ -120,12 +117,7 @@ func nox_xxx_XFer_WriteShopItem_52A5F0(a1 unsafe.Pointer) {
 		pname = spell.ID(pind).String()
 	}
 	cf.WriteString8(pname)
-	mods := [4]*server.ModifierEff{
-		*(**server.ModifierEff)(unsafe.Add(a1, 12)),
-		*(**server.ModifierEff)(unsafe.Add(a1, 16)),
-		*(**server.ModifierEff)(unsafe.Add(a1, 20)),
-		*(**server.ModifierEff)(unsafe.Add(a1, 24)),
-	}
+	mods := e.Modifiers
 	for _, m := range mods {
 		if m != nil {
 			cf.WriteString8(m.Name())

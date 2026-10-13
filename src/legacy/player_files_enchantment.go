@@ -1,9 +1,10 @@
 package legacy
 
 import (
+	"unsafe"
+
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/server"
-	"unsafe"
 )
 
 func playerFileAbilities(u *server.Object, r objectXferStream) {
@@ -24,9 +25,9 @@ func playerFileAbilities(u *server.Object, r objectXferStream) {
 	}
 	for i := start; i < 6; i++ {
 		abil := server.Ability(i)
-		cd := r.word(uint32(core.Abils.GetCooldown(u.CObj(), abil)))
+		cd := r.word(uint32(core.Abils.GetCooldown(u, abil)))
 		if r.read() {
-			core.Abils.SetCooldown(u.CObj(), abil, int(int32(cd)))
+			core.Abils.SetCooldown(u, abil, int(int32(cd)))
 			if cd != 0 {
 				Nox_xxx_netAbilRepotState_4D8100(u, abil, 0)
 			}
@@ -68,7 +69,7 @@ func playerFileEnchantment(u *server.Object) int {
 				if timer == 0 {
 					timer = uint16(GetServer().S().TickRate())
 				}
-				*(*uint16)(unsafe.Add(u.CObj(), 344+2*int(id))) = timer
+				u.BuffsDur[int(id)] = timer
 				if id == 26 && version >= 3 {
 					duration := int32(r.word(0))
 					if rec := spellLifeFindDuration(51, u); rec != nil {
@@ -83,7 +84,7 @@ func playerFileEnchantment(u *server.Object) int {
 					continue
 				}
 				playerFileName(r, server.EnchantID(id).String())
-				r.raw(unsafe.Add(u.CObj(), 344+2*int(id)), 2)
+				r.raw(unsafe.Pointer(&u.BuffsDur[int(id)]), 2)
 				r.byte(byte(spellLifeBuffPower(u, id)))
 				if id == 26 {
 					duration := uint32(100)
@@ -94,12 +95,12 @@ func playerFileEnchantment(u *server.Object) int {
 				}
 			}
 		}
-		if version >= 5 && *(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(2251)) /* info */)) == 0 {
+		if version >= 5 && p.InfoBytes[66] == 0 {
 			playerFileAbilities(u, r)
 		}
 	}
 	// Version four's tail is outside the optional enchantment body.
-	if version == 4 && *(*byte)(unsafe.Add(unsafe.Pointer(p), int(layoutServerPlayer.Off(2251)) /* info */)) == 0 {
+	if version == 4 && p.InfoBytes[66] == 0 {
 		playerFileAbilities(u, r)
 	}
 	return 1

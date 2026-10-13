@@ -548,26 +548,25 @@ func (s *serverPlayers) AnyXxx() bool {
 
 func (s *Server) Sub4E8210(u *Object) (types.Pointf, bool) {
 	var (
-		max uint32
-		v2  unsafe.Pointer
+		max  uint32
+		gate *Object
 	)
 	for _, u2 := range s.Players.ListUnits() {
-		ptr := u2.UpdateDataPlayer()
-		ptr2 := ptr.Field77
-		if ptr2 == nil {
+		g := u2.UpdateDataPlayer().Field77 // the soul gate
+		if g == nil {
 			continue
 		}
-		if val := **(**uint32)(unsafe.Add(ptr2, 700)); val > max {
+		if val := g.CollideDataSoulGate().Frame; val > max {
 			max = val
-			v2 = ptr2
+			gate = g
 		}
 	}
-	if v2 == nil {
+	if gate == nil {
 		return types.Pointf{}, false
 	}
 	ud := u.UpdateDataPlayer()
-	ud.Field77 = v2
-	out := s.RandomReachablePointAround(60.0, *(*types.Pointf)(unsafe.Add(v2, 56)))
+	ud.Field77 = gate
+	out := s.RandomReachablePointAround(60.0, gate.PosVec)
 	return out, true
 }
 
@@ -643,15 +642,16 @@ type Player struct {
 	Lessons             int32  // 534, 2136
 	Field2140           uint32 // 535, 2140
 	Field2144           uint32 // 536, 2144
-	field2148           uint32 // 537, 2148
+	Field2148           uint32 // 537, 2148
 	Field2152           uint32 // 538, 2152
 	Field2156           uint32 // 539, 2156
 	field2160           uint32 // 540, 2160
 	GoldVal             uint32 // 541, 2164
 	Field2168           uint32 // 542, 2168
 	Field2172           byte   // 543, 2172
-	_                   [12]byte
-	info                [97]byte         // 2185
+	_                   [11]byte
+	Field2184           byte             // 2184: stats changed, report them
+	InfoBytes           [97]byte         // 2185
 	Field2282           uint16           // 2282
 	CursorVec           image.Point      // 2284
 	Colors              PlayerUnitColors // 573, 2292
@@ -662,7 +662,7 @@ type Player struct {
 	Frame3596           uint32
 	Field3600           uint32         // 900, 3600
 	Field3604           uint32         // 901, 3604
-	field3608           uint32         // 902, 3608
+	Field3608           uint32         // 902, 3608
 	field3612           uint32         // 903, 3612
 	field3616           uint32         // 904, 3616
 	field3620           uint32         // 905, 3620
@@ -672,11 +672,11 @@ type Player struct {
 	Obj3640             *Object        // 910, 3640
 	Journal             *PlayerJournal // 911, 3644, pointer to journal
 	SummonOrderAll      uint32         // 912, 3648
-	field3652           uint32
+	Field3652           uint32
 	Field3656           uint32
-	field3660           uint32
-	field3664           uint32
-	field3668           uint32
+	Field3660           uint32
+	Field3664           uint32
+	Field3668           uint32
 	Field3672           uint32 // 3672
 	Field3676           byte   // 3676, TODO: status?
 	_                   [3]byte
@@ -685,9 +685,9 @@ type Player struct {
 	_                   [3]byte
 	Field3688           uint32
 	Field3692           uint32
-	SpellLvl            [137]uint32 // 3696
-	BeastScrollLvl      [41]uint32  // 4244
-	_                   [43]uint32
+	SpellLvl            [137]uint32  // 3696
+	BeastScrollLvl      [41]uint32   // 4244
+	Field4408           [43]uint32   // 4408: chapters seen (by chapter), last frames seen by other players (11+index)
 	Field4580           *MinimapItem // 1145, 4580
 	ProtUnitHPCur       uint32       // 1146, 4584
 	ProtPlayerGold      uint32       // 1147, 4588
@@ -709,15 +709,15 @@ type Player struct {
 	field4652           uint32       // 1163, 4652
 	field4656           uint32       // 1164, 4656
 	field4660           uint32       // 1165, 4660
-	field4664           uint32       // 1166, 4664
-	field4668           uint32       // 1167, 4668
-	field4672           uint32       // 1168, 4672
-	field4676           uint32       // 1169, 4676
-	field4680           uint32       // 1170, 4680
+	Field4664           uint32       // 1166, 4664
+	Field4668           uint32       // 1167, 4668
+	Field4672           uint32       // 1168, 4672
+	Field4676           uint32       // 1169, 4676
+	Field4680           uint32       // 1170, 4680
 	field4684           uint32       // 1171, 4684
-	field4688           uint32       // 1172, 4688
-	field4692           uint32       // 1173, 4692
-	field4696           uint32       // 1174, 4696
+	Field4688           uint32       // 1172, 4688
+	Field4692           uint32       // 1173, 4692
+	Field4696           uint32       // 1174, 4696
 	Field4700           uint32       // 1175, 4700
 	NameFinal           [28]uint16   // 4704, server-approved player name // TODO: size is a wild guess
 	SaveNameBuf         [4]byte      // 1190, 4760
@@ -729,8 +729,8 @@ type Player struct {
 	field4784           uint32       // 1196, 4784
 	field4788           uint32       // 1197, 4788
 	Field4792           uint32       // 1198, 4792
-	field4796           uint32       // 1199, 4796
-	data4800            [7]uint32
+	Ankhs               [5]*Object   // 1199, 4796: ankhs the player has collected (see legacy worldAnkhRemember)
+	Data4816            [3]uint32    // 1204, 4816
 }
 
 func (p *Player) ArmorData() (uint32, *EquipArmorData) {
@@ -832,7 +832,7 @@ func (p *Player) Info() *PlayerInfo {
 	if p == nil {
 		return nil
 	}
-	return (*PlayerInfo)(unsafe.Pointer(&p.info)) // inaccessible due to alignment issues
+	return (*PlayerInfo)(unsafe.Pointer(&p.InfoBytes)) // inaccessible due to alignment issues
 }
 
 func (p *Player) OrigName() string {
@@ -918,8 +918,8 @@ func (p *Player) ObserveTarget() *Object { // nox_xxx_playerGetPossess_4DDF30
 
 func (p *Player) Sub422140() {
 	if p != nil {
-		p.field3660 = 0xDEADFACE
-		p.field3664 = 0xDEADFACE
+		p.Field3660 = 0xDEADFACE
+		p.Field3664 = 0xDEADFACE
 	}
 }
 
@@ -959,16 +959,16 @@ type PlayerColors struct {
 }
 
 type PlayerInfo struct {
-	name        [50]byte     // 2185 (+0) // TODO: size is a guess
-	field2235   [4]byte      // 2235 (+50)
-	field2239   [4]byte      // 2239 (+54)
-	field2243   [4]byte      // 2243 (+58)
-	field2247   [4]byte      // 2247 (+62)
-	playerClass byte         // 562, 2251 (+66)
-	isFemale    byte         // 562, 2252 (+67)
-	Colors      PlayerColors // 2253 (+68)
-	Field2273   byte         // 2273 (+88)
-	nameSuff    [8]byte      // 2274 (+89)
+	name           [50]byte     // 2185 (+0) // TODO: size is a guess
+	field2235      [4]byte      // 2235 (+50)
+	field2239      [4]byte      // 2239 (+54)
+	field2243      [4]byte      // 2243 (+58)
+	field2247      [4]byte      // 2247 (+62)
+	PlayerClassVal byte         // 562, 2251 (+66)
+	isFemale       byte         // 562, 2252 (+67)
+	Colors         PlayerColors // 2253 (+68)
+	Field2273      byte         // 2273 (+88)
+	nameSuff       [8]byte      // 2274 (+89)
 }
 
 func (p *PlayerInfo) C() unsafe.Pointer {
@@ -979,11 +979,11 @@ func (p *PlayerInfo) PlayerClass() player.Class {
 	if p == nil {
 		return 0
 	}
-	return player.Class(p.playerClass)
+	return player.Class(p.PlayerClassVal)
 }
 
 func (p *PlayerInfo) SetPlayerClass(v player.Class) {
-	p.playerClass = byte(v)
+	p.PlayerClassVal = byte(v)
 }
 
 func (p *PlayerInfo) IsFemale() bool {

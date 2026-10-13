@@ -1,8 +1,9 @@
 package legacy
 
 import (
-	"github.com/brutusmcforce/opennox/client/gui"
 	"unsafe"
+
+	"github.com/brutusmcforce/opennox/client/gui"
 )
 
 // Go owns the browser state. Fixed-width ABI types preserve the existing legacy

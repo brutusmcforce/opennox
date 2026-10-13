@@ -7,6 +7,18 @@ import (
 	"github.com/brutusmcforce/opennox/common/memmap"
 )
 
+// clientSequenceNode is a queued ordered message (see clientSequenceEnqueue); the message bytes follow it.
+type clientSequenceNode struct {
+	legacyListNode // tag: the sequence number
+	Ticks          uint64
+	Size           uint16
+}
+
+func clientSequenceData(p *legacyListNode) []byte {
+	n := (*clientSequenceNode)(unsafe.Pointer(p))
+	return unsafe.Slice((*byte)(unsafe.Add(unsafe.Pointer(n), unsafe.Sizeof(clientSequenceNode{}))), n.Size)
+}
+
 func clientSequenceHead() *legacyListNode {
 	return &clientSequenceList
 }
@@ -32,15 +44,16 @@ func clientSequenceEnqueue(data []byte) {
 	}
 	size := int(data[3])
 	// Retain the foreign queue allocation/layout while shared globals remain ABI words.
-	ptr := legacyCalloc(uintptr(32+size), 1)
+	ptr := legacyCalloc(unsafe.Sizeof(clientSequenceNode{})+uintptr(size), 1)
 	if ptr == nil {
 		return
 	}
 	node := listInit((*legacyListNode)(ptr))
 	node.tag = uintptr(seq)
-	*(*uint16)(unsafe.Add(ptr, 24)) = uint16(size)
-	*(*uint64)(unsafe.Add(ptr, 16)) = uint64(uint32(PlatformTicks()))
-	copy(unsafe.Slice((*byte)(unsafe.Add(ptr, 32)), size), data[4:4+size])
+	n := (*clientSequenceNode)(ptr)
+	n.Size = uint16(size)
+	n.Ticks = uint64(uint32(PlatformTicks()))
+	copy(clientSequenceData(node), data[4:4+size])
 	if memmap.Uint16(0x5D4594, 1197360) == seq {
 		dword_5d4594_1197352 = memmap.PtrWord(ptr)
 	}
@@ -50,7 +63,7 @@ func clientSequencePoll() {
 	ready := (*legacyListNode)(memmap.WordPtr(dword_5d4594_1197352))
 	if ready == nil {
 		pending := (*legacyListNode)(memmap.WordPtr(dword_5d4594_1197356))
-		if pending != nil && uint64(uint32(PlatformTicks()))-*(*uint64)(unsafe.Add(unsafe.Pointer(pending), 16)) > 30000 {
+		if pending != nil && uint64(uint32(PlatformTicks()))-(*clientSequenceNode)(unsafe.Pointer(pending)).Ticks > 30000 {
 			*memmap.PtrUint16(0x5D4594, 1197360) = uint16(pending.tag)
 			ready = pending
 			dword_5d4594_1197352 = memmap.PtrWord(unsafe.Pointer(pending))
@@ -66,8 +79,8 @@ func clientSequencePoll() {
 				next = nil
 			}
 		}
-		size := int(*(*uint16)(unsafe.Add(unsafe.Pointer(p), 24)))
-		Nox_xxx_netOnPacketRecvCli_48EA70(31, (*byte)(unsafe.Add(unsafe.Pointer(p), 32)), size)
+		data := clientSequenceData(p)
+		Nox_xxx_netOnPacketRecvCli_48EA70(31, unsafe.SliceData(data), len(data))
 		*memmap.PtrUint16(0x5D4594, 1197360)++
 		listRemove(p)
 		legacyFree(unsafe.Pointer(p))

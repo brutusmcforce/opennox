@@ -10,8 +10,8 @@ import (
 var (
 	Nox_xxx_xfer_saveObj51DF90        func(cf *cryptfile.CryptFile, a1p *server.Object) int
 	Nox_xxx_XFerDefault4F49A0         func(cf *cryptfile.CryptFile, v1 *server.Object, a2 unsafe.Pointer) error
-	Nox_xxx_XFer_ReadShopItem_52A840  func(a1 unsafe.Pointer, a2 int)
-	Nox_xxx_XFer_WriteShopItem_52A5F0 func(a1 unsafe.Pointer)
+	Nox_xxx_XFer_ReadShopItem_52A840  func(e *server.ShopStockEntry, vers int)
+	Nox_xxx_XFer_WriteShopItem_52A5F0 func(e *server.ShopStockEntry)
 )
 
 func init() {

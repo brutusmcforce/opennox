@@ -1,9 +1,10 @@
 package legacy
 
 import (
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/client/noxrender"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
@@ -21,7 +22,7 @@ type legacyGlobalStorage struct {
 	dword_587000_122852                   unsafe.Pointer
 	dword_587000_81128                    unsafe.Pointer
 	dword_5d4594_1090048                  *gui.Window
-	dword_5d4594_1090100                  uint32
+	dword_5d4594_1090100                  *gui.Window
 	nox_alloc_monsterList_2386220         unsafe.Pointer
 	nox_alloc_tradeSession_2386492        unsafe.Pointer
 	nox_alloc_spawn_2386216               unsafe.Pointer

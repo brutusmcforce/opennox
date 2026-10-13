@@ -127,7 +127,7 @@ func (c *Client) nox_xxx_netOnPacketRecvCli48EA70_switch(ind ntype.PlayerInd, op
 			*memmap.PtrUint32(0x85B3FC, 120)++
 		} else {
 			if c.srv.Frame() > prevFrame+1 {
-				noxPerfmon.latePackets += int(c.srv.Frame() - prevFrame)
+				noxPerfmon.latePackets += int(int32(c.srv.Frame() - prevFrame))
 			}
 			legacy.Sub_43C650()
 		}

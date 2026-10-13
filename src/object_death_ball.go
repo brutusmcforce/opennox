@@ -2,7 +2,6 @@ package opennox
 
 import (
 	"math"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/libs/types"
@@ -59,12 +58,12 @@ func nox_xxx_collideDeathBall_4E9E90(ball *server.Object, targ *server.Object, p
 	s := asObjectS(ball).getServer()
 	if targ != nil {
 		if targ.Class().Has(object.ClassDoor) {
-			ud := targ.UpdateData
+			ud := targ.UpdateDataDoor()
 			ball.NewPos.X = ball.PrevPos.X
 			ball.NewPos.Y = ball.PrevPos.Y
 			dx := float64(targ.PosVec.X - ball.PrevPos.X)
 			dy := float64(targ.PosVec.Y - ball.PrevPos.Y)
-			ind := *(*uint32)(unsafe.Add(ud, 12))
+			ind := ud.Dir
 			xx := -float64(memmap.Int32(0x587000, uintptr(ind)*8+196188))
 			yy := +float64(memmap.Int32(0x587000, uintptr(ind)*8+196184))
 			var vv types.Pointf

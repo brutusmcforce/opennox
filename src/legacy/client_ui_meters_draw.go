@@ -32,7 +32,7 @@ func uiMeterCross(x, y int) int {
 }
 func uiMeterLabel(w *gui.Window) int {
 	r := GetClient().R2()
-	text := strconv.FormatInt(int64(int32(uiMeters()[uintptr(w.WidgetData)].Current)), 10)
+	text := strconv.FormatInt(int64(int32(uiMeters()[w.Value].Current)), 10)
 	r.Data().SetTextColor(noxcolor.RGBA5551(nox_color_white_2523948))
 	face := r.GetFonts().AsFont(memmap.WordPtr(dword_5d4594_1096288))
 	width := r.GetStringSizeWrapped(face, text, 0).X
@@ -42,7 +42,7 @@ func uiMeterLabel(w *gui.Window) int {
 }
 
 func uiMeterMiniBar(w *gui.Window) int {
-	index := int(uintptr(w.WidgetData))
+	index := int(w.Value)
 	m := &uiMeters()[index]
 	if nox_xxx_clientIsObserver_4372E0() != 0 || nox_gameDisableMapDraw_5d4594_2650672 != 0 || noxflags.HasGame(9437184) {
 		return 1
@@ -74,7 +74,7 @@ func uiMeterMiniBar(w *gui.Window) int {
 type uiMeterBubble struct{ X, Y, Size, Speed, Active, Color int32 }
 
 func uiMeterTube(w *gui.Window) int {
-	index := int(uintptr(w.WidgetData))
+	index := int(w.Value)
 	m := &uiMeters()[index]
 	if index == 0 && dword_5d4594_1096264 != 0 {
 		uiMeterImage(memmap.Uint32(0x5D4594, 1091900), uiWindowPosition(uiMeterMainWindow()))
@@ -173,7 +173,7 @@ func uiMeterTube(w *gui.Window) int {
 var uiMeterChargeStamp uint32
 
 func uiMeterChargeRaster(w *gui.Window) int {
-	m := &uiMeters()[uintptr(w.WidgetData)]
+	m := &uiMeters()[w.Value]
 	pos := uiWindowPosition(w)
 	row := func(index int) []byte {
 		return unsafe.Slice((*byte)(memmap.PtrOff(0x587000, 147904+uintptr(index)*8)), 8)
@@ -245,7 +245,7 @@ func uiMeterChargeRaster(w *gui.Window) int {
 }
 
 func uiMeterWeaponDraw(w *gui.Window) int {
-	m := &uiMeters()[uintptr(w.WidgetData)]
+	m := &uiMeters()[w.Value]
 	pos := uiWindowPosition(w)
 	width, height := w.Size().X, w.Size().Y
 	draw := m.Maximum != 0
@@ -255,13 +255,13 @@ func uiMeterWeaponDraw(w *gui.Window) int {
 	}
 	m.Alternate = m.Color
 	if draw && sector >= 256 {
-		item := uintptr(unsafe.Pointer(uiInventorySelectedWeapon()))
+		item := uiInventorySelectedWeapon()
 		sector = 1
-		if item == 0 {
+		if item == nil {
 			draw = false
 		} else {
-			current := float64(*(*uint16)(unsafe.Pointer(item + 292)))
-			maximum := float64(*(*uint16)(unsafe.Pointer(item + 294)))
+			current := float64(item.Field_73_1) // durability
+			maximum := float64(item.Field_73_2)
 			if current < maximum*memmap.Float64(0x581450, 9608) {
 				m.Alternate = memmap.Uint32(0x85B3FC, 940)
 			} else if current < maximum*math.Float64frombits(uint64(qword_581450_9544)) {

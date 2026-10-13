@@ -91,13 +91,13 @@ func genParticle(opt particleOpt) *Image {
 	c1B := uint32((blur*opt.color.B)&0xffff) >> 8
 	c3R := c1R << 16
 	c4R := c3R
-	c2R := int((((uint32(intens*opt.color.R)>>8)&0xFF)-c1R)<<16) / rr
+	c2R := int(int32((((uint32(intens*opt.color.R)>>8)&0xFF)-c1R)<<16)) / rr
 	c3G := c1G << 16
 	c4G := c3G
-	c2G := int((((uint32(intens*opt.color.G)>>8)&0xFF)-c1G)<<16) / rr
+	c2G := int(int32((((uint32(intens*opt.color.G)>>8)&0xFF)-c1G)<<16)) / rr
 	c3B := c1B << 16
 	c4B := c3B
-	c2B := int((((uint32(intens*opt.color.B)>>8)&0xFF)-c1B)<<16) / rr
+	c2B := int(int32((((uint32(intens*opt.color.B)>>8)&0xFF)-c1B)<<16)) / rr
 	if rr == 0 {
 		return NewRawImage(8, pdata)
 	}

@@ -4,10 +4,10 @@ import (
 	"encoding/binary"
 	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/object"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/internal/cryptfile"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/server"
 )
 
@@ -74,7 +74,11 @@ func (r objectXferStream) position(u *server.Object, integer bool) {
 	}
 }
 func (r objectXferStream) scriptID(u *server.Object) {
-	r.raw(unsafe.Pointer(&u.ScriptIDVal), 4)
+	id := int32(u.ScriptIDVal) // a 32-bit field in the stream; ScriptIDVal is a Go int
+	r.raw(unsafe.Pointer(&id), 4)
+	if r.read() {
+		u.ScriptIDVal = int(id)
+	}
 	if r.read() && u.ScriptIDVal == 0 && !objectXferEditor() {
 		u.ScriptIDVal = int(GetServer().S().Objs.NextObjectScriptID())
 	}
@@ -132,7 +136,7 @@ func objectXferOld(u *server.Object, inner, outer int, r objectXferStream) int {
 		return 0
 	}
 	if outer >= 20 {
-		r.raw(unsafe.Add(u.CObj(), int(layoutServerObject.Off(52)) /* TeamVal.ID */), 1)
+		r.raw(unsafe.Pointer(&u.TeamVal.ID), 1)
 	}
 	if outer >= 30 {
 		r.inventoryCount(u)
@@ -175,11 +179,11 @@ func objectXferCommon(u *server.Object, outer int) int {
 	if !r.name(u) {
 		return 0
 	}
-	r.raw(unsafe.Add(u.CObj(), int(layoutServerObject.Off(52)) /* TeamVal.ID */), 1)
+	r.raw(unsafe.Pointer(&u.TeamVal.ID), 1)
 	r.inventoryCount(u)
 	r.owned(u, false)
 	r.extra(u)
-	if inner >= 63 && objectXferScript(unsafe.Pointer(&u.ScriptPickup), u.Field189) == 0 {
+	if inner >= 63 && objectXferScript(unsafe.Pointer(&u.ScriptPickup), u.EditorData().ScriptName(server.ScriptNamePickup)) == 0 {
 		return 0
 	}
 	if inner >= 64 {

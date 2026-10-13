@@ -1,9 +1,11 @@
 package legacy
 
 import (
+	"unsafe"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/common/memmap"
-	"unsafe"
+	"github.com/brutusmcforce/opennox/server"
 )
 
 type quickbarSlot struct{ ID, Flags uint32 }
@@ -24,7 +26,7 @@ var quickbarRecords [6]quickbarRecord
 // Some legacy transitions only compute a row address, without accessing it.
 // Keep that arithmetic separate from indexing the five valid owned rows.
 func quickbarRowPointer(b *quickbarRecord, row byte) *[5]quickbarSlot {
-	return (*[5]quickbarSlot)(unsafe.Add(unsafe.Pointer(b), 40*uintptr(row)))
+	return &b.Rows[uintptr(row)]
 }
 
 // The shared slot and record layouts remain visible to remaining C owners.
@@ -40,7 +42,7 @@ func quickbarAt(off uintptr) *quickbarRecord {
 	}
 	return &quickbarRecords[(off-1047940)/256]
 }
-func quickbarPlayer() unsafe.Pointer { return dword_8531A0_2576.C() }
+func quickbarPlayer() *server.Player { return dword_8531A0_2576 }
 func quickbarWord(off uintptr) *uint32 {
 	switch off {
 	case 1047548:
@@ -83,7 +85,7 @@ func quickbarWord(off uintptr) *uint32 {
 func quickbarByte(off uintptr) *byte         { return memmap.PtrUint8(0x5D4594, off) }
 func quickbarWindow(off uintptr) *gui.Window { return bookWindow(*quickbarWord(off)) }
 func quickbarUserData(w *gui.Window) *uint32 {
-	return (*uint32)(unsafe.Add(w.C(), int(layoutGuiWindow.Off(368)) /* field92 */))
+	return &w.Field92
 }
 func quickbarFlagByte(s *quickbarSlot) *byte  { return (*byte)(unsafe.Pointer(&s.Flags)) }
 func quickbarPointer(p unsafe.Pointer) uint32 { return memmap.PtrWord(p) }
