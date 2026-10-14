@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -176,10 +177,12 @@ type audioStream struct {
 
 	next    *audioStream
 	source  openal.Source
-	hwbuf   openal.Buffers
+	hwbuf   openal.Buffers // hwbuf[:hwready] are free; unqueuing rewrites the names, so the rest may repeat them
+	hwall   openal.Buffers // all buffers, to delete them
 	hwready int
 
 	playing bool
+	paused  bool
 
 	dec audioDecoder
 }
@@ -328,6 +331,7 @@ func (dig Driver) OpenStream(name string) Stream {
 		return 0
 	}
 	s.hwbuf = openal.NewBuffers(2)
+	s.hwall = slices.Clone(s.hwbuf)
 	s.hwready = 2
 	if !audioCheckError() {
 		s.source.Delete()
@@ -357,10 +361,26 @@ func (h Stream) Close() error {
 	if s == nil {
 		return nil
 	}
-	s.d.mu.Lock()
+	d := s.d
+	d.mu.Lock()
 	s.playing = false
 	s.dec.Close()
-	s.d.mu.Unlock()
+	// free the OpenAL source and buffers, or every stream leaks them until OpenAL runs out (AL_OUT_OF_MEMORY)
+	s.source.Stop()
+	s.source.Seti(openal.AlBuffer, 0) // unqueues all buffers
+	s.hwall.Delete()
+	s.source.Delete()
+	audioCheckError()
+	for p := &d.streamHead; *p != nil; p = &(*p).next {
+		if *p == s {
+			*p = s.next
+			break
+		}
+	}
+	d.mu.Unlock()
+	audioStreams.Lock()
+	delete(audioStreams.byHandle, h)
+	audioStreams.Unlock()
 	return nil
 }
 
@@ -491,8 +511,18 @@ func (h Stream) Pause(pause bool) {
 	if s == nil {
 		return
 	}
-	// TODO: mutex?
-	s.playing = !pause
+	s.d.mu.Lock()
+	defer s.d.mu.Unlock()
+	if s.paused == pause {
+		return
+	}
+	s.paused = pause
+	if pause {
+		s.source.Pause()
+	} else if s.playing && s.source.State() == openal.Paused {
+		s.source.Play()
+	}
+	audioCheckError()
 }
 
 func (h Sample) RegisterEOBCallback(f func()) {
@@ -832,10 +862,15 @@ func (h Stream) Status() int {
 	if s == nil {
 		return 2
 	}
-	if s.playing {
-		return 4
+	s.d.mu.Lock()
+	defer s.d.mu.Unlock()
+	switch {
+	case s.playing && s.paused:
+		return 8 // SMP_STOPPED
+	case s.playing:
+		return 4 // SMP_PLAYING
 	}
-	return 2
+	return 2 // SMP_DONE
 }
 
 func (dig Driver) Close() error {
@@ -929,7 +964,7 @@ func (s *audioSample) work() {
 }
 
 func (s *audioStream) work() {
-	if !s.playing {
+	if !s.playing || s.paused {
 		return
 	}
 	var buffer [16 * 1024 * 3]int16

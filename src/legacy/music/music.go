@@ -234,7 +234,7 @@ func (m *Module) Init() {
 }
 
 func (m *Module) Update() {
-	current_block := m.blocks[m.block_idx]
+	current_block := &m.blocks[m.block_idx] // a pointer as in the original: startPlay resets the position, a failed start clears the block
 	if *m.dword_5d4594_816340 == 0 {
 		return
 	}
@@ -276,7 +276,7 @@ func (m *Module) Update() {
 		if m.dword_5d4594_816356 != 0 && *m.dword_587000_93156 != 0 {
 			break
 		}
-		if *m.dword_587000_93156 != 0 || current_block.Inner.MusicIdx != m.currentPlaying.MusicIdx || m.playingStream == 0 || m.playingStream.Status() == 2 {
+		if *m.dword_587000_93156 == 0 || current_block.Inner.MusicIdx != m.currentPlaying.MusicIdx || m.playingStream == 0 || m.playingStream.Status() == 2 {
 			m.Sub_43D650()
 			*m.dword_5d4594_816348 = 0
 		} else {
@@ -286,7 +286,7 @@ func (m *Module) Update() {
 		}
 	case 4:
 		if m.playingStream != 0 && m.playingStream.Status() != 2 {
-			if m.timer.Timers[0].Current&0xFFFF0000 != 0 {
+			if m.timer.Timers[0].Current&0xFFFF0000 == 0 { // faded out
 				m.pause()
 				*m.dword_5d4594_816348 = 3
 			}

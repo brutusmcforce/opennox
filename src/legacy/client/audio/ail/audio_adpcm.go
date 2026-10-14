@@ -104,7 +104,7 @@ func (d *adpcmDecoder) Decode(out []int16) (int, bool) {
 func (d *adpcmDecoder) Seek(position int) {
 	d.buffered = 0
 	blockSize := d.blockSize
-	samplesPerBlock := (blockSize/d.channels - 4) * 2
+	samplesPerBlock := (blockSize/d.channels-4)*2 + 1 // as Decode: the header holds the first sample
 	blocks := position / samplesPerBlock
 	d.position = 0
 

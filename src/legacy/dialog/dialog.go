@@ -265,11 +265,11 @@ func (d *Dialog) playFile(name string) bool {
 		return true
 	}
 	if d.fallbackDir == nil {
-		return true
+		return false
 	}
 	fdir := d.fallbackDir()
 	if fdir == "" {
-		return true
+		return false
 	}
 	*d.isFallbackMode = 1
 	path2 := filepath.Join(fdir, path)
