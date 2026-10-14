@@ -149,8 +149,9 @@ func (s *Server) ObjectsAddPending() {
 	var next *server.Object
 	for it := s.Objs.Pending; it != nil; it = next {
 		next = it.Next()
+		// an owner deleted this frame hands the object to its own owner
 		for it2 := it.Owner(); it2 != nil; it2 = it.Owner() {
-			if !it.Flags().Has(object.FlagDestroyed) {
+			if !it2.Flags().Has(object.FlagDestroyed) {
 				break
 			}
 			it.SetOwner(it2.Owner())
@@ -192,7 +193,7 @@ func (s *Server) ObjectsAddPending() {
 			if it.SubClass()&0x18 != 0 {
 				v6 = false
 			} else {
-				v6 = (^it.SubClass() >> 7) != 0
+				v6 = (^uint8(it.SubClass()) >> 7) != 0 // subclass bit 0x80 clear
 			}
 		} else {
 			v6 = ((uint32(it.Class()) >> 29) & 1) != 0

@@ -95,7 +95,7 @@ func setBomberSpells(u *server.Object, spells ...spell.ID) {
 		return
 	}
 	for it := u.FirstItem(); it != nil; it = it.NextItem() {
-		if int(it.TypeInd) != s.Types.GlyphID() {
+		if int(it.TypeInd) == s.Types.GlyphID() { // replace the bomber's old trap
 			s.DelayedDelete(it)
 			break
 		}

@@ -95,7 +95,7 @@ func (s *serverAIPaths) MapIndexFlags(x, y int) AIMapIndexFlags {
 func (s *serverAIPaths) CheckIndexFlags(obj *Object, x, y int) bool {
 	p := s.MapIndex(x, y)
 	if obj.Flags().Has(object.FlagAirborne) {
-		return p.Flags8&0x10 != 0
+		return p.Flags8&0x2 != 0 // tall obstacles only: flying units pass over holes (sub_50B950)
 	} else {
 		return p.Flags8&0x1 != 0
 	}
@@ -276,8 +276,7 @@ func (s *serverAIPaths) IndexObject(obj *Object) {
 	v20 = v8
 	for a1a = v7; v9 <= v8; a1a = v9 {
 		v18 = v6
-		if v6 <= v19 {
-			p := s.MapIndex(int(v6), int(v9))
+		if p := s.MapIndex(int(v6), int(v9)); v6 <= v19 && p != nil {
 			v10 := (*uint8)(unsafe.Pointer(&p.Flags8))
 			for {
 				for _, v11 := range memmap.PtrT[[9]types.Pointf](0x587000, 234104) {
@@ -302,11 +301,16 @@ func (s *serverAIPaths) IndexObject(obj *Object) {
 					}
 				}
 				v6++
-				v10 = (*uint8)(unsafe.Add(unsafe.Pointer(v10), 3072))
 				v18 = v6
 				if v6 > v19 {
 					break
 				}
+				// the next x: the original's grid is x-major (+3072 bytes), ours is [y][x]
+				np := s.MapIndex(int(v6), int(v9))
+				if np == nil {
+					break
+				}
+				v10 = (*uint8)(unsafe.Pointer(&np.Flags8))
 			}
 			v9 = a1a
 			v8 = v20

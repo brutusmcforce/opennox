@@ -1337,7 +1337,7 @@ func (obj *Object) EnchantPower(v EnchantID) int { // nox_xxx_buffGetPower_4FF57
 }
 
 func (obj *Object) Aggression() float32 {
-	if obj.Class().Has(object.ClassMonster) {
+	if !obj.Class().Has(object.ClassMonster) {
 		return 0
 	}
 	ud := obj.UpdateDataMonster()
@@ -1352,7 +1352,7 @@ func (obj *Object) SetAggression(v float32) {
 }
 
 func (obj *Object) RetreatLevel() float32 {
-	if obj.Class().Has(object.ClassMonster) {
+	if !obj.Class().Has(object.ClassMonster) {
 		return 0
 	}
 	ud := obj.UpdateDataMonster()
@@ -1367,7 +1367,7 @@ func (obj *Object) SetRetreatLevel(v float32) {
 }
 
 func (obj *Object) RegroupLevel() float32 {
-	if obj.Class().Has(object.ClassMonster) {
+	if !obj.Class().Has(object.ClassMonster) {
 		return 0
 	}
 	ud := obj.UpdateDataMonster()
@@ -1397,13 +1397,10 @@ func (obj *Object) FindOwnerChainPlayer() *Object {
 	if obj == nil {
 		return nil
 	}
+	// as the original: the object itself counts too (a player is its own player)
 	res := obj
-	for it := obj.ObjOwner; it != nil; it = it.ObjOwner {
-		if it.Class().Has(object.ClassPlayer) {
-			res = it
-			break
-		}
-		res = it
+	for !res.Class().Has(object.ClassPlayer) && res.ObjOwner != nil {
+		res = res.ObjOwner
 	}
 	return res
 }

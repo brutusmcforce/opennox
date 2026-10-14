@@ -33,3 +33,29 @@ func TestItemsApplyUpdateEffect(t *testing.T) {
 	s.ItemsApplyUpdateEffect(player)
 	must.Eq(t, []*Object{staff}, got)
 }
+
+// As the original: the object itself counts, so a player is its own player even if it has an owner.
+func TestFindOwnerChainPlayer(t *testing.T) {
+	player := &Object{ObjClass: object.ClassPlayer}
+	other := &Object{ObjClass: object.ClassPlayer}
+	player.ObjOwner = other
+	must.EqOp(t, player, player.FindOwnerChainPlayer())
+	missile := &Object{ObjClass: object.ClassMissile}
+	summon := &Object{ObjClass: object.ClassMonster, ObjOwner: player}
+	missile.ObjOwner = summon
+	must.EqOp(t, player, missile.FindOwnerChainPlayer())
+	lone := &Object{ObjClass: object.ClassMissile}
+	must.EqOp(t, lone, lone.FindOwnerChainPlayer())
+}
+
+// Scripts read these from monsters; anything else returns 0 instead of panicking.
+func TestMonsterAIGetters(t *testing.T) {
+	var ud MonsterUpdateData
+	ud.RetreatLevel = 0.25
+	mon := &Object{ObjClass: object.ClassMonster, UpdateData: unsafe.Pointer(&ud)}
+	must.EqOp(t, float32(0.25), mon.RetreatLevel())
+	item := &Object{ObjClass: object.ClassFood}
+	must.EqOp(t, float32(0), item.RetreatLevel())
+	must.EqOp(t, float32(0), item.Aggression())
+	must.EqOp(t, float32(0), item.RegroupLevel())
+}

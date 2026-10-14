@@ -122,7 +122,7 @@ func (a *aiData) nox_xxx_mobActionDependency(u *server.Object) {
 				st.Args[0] = uintptr(math.Float32bits(pos.X))
 				st.Args[1] = uintptr(math.Float32bits(pos.Y))
 			}
-			if a.s.MapTraceRay(u.Pos(), st.ArgPos(0), server.MapTraceFlag1); !v29 {
+			if a.s.MapTraceRay(u.Pos(), st.ArgPos(0), server.MapTraceFlag1) && !v29 { // the place is in sight, but the object is not there
 				ok = false
 			}
 		case ai.DEPENDENCY_OBJECT_FARTHER_THAN:
@@ -629,7 +629,7 @@ func (AIActionIdle) Cancel(_ *server.Object) {}
 func (AIActionIdle) Update(u *server.Object) {
 	s := asObjectS(u).getServer()
 	ud := u.UpdateDataMonster()
-	if uint16(s.Frame()-ud.AIStackHead().ArgU32(0)) == uint16(ud.Field305) {
+	if int32(s.Frame()-ud.AIStackHead().ArgU32(0)) == int32(int16(ud.Field305)) { // the delay is a short, as the original
 		s.noxScript.ScriptCallback(&ud.ScriptLookingForEnemy, nil, u, server.NoxEventMonsterIdle)
 	}
 	if u.Flags().Has(object.FlagEnabled) && (u.Sub_5343C0() || u.Nox_xxx_monsterCanAttackAtWill_534390()) {

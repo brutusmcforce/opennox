@@ -755,7 +755,7 @@ func nox_xxx_updatePixie_53CD20(u *server.Object) {
 	}
 	u.Float28 = 0.9
 	u.ForceVec = u.Direction2.Vec().Mul(u.SpeedCur)
-	if (s.Frame()&8 == 0) && owner != nil {
+	if s.Frame()&8 != 0 && owner != nil {
 		if s.MapTraceVision(u, owner) {
 			ud.SeenOwner = s.Frame()
 		}

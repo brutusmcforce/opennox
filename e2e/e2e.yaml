@@ -954,8 +954,8 @@ steps:
     dt: 20
   - name: "Talk to the barkeeper"
     action: interact
-    x: 433
-    y: 300
+    x: 451
+    y: 301
   - name: "con02-004 Shop dialog"
     action: screen
     dt: 40

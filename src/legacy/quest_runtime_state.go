@@ -38,7 +38,9 @@ func questRuntimeSettings() unsafe.Pointer {
 		return p
 	}
 	p := memmap.PtrOff(0x5D4594, 371516)
-	*controlByte(p, 100) &^= 16
+	if !QuestWasClosed { // reopen the server only if it was open before the quest (sub_4D70B0)
+		*controlByte(p, 100) &^= 16
+	}
 	return p
 }
 func questRuntimeMapName(off uintptr) *byte { return (*byte)(memmap.PtrOff(0x973F18, off)) }

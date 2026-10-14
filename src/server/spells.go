@@ -255,7 +255,7 @@ func (sp *serverSpells) Phoneme(ind spell.ID, ind2 int) spell.Phoneme {
 
 func (sp *serverSpells) CanUseInTraps(ind spell.ID) bool {
 	spl := sp.DefByInd(ind)
-	if sp == nil {
+	if spl == nil {
 		return false
 	}
 	if noxflags.HasGame(noxflags.GameModeQuest) && ind == spell.SPELL_BLINK {

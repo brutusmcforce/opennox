@@ -182,9 +182,9 @@ func (ns *reliableSender) ackOlder(seq byte) {
 	)
 	for it := ns.queue; it != nil; it = next {
 		next = it.next
-		// FIXME: condition here looks wrong
 		if seq < 0x20 || seq > 0xE0 {
-			if it.seq >= seq {
+			// near the wrap, as signed bytes (as the original): 0xF0 is older than 0x05
+			if int8(it.seq) >= int8(seq) {
 				prev = it
 			} else {
 				ns.remove(prev, it)
