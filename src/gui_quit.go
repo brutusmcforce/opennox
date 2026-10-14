@@ -34,7 +34,8 @@ func nox_xxx_wndLoadQuitMenu_445790() int {
 	dword_5d4594_825752 = 0
 	dword_5d4594_825768 = 0
 	str := strMan.GetStringInFile("Vote", "guiquit.c")
-	alloc.StrCopyZero(memmap.PtrT[[256]byte](0x5D4594, 825772)[:], str)
+	// the label of the vote button (see legacy.sessionQuitToggle): a wide string, like all GUI texts (opennox#711)
+	alloc.StrCopyZero16(memmap.PtrT[[128]uint16](0x5D4594, 825772)[:], str)
 	return 1
 }
 

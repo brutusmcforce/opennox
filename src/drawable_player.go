@@ -374,7 +374,9 @@ func sub_4B8CA0(earr *server.EquipArmorData, bit uint32) {
 	if m == nil {
 		return
 	}
-	for i := 0; i < 6; i++ { // TODO: are bounds correct?
+	// materials 1-6, like objectSetBaseMaterials for items on the ground (opennox#687: they were 0-5 and 0-4,
+	// so parts of worn items kept the colors of the player's skin and hair)
+	for i := 1; i <= 6; i++ {
 		cl := m.Colors12[i]
 		c.r.Data().SetMaterialRGB(i, int(cl.R), int(cl.G), int(cl.B))
 	}
@@ -429,7 +431,9 @@ func (c *Client) sub_4B8E10(earr *[server.PlayerWeaponCnt]server.EquipmentData, 
 	if m == nil {
 		return
 	}
-	for i := 0; i < 5; i++ { // TODO: are bounds correct?
+	// materials 1-6, like objectSetBaseMaterials for items on the ground (opennox#687: they were 0-5 and 0-4,
+	// so parts of worn items kept the colors of the player's skin and hair)
+	for i := 1; i <= 6; i++ {
 		cl := m.Colors12[i]
 		c.r.Data().SetMaterialRGB(i, int(cl.R), int(cl.G), int(cl.B))
 	}

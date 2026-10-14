@@ -249,8 +249,10 @@ func particleVortexDraw(vp *noxrender.Viewport, dr *client.Drawable) int {
 	} else if previous >= 256 {
 		previous -= 256
 	}
-	// The source uses unsigned products/division for the trailing endpoint.
-	oldWorld := image.Pt(int(int32(uint32(center.X)+uint32(radius)**memmap.PtrUint32(0x587000, 192088+uintptr(8*previous))/16)), int(int32(uint32(center.Y)+uint32(radius)**memmap.PtrUint32(0x587000, 192092+uintptr(8*previous))/16)))
+	// The decompiled source read the sine table as unsigned here, so the end of the trail of every orb at a
+	// negative sine or cosine was about 2^28 pixels away: lines across the screen (opennox#682, #738).
+	// The table is signed, as for the head of the trail.
+	oldWorld := updateRadial(center, previous, radius)
 	old := vp.ToScreenPos(oldWorld)
 	old.Y -= int(int16(dr.ZVal))
 	if oldWorld.Y >= center.Y {

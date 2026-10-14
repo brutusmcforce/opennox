@@ -36,10 +36,13 @@ func New(log *slog.Logger, title string, sz image.Point) (*Window, error) {
 	if err := sdl.GLSetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 3); err != nil {
 		return nil, fmt.Errorf("cannot set OpenGL version: %w", err)
 	}
-	if err := sdl.GLSetAttribute(sdl.GL_CONTEXT_PROFILE_CORE, 1); err != nil {
+	// the attribute ids are GL_CONTEXT_PROFILE_MASK and GL_CONTEXT_FLAGS (opennox#749: GL_CONTEXT_PROFILE_CORE
+	// and GL_CONTEXT_FORWARD_COMPATIBLE_FLAG are values, used as ids they set the green and blue sizes);
+	// macOS (and Wine on it) only has 3.2+ contexts as forward-compatible core profiles
+	if err := sdl.GLSetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, sdl.GL_CONTEXT_PROFILE_CORE); err != nil {
 		return nil, fmt.Errorf("cannot set OpenGL core: %w", err)
 	}
-	if err := sdl.GLSetAttribute(sdl.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG, 1); err != nil {
+	if err := sdl.GLSetAttribute(sdl.GL_CONTEXT_FLAGS, sdl.GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); err != nil {
 		return nil, fmt.Errorf("cannot set OpenGL forward: %w", err)
 	}
 	if err := sdl.GLSetAttribute(sdl.GL_DOUBLEBUFFER, 1); err != nil {
