@@ -61,9 +61,10 @@ func screenRopeLine(a, b image.Point) int {
 	return 0
 }
 func screenCircle(x, y, radius int, color uint32) int {
-	// Multiplication and logical shifts are intentionally unsigned, matching C.
+	// Signed 32-bit products and arithmetic shifts, as in Game.exe (imul, sar 4); the decompiled C read the
+	// table as unsigned, which put the points with a negative sine or cosine 2^28 pixels away.
 	point := func(off uintptr) image.Point {
-		return image.Pt(x+int(uint32(radius)**memmap.PtrUint32(0x587000, off)>>4), y+int(uint32(radius)**memmap.PtrUint32(0x587000, off+4)>>4))
+		return image.Pt(x+int((int32(radius)**memmap.PtrInt32(0x587000, off))>>4), y+int((int32(radius)**memmap.PtrInt32(0x587000, off+4))>>4))
 	}
 	first := point(192088)
 	prev := first

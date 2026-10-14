@@ -38,7 +38,12 @@ func uiInventoryStartDrag(w *gui.Window, pos image.Point) {
 		return
 	}
 	if uiInventoryHitRect(pos, 136336) {
-		uiInventorySetDragged(uiInventoryDrawable(uiInventoryEquipment()[uiInventoryEquipmentAt(pos)]))
+		// no slot (-1) is no item: C read the word before the array here
+		var code uint32
+		if slot := uiInventoryEquipmentAt(pos); slot >= 0 {
+			code = uiInventoryEquipment()[slot]
+		}
+		uiInventorySetDragged(uiInventoryDrawable(code))
 		dword_5d4594_1049856 = 1
 		return
 	}

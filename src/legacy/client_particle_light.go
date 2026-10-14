@@ -55,8 +55,9 @@ func particleLightIntensityRaw(p unsafe.Pointer, intensity float32) int {
 }
 func initParticlePalettes() int {
 	for i := 0; i < 64; i++ {
-		// Preserve the source's signed-byte first palette, including its final step.
-		v := int(byte(int8(-i) / 63))
+		// A ramp from 0 to 255, like the others: Game.exe steps a 32-bit counter by 255 (the decompiled C
+		// had a char counting down, which made all but the last entry black).
+		v := i * 255 / 63
 		*effectMapped(1312500 + uintptr(4*i)) = particleRGB(v/3, 3*v/5, v)
 	}
 	for i := 0; i < 32; i++ {

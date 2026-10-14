@@ -3,6 +3,8 @@ package legacy
 import (
 	"unsafe"
 
+	"github.com/brutusmcforce/opennox/libs/object"
+
 	"github.com/brutusmcforce/opennox/common/layout"
 	"github.com/brutusmcforce/opennox/server"
 )
@@ -28,12 +30,18 @@ func unitFinishDialogue(player *server.Object, response byte) {
 	if monster == nil {
 		return
 	}
+	// The dialog is always closed. The original only did that while the partner still had dialog functions,
+	// which it had when the dialog started: a partner that died and was removed during the dialog left
+	// the player in it, with the dialog window open (opennox#662), and the removed object has no update data.
+	reliableEnqueue(int(player.UpdateDataPlayer().Player.PlayerInd), []byte{0xd0, 4}, nil, 1, 0)
+	*partner = nil
+	if monster.UpdateData == nil || monster.Flags().Has(object.FlagDestroyed) {
+		return
+	}
 	a, b := int32(*(*uint32)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](monster.UpdateData).DialogStartFunc))), int32(*(*uint32)(unsafe.Pointer(&layout.As[server.MonsterUpdateData](monster.UpdateData).DialogEndFunc)))
 	if a == -1 || b == -1 {
 		return
 	}
-	reliableEnqueue(int(player.UpdateDataPlayer().Player.PlayerInd), []byte{0xd0, 4}, nil, 1, 0)
-	*partner = nil
 	if layout.As[server.MonsterUpdateData](monster.UpdateData).DialogFlags != 1 {
 		response = 0
 	}

@@ -294,9 +294,8 @@ func effectRainOrb(vp *noxrender.Viewport, dr *client.Drawable) int {
 		*effectMapped(1313700) = effectType("WhiteMoveOrb")
 		*effectMapped(1313704) = effectType("BlueMoveOrb")
 	}
-	// X subtraction is unsigned in C, while Y is assigned to an int before the
-	// float conversion. Preserve that asymmetry and the float32 call boundary.
-	angle := uintptr(effectAngle(float32(uint32(dr.PosVec.X)-u.ToX), float32(int32(uint32(dr.PosVec.Y)-u.ToY))))
+	// Both differences are signed ints in C: the burst goes away from the target on both axes.
+	angle := uintptr(effectAngle(float32(int32(uint32(dr.PosVec.X)-u.ToX)), float32(int32(uint32(dr.PosVec.Y)-u.ToY))))
 	x := effectFloatInt(float32(float64(*memmap.PtrFloat32(0x587000, 194136+8*angle))*150 + float64(int32(u.ToX))))
 	y := effectFloatInt(float32(float64(*memmap.PtrFloat32(0x587000, 194140+8*angle))*150 + float64(int32(u.ToY))))
 	coords := [4]uint16{uint16(x), uint16(y), uint16(dr.PosVec.X), uint16(dr.PosVec.Y + 20)}
