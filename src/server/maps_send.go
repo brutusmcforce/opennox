@@ -249,6 +249,11 @@ func (s *serverMapSend) Update() {
 		if !it.Active {
 			continue
 		}
+		if s.s.NetStr.ConnByPlayerInd(it.PlayerInd) == nil {
+			// the player left during the download
+			it.Active = false
+			continue
+		}
 		if s.CountQueued(ntype.PlayerInd(i)) <= mapSendMaxQueue {
 			s.SendMore(it)
 		}

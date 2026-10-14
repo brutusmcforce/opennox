@@ -12,11 +12,27 @@ import (
 
 var (
 	// LobbyServer is an address of the Nox lobby server used for discovery.
-	LobbyServer = "http://nox.nwca.xyz:8088"
+	LobbyServer = DefaultLobbyServer
 )
 
+const (
+	// DefaultLobbyServer is the public lobby.
+	DefaultLobbyServer = "https://nox.thunraz.se"
+	// oldLobbyServer was the default before. Configs written by older versions have it saved,
+	// so it means the current default.
+	oldLobbyServer = "http://nox.nwca.xyz:8088"
+)
+
+// lobbyServer is the lobby to use.
+func lobbyServer() string {
+	if LobbyServer == "" || LobbyServer == oldLobbyServer {
+		return DefaultLobbyServer
+	}
+	return LobbyServer
+}
+
 func newLobbyClient() *lobby.Client {
-	cli := lobby.NewClient(LobbyServer)
+	cli := lobby.NewClient(lobbyServer())
 	cli.SetUserAgent("OpenNox/" + version.Version())
 	return cli
 }

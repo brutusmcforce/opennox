@@ -901,8 +901,13 @@ func (s *Server) MapTraceRayAt(p1, p2 types.Pointf, outPos *types.Pointf, outGri
 	if wx1 < 0 || wx1 >= 256 || wy1 < 0 || wy1 >= 256 {
 		return false
 	}
-	wx2 := int(p2.X / common.GridStep)
-	wy2 := int(p2.Y / common.GridStep)
+	if p2.X != p2.X || p2.Y != p2.Y { // NaN: the loops below would not end
+		return false
+	}
+	// Cells outside the grid never block, so the end cell is clamped next to it: a huge end point
+	// would otherwise loop for a long time.
+	wx2 := clampTraceCell(p2.X)
+	wy2 := clampTraceCell(p2.Y)
 	if wx1 == wx2 {
 		step := +1
 		if p2.Y < p1.Y {
@@ -964,7 +969,12 @@ func (s *Server) MapTraceRayAt(p1, p2 types.Pointf, outPos *types.Pointf, outGri
 		slope := dy / dx
 		var xnext float32
 		for x := p1.X; mulX*x <= mulX*p2.X; x = xnext + 0.1*mulX {
-			xi := int(math.Trunc(float64(x / common.GridStep)))
+			// Floor, not Trunc: with Trunc a ray going left to a negative X never got past -0.1 (the server hung
+			// tracing to an object outside the map). The same for positive X.
+			xi := int(math.Floor(float64(x / common.GridStep)))
+			if xi < 0 && mulX < 0 || xi >= WallGridSize && mulX > 0 {
+				break // left the grid: nothing else can block
+			}
 			xmin := float32(xi+0) * common.GridStep
 			xmax := float32(xi+1) * common.GridStep
 			if mulX <= 0 {
@@ -981,6 +991,7 @@ func (s *Server) MapTraceRayAt(p1, p2 types.Pointf, outPos *types.Pointf, outGri
 			}
 			yi1 := int(math.Trunc(float64(y1/common.GridStep)) - stepY)
 			yi2 := int(math.Trunc(float64(y2/common.GridStep)) + stepY)
+			yi1, yi2 = clampCell(yi1), clampCell(yi2) // the cells outside the grid never block
 			ddy := 1
 			if yi1 >= yi2 {
 				ddy = -1
@@ -1014,7 +1025,10 @@ func (s *Server) MapTraceRayAt(p1, p2 types.Pointf, outPos *types.Pointf, outGri
 		slope := dx / dy
 		var ynext float32
 		for y := p1.Y; mulY*y <= mulY*p2.Y; y = ynext + 0.1*mulY {
-			yi := int(math.Trunc(float64(y / common.GridStep)))
+			yi := int(math.Floor(float64(y / common.GridStep))) // see above
+			if yi < 0 && mulY < 0 || yi >= WallGridSize && mulY > 0 {
+				break
+			}
 			ymin := float32(yi+0) * common.GridStep
 			ymax := float32(yi+1) * common.GridStep
 			if mulY <= 0 {
@@ -1031,6 +1045,7 @@ func (s *Server) MapTraceRayAt(p1, p2 types.Pointf, outPos *types.Pointf, outGri
 			}
 			xi1 := int(math.Trunc(float64(x1/common.GridStep)) - stepX)
 			xi2 := int(math.Trunc(float64(x2/common.GridStep)) + stepX)
+			xi1, xi2 = clampCell(xi1), clampCell(xi2) // the cells outside the grid never block
 			ddy := 1
 			if xi1 >= xi2 {
 				ddy = -1
@@ -1050,6 +1065,23 @@ func (s *Server) MapTraceRayAt(p1, p2 types.Pointf, outPos *types.Pointf, outGri
 		}
 		return true
 	}
+}
+
+// clampTraceCell is the grid cell of a ray end coordinate, at most one cell outside the grid.
+func clampTraceCell(v float32) int {
+	c := v / common.GridStep
+	switch {
+	case c <= -1:
+		return -1
+	case c >= WallGridSize:
+		return WallGridSize
+	}
+	return int(c)
+}
+
+// clampCell keeps a cell index at most one cell outside the grid.
+func clampCell(c int) int {
+	return min(max(c, -1), WallGridSize)
 }
 
 func (s *Server) mapTraceRayImpl(pi image.Point, p1, p2 types.Pointf, flags MapTraceFlags) []types.Pointf {

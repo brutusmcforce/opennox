@@ -239,7 +239,9 @@ func (s *Server) nox_xxx_netSendBySock_40EE10(conn *netstr.Conn, ind ntype.Playe
 
 func noxnetCheckPassword(p *noxnet.MsgServerPass) netmsg.Message {
 	sst := getServerSettings()
-	expPass := alloc.GoString16((*uint16)(unsafe.Add(unsafe.Pointer(sst), 39)))
+	// The original compared with ((wchar_t*)settings + 39), the password at byte 78; byte 39 was compared
+	// since the port, so no password ever matched (opennox#574).
+	expPass := sst.Password()
 
 	if p.Pass != expPass {
 		return &noxnet.MsgServerError{Err: noxnet.ErrWrongPassword}

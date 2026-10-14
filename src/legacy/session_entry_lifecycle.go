@@ -44,6 +44,12 @@ func sessionPlayerReady(index int32) {
 		return
 	}
 	playerStateAddStatus(pl, 16)
+	if pl.PlayerUnit != nil {
+		// The client's friend list holds net codes, which a new map reuses for other objects: without a reset
+		// enemies could get a friendly selection circle after a map change, and friends a hostile one (opennox#535).
+		gameplayReportFriendReset(int(index))
+		statePlayerVisibility(index)
+	}
 	if noxflags.HasGame(8192) && !noxflags.HasGame(128) {
 		if u := pl.PlayerUnit; u != nil {
 			spellLifeBuffOff(u, 23)

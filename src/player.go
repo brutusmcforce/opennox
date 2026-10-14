@@ -447,6 +447,39 @@ func (s *Server) newPlayer(ind ntype.PlayerInd, opts *PlayerOpts) int {
 	return int(punit.NetCode)
 }
 
+// Spell flags the original spell bar uses: a new slot casts on the caster with spellDefaultSelf,
+// and its direction can't be changed with spellFixedTarget.
+const (
+	spellDefaultSelf = things.SpellDefensive | things.SpellFlags(0x400)
+	spellFixedTarget = things.SpellCantTargetSelf | things.SpellFlags(0x400)
+)
+
+// playerManualSpell casts the spell a player spoke with phonemes.
+//
+// The original used the target of the last spell cast from the spell bar for it: a manual heal could go
+// to the monster that was targeted last, an attack to the player himself (opennox#301). The target is now
+// picked as for a new spell bar slot: the caster for defensive spells, otherwise the object under the cursor.
+// Holding the "invert spell target" key (Shift, as on the spell bar) picks the other one.
+func (s *Server) playerManualSpell(u *server.Object) {
+	ud := u.UpdateDataPlayer()
+	pl := ud.Player
+	if leaf := ud.SpellPhonemeLeaf; leaf != nil && leaf != s.Spells.PhonemeTree() && leaf.Ind != 0 {
+		id := spell.ID(leaf.Ind)
+		self := s.Spells.HasFlags(id, spellDefaultSelf)
+		ind := int(pl.PlayerIndex())
+		if ind >= 0 && ind < len(s.spellInvertFrame) && ud.SpellCastStart != 0 && s.spellInvertFrame[ind] >= ud.SpellCastStart &&
+			!s.Spells.HasFlags(id, spellFixedTarget) {
+			self = !self
+		}
+		if self {
+			pl.Obj3640 = u
+		} else {
+			pl.Obj3640 = ud.CursorObj
+		}
+	}
+	s.PlayerSpell(u)
+}
+
 func (s *Server) PlayerSpell(u *server.Object) {
 	ok2 := true
 	ud := u.UpdateDataPlayer()

@@ -8,6 +8,12 @@ const (
 
 	// maxFieldLen limits text fields of a registered game (name, map, etc).
 	maxFieldLen = 128
+	// maxPlayers limits the player count of a registered game.
+	maxPlayers = 128
+	// maxGamesPerAddr limits the games registered from one address (one per port).
+	maxGamesPerAddr = 16
+	// maxGames limits all registered games.
+	maxGames = 2048
 )
 
 // GameMode is a Nox game mode.

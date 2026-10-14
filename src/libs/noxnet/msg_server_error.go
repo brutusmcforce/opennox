@@ -147,7 +147,7 @@ func (p *MsgServerError) Encode(data []byte) (int, error) {
 }
 
 func (p *MsgServerError) Decode(data []byte) (int, error) {
-	if len(data) < 9 {
+	if len(data) < 1 { // a single byte, as Encode writes and the original sent (it asked for 9)
 		return 0, io.ErrUnexpectedEOF
 	}
 	p.Err = ConnectError(data[0])

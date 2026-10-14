@@ -1244,6 +1244,11 @@ func (obj *Object) SetTeam(tm *server.Team) {
 	}
 	// TODO: check arg3 and arg5
 	legacy.Nox_xxx_createAtImpl_4191D0(tm.ID(), obj.TeamPtr(), 1, int(obj.NetCode), 0)
+	if obj.Class().Has(object.ClassMonster) {
+		// players see it as a friend or an enemy now (the selection circle, opennox#612);
+		// the join only updates this for player units
+		obj.SObj().Nox_xxx_monsterMarkUpdate_4E8020()
+	}
 }
 
 func (obj *Object) IsLocked() bool {

@@ -39,6 +39,10 @@ func (s *Server) updateUnitsBBB() { // nox_xxx_updateUnits_51B100_B
 		}
 		if obj.Class().Has(object.ClassMonster) {
 			obj.NeedSync()
+		} else if obj.Class().Has(object.ClassPlayer) && obj.Flags().Has(object.FlagNoUpdate) {
+			// A frozen player (e.g. talking to an NPC) skips its update, which sends it to the clients:
+			// they stopped drawing it after a few frames (opennox#671).
+			obj.NeedSync()
 		}
 		legacy.Nox_xxx_updateFallLogic_51B870(obj.SObj())
 		if h := obj.HealthData; h != nil {

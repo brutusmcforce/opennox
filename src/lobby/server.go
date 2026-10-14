@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/netip"
 	"strings"
 )
 
@@ -15,6 +16,16 @@ type Server struct {
 	l         Lobby
 	mux       *http.ServeMux
 	trustAddr bool // trust IP sent by a remote
+	// trustProxy takes the remote IP from the X-Real-IP or X-Forwarded-For headers of requests
+	// that come from the local host (a reverse proxy).
+	trustProxy bool
+}
+
+// SetTrustProxy makes the server use the client address set by a reverse proxy on the same host
+// (the X-Real-IP header, or the last address in X-Forwarded-For). Requests from other hosts are not affected,
+// so the headers can't be used to register a game for someone else's address.
+func (api *Server) SetTrustProxy(v bool) {
+	api.trustProxy = v
 }
 
 // IPResp represents a response to the address request.
@@ -81,7 +92,22 @@ func (api *Server) getAddress(r *http.Request) (string, error) {
 		return "", errors.New("cannot detect IP address")
 	}
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	return ip, err
+	if err != nil || !api.trustProxy {
+		return ip, err
+	}
+	if peer, err := netip.ParseAddr(ip); err != nil || !peer.IsLoopback() {
+		return ip, nil
+	}
+	if v, err := netip.ParseAddr(strings.TrimSpace(r.Header.Get("X-Real-IP"))); err == nil {
+		return v.Unmap().String(), nil
+	}
+	if h := r.Header.Values("X-Forwarded-For"); len(h) != 0 {
+		list := strings.Split(h[len(h)-1], ",")
+		if v, err := netip.ParseAddr(strings.TrimSpace(list[len(list)-1])); err == nil {
+			return v.Unmap().String(), nil
+		}
+	}
+	return ip, nil
 }
 
 func (api *Server) Address(w http.ResponseWriter, r *http.Request) {

@@ -22,6 +22,31 @@ func uiInventoryPrev(dr *client.Drawable) *client.Drawable {
 func uiInventorySetPrev(dr, prev *client.Drawable) {
 	dr.Field_93 = prev
 }
+
+// uiInventoryRejected holds the net codes of picked up items that did not fit into the inventory window.
+// The server is told and drops them (with its own "carrying too much" message), so the reports that follow
+// for them, like equipping a returning chakram and the drop, are expected (opennox#697).
+var uiInventoryRejected []uint32
+
+func uiInventoryReject(code uint32) {
+	if len(uiInventoryRejected) >= 32 {
+		uiInventoryRejected = uiInventoryRejected[1:]
+	}
+	uiInventoryRejected = append(uiInventoryRejected, code)
+}
+
+func uiInventoryWasRejected(code uint32, forget bool) bool {
+	for i, c := range uiInventoryRejected {
+		if c == code {
+			if forget {
+				uiInventoryRejected = append(uiInventoryRejected[:i], uiInventoryRejected[i+1:]...)
+			}
+			return true
+		}
+	}
+	return false
+}
+
 func uiInventoryError(id string) {
 	s := GetServer().S().Strings().GetStringInFile(strman.ID(id), `C:\NoxPost\src\Client\Gui\guiinv.c`)
 	Nox_xxx_printCentered_445490(s)
@@ -131,7 +156,8 @@ func nox_xxx_spritePickup_461660(code, typ int32, mods *server.ModifierInitData)
 		}
 	} else {
 		if uiInventoryNewStack(uint32(code), t, mods, &coords) == 0 {
-			uiInventoryError("InventoryFull")
+			// the original printed a debug error here; the server explains why the item is dropped
+			uiInventoryReject(uint32(code))
 			return 0
 		}
 		cell = &uiInventoryGrid()[coords[1]+21*coords[0]]
@@ -259,7 +285,7 @@ func sub_461A80(code int32) {
 		uiInventoryDraggedItem = nil
 		dword_5d4594_1049856 = 0
 		Nox_xxx_cursorResetDraggedItem_4776A0()
-	} else {
+	} else if !uiInventoryWasRejected(uint32(code), true) {
 		uiInventoryError("DroppedNotFound")
 	}
 }

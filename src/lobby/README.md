@@ -2,9 +2,6 @@
 
 This project provides a Nox game lobby which exposes a simple HTTP API for both listing and registering Nox game servers.
 
-XWIS games will also appear in the list returned by the API, so the lobby is backward-compatible.
-Due to technical limitations, however, games registered via HTTP won't be registered on XWIS.
-
 The main use case for the lobby is to support OpenNox, but the API can also be used for bots
 that want to notify players about currently active Nox games.
 
@@ -13,7 +10,7 @@ that want to notify players about currently active Nox games.
 To get a list of games on the public lobby:
 
 ```bash
-curl 'http://nox.nwca.xyz:8088/api/v0/games/list'
+curl 'https://nox.thunraz.se/api/v0/games/list'
 ```
 
 This package is also the Go client for the HTTP API; OpenNox uses it to list and register games.

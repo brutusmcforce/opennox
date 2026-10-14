@@ -671,6 +671,30 @@ func uiListDraw(w *gui.Window, draw *gui.WindowData, images bool) int {
 	r.SetTextSmooting(false)
 	return 1
 }
+
+// uiListGrow makes room for at least n rows in a list box. The rows are kept.
+func uiListGrow(w *gui.Window, n int) {
+	d := uiListData(w)
+	if d == nil || n <= int(d.Count) || n > 0xffff {
+		return
+	}
+	rows, _ := alloc.Make([]gui.ScrollListBoxItem{}, n)
+	copy(rows, uiListRows(d))
+	alloc.FreePtr(unsafe.Pointer(d.Items))
+	d.Items = unsafe.SliceData(rows)
+	if d.Field_4 != 0 { // the selection array of a multiple selection list
+		old := uiListSelection(d)
+		selection, _ := alloc.Make([]int32{}, n+1)
+		for i := range selection {
+			selection[i] = -1
+		}
+		copy(selection, old)
+		alloc.FreePtr(memmap.WordPtr(d.Field_12))
+		d.Field_12 = memmap.PtrWord(unsafe.Pointer(unsafe.SliceData(selection)))
+	}
+	d.Count = uint16(n)
+}
+
 func uiListNew(parent *gui.Window, flags gui.StatusFlags, x, y, width, height int, draw *gui.WindowData, opts *gui.ScrollListBoxData) *gui.Window {
 	fh := GetClient().R2().FontHeight(GetClient().R2().GetFonts().AsFont(draw.FontPtr))
 	if int(opts.Line_height) < fh {

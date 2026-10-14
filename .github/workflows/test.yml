@@ -32,7 +32,7 @@ jobs:
         # packages that need cgo (the SDL/OpenGL seats) are covered by the game build
         run: |
           go list -e -f '{{if not .Error}}{{if not .DepsErrors}}{{.ImportPath}}{{end}}{{end}}' \
-            ./libs/... ./noxcrypt/... ./xwis/... ./lobby/... ./nat/... ./noxscript/... ./opennoxcontrol/... ./vqa-decode/... \
+            ./libs/... ./noxcrypt/... ./lobby/... ./nat/... ./noxscript/... ./opennoxcontrol/... ./vqa-decode/... \
             > "$RUNNER_TEMP/packages.txt"
           wc -l < "$RUNNER_TEMP/packages.txt"
 

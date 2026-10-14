@@ -109,7 +109,9 @@ func sub_462040(code int32) {
 	} else {
 		src = uiInventoryDragged()
 		if src == nil || src.NetCode32 != uint32(code) {
-			uiInventoryError("EquippedNotFound")
+			if !uiInventoryWasRejected(uint32(code), false) {
+				uiInventoryError("EquippedNotFound")
+			}
 			return
 		}
 	}

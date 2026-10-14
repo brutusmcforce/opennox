@@ -102,6 +102,9 @@ type Server struct {
 	quest           questServer
 	springs         serverSprings
 	mapSwitchWPName string
+	// spellInvertFrame is when each player last held the "invert spell target" key (Shift) while
+	// casting a spell with phonemes (see playerManualSpell).
+	spellInvertFrame [32]uint32
 	// sysopTries is when each player last sent a sysop password, to rate-limit guessing.
 	sysopTries map[ntype.PlayerInd]time.Duration
 	// scriptObject is the raw script section of the current map. It's written back when the map is saved.

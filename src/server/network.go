@@ -132,6 +132,9 @@ func (s *Server) OnPacketOpSub(pli ntype.PlayerInd, op netmsg.Op, data []byte, p
 	case netmsg.MSG_KEEP_ALIVE:
 		return 1, true, nil
 	case 0x26: // TODO: what this opcode is for?
+		if len(data) < 2 {
+			return 0, false, io.ErrUnexpectedEOF
+		}
 		return 2, true, nil
 	case netmsg.MSG_MOUSE:
 		var p noxnet.MsgMouse

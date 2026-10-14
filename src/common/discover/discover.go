@@ -24,7 +24,6 @@ const (
 	priorityStatic = -2
 	priorityLAN    = -1
 	priorityLobby  = 0
-	priorityXWIS   = 1
 )
 
 type Server struct {
@@ -40,7 +39,6 @@ type SearchFunc func(ctx context.Context, log *slog.Logger, out chan<- Server) e
 
 var (
 	backends = make(map[string]SearchFunc)
-	fallback = make(map[string]SearchFunc)
 )
 
 // RegisterBackend register a new server discovery backend.
@@ -52,14 +50,6 @@ func RegisterBackend(name string, fnc SearchFunc) {
 		log = log.With("src", name)
 		return fnc(ctx, log, out)
 	}
-}
-
-// RegisterFallback register a new fallback server discovery backend.
-func RegisterFallback(name string, fnc SearchFunc) {
-	if _, ok := fallback[name]; ok {
-		panic("already registered: " + name)
-	}
-	fallback[name] = fnc
 }
 
 // UseOnlyServers restricts server discovery to the given addresses, which are still pinged (for tests).
@@ -80,7 +70,6 @@ func UseOnlyServers(addrs []netip.AddrPort) {
 		}
 		return nil
 	}}
-	fallback = make(map[string]SearchFunc)
 }
 
 func isTimeout(err error) bool {
@@ -157,35 +146,17 @@ func mergeInfo(g1 lobby.Game, g2 *lobby.Game) lobby.Game {
 
 func eachServer(rctx context.Context, log *slog.Logger, pc *net.UDPConn, fnc ServerFunc) error {
 	log.Info("searching for servers")
-	ctx1 := rctx
-	dt1, dt2 := discoverTimeout, discoverTimeout
-	if deadline, ok := rctx.Deadline(); ok {
-		dt := time.Until(deadline)
-		dt1, dt2 = dt/2, dt/2
+	ctx := rctx
+	if _, ok := rctx.Deadline(); !ok {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(rctx, discoverTimeout)
+		defer cancel()
 	}
-	ctx1, cancel1 := context.WithTimeout(rctx, dt1)
-	defer cancel1()
-	n, err1 := eachServerWith(ctx1, log, pc, fnc, backends)
-	if err1 != nil {
-		log.Warn("search", "err", err1)
+	_, err := eachServerWith(ctx, log, pc, fnc, backends)
+	if err != nil {
+		log.Warn("search", "err", err)
 	}
-	if n != 0 {
-		return err1
-	}
-	log.Warn("no servers, searching with fallback")
-	ctx2, cancel2 := context.WithTimeout(rctx, dt2)
-	defer cancel2()
-	n, err2 := eachServerWith(ctx2, log, pc, fnc, fallback)
-	if n != 0 {
-		return err2
-	}
-	if err2 != nil {
-		log.Error("fallback search", "err", err2)
-		if err1 != nil {
-			log.Error("search failed", "err", err1)
-		}
-	}
-	return err1
+	return err
 }
 
 func eachServerWith(ctx context.Context, log *slog.Logger, pc *net.UDPConn, fnc ServerFunc, blist map[string]SearchFunc) (int, error) {

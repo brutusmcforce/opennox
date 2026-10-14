@@ -324,7 +324,9 @@ func sustainedShieldDamage(u *server.Object, damage *int32, kind int32, source *
 	v := *damage
 	if int32(uint16(resourceGetHP(u))) > v {
 		*damage = v / 2
-		if *damage == 0 {
+		// The original made this at least 1, so no damage (e.g. a spider's spit) hurt only with the shield
+		// (opennox#660): the shield must never make it worse.
+		if *damage == 0 && v > 0 {
 			*damage = 1
 		}
 		sustainedShieldAbsorb(u, *damage)

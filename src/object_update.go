@@ -110,7 +110,7 @@ func nox_xxx_updatePlayer_4F8100(u *server.Object) {
 		}
 	}
 	if ud.SpellCastStart != 0 && ud.Field47_0 == 0 && (s.Frame()-ud.SpellCastStart) > spellTimeout {
-		s.PlayerSpell(u) // (manual?) spell casting
+		s.playerManualSpell(u) // (manual?) spell casting
 		ud.SpellCastStart = 0
 	}
 	nox_xxx_playerInventory_4F8420(u)
@@ -575,11 +575,18 @@ func (s *Server) unitUpdatePlayerImplB(u *server.Object, a1, v68 bool) {
 			// If the appropriate flag is set, reset countdown for manual casting
 			// every phoneme press
 			u.PlayerActionPhoneme(it.Code, resetCountdownPerPhoneme)
+		case player.CCInvertSpellTarget:
+			// only sent by OpenNox clients; the original handled the key on the client side only
+			if ud.SpellCastStart != 0 {
+				if ind := int(pl.PlayerIndex()); ind >= 0 && ind < len(s.spellInvertFrame) {
+					s.spellInvertFrame[ind] = s.Frame()
+				}
+			}
 		case player.CCSpellPatternEnd:
 			nox_xxx_playerSetState_4FA020(u, server.PlayerState13)
 			if !noxflags.HasGame(noxflags.GameModeChat) {
 				if ud.SpellCastStart != 0 {
-					s.PlayerSpell(u)
+					s.playerManualSpell(u)
 					ud.SpellCastStart = 0
 				} else {
 					targ := s.getObjectFromNetCode(int(it.Uint32()))
@@ -590,7 +597,7 @@ func (s *Server) unitUpdatePlayerImplB(u *server.Object, a1, v68 bool) {
 			nox_xxx_playerSetState_4FA020(u, server.PlayerState13)
 			if !noxflags.HasGame(noxflags.GameModeChat) {
 				if ud.SpellCastStart != 0 {
-					s.PlayerSpell(u)
+					s.playerManualSpell(u)
 					ud.SpellCastStart = 0
 				}
 				ud.Field55 = pl.CursorVec.X
@@ -601,7 +608,7 @@ func (s *Server) unitUpdatePlayerImplB(u *server.Object, a1, v68 bool) {
 		case player.CCCastMostRecentSpell:
 			if !noxflags.HasGame(noxflags.GameModeChat) {
 				if ud.SpellCastStart != 0 {
-					s.PlayerSpell(u)
+					s.playerManualSpell(u)
 					ud.SpellCastStart = 0
 				}
 				ud.Field55 = pl.CursorVec.X

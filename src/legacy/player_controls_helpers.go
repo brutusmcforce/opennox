@@ -210,8 +210,18 @@ func controlSetWaypoint(u *server.Object, x, y uint32) {
 	if *(*byte)(unsafe.Pointer(&controlPlayer(u).Field3680))&3 != 0 {
 		return
 	}
-	ptr := &layout.As[server.PlayerUpdateData](data).Waypoints[*controlWaypointByte(data, 0)]
+	slot := int(*controlWaypointByte(data, 0))
 	pos := *(*types.Pointf)(unsafe.Pointer(&[2]uint32{x, y}))
+	waypoints := &layout.As[server.PlayerUpdateData](data).Waypoints
+	// The position comes from the client: a waypoint outside of the map is deleted when it moves,
+	// and the player kept using the deleted object.
+	if slot >= len(waypoints) || !GetServer().S().Map.ValidIndexPos(pos) {
+		return
+	}
+	ptr := &waypoints[slot]
+	if *ptr != nil && (*ptr).ObjFlags&0x20 != 0 { // destroyed
+		*ptr = nil
+	}
 	if *ptr != nil {
 		Nox_xxx_unitMove_4E7010(*ptr, pos)
 	} else {

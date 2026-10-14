@@ -15,7 +15,6 @@ import (
 	"github.com/brutusmcforce/opennox/common/layout"
 
 	"github.com/brutusmcforce/opennox/lobby"
-	"github.com/brutusmcforce/opennox/xwis"
 
 	"github.com/brutusmcforce/opennox/libs/common"
 	"github.com/brutusmcforce/opennox/libs/console"
@@ -43,7 +42,7 @@ import (
 )
 
 var (
-	useXWIS                   = true
+	registerOnline            = true
 	gameLog                   = log.New("game")
 	nox_game_playState_811372 int
 	movieFilesStackCur        int
@@ -56,7 +55,7 @@ var (
 )
 
 func init() {
-	configBoolPtr("network.xwis.register", "NOX_XWIS", true, &useXWIS)
+	configBoolPtr("network.lobby.register", "NOX_LOBBY_REGISTER", true, &registerOnline)
 	configStrPtr("server.maps.default_chat", "NOX_CHAT_MAP", "so_lod", &defaultChatMap)
 	gui.RegisterState(client.StateMovies, "Movies", nox_game_rollLogoAndStart_4AB1F0)
 	gui.RegisterState(client.StateMainMenu, "MainMenu", nox_game_showMainMenu4A1C00)
@@ -329,7 +328,7 @@ func sub_4D6F90(a1 uint32) {
 }
 
 type srvReg struct {
-	cur xwisInfoShort
+	cur gameInfoShort
 	srv *discover.RegServer
 }
 
@@ -355,7 +354,7 @@ func nox_xxx_serverHost_43B4D0() {
 	}
 }
 
-type xwisInfoShort struct {
+type gameInfoShort struct {
 	Name       string
 	Map        string
 	Port       int
@@ -367,7 +366,7 @@ type xwisInfoShort struct {
 	Res        image.Point
 }
 
-func (v *xwisInfoShort) Equal(v2 *xwisInfoShort) bool {
+func (v *gameInfoShort) Equal(v2 *gameInfoShort) bool {
 	return v.Name == v2.Name && v.Map == v2.Map &&
 		v.Port == v2.Port && v.Flags == v2.Flags &&
 		v.Access == v2.Access && len(v.Players) == len(v2.Players) &&
@@ -375,7 +374,7 @@ func (v *xwisInfoShort) Equal(v2 *xwisInfoShort) bool {
 		v.Res == v2.Res
 }
 
-func (s *Server) getGameInfo() xwisInfoShort {
+func (s *Server) getGameInfo() gameInfoShort {
 	access := lobby.AccessOpen
 	if sst := getServerSettings(); sst.Flags100.Has(server.ServerPrivate) {
 		access = lobby.AccessPassword
@@ -394,7 +393,7 @@ func (s *Server) getGameInfo() xwisInfoShort {
 	if !isDedicatedServer {
 		res = noxClient.videoGetGameMode()
 	}
-	return xwisInfoShort{
+	return gameInfoShort{
 		Port:       s.ServerPort(),
 		Name:       s.getServerName(),
 		Map:        s.getServerMap(),
@@ -405,11 +404,6 @@ func (s *Server) getGameInfo() xwisInfoShort {
 		Access:     access,
 		Res:        res,
 	}
-}
-
-func xwisIsQuest(info *xwis.GameInfo) bool {
-	flags := int(info.Flags) | int(info.MapType)
-	return flags&int(xwis.MapTypeQuest) != 0
 }
 
 func gameFlagsToMode(f noxflags.GameFlag) lobby.GameMode {
@@ -434,19 +428,7 @@ func gameFlagsToMode(f noxflags.GameFlag) lobby.GameMode {
 	return lobby.ModeCustom
 }
 
-func gameAccessToXWIS(v lobby.GameAccess) xwis.Access {
-	switch v {
-	case lobby.AccessOpen:
-		return xwis.AccessOpen
-	case lobby.AccessClosed:
-		return xwis.AccessClosed
-	case lobby.AccessPassword:
-		return xwis.AccessPrivate
-	}
-	return xwis.AccessOpen
-}
-
-func (v xwisInfoShort) GameInfo() discover.GameInfo {
+func (v gameInfoShort) GameInfo() discover.GameInfo {
 	info := discover.GameInfo{
 		Game: lobby.Game{
 			Name: v.Name,
@@ -457,35 +439,24 @@ func (v xwisInfoShort) GameInfo() discover.GameInfo {
 				Height:  v.Res.Y,
 				HighRes: true,
 			},
-			Mode: gameFlagsToMode(v.Flags),
-			Vers: version.Version(),
+			Mode:   gameFlagsToMode(v.Flags),
+			Access: v.Access,
+			Vers:   version.Version(),
 			Players: lobby.PlayersInfo{
 				Cur:  len(v.Players),
 				Max:  v.MaxPlayers,
 				List: v.Players,
 			},
 		},
-		XWIS: xwis.GameInfo{
-			Name:       v.Name,
-			Map:        v.Map,
-			Resolution: xwis.Res1024x768,
-			Flags:      xwis.GameFlags(v.Flags),
-			Access:     gameAccessToXWIS(v.Access),
-			Players:    len(v.Players),
-			MaxPlayers: v.MaxPlayers,
-		},
 	}
 	if v.Flags.Has(noxflags.GameModeQuest) {
 		info.Game.Quest = &lobby.QuestInfo{Stage: v.Level}
-	}
-	if xwisIsQuest(&info.XWIS) {
-		info.XWIS.FragLimit = v.Level
 	}
 	return info
 }
 
 func (s *Server) maybeRegisterGameOnline() {
-	if !useXWIS || !noxflags.HasGame(noxflags.GameOnline) || env.IsE2E() || !(isDedicatedServer || s.Announce) {
+	if !registerOnline || !noxflags.HasGame(noxflags.GameOnline) || env.IsE2E() || !isDedicatedServer && !s.Announce {
 		s.maybeStopRegister()
 		return
 	}

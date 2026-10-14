@@ -2,7 +2,6 @@ package opennox
 
 import (
 	"encoding/binary"
-	"fmt"
 	"time"
 	"unsafe"
 
@@ -72,8 +71,10 @@ func (s *Server) onPacketRaw(pli ntype.PlayerInd, data []byte) bool {
 		if s.NetStr.Debug && n != 0 {
 			netstr.Log.Printf("SERVER: op=%d (%s) [%d:%d]\n%02x %x", int(op), op.String(), int(n)-1, op.Len(), data[0], data[1:])
 		}
-		if n > len(data) {
-			panic(fmt.Errorf("incorrect length returned for op: %v", op))
+		if n <= 0 || n > len(data) {
+			// a handler bug: drop the rest of the packet, a client must not be able to stop the server
+			netstr.Log.Printf("SERVER: ERR: op=%d (%s): handler returned length %d of %d", int(op), op.String(), n, len(data))
+			return false
 		}
 		data = data[n:]
 	}

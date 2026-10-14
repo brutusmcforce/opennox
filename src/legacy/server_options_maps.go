@@ -14,6 +14,12 @@ func serverOptionsMapList(mode int, current string, update bool) {
 	w := serverOptionsWindow(1046496)
 	teamUIEvent(w, 16399, 0, 0)
 	*serverOptionsWord(1046552) = uint32(mode)
+	// The list from the window file holds 256 maps and drops the first ones for more (opennox#651).
+	n := 0
+	for it := mapCatalogFirst(); it != nil; it = mapCatalogNext(it) {
+		n++
+	}
+	uiListGrow(w, n)
 	selected, index := -1, 0
 	for it := mapCatalogFirst(); it != nil; it = mapCatalogNext(it) {
 		if it.Field_6 == 0 || int(sessionMapFlags(it))&mode == 0 {

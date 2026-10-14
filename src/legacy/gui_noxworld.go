@@ -143,7 +143,7 @@ func (s *Nox_gui_server_ent_t) ServerName() string {
 }
 
 func (s *Nox_gui_server_ent_t) SetServerName(v string) {
-	alloc.StrCopy(s.ServerNameBuf[:], v)
+	alloc.StrCopyZero(s.ServerNameBuf[:], v) // terminated: some readers read up to the zero
 }
 
 func (s *Nox_gui_server_ent_t) MapName() string {

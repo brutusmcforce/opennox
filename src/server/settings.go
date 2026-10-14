@@ -1,6 +1,9 @@
 package server
 
-import "unsafe"
+import (
+	"unicode/utf16"
+	"unsafe"
+)
 
 type Settings3 struct {
 	Vals [5]uint32 // 0, 0
@@ -92,4 +95,13 @@ type Settings struct {
 
 func (d *Settings) Settings2() *Settings2 {
 	return (*Settings2)(unsafe.Pointer(&d.settings2))
+}
+
+// Password is the game password players must give to join.
+func (s *Settings) Password() string {
+	n := 0
+	for n < len(s.ServerPass78) && s.ServerPass78[n] != 0 {
+		n++
+	}
+	return string(utf16.Decode(s.ServerPass78[:n]))
 }

@@ -71,7 +71,9 @@ func (s *Server) nox_xxx_pathFind_50BA00(far bool, obj *server.Object, a3 *types
 	vn.Field8 = nil
 	vn2 := vn
 
-	s.AI.Paths.MapIndex(int(x0), int(y0)).Index0 = s.AI.Paths.MapIndexLast
+	if p := s.AI.Paths.MapIndex(int(x0), int(y0)); p != nil { // nil: starting outside of the map
+		p.Index0 = s.AI.Paths.MapIndexLast
+	}
 	for v66 := int32(0); ; {
 		vn3 := vn2
 		vn2 = nil
@@ -345,7 +347,9 @@ func (s *Server) Sub_50CB20(a1 *server.Object, a2 *types.Pointf) *server.Waypoin
 	v4.Y2 = uint16(int16(a2a.Y))
 	v4.Field4 = nil
 	v4.Field8 = nil
-	s.AI.Paths.MapIndex(int(v4.X0), int(v4.Y2)).Index0 = s.AI.Paths.MapIndexLast
+	if p := s.AI.Paths.MapIndex(int(v4.X0), int(v4.Y2)); p != nil { // nil: starting outside of the map
+		p.Index0 = s.AI.Paths.MapIndexLast
+	}
 	for {
 		var v19 *server.AIVisitNode
 		if v4 == nil {
@@ -354,7 +358,7 @@ func (s *Server) Sub_50CB20(a1 *server.Object, a2 *types.Pointf) *server.Waypoin
 		for v6 := v4; v6 != nil; v6 = v6.Field8 {
 			v7 := int32(v6.X0)
 			v8 := int32(v6.Y2)
-			if int32(s.AI.Paths.MapIndex(int(v7), int(v8)).Flags8)&0x40 != 0 && !s.sub_50B870(a1, int(v7), int(v8)) {
+			if s.AI.Paths.MapIndexFlags(int(v7), int(v8))&0x40 != 0 && !s.sub_50B870(a1, int(v7), int(v8)) {
 				var v18 types.Pointf
 				v18.X = float32(float64(v7*23 + 11))
 				v18.Y = float32(float64(v8*23 + 11))

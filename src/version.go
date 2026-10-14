@@ -8,7 +8,6 @@ import (
 )
 
 const (
-	noxProtoVersionLegacy  = NoxVersion(0x0001039A) // 0.1.922
 	noxProtoVersionHighRes = NoxVersion(0x000F039A) // 0.15.922
 )
 

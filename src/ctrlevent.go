@@ -554,7 +554,7 @@ func (c *CtrlEventHandler) nox_xxx_clientControl_42D6B0_B() {
 			nox_xxx_netClientSendSocial(server.HostPlayerIndex, 4, 0, 1)
 		case player.CCInvertSpellTarget:
 			legacy.Sub_460630()
-			ce.Active = false
+			// also sent to the server: it inverts the target of spells cast with phonemes (opennox#301)
 		case player.CCToggleRank:
 			clientPlaySoundSpecial(sound.SoundShellClick, 100)
 			sub_4703F0()

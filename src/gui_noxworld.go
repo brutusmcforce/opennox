@@ -159,17 +159,12 @@ func sub_438770_waitList() {
 		case lobby.AccessPassword:
 			status |= 0x20
 		}
-		// TODO: should propagate this via lobby
-		v := noxProtoVersionLegacy
-		if g.Res.HighRes || g.Res.Width > 1024 || g.Res.Height > 768 {
-			v = noxProtoVersionHighRes
-		}
 		clientOnLobbyServer(log, &LobbyServerInfo{
 			Server:  g,
 			Flags:   gameModeToFlags(g.Mode),
 			Status:  status,
 			Level:   uint16(level),
-			Version: uint32(v),
+			Version: uint32(NOX_CLIENT_VERS_CODE),
 		})
 	}
 	sub_44A400()
@@ -234,7 +229,7 @@ func clientOnLobbyServer(log *slog.Logger, info *LobbyServerInfo) int {
 	} else {
 		srv.PlayersVal = byte(info.Players.Cur)
 	}
-	if info.Players.Max < 0 || info.Players.Cur > 0xff {
+	if info.Players.Max < 0 || info.Players.Max > 0xff {
 		srv.MaxPlayersVal = 255
 	} else {
 		srv.MaxPlayersVal = byte(info.Players.Max)

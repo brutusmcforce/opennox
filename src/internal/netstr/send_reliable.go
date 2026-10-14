@@ -49,6 +49,9 @@ func (ns *Conn) SendReliableMsg(msg netmsg.Message) (int, error) {
 }
 
 func (ns *Conn) ReliableInQueue(ops ...netmsg.Op) int {
+	if ns == nil { // disconnected
+		return 0
+	}
 	return ns.reliable.InQueue(ops...)
 }
 

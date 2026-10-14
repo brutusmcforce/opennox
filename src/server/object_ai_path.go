@@ -92,8 +92,19 @@ func (s *serverAIPaths) MapIndexFlags(x, y int) AIMapIndexFlags {
 	return p.Flags8
 }
 
+// orIndexFlags sets flags of an index cell; cells outside of the map are ignored
+// (the original wrote out of the array for objects outside of the map).
+func (s *serverAIPaths) orIndexFlags(x, y int, flags AIMapIndexFlags) {
+	if p := s.MapIndex(x, y); p != nil {
+		p.Flags8 |= flags
+	}
+}
+
 func (s *serverAIPaths) CheckIndexFlags(obj *Object, x, y int) bool {
 	p := s.MapIndex(x, y)
+	if p == nil {
+		return true // outside of the map: blocked
+	}
 	if obj.Flags().Has(object.FlagAirborne) {
 		return p.Flags8&0x2 != 0 // tall obstacles only: flying units pass over holes (sub_50B950)
 	} else {
@@ -179,6 +190,9 @@ func (s *serverAIPaths) Free() {
 
 func (s *serverAIPaths) sub50B8E0(obj *Object, x, y int) uint32 {
 	p := s.MapIndex(x, y)
+	if p == nil {
+		return 1
+	}
 	if p.IndexGen4 != s.mapIndexGen {
 		return 0
 	}
@@ -328,7 +342,7 @@ func (s *serverAIPaths) sub50AEA0(node *AIVisitNode, outPos *types.Pointf, outNe
 	x := int32(node.X0)
 	y := int32(node.Y2)
 	p := s.MapIndex(int(x), int(y))
-	if (p.Flags8 & 0x3C) == 0 {
+	if p == nil || (p.Flags8&0x3C) == 0 {
 		return false
 	}
 	var filter object.Class
@@ -523,19 +537,19 @@ func (s *serverAIPaths) Sub50AFA0() {
 				v2 = int32(v23)
 				v24 = float32(float64(it.PosVec.Y) / 23)
 				v3 = int32(v24)
-				s.MapIndex(int(v2), int(v3)).Flags8 |= 0x10
+				s.orIndexFlags(int(v2), int(v3), 0x10)
 			} else if v1&0x400 != 0 {
 				v25 = float32(float64(it.PosVec.X) / 23)
 				v4 = int32(v25)
 				v26 = float32(float64(it.PosVec.Y) / 23)
 				v5 = int32(v26)
-				s.MapIndex(int(v4), int(v5)).Flags8 |= 0x20
+				s.orIndexFlags(int(v4), int(v5), 0x20)
 			} else if v1&0x4000 != 0 {
 				v27 = float32(float64(it.PosVec.X) / 23)
 				v6 = int32(v27)
 				v28 = float32(float64(it.PosVec.Y) / 23)
 				v7 = int32(v28)
-				s.MapIndex(int(v6), int(v7)).Flags8 |= 0x4
+				s.orIndexFlags(int(v6), int(v7), 0x4)
 			} else if (v1 & 0x8000) == 0 {
 				if (int32(*(*uint8)(unsafe.Pointer(&it.ObjFlags))) & 0x49) == 0 {
 					if uint32(v1)&0x400000 != 0 {
@@ -558,7 +572,7 @@ func (s *serverAIPaths) Sub50AFA0() {
 								for {
 									v16p := s.MapIndex(int(v12), int(v15))
 									v17 = memmap.PtrFloat32(0x587000, 234108)
-									for {
+									for v16p != nil { // nil: outside of the map
 										v41 = float32(float64(v38) * 23.0)
 										a2.X = v41 + *((*float32)(unsafe.Add(unsafe.Pointer(v17), -int(unsafe.Sizeof(float32(0))*1))))
 										v42 = float32(float64(j) * 23.0)
@@ -594,7 +608,7 @@ func (s *serverAIPaths) Sub50AFA0() {
 				v8 = int32(v29)
 				v30 = float32(float64(it.PosVec.Y) / 23)
 				v9 = int32(v30)
-				s.MapIndex(int(v8), int(v9)).Flags8 |= 0x8
+				s.orIndexFlags(int(v8), int(v9), 0x8)
 			}
 		}
 	}
@@ -602,7 +616,7 @@ func (s *serverAIPaths) Sub50AFA0() {
 		if k.HasFlag2Mask(0x80) {
 			v21 := int32(float64(k.PosVec.X) / 23)
 			v22 := int32(float64(k.PosVec.Y) / 23)
-			s.MapIndex(int(v21), int(v22)).Flags8 |= 0x40
+			s.orIndexFlags(int(v21), int(v22), 0x40)
 		}
 	}
 }
@@ -611,7 +625,7 @@ func (s *serverAIPaths) Sub_50AC20(node *AIVisitNode, out *[2]uint16) int32 {
 	x := int32(node.X0)
 	y := int32(node.Y2)
 	p := s.MapIndex(int(x), int(y))
-	if (p.Flags8 & 0x3C) == 0 {
+	if p == nil || (p.Flags8&0x3C) == 0 {
 		return 0
 	}
 	var pos types.Pointf

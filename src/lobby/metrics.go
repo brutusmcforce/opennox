@@ -11,7 +11,6 @@ import (
 
 const (
 	sourceOpenNox = "opennox"
-	sourceXWIS    = "xwis"
 )
 
 var (
@@ -20,22 +19,15 @@ var (
 		Name: "nox_game_seen",
 		Help: "Number of times the game was seen online",
 	}, serverLabelNames)
-	cntGameExpired = promauto.NewCounterVec(prometheus.CounterOpts{
+	// not per game: a series for every game that ever expired would never be deleted
+	cntGameExpired = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "nox_game_expired",
-		Help: "Number of times the game registration expired",
-	}, serverLabelNames)
+		Help: "Number of times a game registration expired",
+	})
 	cntGamePlayers = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "nox_game_players",
 		Help: "Number of players in the game",
 	}, serverLabelNames)
-	cntXWISRooms = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "nox_xwis_rooms",
-		Help: "Number of XWIS rooms",
-	})
-	cntXWISGames = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "nox_xwis_games",
-		Help: "Number of XWIS rooms",
-	})
 	cntRequests = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "nox_http_requests",
 		Help: "Number of HTTP requests to the API",

@@ -9,6 +9,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"unicode"
+	"unicode/utf8"
 )
 
 const (
@@ -159,24 +161,74 @@ func (l *Service) RegisterGame(ctx context.Context, s *Game) error {
 	if len(s.Name) > maxFieldLen || len(s.Map) > maxFieldLen || len(s.Vers) > maxFieldLen || len(s.Mode) > maxFieldLen {
 		return errors.New("field is too long")
 	}
+	if !validText(s.Name) || !validText(s.Map) || !validText(s.Vers) || !validText(string(s.Mode)) {
+		return errors.New("invalid characters in a field")
+	}
+	if s.Players.Max > maxPlayers || s.Players.Cur > s.Players.Max || len(s.Players.List) > s.Players.Max {
+		return errors.New("invalid number of players")
+	}
+	for _, p := range s.Players.List {
+		if len(p.Name) > maxFieldLen || len(p.Class) > maxFieldLen || !validText(p.Name) || !validText(p.Class) {
+			return errors.New("invalid player info")
+		}
+	}
+	if s.Res.Width < 0 || s.Res.Height < 0 || s.Res.Width > 0xffff || s.Res.Height > 0xffff {
+		return errors.New("invalid resolution")
+	}
+	if s.Quest != nil && s.Quest.Stage < 0 {
+		return errors.New("invalid quest stage")
+	}
 	s.Map = strings.ToLower(s.Map)
 	labels := serverLabels(sourceOpenNox, s)
-	cntGameSeen.WithLabelValues(labels...).Inc()
-	cntGamePlayers.WithLabelValues(labels...).Set(float64(s.Players.Cur))
-	info := &GameInfo{Game: *s}
+	info := &GameInfo{Game: *s.Clone()}
 	key := s.gameKey()
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if prev := l.byAddr[key]; prev != nil {
+	now := time.Now().UTC()
+	prev := l.byAddr[key]
+	if prev == nil {
+		// a new game: expired games don't count against the limits
+		total, n := 0, 0
+		for k, v := range l.byAddr {
+			if !l.isValid(v, now) {
+				continue
+			}
+			total++
+			if k.Addr == key.Addr {
+				n++
+			}
+		}
+		if total >= maxGames {
+			return errors.New("too many games registered")
+		}
+		if n >= maxGamesPerAddr {
+			return errors.New("too many games registered from this address")
+		}
+	} else if old := serverLabels(sourceOpenNox, &prev.Game); !slices.Equal(old, labels) {
 		// the game changed its name, map, etc: drop the series with the old labels
-		if old := serverLabels(sourceOpenNox, &prev.Game); !slices.Equal(old, labels) {
-			cntGamePlayers.DeleteLabelValues(old...)
+		cntGameSeen.DeleteLabelValues(old...)
+		cntGamePlayers.DeleteLabelValues(old...)
+	}
+	cntGameSeen.WithLabelValues(labels...).Inc()
+	cntGamePlayers.WithLabelValues(labels...).Set(float64(s.Players.Cur))
+	info.SeenAt = now
+	l.byAddr[key] = info
+	l.maybeGC(now)
+	return nil
+}
+
+// validText reports if a text field is valid UTF-8 without control characters (newlines, escapes):
+// the names are shown in game UIs and bot messages.
+func validText(s string) bool {
+	if !utf8.ValidString(s) {
+		return false
+	}
+	for _, r := range s {
+		if unicode.IsControl(r) {
+			return false
 		}
 	}
-	info.SeenAt = time.Now().UTC()
-	l.byAddr[key] = info
-	l.maybeGC(info.SeenAt)
-	return nil
+	return true
 }
 
 func (l *Service) doGC() {
@@ -194,7 +246,8 @@ func (l *Service) maybeGC(now time.Time) {
 		if !l.isValid(v, now) {
 			delete(l.byAddr, k)
 			labels := serverLabels(sourceOpenNox, &v.Game)
-			cntGameExpired.WithLabelValues(labels...).Inc()
+			cntGameExpired.Inc()
+			cntGameSeen.DeleteLabelValues(labels...)
 			cntGamePlayers.DeleteLabelValues(labels...)
 		}
 	}

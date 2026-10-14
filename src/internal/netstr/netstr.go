@@ -109,7 +109,11 @@ func (g *Streams) reset() {
 }
 
 func (g *Streams) ConnByPlayerInd(pind ntype.PlayerInd) *Conn {
-	return g.streams[int(pind)+1]
+	i := int(pind) + 1
+	if i < 0 || i >= len(g.streams) {
+		return nil
+	}
+	return g.streams[i]
 }
 
 func (g *Streams) getForPacket(i int) handle {
