@@ -92,7 +92,11 @@ func (ii ImageRef) MarshalJSON() ([]byte, error) {
 	if ii.Ind != 0 {
 		return json.Marshal(ii.Ind)
 	}
-	return json.Marshal(ii)
+	// the same form as UnmarshalJSON reads; marshaling ii itself would call this method again, forever
+	return json.Marshal(struct {
+		Ind  int    `json:"ind,omitempty"`
+		Name string `json:"name,omitempty"`
+	}{Ind: ii.Ind2, Name: ii.Name})
 }
 
 func (ii *ImageRef) UnmarshalJSON(p []byte) error {

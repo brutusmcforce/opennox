@@ -14,13 +14,13 @@ func (s noxScriptNS) Unused5e(id string) int {
 func (s noxScriptNS) Unused74(arg1 int, arg2 int) {}
 
 func (s noxScriptNS) Unknownb8(id int) bool {
-	//TODO implement me
-	panic("implement me")
+	obj := s.s.noxScript.ScriptToObject(id)
+	return obj != nil && uint32(obj.ObjSubClass)&0x100 != 0
 }
 
 func (s noxScriptNS) Unknownb9(id int) bool {
-	//TODO implement me
-	panic("implement me")
+	obj := s.s.noxScript.ScriptToObject(id)
+	return obj != nil && uint32(obj.ObjSubClass)&0x80 != 0
 }
 
 func (s noxScriptNS) Unknownc4() {

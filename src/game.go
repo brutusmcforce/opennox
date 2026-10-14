@@ -1467,7 +1467,7 @@ func sub_473840() {
 	legacy.Sub_49C7A0()
 	legacy.Nox_xxx_guiServerOptionsHide_4597E0(1)
 	legacy.Sub_467980()
-	noxClient.GUI.DestroyAll()
+	guiDestroyAll(noxClient.GUI)
 	nox_client_renderGUI_80828 = nox_xxx_xxxRenderGUI_587000_80832
 }
 

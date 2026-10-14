@@ -72,6 +72,8 @@ func (s *Server) DelayedDelete(obj *server.Object) {
 	}
 	if obj.Class().Has(object.ClassPlayer) {
 		legacy.Sub_506740(obj)
+	} else if obj.Class().Has(object.ClassMonster) {
+		legacy.ShopUnitRemoved(obj)
 	}
 	obj.ObjFlags |= object.FlagDestroyed
 	obj.DeletedNext = s.Objs.DeletedList
@@ -500,6 +502,13 @@ func (obj *Object) BaseSpeed() float32 {
 
 func (obj *Object) SetBaseSpeed(v float32) {
 	obj.SObj().SetBaseSpeed(v)
+	if obj.Flags().Has(object.FlagPending) {
+		// the init of the object (when it's added to the map) sets the base speed of monsters and NPCs again,
+		// so set it again after that (opennox#730)
+		obj.Server().Objs.QueueAction(func() {
+			obj.SObj().SetBaseSpeed(v)
+		})
+	}
 }
 
 func (obj *Object) Strength() int {
@@ -773,16 +782,14 @@ func (obj *Object) IsEnabled() bool {
 	return obj.SObj().IsEnabled()
 }
 
-// Toggle the object's enable state.
-// The returning boolean represents the enabled state of the object before toggled.
+// Toggle the object's enable state. It returns the new state (as documented in ns4, and like walls and waypoints).
 func (obj *Object) Toggle() bool {
 	if obj.IsEnabled() {
 		legacy.Nox_xxx_objectSetOff_4E7600(obj.SObj())
-		return true
-	} else {
-		legacy.Nox_xxx_objectSetOn_4E75B0(obj.SObj())
 		return false
 	}
+	legacy.Nox_xxx_objectSetOn_4E75B0(obj.SObj())
+	return true
 }
 
 func (obj *Object) Enable(enable bool) {
@@ -958,16 +965,25 @@ func (obj *Object) Follow(targ ns4.Positioner) {
 	if v, ok := targ.(script.ObjectWrapper); ok {
 		targ = v.GetObject()
 	}
-	cobj := server.ToObject(targ.(server.Obj))
-	legacy.Nox_xxx_unitSetFollow_5158C0(obj.SObj(), cobj)
+	t, ok := targ.(server.Obj)
+	if !ok {
+		return // only objects can be followed
+	}
+	legacy.Nox_xxx_unitSetFollow_5158C0(obj.SObj(), server.ToObject(t))
 }
 
 func (obj *Object) Flee(target ns4.Positioner, dt ns4.Duration) {
-	var targ *server.Object
-	if t, ok := target.(server.Obj); ok {
-		targ = server.ToObject(t)
+	if target == nil {
+		return
 	}
-	legacy.Nox_server_scriptFleeFrom_515F70(obj.SObj(), targ, obj.Server().AsFrames(dt))
+	if t, ok := target.(server.Obj); ok {
+		if targ := server.ToObject(t); targ != nil {
+			legacy.Nox_server_scriptFleeFrom_515F70(obj.SObj(), targ, obj.Server().AsFrames(dt))
+		}
+		return
+	}
+	// a waypoint or a point
+	legacy.FleeFromPos(obj.SObj(), target.Pos(), obj.Server().AsFrames(dt))
 }
 
 func (obj *Object) Aggression() float32 {
@@ -1114,6 +1130,9 @@ func (obj *Object) DestroyChat() {
 }
 
 func (obj *Object) CreateMover(wp ns4.WaypointObj, speed float32) *server.Object {
+	if wp == nil {
+		return nil
+	}
 	s := obj.getServer()
 	mv := s.NewObjectByTypeID("Mover")
 	if mv == nil {

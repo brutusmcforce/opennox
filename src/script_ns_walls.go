@@ -36,7 +36,7 @@ func (s noxScriptNS) WallGroupByHandle(h ns.WallGroupHandle) ns.WallGroupObj {
 		return nil
 	}
 	g := s.s.MapGroups.GroupByInd(h.WallGroupScriptID())
-	if g == nil || s.s.MapGroups.MapGroupType(g) != server.MapGroupObjects {
+	if g == nil || s.s.MapGroups.MapGroupType(g) != server.MapGroupWalls {
 		return nil
 	}
 	return nsWallGroup{s.s, g}

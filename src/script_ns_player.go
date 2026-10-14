@@ -117,18 +117,15 @@ func (s noxScriptNS) WideScreen(enable bool) {
 }
 
 func (s noxScriptNS) IsTalking() bool {
-	//TODO implement me
-	panic("implement me")
+	return legacy.ScriptHostState(false)
 }
 
 func (s noxScriptNS) IsTrading() bool {
-	//TODO implement me
-	panic("implement me")
+	return legacy.ScriptHostState(true)
 }
 
 func (s noxScriptNS) SetHalberd(upgrade ns.HalberdLevel) {
-	//TODO implement me
-	panic("implement me")
+	legacy.ScriptSetHalberd(int(upgrade))
 }
 
 func (s noxScriptNS) ImmediateBlind() {

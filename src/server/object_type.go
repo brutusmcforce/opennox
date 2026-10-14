@@ -70,6 +70,7 @@ type serverObjTypes struct {
 		magic      int
 		deathBall  int
 		flag       int
+		maiden     int
 	}
 
 	ClientTypeByID func(id string) int
@@ -91,6 +92,10 @@ func (s *serverObjTypes) cacheObjectTypeID(vr *int, id string) int {
 
 func (s *serverObjTypes) NPCID() int {
 	return s.cacheObjectTypeID(&s.fast.npc, "NPC")
+}
+
+func (s *serverObjTypes) MaidenID() int {
+	return s.cacheObjectTypeID(&s.fast.maiden, "Maiden")
 }
 
 func (s *serverObjTypes) MimicID() int {

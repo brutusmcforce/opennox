@@ -38,7 +38,9 @@ func bookEnchantNext(id int32) int32 {
 	return -1
 }
 func bookAbilityID(name string) int32 {
-	for i := int32(0); ; i++ {
+	// the table has an entry for each ability and no end marker: an unknown name (e.g. from a broken save)
+	// read the strings after it as pointers
+	for i := int32(0); i < int32(server.AbilityMax); i++ {
 		p := (*byte)(memmap.LoadPtr(0x587000, uintptr(69736+4*i)))
 		if p == nil {
 			return 0
@@ -47,6 +49,7 @@ func bookAbilityID(name string) int32 {
 			return i
 		}
 	}
+	return 0
 }
 func bookGuideID(name string) int32 {
 	for i := int32(0); i < 41; i++ {

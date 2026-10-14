@@ -44,6 +44,14 @@ func objectMonsterInit(obj *server.Object) {
 					obj.Nox_xxx_setNPCColor_4E4A90(byte(i), &cl)
 				}
 			}
+		case s.Types.MaidenID():
+			// Clients draw maidens with the colors that the server reports when they are set. Maidens of maps
+			// set them when they are loaded, but the ones created by scripts have the colors of the type,
+			// which were never reported: the clients didn't draw them (opennox#586).
+			for i := range ud.Color {
+				cl := ud.Color[i]
+				obj.Nox_xxx_setNPCColor_4E4A90(byte(i), &cl)
+			}
 		}
 	}
 	switch ai.ActionType(ud.AIAction340) {

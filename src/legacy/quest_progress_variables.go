@@ -144,3 +144,21 @@ func questProgressReset(name string) {
 		p = next
 	}
 }
+
+// QuestStatusSet sets a quest status variable; isFloat marks a float value (as bits).
+func QuestStatusSet(name string, value uint32, isFloat bool) {
+	kind := uint32(0)
+	if isFloat {
+		kind = 1
+	}
+	questProgressSet(name, value, kind)
+}
+
+// QuestStatus returns a quest status variable.
+func QuestStatus(name string) uint32 { return questProgressInt(name) }
+
+// QuestStatusFloat returns a float quest status variable.
+func QuestStatusFloat(name string) float32 { return float32(questProgressFloat(name)) }
+
+// QuestStatusReset removes quest status variables matching a name.
+func QuestStatusReset(name string) { questProgressReset(name) }

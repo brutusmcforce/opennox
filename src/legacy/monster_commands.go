@@ -111,13 +111,13 @@ func monsterControlFight(u, t *server.Object) {
 	u.MonsterPushAction(ai.ACTION_REPORT, 15)
 	u.MonsterPushAction(ai.ACTION_FIGHT, t.PosVec, GetServer().S().Frame())
 }
-func monsterControlFlee(u, t *server.Object, duration uint32) {
+func monsterControlFlee(u *server.Object, from types.Pointf, duration uint32) {
 	if !monsterControlAlive(u) || u.UpdateDataMonster().HasAction(ai.ACTION_FLEE) {
 		return
 	}
 	u.MonsterPushAction(ai.ACTION_REPORT, 24)
 	u.MonsterPushAction(ai.DEPENDENCY_TIME, GetServer().S().Frame()+duration)
-	u.MonsterPushAction(ai.ACTION_FLEE, t.PosVec, 0)
+	u.MonsterPushAction(ai.ACTION_FLEE, from, 0)
 }
 func monsterControlWait(u *server.Object, duration uint32) {
 	if !monsterControlAlive(u) {

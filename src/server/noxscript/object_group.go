@@ -111,11 +111,12 @@ func nsGroupIsOwnedByAny(s VM) int {
 }
 
 func nsGroupDelete(s VM) int {
-	g := s.PopObjGroupNS()
-	g.EachObject(true, func(obj ns4.Obj) bool {
-		obj.Delete()
-		return true
-	})
+	if g := s.PopObjGroupNS(); g != nil {
+		g.EachObject(true, func(obj ns4.Obj) bool {
+			obj.Delete()
+			return true
+		})
+	}
 	return 0
 }
 
@@ -210,7 +211,7 @@ func nsGroupDamage(s VM) int {
 	typ := damage.Type(s.PopI32())
 	dmg := int(s.PopI32())
 	src := s.PopObjectNS()
-	g := s.PopObjectNS()
+	g := s.PopObjGroupNS() // a group, as in the original (it damaged the object with the index of the group)
 	if g != nil {
 		g.Damage(src, dmg, typ)
 	}

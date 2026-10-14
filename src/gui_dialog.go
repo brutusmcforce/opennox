@@ -48,6 +48,24 @@ func sub44A4A0() bool {
 	return nox_gui_curDialog_830224 != nil
 }
 
+// guiDestroyAll destroys all windows. A dialog that is still open (e.g. the quick-load question when
+// the window is closed) is destroyed with them, so it is forgotten: otherwise Esc and new dialogs
+// would think it is still shown (opennox#663).
+func guiDestroyAll(g *gui.GUI) {
+	if nox_gui_curDialog_830224 != nil {
+		nox_gui_curDialog_830224 = nil
+		dword_5d4594_830228 = nil
+		dword_5d4594_830232 = nil
+		dword_5d4594_830236 = nil
+		func_5D4594_830220 = nil
+		func_5d4594_830216 = nil
+		*memmap.PtrUint32(0x5D4594, 830240) = 0
+		sz := videoGetWindowSize()
+		noxClient.SetMouseBounds(image.Rect(0, 0, sz.X-1, sz.Y-1))
+	}
+	g.DestroyAll()
+}
+
 func winNewDialogID(win *gui.Window, id strman.ID, file string) {
 	str := strMan.GetStringInFile(id, file)
 	NewDialogWindow(win, "", str, 0, nil, nil)

@@ -60,8 +60,17 @@ func scriptInventoryStartup() {
 	*memmap.PtrUint32(0x5D4594, 2386832) = 1
 }
 func scriptInventoryHalberd(vm noxscript.VM) int {
-	host := GetServer().S().Players.ByInd(31).PlayerUnit
-	index := vm.PopI32()
+	ScriptSetHalberd(int(vm.PopI32()))
+	return 0
+}
+
+// ScriptSetHalberd replaces the Oblivion staff of the host with an upgrade (0-3).
+func ScriptSetHalberd(index int) {
+	pl := GetServer().S().Players.ByInd(31)
+	if pl == nil || pl.PlayerUnit == nil || index < 0 || index > 3 {
+		return
+	}
+	host := pl.PlayerUnit
 	equipped := false
 	for it := host.InvFirstItem; it != nil; it = it.InvNextItem {
 		if it.ObjClass&0x1000000 != 0 && it.ObjSubClass&0x7800000 != 0 {
@@ -75,5 +84,4 @@ func scriptInventoryHalberd(vm noxscript.VM) int {
 	if equipped {
 		equipmentTryEquip(host, item)
 	}
-	return 0
 }

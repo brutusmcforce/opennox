@@ -97,19 +97,25 @@ func (obj scrObject) CanSee(obj2 script.Object) bool {
 }
 
 func (obj scrObject) Guard() {
-	panic("implement me")
+	u := obj.SObj()
+	if u == nil || !u.Class().Has(object.ClassMonster) {
+		return
+	}
+	// guard the current position, looking the same way, with the same sight range
+	pos := u.Pos()
+	obj.Object.Guard(pos, pos.Add(u.Direction1.Vec()), u.UpdateDataMonster().SightRange)
 }
 
 func (obj scrObject) Destroy() {
-	panic("implement me")
+	obj.Delete()
 }
 
 func (obj scrObject) Say(text string, dur script.Duration) {
-	panic("implement me")
+	obj.ChatStrTimer(text, dur)
 }
 
 func (obj scrObject) Mute() {
-	panic("implement me")
+	obj.DestroyChat()
 }
 
 func (obj scrObject) Follow(targ script.Positioner) {

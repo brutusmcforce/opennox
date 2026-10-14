@@ -1,6 +1,8 @@
 package opennox
 
 import (
+	"math"
+
 	"github.com/brutusmcforce/opennox/noxscript/ns/v4"
 
 	"github.com/brutusmcforce/opennox/common/sound"
@@ -9,28 +11,23 @@ import (
 )
 
 func (s noxScriptNS) GetQuestStatus(name string) int {
-	//TODO implement me
-	panic("implement me")
+	return int(int32(legacy.QuestStatus(name)))
 }
 
 func (s noxScriptNS) GetQuestStatusFloat(name string) float32 {
-	//TODO implement me
-	panic("implement me")
+	return legacy.QuestStatusFloat(name)
 }
 
 func (s noxScriptNS) SetQuestStatus(status int, name string) {
-	//TODO implement me
-	panic("implement me")
+	legacy.QuestStatusSet(name, uint32(int32(status)), false)
 }
 
 func (s noxScriptNS) SetQuestStatusFloat(status float32, name string) {
-	//TODO implement me
-	panic("implement me")
+	legacy.QuestStatusSet(name, math.Float32bits(status), true)
 }
 
 func (s noxScriptNS) ResetQuestStatus(name string) {
-	//TODO implement me
-	panic("implement me")
+	legacy.QuestStatusReset(name)
 }
 
 func (s noxScriptNS) JournalEntry(obj ns.Obj, msg ns.StringID, typ ns.EntryType) {
@@ -47,26 +44,21 @@ func (s noxScriptNS) JournalEntry(obj ns.Obj, msg ns.StringID, typ ns.EntryType)
 }
 
 func (s noxScriptNS) JournalEdit(obj ns.Obj, message ns.StringID, typ ns.EntryType) {
-	//TODO implement me
-	panic("implement me")
+	s.JournalEditStr(obj, string(message), typ)
 }
 
 func (s noxScriptNS) JournalDelete(obj ns.Obj, message ns.StringID) {
-	//TODO implement me
-	panic("implement me")
+	s.JournalDeleteStr(obj, string(message))
 }
 
 func (s noxScriptNS) JournalEntryStr(obj ns.Obj, msg string, typ ns.EntryType) {
-	//TODO implement me
-	panic("implement me")
+	s.JournalEntry(obj, ns.StringID(msg), typ)
 }
 
 func (s noxScriptNS) JournalEditStr(obj ns.Obj, message string, typ ns.EntryType) {
-	//TODO implement me
-	panic("implement me")
+	legacy.ScriptJournal(s.asObj(obj), message, uint16(typ), true)
 }
 
 func (s noxScriptNS) JournalDeleteStr(obj ns.Obj, message string) {
-	//TODO implement me
-	panic("implement me")
+	legacy.ScriptJournal(s.asObj(obj), message, 0, false)
 }

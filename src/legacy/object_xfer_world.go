@@ -101,10 +101,8 @@ func objectXferLight(u *server.Object) int {
 			} else {
 				d = objs.ByNetCodeDynamic(int(u.NetCode))
 			}
-			if d == nil {
-				legacyAbort()
-				return 0
-			}
+			// The original aborted without a drawable, which lights created at runtime (e.g. by scripts) don't
+			// have: saving their map crashed the game. Their record is saved without light values instead.
 		}
 		if d != nil {
 			// the saved record keeps the 386 layout of the drawable from LightFlags on

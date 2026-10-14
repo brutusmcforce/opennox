@@ -280,6 +280,7 @@ func sub_42BF10() {
 	}
 	objectTypeCode16ByInd = make([]uint16, sz)
 	objectTypeCode16ByInd_len = 0
+	objectTypeCodeAlias = nil
 }
 
 func nox_xxx_parseThingBinClient_44C840_read_things() error {
@@ -339,7 +340,11 @@ func nox_xxx_parseThingBinClient_44C840_read_things() error {
 func sub_42BFB0() {
 	objectTypeCode16ByInd = make([]uint16, len(objectTypeCode16ByInd))
 	objectTypeCode16ByInd_len = 0
+	objectTypeCodeAlias = nil
 }
+
+// objectTypeCodeAlias maps more codes of a map's object TOC to types (see sub_42C310).
+var objectTypeCodeAlias map[uint16]int
 
 func nox_xxx_free_42BF80() {
 	objectTypeCode16ByInd = nil
@@ -351,11 +356,24 @@ func nox_xxx_objectTOCgetTT(a1 uint16) int {
 			return i
 		}
 	}
+	if ind, ok := objectTypeCodeAlias[a1]; ok {
+		return ind
+	}
 	return 0
 }
 
 func sub_42C310(a1 int, a2 uint16) {
 	if objectTypeCode16ByInd == nil {
+		return
+	}
+	if cur := objectTypeCode16ByInd[a1]; cur != 0 && cur != a2 {
+		// thing.bin has types with the same name (BarCorner3A, ...), and the TOC refers to types by name:
+		// a map with objects of both had two codes for one type, and the objects of the first one
+		// couldn't be loaded ("cannot find object with type: 0").
+		if objectTypeCodeAlias == nil {
+			objectTypeCodeAlias = make(map[uint16]int)
+		}
+		objectTypeCodeAlias[a2] = a1
 		return
 	}
 	objectTypeCode16ByInd[a1] = a2
@@ -386,11 +404,18 @@ func sub_42BFE0() {
 			last++
 		}
 	}
-	for it := s.Objs.List; it != nil; it = it.Next() {
-		checkInd(it.TypeInd)
+	// the objects are saved with their items, and the items with theirs (see nox_xxx_xfer_saveObj51DF90):
+	// an item type without a code isn't saved, but its holder still counts it
+	var checkItems func(it *server.Object)
+	checkItems = func(it *server.Object) {
 		for it2 := it.FirstItem(); it2 != nil; it2 = it2.NextItem() {
 			checkInd(it2.TypeInd)
+			checkItems(it2)
 		}
+	}
+	for it := s.Objs.List; it != nil; it = it.Next() {
+		checkInd(it.TypeInd)
+		checkItems(it)
 		if it.Class().Has(object.ClassMonsterGenerator) {
 			checkTypesMonsterGen(it, checkInd)
 		}
@@ -403,6 +428,7 @@ func sub_42BFE0() {
 	}
 	for it := s.Objs.MissileList; it != nil; it = it.Next() {
 		checkInd(it.TypeInd)
+		checkItems(it) // a thrown weapon is saved as its item
 	}
 	if !noxflags.HasGame(noxflags.GameFlag22) && noxflags.HasGame(noxflags.GameHost) &&
 		noxflags.HasGame(noxflags.GameClient) && !noxflags.HasGame(noxflags.GameFlag23) {

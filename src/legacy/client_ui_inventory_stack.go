@@ -57,7 +57,7 @@ func uiInventorySetAlternate(cell *uiInventoryCell) int {
 }
 
 func uiInventoryAppend(code, typ uint32) *uiInventoryCell {
-	if uint32(GetClient().Cli().Things.TypeByInd(int(typ)).ObjClass)&0x4000000 != 0 {
+	if t := GetClient().Cli().Things.TypeByInd(int(typ)); t == nil || uint32(t.ObjClass)&0x4000000 != 0 {
 		return nil
 	}
 	grid := uiInventoryGrid()
@@ -117,6 +117,9 @@ func nox_xxx_spritePickup_461660(code, typ int32, mods *server.ModifierInitData)
 	t := uint32(typ)
 	if t == uint32(dword_5d4594_1062560) || t == memmap.Uint32(0x5D4594, 1049728) || t == memmap.Uint32(0x5D4594, 1049724) || t == uint32(dword_5d4594_1062556) || t == uint32(dword_5d4594_1062564) {
 		return 1
+	}
+	if GetClient().Cli().Things.TypeByInd(int(t)) == nil {
+		return 0 // not a type (a broken message): the server is told that the pickup failed
 	}
 	var coords [2]int32
 	cell := uiInventoryAppend(uint32(code), t)

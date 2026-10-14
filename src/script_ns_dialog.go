@@ -9,13 +9,14 @@ import (
 )
 
 func (s noxScriptNS) SetShopkeeperText(obj ns.Obj, text ns.StringID) {
-	//TODO implement me
-	panic("implement me")
+	if obj != nil {
+		obj.SetShopText(text)
+	}
 }
 
 func (s noxScriptNS) SetShopkeeperTextStr(obj ns.Obj, text string) {
-	//TODO implement me
-	panic("implement me")
+	// clients only get string IDs for shop texts
+	ScriptLog.Printf("noxscript: SetShopkeeperTextStr is not supported, use SetShopkeeperText (%q)", text)
 }
 
 func (s noxScriptNS) TellStory(aud audio.Name, story ns.StringID) {
@@ -26,8 +27,8 @@ func (s noxScriptNS) TellStory(aud audio.Name, story ns.StringID) {
 }
 
 func (s noxScriptNS) TellStoryStr(audio audio.Name, story string) {
-	//TODO implement me
-	panic("implement me")
+	// clients only get string IDs for stories
+	ScriptLog.Printf("noxscript: TellStoryStr is not supported, use TellStory (%q)", story)
 }
 
 func (s noxScriptNS) StartDialog(cobj ns.Obj, cother ns.Obj) {

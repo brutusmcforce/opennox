@@ -5,6 +5,7 @@ import (
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/libs/spell"
 	"github.com/brutusmcforce/opennox/server"
 )
@@ -72,15 +73,17 @@ func itemXferGenerator(u *server.Object) int {
 		r.byte(3)
 		for row := 0; row < 3; row++ {
 			children := p.Field0[4*row : 4*row+4]
+			// a destroyed child is not saved by Nox_xxx_xfer_saveObj51DF90, so it must not be counted or named
+			keep := func(ch *server.Object) bool { return ch != nil && !ch.Flags().Has(object.FlagDestroyed) }
 			count := byte(0)
 			for _, ch := range children {
-				if ch != nil {
+				if keep(ch) {
 					count++
 				}
 			}
 			r.byte(count)
 			for _, ch := range children {
-				if ch == nil {
+				if !keep(ch) {
 					continue
 				}
 				name := GetServer().S().Types.ByInd(int(ch.TypeInd)).ID()

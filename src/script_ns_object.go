@@ -174,23 +174,19 @@ func (s noxScriptNS) DestroyEveryChat() {
 }
 
 func (s noxScriptNS) MakeFriendly(obj ns4.Obj) {
-	//TODO implement me
-	panic("implement me")
+	legacy.ScriptOwnership(s.asObj(obj), 0)
 }
 
 func (s noxScriptNS) MakeEnemy(obj ns4.Obj) {
-	//TODO implement me
-	panic("implement me")
+	legacy.ScriptOwnership(s.asObj(obj), 1)
 }
 
 func (s noxScriptNS) BecomePet(obj ns4.Obj) {
-	//TODO implement me
-	panic("implement me")
+	legacy.ScriptOwnership(s.asObj(obj), 2)
 }
 
 func (s noxScriptNS) BecomeEnemy(obj ns4.Obj) {
-	//TODO implement me
-	panic("implement me")
+	legacy.ScriptOwnership(s.asObj(obj), 3)
 }
 
 type nsObjType struct {
@@ -231,8 +227,11 @@ func (typ nsObjType) HasClass(class class.Class) bool {
 }
 
 func (typ nsObjType) HasSubclass(subclass subclass.SubClass) bool {
-	//TODO implement me
-	panic("implement me")
+	cls, err := object.ParseSubClass(string(subclass))
+	if err != nil {
+		return false
+	}
+	return typ.t.SubClass().Has(cls)
 }
 
 func (typ nsObjType) Flags() object.Flags {
@@ -369,8 +368,7 @@ func (obj nsObj) MaxMana() int {
 }
 
 func (obj nsObj) GiveXp(xp float32) {
-	//TODO implement me
-	panic("implement me")
+	legacy.ScriptGiveXP(obj.SObj(), xp)
 }
 
 func (obj nsObj) Player() ns4.Player {
@@ -462,6 +460,9 @@ func (obj nsObj) Damage(source ns4.Obj, amount int, typ damage.Type) bool {
 }
 
 func (obj nsObj) DeleteAfter(dt ns4.Duration) {
+	if dt.IsInfinite() {
+		return // never (AsFrames gives 0 frames, which deleted it at once)
+	}
 	s := obj.s
 	s.DeleteAfter(obj.Object.SObj(), uint32(s.AsFrames(dt)))
 }
@@ -634,8 +635,7 @@ func (obj nsObj) AggressionLevel(level float32) {
 }
 
 func (obj nsObj) SetRoamFlag(flags int) {
-	//TODO implement me
-	panic("implement me")
+	legacy.ScriptRoamFlag(obj.SObj(), byte(flags))
 }
 
 func (obj nsObj) RetreatLevel(percent float32) {
@@ -787,8 +787,10 @@ func (g nsObjGroup) Damage(source ns4.Obj, amount int, typ damage.Type) {
 }
 
 func (g nsObjGroup) Delete() {
-	//TODO implement me
-	panic("implement me")
+	g.EachObject(true, func(obj ns4.Obj) bool {
+		obj.Delete()
+		return true
+	})
 }
 
 func (g nsObjGroup) Idle() {
@@ -799,8 +801,10 @@ func (g nsObjGroup) Idle() {
 }
 
 func (g nsObjGroup) Wander() {
-	//TODO implement me
-	panic("implement me")
+	g.EachObject(true, func(obj ns4.Obj) bool {
+		obj.Wander()
+		return true
+	})
 }
 
 func (g nsObjGroup) Hunt() {
@@ -884,8 +888,10 @@ func (g nsObjGroup) AggressionLevel(level float32) {
 }
 
 func (g nsObjGroup) SetRoamFlag(flags int) {
-	//TODO implement me
-	panic("implement me")
+	g.EachObject(true, func(obj ns4.Obj) bool {
+		obj.SetRoamFlag(flags)
+		return true
+	})
 }
 
 func (g nsObjGroup) RetreatLevel(percent float32) {

@@ -50,8 +50,13 @@ func scriptBindingJournal(vm noxscript.VM, edit bool) int {
 			return 0
 		}
 	}
-	name := scriptBindingCString(GetServer().S().NoxScriptVM.GetString(id))
-	if objectID == 0 {
+	ScriptJournal(obj, scriptBindingCString(GetServer().S().NoxScriptVM.GetString(id)), flags, edit)
+	return 0
+}
+
+// ScriptJournal edits (or deletes) a journal entry of a player, or of all players if obj is nil.
+func ScriptJournal(obj *server.Object, name string, flags uint16, edit bool) {
+	if obj == nil {
 		if edit {
 			journalUpdateAll(name, flags)
 		} else {
@@ -62,7 +67,33 @@ func scriptBindingJournal(vm noxscript.VM, edit bool) int {
 	} else {
 		journalUnitRemove(obj, name)
 	}
-	return 0
+}
+
+// ScriptRoamFlag sets the roam flags of a monster.
+func ScriptRoamFlag(u *server.Object, value byte) {
+	if u != nil {
+		monsterControlByte(u, &value)
+	}
+}
+
+// ScriptGiveXP gives experience to a unit.
+func ScriptGiveXP(u *server.Object, xp float32) {
+	if u != nil {
+		unitGiveExperience(u, xp)
+	}
+}
+
+// ScriptHostState reports if the host is trading, or talking to an NPC.
+func ScriptHostState(trading bool) bool {
+	pl := GetServer().S().Players.ByInd(31)
+	if pl == nil || pl.PlayerUnit == nil {
+		return false
+	}
+	ud := pl.PlayerUnit.UpdateDataPlayer()
+	if trading {
+		return ud.Trade70 != nil
+	}
+	return ud.DialogWith != nil
 }
 
 func scriptBindingRoamByte(vm noxscript.VM, group bool) int {
@@ -70,33 +101,21 @@ func scriptBindingRoamByte(vm noxscript.VM, group bool) int {
 	if group {
 		s := GetServer().S()
 		g := s.MapGroups.GroupByInd(int(vm.PopI32()))
-		server.EachObjectRecursive(s, g, func(u *server.Object) bool { monsterControlByte(u, &value); return true })
+		server.EachObjectRecursive(s, g, func(u *server.Object) bool { ScriptRoamFlag(u, value); return true })
 	} else {
-		monsterControlByte(scriptBindingObject(vm), &value)
+		ScriptRoamFlag(scriptBindingObject(vm), value)
 	}
 	return 0
 }
 
 func scriptBindingGiveXP(vm noxscript.VM) int {
 	xp := vm.PopF32()
-	if u := scriptBindingObject(vm); u != nil {
-		unitGiveExperience(u, xp)
-	}
+	ScriptGiveXP(scriptBindingObject(vm), xp)
 	return 0
 }
 
 func scriptBindingHostState(vm noxscript.VM, trading bool) int {
-	pl := GetServer().S().Players.ByInd(31)
-	result := false
-	if pl != nil {
-		ud := pl.PlayerUnit.UpdateDataPlayer()
-		if trading {
-			result = ud.Trade70 != nil
-		} else {
-			result = ud.DialogWith != nil
-		}
-	}
-	vm.PushBool(result)
+	vm.PushBool(ScriptHostState(trading))
 	return 0
 }
 
@@ -107,36 +126,45 @@ func scriptBindingSubclass(vm noxscript.VM, bit uint32) int {
 }
 
 func scriptBindingOwnership(vm noxscript.VM, mode int) int {
+	ScriptOwnership(scriptBindingObject(vm), mode)
+	return 0
+}
+
+// ScriptOwnership changes how a monster relates to the host: MakeFriendly (0), MakeEnemy (1),
+// BecomePet (2), BecomeEnemy (3).
+func ScriptOwnership(u *server.Object, mode int) {
+	if u == nil {
+		return
+	}
 	s := GetServer().S()
 	// MakeEnemy does not require the local-player slot; the other three original
 	// commands require that slot, and only act on its unit when one is present.
-	var pl *server.Player
+	var host *server.Object
 	if mode != 1 {
-		pl = s.Players.ByInd(31)
-	}
-	u := scriptBindingObject(vm)
-	if u == nil {
-		return 0
+		pl := s.Players.ByInd(31)
+		if pl == nil {
+			return // a dedicated server has no host player
+		}
+		host = pl.PlayerUnit
 	}
 	switch mode {
 	case 0:
 		u.ObjSubClass |= 0x100
-		if host := pl.PlayerUnit; host != nil {
+		if host != nil {
 			s.ObjSetOwner(host, u)
 		}
 	case 1:
 		u.ObjSubClass &^= 0x100
 		s.ObjClearOwner(u)
 	case 2:
-		if host := pl.PlayerUnit; host != nil {
+		if host != nil {
 			statePet(host, u)
 		}
 	case 3:
-		if host := pl.PlayerUnit; host != nil {
+		if host != nil {
 			stateRemoveMonitors(host, u)
 		}
 	}
-	return 0
 }
 
 func scriptBindingMover(u *server.Object, wp *server.Waypoint) {

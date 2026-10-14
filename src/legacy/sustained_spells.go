@@ -182,7 +182,8 @@ func sustainedMoonglowCancel(p unsafe.Pointer) uint32 {
 	if u.ObjClass&4 != 4 {
 		return spellLifeBuffOff(u, 15)
 	}
-	if light := (*server.Object)(memmap.WordPtr(uint32(d.Field72))); light != nil {
+	// the light may have ended already (see temporaryMoonglow)
+	if light := (*server.Object)(memmap.WordPtr(uint32(d.Field72))); light != nil && light.ObjFlags&0x20 == 0 && light.ObjOwner == u {
 		sustainedDelete(light)
 	}
 	d.Field72 = 0

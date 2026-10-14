@@ -693,7 +693,7 @@ func nox_xxx_cliSetupSession_437190() {
 	legacy.Sub_48D800()
 	legacy.Sub_49A8C0()
 	sub_470550()
-	c.GUI.DestroyAll()
+	guiDestroyAll(c.GUI)
 	c.r.FadeDisable()
 	if !noxflags.HasGame(noxflags.GameHost) {
 		sub_43CC80()
@@ -979,7 +979,7 @@ func nox_xxx_cliDrawConnectedLoop_43B360() int {
 
 func nox_client_guiXxxDestroy_4A24A0() int {
 	sub_4A1BD0()
-	noxClient.GUI.DestroyAll()
+	guiDestroyAll(noxClient.GUI)
 	nox_client_gui_flag_815132 = 0
 	return 1
 }

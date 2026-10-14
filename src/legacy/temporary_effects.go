@@ -119,7 +119,8 @@ func temporaryMoonglow(u *server.Object) {
 		return
 	}
 	core := GetServer().S()
-	if owner.ObjFlags&0x20 != 0 || core.Frame()-u.Field32 > 300*uint32(core.TickRate()) {
+	// the light also ends with the enchantment, e.g. when a script turns ENCHANT_MOONGLOW off (opennox#635)
+	if owner.ObjFlags&0x20 != 0 || core.Frame()-u.Field32 > 300*uint32(core.TickRate()) || owner.Buffs&(1<<server.ENCHANT_MOONGLOW) == 0 {
 		GetServer().DelayedDelete(u)
 		Nox_xxx_spellBuffOff_4FF5B0(u.ObjOwner, 1)
 	} else {

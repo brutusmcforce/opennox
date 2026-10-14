@@ -174,6 +174,22 @@ func shopExit(s *shopSession) {
 		shopDestroy(s)
 	}
 }
+
+// ShopUnitRemoved ends the open trade sessions of a non-player object that is being deleted (e.g. a shopkeeper
+// killed while a player has the shop open). The original kept the sessions, and the actions of the player
+// then used the freed object.
+func ShopUnitRemoved(u *server.Object) {
+	if u.ObjClass&4 != 0 {
+		return // players end their sessions when they die or leave
+	}
+	for s := shopHead(); s != nil; {
+		next := s.Next
+		if s.Active != 0 && (s.Units[0] == u || s.Units[1] == u) {
+			shopCancel(s)
+		}
+		s = next
+	}
+}
 func shopCancel(s *shopSession) {
 	if s.Kind != 0 {
 		shopExit(s)

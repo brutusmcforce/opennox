@@ -267,7 +267,15 @@ func Nox_xxx_mobSetFightTarg_515D30(obj, targ *server.Object) {
 	monsterControlFight(obj, targ)
 }
 func Nox_server_scriptFleeFrom_515F70(obj, targ *server.Object, df int) {
-	monsterControlFlee(obj, targ, uint32(df))
+	if targ == nil {
+		return
+	}
+	monsterControlFlee(obj, targ.PosVec, uint32(df))
+}
+
+// FleeFromPos makes a monster flee from a position for a number of frames.
+func FleeFromPos(obj *server.Object, pos types.Pointf, df int) {
+	monsterControlFlee(obj, pos, uint32(df))
 }
 func Nox_xxx_monsterGoPatrol_515680(obj *server.Object, p1, p2 types.Pointf, dist float32) {
 	monsterControlPatrol(obj, p1, p2, dist)
