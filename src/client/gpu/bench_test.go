@@ -284,3 +284,45 @@ func TestFillKeepsPage(t *testing.T) {
 		t.Fatalf("fill color: %v", c)
 	}
 }
+
+// Solid fills (FillRects on an unscaled target) must draw exactly the pixels of Fill.
+func TestSolidFillsMatchFill(t *testing.T) {
+	r := withGL(t)
+	full := image.Rect(0, 0, 128, 96)
+	rnd := rand.New(rand.NewPCG(7, 8))
+	type fill struct {
+		rc image.Rectangle
+		c  color.NRGBA
+	}
+	var fills []fill
+	for i := 0; i < 300; i++ {
+		x, y := rnd.IntN(120), rnd.IntN(90)
+		fills = append(fills, fill{
+			rc: image.Rect(x, y, x+1+rnd.IntN(20), y+1+rnd.IntN(3)),
+			c:  color.NRGBA{R: uint8(rnd.IntN(256)), G: uint8(rnd.IntN(256)), B: uint8(rnd.IntN(256)), A: uint8(rnd.IntN(256))},
+		})
+	}
+	draw := func(solid bool) []byte {
+		img := noximage.NewImage16(full)
+		r.SetTarget(img)
+		defer r.Forget(img)
+		r.Clear(color.NRGBA{R: 40, G: 90, B: 160, A: 255})
+		for _, f := range fills {
+			if solid {
+				r.FillRects([]image.Rectangle{f.rc}, f.c, full)
+			} else {
+				r.Fill(f.rc, f.c, full)
+			}
+		}
+		if solid && !r.state.solid {
+			t.Fatal("FillRects didn't use the solid batch")
+		}
+		return r.ReadPixels(img).Pix
+	}
+	want, got := draw(false), draw(true)
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("pixel %d channel %d: got %d, want %d", i/4, i%4, got[i], want[i])
+		}
+	}
+}

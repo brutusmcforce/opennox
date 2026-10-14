@@ -61,6 +61,7 @@ type target struct {
 }
 
 type batchState struct {
+	solid   bool // a batch of solid fills (see solidRenderer), not sprites
 	page    *atlasPage
 	clip    image.Rectangle
 	blend   blendMode
@@ -99,6 +100,7 @@ type Renderer struct {
 
 	atlas   atlas
 	floor   floorRenderer
+	solid   solidRenderer
 	white   texRegion
 	sprites map[noxrender.Image16]texRegion
 	broken  map[noxrender.Image16]struct{}
@@ -154,6 +156,9 @@ func New(log *slog.Logger) (*Renderer, error) {
 	if err = r.floor.init(); err != nil {
 		return nil, fmt.Errorf("floor shader: %w", err)
 	}
+	if err = r.solid.init(); err != nil {
+		return nil, fmt.Errorf("solid shader: %w", err)
+	}
 
 	gl.GenVertexArrays(1, &r.vao)
 	gl.BindVertexArray(r.vao)
@@ -199,6 +204,7 @@ func (r *Renderer) Close() {
 	}
 	r.atlas.free()
 	r.floor.free()
+	r.solid.free()
 	gl.DeleteBuffers(1, &r.vbo)
 	gl.DeleteVertexArrays(1, &r.vao)
 	gl.DeleteVertexArrays(1, &r.emptyVAO)
@@ -348,7 +354,7 @@ func (r *Renderer) clearTarget(cr, cg, cb, ca float32) {
 }
 
 func (r *Renderer) setState(page *atlasPage, clip image.Rectangle, blend blendMode, pal *[16][3]uint8) {
-	if pal == nil && page == r.state.page && clip == r.state.clip && blend == r.state.blend && len(r.verts)+instSize <= cap(r.verts) {
+	if pal == nil && !r.state.solid && page == r.state.page && clip == r.state.clip && blend == r.state.blend && len(r.verts)+instSize <= cap(r.verts) {
 		return // the same batch; fills and glyphs keep the palette, so skip copying and comparing it
 	}
 	st := batchState{page: page, clip: clip, blend: blend}
@@ -361,6 +367,18 @@ func (r *Renderer) setState(page *atlasPage, clip image.Rectangle, blend blendMo
 		r.flush()
 		r.state = st
 	}
+}
+
+// setSolidState starts or continues a batch of solid fills.
+func (r *Renderer) setSolidState(clip image.Rectangle, blend blendMode) {
+	if r.state.solid && clip == r.state.clip && blend == r.state.blend && len(r.solid.data)+solidSize <= cap(r.solid.data) {
+		return
+	}
+	r.flush()
+	// the page and the palette stay, so a sprite batch after this can continue with them
+	st := r.state
+	st.solid, st.clip, st.blend = true, clip, blend
+	r.state = st
 }
 
 func (r *Renderer) quad(dst image.Rectangle, reg texRegion, src image.Rectangle, c [4]float32, mode float32) {
@@ -389,8 +407,13 @@ func (r *Renderer) quadGradF(x0, y0, x1, y1 float32, reg texRegion, src image.Re
 }
 
 func (r *Renderer) flush() {
-	if len(r.verts) == 0 || r.cur == nil {
+	n := len(r.verts)
+	if r.state.solid {
+		n = len(r.solid.data)
+	}
+	if n == 0 || r.cur == nil {
 		r.verts = r.verts[:0]
+		r.solid.data = r.solid.data[:0]
 		return
 	}
 	t := r.cur
@@ -402,6 +425,22 @@ func (r *Renderer) flush() {
 	if !c.valid || c.target != t || c.size != t.size || c.log != t.log {
 		gl.BindFramebuffer(gl.FRAMEBUFFER, t.fbo)
 		gl.Viewport(0, 0, int32(t.size.X), int32(t.size.Y))
+		gl.Enable(gl.BLEND)
+		*c = glCache{valid: true, target: t, size: t.size, log: t.log}
+	}
+	if st.solid {
+		if c.prog != r.solid.prog {
+			gl.UseProgram(r.solid.prog)
+			gl.BindVertexArray(r.solid.vao)
+			gl.BindBuffer(gl.ARRAY_BUFFER, r.solid.vbo)
+			gl.Uniform2f(r.solid.locSize, float32(t.log.X), float32(t.log.Y))
+			c.prog = r.solid.prog
+		}
+		r.setBlendClip(t, st)
+		r.solid.draw()
+		return
+	}
+	if c.prog != r.prog {
 		gl.UseProgram(r.prog)
 		gl.BindVertexArray(r.vao)
 		gl.BindBuffer(gl.ARRAY_BUFFER, r.vbo)
@@ -415,8 +454,7 @@ func (r *Renderer) flush() {
 			sharp = 1
 		}
 		gl.Uniform1i(r.locSharp, sharp)
-		gl.Enable(gl.BLEND)
-		*c = glCache{valid: true, target: t, size: t.size, log: t.log}
+		c.prog = r.prog
 	}
 	if !r.palOK || r.pal != st.palette {
 		pal := &r.palF // a local would escape to the heap
@@ -435,6 +473,14 @@ func (r *Renderer) flush() {
 		gl.BindTexture(gl.TEXTURE_2D, st.page.mat)
 		c.page = st.page
 	}
+	r.setBlendClip(t, st)
+	gl.BufferData(gl.ARRAY_BUFFER, len(r.verts)*4, unsafe.Pointer(&r.verts[0]), gl.STREAM_DRAW) // gl.Ptr allocates
+	gl.DrawArraysInstanced(gl.TRIANGLES, 0, 6, int32(len(r.verts)/instSize))
+	r.verts = r.verts[:0]
+}
+
+func (r *Renderer) setBlendClip(t *target, st *batchState) {
+	c := &r.glc
 	if !c.blendSet || c.blend != st.blend {
 		switch st.blend {
 		case blendSubtract:
@@ -463,15 +509,13 @@ func (r *Renderer) flush() {
 		}
 		c.clip, c.clipSet = st.clip, true
 	}
-	gl.BufferData(gl.ARRAY_BUFFER, len(r.verts)*4, unsafe.Pointer(&r.verts[0]), gl.STREAM_DRAW) // gl.Ptr allocates
-	gl.DrawArraysInstanced(gl.TRIANGLES, 0, 6, int32(len(r.verts)/instSize))
-	r.verts = r.verts[:0]
 }
 
 // glCache is the OpenGL state that flush set. Anything else that changes the state (other drawing,
 // texture uploads, creating targets) must call restore, which invalidates it.
 type glCache struct {
 	valid     bool
+	prog      uint32 // the bound program: r.prog or r.solid.prog
 	target    *target
 	size, log image.Point
 	page      *atlasPage
@@ -501,6 +545,21 @@ func (r *Renderer) FillRects(rcs []image.Rectangle, c color.NRGBA, clip image.Re
 		return
 	}
 	col := rgbaF(c)
+	// On scaled targets the sprite shader filters the white texel (sharp bilinear), so keep using it there.
+	if t := r.cur; t.size == t.log {
+		for _, rc := range rcs {
+			if rc.Empty() {
+				continue
+			}
+			if !solidFits(rc) {
+				r.Fill(rc, c, clip)
+				continue
+			}
+			r.setSolidState(clip, blendOver)
+			r.solid.add(rc, &col)
+		}
+		return
+	}
 	for _, rc := range rcs {
 		if rc.Empty() {
 			continue
