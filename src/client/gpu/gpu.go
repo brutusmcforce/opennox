@@ -18,6 +18,7 @@ import (
 	"log/slog"
 	"strings"
 	"sync"
+	"unsafe"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 
@@ -90,6 +91,7 @@ type Renderer struct {
 	verts []float32
 	state batchState
 	pal   [16][3]uint8
+	palF  [16 * 3]float32
 	palOK bool
 
 	atlas   atlas
@@ -335,6 +337,9 @@ func (r *Renderer) clearTarget(cr, cg, cb, ca float32) {
 }
 
 func (r *Renderer) setState(page *atlasPage, clip image.Rectangle, blend blendMode, pal *[16][3]uint8) {
+	if pal == nil && page == r.state.page && clip == r.state.clip && blend == r.state.blend && len(r.verts)+6*vertSize <= cap(r.verts) {
+		return // the same batch; fills and glyphs keep the palette, so skip copying and comparing it
+	}
 	st := batchState{page: page, clip: clip, blend: blend}
 	if pal != nil {
 		st.palette = *pal
@@ -396,7 +401,7 @@ func (r *Renderer) flush() {
 	}
 	gl.Uniform1i(r.locSharp, sharp)
 	if !r.palOK || r.pal != st.palette {
-		var pal [16 * 3]float32
+		pal := &r.palF // a local would escape to the heap
 		for i, c := range st.palette {
 			pal[3*i+0] = float32(c[0]) / 255
 			pal[3*i+1] = float32(c[1]) / 255
@@ -433,7 +438,7 @@ func (r *Renderer) flush() {
 		gl.Disable(gl.SCISSOR_TEST)
 	}
 	gl.BindBuffer(gl.ARRAY_BUFFER, r.vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(r.verts)*4, gl.Ptr(r.verts), gl.STREAM_DRAW)
+	gl.BufferData(gl.ARRAY_BUFFER, len(r.verts)*4, unsafe.Pointer(&r.verts[0]), gl.STREAM_DRAW) // gl.Ptr allocates
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(r.verts)/vertSize))
 	r.verts = r.verts[:0]
 	r.restore()
@@ -448,8 +453,9 @@ func (r *Renderer) Fill(rc image.Rectangle, c color.NRGBA, clip image.Rectangle)
 	if rc.Empty() || r.cur == nil {
 		return
 	}
-	r.setState(r.white.page, clip, blendOver, nil)
-	r.quad(rc, r.white, image.Rect(0, 0, 1, 1), rgbaF(c), modeNormal)
+	white := r.whiteRegion()
+	r.setState(white.page, clip, blendOver, nil)
+	r.quad(rc, white, image.Rect(0, 0, 1, 1), rgbaF(c), modeNormal)
 }
 
 // Subtract implements noxrender.GPU.
@@ -458,8 +464,18 @@ func (r *Renderer) Subtract(rc image.Rectangle, v uint8, clip image.Rectangle) {
 		return
 	}
 	f := float32(v) / 255
-	r.setState(r.white.page, clip, blendSubtract, nil)
-	r.quad(rc, r.white, image.Rect(0, 0, 1, 1), [4]float32{f, f, f, 0}, modeRaw)
+	white := r.whiteRegion()
+	r.setState(white.page, clip, blendSubtract, nil)
+	r.quad(rc, white, image.Rect(0, 0, 1, 1), [4]float32{f, f, f, 0}, modeRaw)
+}
+
+// whiteRegion returns a white pixel on the page of the current batch if it has one,
+// so fills between sprites keep the batch going.
+func (r *Renderer) whiteRegion() texRegion {
+	if p := r.state.page; p != nil && !p.white.Empty() {
+		return texRegion{page: p, rect: p.white}
+	}
+	return r.white
 }
 
 func (r *Renderer) spriteRegion(img noxrender.Image16) (texRegion, bool) {
@@ -526,6 +542,12 @@ func (r *Renderer) Glyph(key noxrender.GlyphKey, dr image.Rectangle, mask image.
 	reg := r.glyphRegion(key, dr, mask, maskp)
 	r.setState(reg.page, clip, blendOver, nil)
 	r.quad(dr, reg, image.Rect(0, 0, dr.Dx(), dr.Dy()), rgbaF(c), modeNormal)
+}
+
+// HasGlyph implements noxrender.GlyphCache.
+func (r *Renderer) HasGlyph(key noxrender.GlyphKey) bool {
+	_, ok := r.glyphs[key]
+	return ok
 }
 
 // GlyphHiRes implements noxrender.GPU.

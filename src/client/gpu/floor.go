@@ -18,6 +18,7 @@ type floorRenderer struct {
 	light uint32
 	lsize image.Point
 	verts []float32
+	rects []image.Rectangle // reused for merging the spans
 	// reused buffers for merging dirty cells (see uploadTiles)
 	open, next []cellRect
 }
@@ -139,7 +140,8 @@ func (r *Renderer) Floor(p *noxrender.FloorParams, spans []image.Rectangle) {
 	}
 
 	f.verts = f.verts[:0]
-	for _, s := range spans {
+	f.rects = mergeSpans(f.rects[:0], spans)
+	for _, s := range f.rects {
 		x0, y0, x1, y1 := float32(s.Min.X), float32(s.Min.Y), float32(s.Max.X), float32(s.Max.Y)
 		f.verts = append(f.verts,
 			x0, y0, 0, 0, 0, 0, 0, 0, 0,
@@ -179,9 +181,38 @@ func (r *Renderer) Floor(p *noxrender.FloorParams, spans []image.Rectangle) {
 	gl.Disable(gl.BLEND)
 	gl.Disable(gl.SCISSOR_TEST)
 	gl.BindBuffer(gl.ARRAY_BUFFER, r.vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(f.verts)*4, gl.Ptr(f.verts), gl.STREAM_DRAW)
+	gl.BufferData(gl.ARRAY_BUFFER, len(f.verts)*4, unsafe.Pointer(&f.verts[0]), gl.STREAM_DRAW) // gl.Ptr allocates
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(f.verts)/vertSize))
 	r.restore()
+}
+
+// mergeSpans merges spans of the same columns in adjacent rows into rectangles: the floor is
+// drawn per pixel by the shader, so fewer and larger quads draw the same pixels.
+// Spans are given row by row, as the game makes them.
+func mergeSpans(out []image.Rectangle, spans []image.Rectangle) []image.Rectangle {
+	open := 0 // out[open:] may still grow down
+	for _, s := range spans {
+		merged := false
+		for i := open; i < len(out); i++ {
+			o := &out[i]
+			if o.Max.Y == s.Min.Y && o.Min.X == s.Min.X && o.Max.X == s.Max.X && s.Dy() == 1 {
+				o.Max.Y = s.Max.Y
+				merged = true
+				break
+			}
+		}
+		if !merged {
+			// rectangles that end above this row can't grow anymore: move them before the open ones
+			for i := open; i < len(out); i++ {
+				if out[i].Max.Y < s.Min.Y {
+					out[open], out[i] = out[i], out[open]
+					open++
+				}
+			}
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 const floorVert = `#version 330 core

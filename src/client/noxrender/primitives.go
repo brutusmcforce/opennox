@@ -208,10 +208,9 @@ func (r *NoxRender) DrawLine(p1, p2 image.Point, cl color.Color) {
 	if r.gpu == nil {
 		return
 	}
-	bc := SplitColor(noxcolor.ToRGBA5551Color(cl))
-	setPixel := func(x, y int) {
-		r.gpuPixel(x, y, bc, 256)
-	}
+	run := pixelRun{r: r, c: SplitColor(noxcolor.ToRGBA5551Color(cl)), alpha: 256}
+	defer run.flush()
+	setPixel := run.add
 
 	y := p1.Y
 	w := p2.X - p1.X
@@ -263,10 +262,10 @@ func (r *NoxRender) DrawLineAlpha(p1, p2 image.Point, cl color.Color) {
 	if r.gpu == nil {
 		return
 	}
-	alpha := int(d.Alpha())
-	bc := SplitColor(noxcolor.ToRGBA5551Color(cl))
+	run := pixelRun{r: r, c: SplitColor(noxcolor.ToRGBA5551Color(cl)), alpha: int(d.Alpha())}
+	defer run.flush()
 	blend := func(p image.Point) {
-		r.gpuPixel(p.X, p.Y, bc, alpha)
+		run.add(p.X, p.Y)
 	}
 
 	width := p2.X - p1.X
@@ -306,6 +305,45 @@ func (r *NoxRender) DrawLineAlpha(p1, p2 image.Point, cl color.Color) {
 				v += 2 * height
 			}
 		}
+	}
+}
+
+// pixelRun merges the pixels of a line into horizontal or vertical runs, so a line is drawn
+// with a few rectangles instead of a quad per pixel. A line never repeats a pixel, so the result is the same.
+type pixelRun struct {
+	r     *NoxRender
+	c     Color16
+	alpha int
+	rc    image.Rectangle
+}
+
+func (p *pixelRun) add(x, y int) {
+	rc := &p.rc
+	switch {
+	case rc.Empty():
+		*rc = image.Rect(x, y, x+1, y+1)
+		return
+	case rc.Dy() == 1 && y == rc.Min.Y && x == rc.Max.X:
+		rc.Max.X++
+		return
+	case rc.Dy() == 1 && y == rc.Min.Y && x == rc.Min.X-1:
+		rc.Min.X--
+		return
+	case rc.Dx() == 1 && x == rc.Min.X && y == rc.Max.Y:
+		rc.Max.Y++
+		return
+	case rc.Dx() == 1 && x == rc.Min.X && y == rc.Min.Y-1:
+		rc.Min.Y--
+		return
+	}
+	p.flush()
+	*rc = image.Rect(x, y, x+1, y+1)
+}
+
+func (p *pixelRun) flush() {
+	if !p.rc.Empty() {
+		p.r.gpuFill(p.rc, p.c, p.alpha)
+		p.rc = image.Rectangle{}
 	}
 }
 

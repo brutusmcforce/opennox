@@ -62,7 +62,7 @@ type Reader struct {
 	sym  [symbols]int
 	ind  [symbols][2]int
 	cnt  [symbols]int
-	win  [windowSize]int
+	win  [windowSize]byte // only output bytes: 64 KB instead of 512 KB per reader
 	wpos uint
 	err  error
 }
@@ -143,7 +143,7 @@ func (r *Reader) decodeMore() {
 		r.cnt[sym]++
 		if sym < 0x100 {
 			r.buf.WriteByte(byte(sym))
-			r.win[r.wpos%windowSize] = sym
+			r.win[r.wpos%windowSize] = byte(sym)
 			r.wpos++
 			continue
 		}
@@ -205,9 +205,9 @@ func (r *Reader) decodeMore() {
 		dist := (uint64(offs) << 9) + b
 		ind = uint64(r.wpos) - dist
 		for i := uint64(0); i < leng; i++ {
-			sym = r.win[(ind+i)%windowSize]
-			r.buf.WriteByte(byte(sym))
-			r.win[r.wpos%windowSize] = sym
+			c := r.win[(ind+i)%windowSize]
+			r.buf.WriteByte(c)
+			r.win[r.wpos%windowSize] = c
 			r.wpos++
 		}
 	}

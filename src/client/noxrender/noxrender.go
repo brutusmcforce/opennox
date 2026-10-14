@@ -359,6 +359,9 @@ type NoxRender struct {
 	pix   *noximage.Image16
 	gpu   GPU
 
+	spriteSt  SpriteState // reused by the GPU sprite calls
+	glyphInfo map[GlyphKey]glyphInfo
+
 	// noStep is set when drawing additional frames between game ticks.
 	// Animations (fades, etc) must not advance in this case.
 	noStep bool

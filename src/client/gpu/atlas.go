@@ -18,6 +18,7 @@ type atlasPage struct {
 	mat     uint32
 	shelves []shelf
 	nextY   int
+	white   image.Rectangle // a white pixel for solid fills, so they don't switch pages (and break batches)
 }
 
 type shelf struct {
@@ -115,10 +116,20 @@ func (a *atlas) add(w, h int, rgba, mat []byte) texRegion {
 		}
 	}
 	p := newAtlasPage(atlasSize)
+	p.addWhite()
 	a.pages = append(a.pages, p)
 	r, _ := p.alloc(w, h)
 	p.upload(r, rgba, mat)
 	return texRegion{page: p, rect: r}
+}
+
+func (p *atlasPage) addWhite() {
+	r, ok := p.alloc(1, 1)
+	if !ok {
+		return
+	}
+	p.upload(r, []byte{0xff, 0xff, 0xff, 0xff}, []byte{0})
+	p.white = r
 }
 
 func (a *atlas) free() {

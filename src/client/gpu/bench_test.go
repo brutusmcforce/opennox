@@ -2,6 +2,7 @@ package gpu
 
 import (
 	"image"
+	"image/color"
 	"log/slog"
 	"math/rand/v2"
 	"os"
@@ -253,5 +254,33 @@ func TestUploadColors(t *testing.T) {
 				t.Fatalf("pixel %d,%d: got %v, want %v", x, y, p[:4], c)
 			}
 		}
+	}
+}
+
+// Fills between sprites on a later atlas page must not switch pages (each switch flushes the batch),
+// and still draw the right color.
+func TestFillKeepsPage(t *testing.T) {
+	r := withGL(t)
+	img := noximage.NewImage16(image.Rect(0, 0, 64, 64))
+	r.SetTarget(img)
+	defer r.Forget(img)
+	// a region that needs a page of its own
+	big := atlasSize - 8
+	reg := r.atlas.add(big, big, make([]byte, big*big*4), make([]byte, big*big))
+	if reg.page == r.white.page {
+		reg = r.atlas.add(big, big, make([]byte, big*big*4), make([]byte, big*big))
+	}
+	if reg.page == r.white.page || reg.page.white.Empty() {
+		t.Fatal("expected a new atlas page with a white pixel")
+	}
+	full := image.Rect(0, 0, 64, 64)
+	r.setState(reg.page, full, blendOver, nil)
+	r.Fill(image.Rect(4, 4, 20, 20), color.NRGBA{R: 255, A: 255}, full)
+	if r.state.page != reg.page {
+		t.Fatal("the fill switched the atlas page")
+	}
+	out := r.ReadPixels(img)
+	if c := out.NRGBAAt(10, 10); c.R < 240 || c.G > 15 || c.B > 15 {
+		t.Fatalf("fill color: %v", c)
 	}
 }

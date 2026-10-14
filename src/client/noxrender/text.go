@@ -297,11 +297,13 @@ func (r *NoxRender) DrawStringHL(font font.Face, str string, pos image.Point) in
 	return r.drawStringLine(font, str, pos)
 }
 
+// lineBreaks removes line breaks; building a replacer allocates a lot, so it's made once.
+var lineBreaks = strings.NewReplacer("\n", "", "\r", "")
+
 func (r *NoxRender) drawStringLine(font font.Face, str string, pos image.Point) int {
-	str = strings.NewReplacer(
-		"\n", "",
-		"\r", "",
-	).Replace(str)
+	if strings.ContainsAny(str, "\n\r") {
+		str = lineBreaks.Replace(str)
+	}
 	return r.drawString(font, str, pos)
 }
 
