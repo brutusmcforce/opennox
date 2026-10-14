@@ -51,9 +51,11 @@ type RectFiller interface {
 }
 
 // GlyphCache is implemented by GPUs that keep the glyphs they were given. Then glyphs they have
-// are drawn without rasterizing them again (a mask of nil).
+// are drawn without rasterizing them again.
 type GlyphCache interface {
-	HasGlyph(key GlyphKey) bool
+	// DrawCachedGlyph draws a glyph like Glyph (or GlyphHiRes) with a nil mask, if the GPU has it.
+	// It reports if the GPU had the glyph.
+	DrawCachedGlyph(key GlyphKey, dr image.Rectangle, c color.NRGBA, clip image.Rectangle, hiRes bool) bool
 }
 
 // glyphInfo is a glyph's rectangle relative to the integer part of the dot, and its advance.
@@ -67,17 +69,20 @@ func dotInt(dot fixed.Point26_6) image.Point {
 	return image.Pt(dot.X.Floor(), dot.Y.Floor())
 }
 
-// cachedGlyph returns the glyph's rectangle at dot, if the GPU already has the glyph.
-func (r *NoxRender) cachedGlyph(key GlyphKey, dot fixed.Point26_6) (image.Rectangle, glyphInfo, bool) {
-	gc, ok := r.gpu.(GlyphCache)
-	if !ok {
-		return image.Rectangle{}, glyphInfo{}, false
+// drawCachedGlyph draws a glyph at dot that was drawn before, without rasterizing it again.
+// It reports false if the glyph must be rasterized.
+func (r *NoxRender) drawCachedGlyph(gc GlyphCache, key GlyphKey, dot fixed.Point26_6, c color.NRGBA, clip image.Rectangle, hiRes bool) (glyphInfo, bool) {
+	if gc == nil {
+		return glyphInfo{}, false
 	}
 	gi, ok := r.glyphInfo[key]
-	if !ok || (gi.ok && !gi.rel.Empty() && !gc.HasGlyph(key)) {
-		return image.Rectangle{}, glyphInfo{}, false
+	if !ok {
+		return glyphInfo{}, false
 	}
-	return gi.rel.Add(dotInt(dot)), gi, true
+	if gi.ok && !gi.rel.Empty() && !gc.DrawCachedGlyph(key, gi.rel.Add(dotInt(dot)), c, clip, hiRes) {
+		return glyphInfo{}, false
+	}
+	return gi, true
 }
 
 func (r *NoxRender) saveGlyph(key GlyphKey, dot fixed.Point26_6, dr image.Rectangle, advance fixed.Int26_6, ok bool) {
@@ -109,6 +114,8 @@ type FloorParams struct {
 	LightH   int
 	LightOff image.Point // light grid position (in pixels) is a screen position plus this offset
 	Step     int         // light grid step, in pixels
+	// LightRect are the cells of Light (X: column, Y: row) that are set and used; empty means the whole grid.
+	LightRect image.Rectangle
 }
 
 // GPU is the drawing backend. All drawing goes through it.
@@ -292,6 +299,7 @@ func (r *NoxRender) gpuDrawString(s string, dot fixed.Point26_6, clip image.Rect
 			hi = of.scaledFace(math.Round(sx*8) / 8)
 		}
 	}
+	gc, _ := r.gpu.(GlyphCache)
 	prev := rune(-1)
 	for _, ch := range s {
 		if prev >= 0 {
@@ -300,11 +308,7 @@ func (r *NoxRender) gpuDrawString(s string, dot fixed.Point26_6, clip image.Rect
 		if hi != nil && of.hasGlyph(ch) {
 			pdot := fixed.Point26_6{X: fixed.Int26_6(float64(dot.X) * sx), Y: fixed.Int26_6(float64(dot.Y+of.yOff) * sy)}
 			key := GlyphKey{Face: hi, Rune: ch, Frac: fixed.Point26_6{X: pdot.X & 0x3f, Y: pdot.Y & 0x3f}}
-			if dr, gi, cached := r.cachedGlyph(key, pdot); cached {
-				if gi.ok && !dr.Empty() {
-					r.gpu.GlyphHiRes(key, dr, nil, image.Point{}, c, clip)
-				}
-			} else {
+			if _, cached := r.drawCachedGlyph(gc, key, pdot, c, clip, true); !cached {
 				dr, mask, maskp, adv, ok := hi.Glyph(pdot, ch)
 				r.saveGlyph(key, pdot, dr, adv, ok)
 				if ok && !dr.Empty() {
@@ -323,13 +327,10 @@ func (r *NoxRender) gpuDrawString(s string, dot fixed.Point26_6, clip image.Rect
 			Frac: fixed.Point26_6{X: dot.X & 0x3f, Y: dot.Y & 0x3f},
 		}
 		var advance fixed.Int26_6
-		if dr, gi, cached := r.cachedGlyph(key, dot); cached {
-			// already on the GPU: don't rasterize it again
+		if gi, cached := r.drawCachedGlyph(gc, key, dot, c, clip, false); cached {
+			// already on the GPU: not rasterized again
 			if !gi.ok {
 				continue
-			}
-			if !dr.Empty() {
-				r.gpu.Glyph(key, dr, nil, image.Point{}, c, clip)
 			}
 			advance = gi.advance + fixed.I(r.text.advance) // the extra spacing changes between strings
 		} else {

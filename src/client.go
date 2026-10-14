@@ -83,6 +83,7 @@ type Client struct {
 	fps                    fpsOverlay
 	gpuFloor               noxrender.FloorParams
 	gpuFloorSpans          []image.Rectangle
+	blackLines             []noxrender.HLine // reused by sub_4C5500
 	sel                    selCircle
 	zoom                   worldZoom
 	screenshots            screenshots

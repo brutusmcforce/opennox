@@ -35,3 +35,31 @@ func TestLightConeHighRes(t *testing.T) {
 	}
 	require.NotZero(t, lit)
 }
+
+// Filling the light grid only resets the cells that lights changed: the result must be the whole grid.
+func TestFillLightGrid(t *testing.T) {
+	c := &Client{}
+	check := func(cl noxrender.RGB) {
+		t.Helper()
+		for x := range c.tiles.nox_arr2_853BC0 {
+			for y, v := range c.tiles.nox_arr2_853BC0[x] {
+				if v != cl {
+					t.Fatalf("cell %d,%d: %v, want %v", x, y, v, cl)
+				}
+			}
+		}
+	}
+	amb := noxrender.RGB{R: 50 << 16, G: 60 << 16, B: 70 << 16}
+	light := noxrender.RGB{R: 255, G: 128, B: 1}
+	for i, cl := range []noxrender.RGB{amb, amb, {R: 255 << 16, G: 255 << 16, B: 255 << 16}, amb} {
+		c.fillLightGrid(cl)
+		check(cl)
+		// lights in a few places, including the corners
+		for _, p := range []image.Point{{0, 0}, {lightGridW - 1, lightGridH - 1}, {10 + i, 20}, {100, 3 * i}} {
+			c.sub_4695E0(p.X, p.Y, light, 100<<8, i == 2) // darker on white
+		}
+		require.NotEqual(t, cl, c.tiles.nox_arr2_853BC0[10+i][20])
+	}
+	c.fillLightGrid(amb)
+	check(amb)
+}

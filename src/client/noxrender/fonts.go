@@ -3,7 +3,9 @@ package noxrender
 import (
 	"embed"
 	"image"
+	"math"
 	"sync"
+	"sync/atomic"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
@@ -42,11 +44,14 @@ type outlineFace struct {
 	// sharedOrig is set if the original font is owned by another face.
 	sharedOrig bool
 
-	mu     sync.Mutex
-	kern   map[[2]rune]fixed.Int26_6
-	has    map[rune]bool // see hasGlyph
-	buf    sfnt.Buffer
-	scaled map[float64]font.Face
+	mu   sync.Mutex
+	kern map[[2]rune]fixed.Int26_6
+	has  map[rune]bool // see hasGlyph
+	// lock-free caches for ASCII, which is most of the text: see Kern and hasGlyph
+	kernASCII atomic.Pointer[[asciiN * asciiN]atomic.Int32]
+	hasASCII  [asciiN]atomic.Int32 // 0: unknown, 1: no, 2: yes
+	buf       sfnt.Buffer
+	scaled    map[float64]font.Face
 }
 
 func newOutlineFace(fnt *opentype.Font, size float64, orig font.Face) (*outlineFace, error) {
@@ -160,6 +165,11 @@ func (f *outlineFace) hasGlyph(r rune) bool {
 	if f.orig == nil {
 		return true
 	}
+	if r >= 0 && r < asciiN {
+		if v := f.hasASCII[r].Load(); v != 0 {
+			return v == 2
+		}
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if has, ok := f.has[r]; ok {
@@ -171,6 +181,13 @@ func (f *outlineFace) hasGlyph(r rune) bool {
 		f.has = make(map[rune]bool)
 	}
 	f.has[r] = has
+	if r >= 0 && r < asciiN {
+		v := int32(1)
+		if has {
+			v = 2
+		}
+		f.hasASCII[r].Store(v)
+	}
 	return has
 }
 
@@ -239,8 +256,37 @@ func (f *outlineFace) GlyphAdvance(r rune) (advance fixed.Int26_6, ok bool) {
 	return f.pick(r).GlyphAdvance(r)
 }
 
+// asciiN is the number of runes in the ASCII caches of outlineFace.
+const asciiN = 128
+
+// kernUnknown marks pairs that are not in the ASCII kern cache yet.
+const kernUnknown = math.MinInt32
+
 func (f *outlineFace) Kern(r0, r1 rune) fixed.Int26_6 {
 	// looking it up in the font is slow, and it's needed for every pair of letters drawn
+	if r0 < 0 || r0 >= asciiN || r1 < 0 || r1 >= asciiN {
+		return f.kernSlow(r0, r1)
+	}
+	tbl := f.kernASCII.Load()
+	if tbl == nil {
+		tbl = new([asciiN * asciiN]atomic.Int32)
+		for i := range tbl {
+			tbl[i].Store(kernUnknown)
+		}
+		if !f.kernASCII.CompareAndSwap(nil, tbl) {
+			tbl = f.kernASCII.Load()
+		}
+	}
+	e := &tbl[r0*asciiN+r1]
+	if k := e.Load(); k != kernUnknown {
+		return fixed.Int26_6(k)
+	}
+	k := f.kernSlow(r0, r1)
+	e.Store(int32(k))
+	return k
+}
+
+func (f *outlineFace) kernSlow(r0, r1 rune) fixed.Int26_6 {
 	key := [2]rune{r0, r1}
 	f.mu.Lock()
 	k, ok := f.kern[key]

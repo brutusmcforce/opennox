@@ -137,6 +137,23 @@ func (f *floorRenderer) uploadTiles(p *noxrender.FloorParams, rows int) {
 	gl.PixelStorei(gl.UNPACK_ROW_LENGTH, 0)
 }
 
+// uploadLight updates the light texture with the used cells of the light grid (FloorParams.LightRect).
+func (f *floorRenderer) uploadLight(p *noxrender.FloorParams) {
+	// the light grid is column-major: the texture is transposed (see FloorParams.Light)
+	sz := image.Pt(p.LightH, p.LightW)
+	lr := p.LightRect
+	if f.lsize != sz || lr.Empty() || !lr.In(image.Rect(0, 0, p.LightW, p.LightH)) {
+		uploadTex(f.light, &f.lsize, sz, gl.RGB32F, gl.RGB, gl.FLOAT, unsafe.Pointer(&p.Light[0]))
+		return
+	}
+	gl.BindTexture(gl.TEXTURE_2D, f.light)
+	gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
+	gl.PixelStorei(gl.UNPACK_ROW_LENGTH, int32(p.LightH))
+	gl.TexSubImage2D(gl.TEXTURE_2D, 0, int32(lr.Min.Y), int32(lr.Min.X), int32(lr.Dy()), int32(lr.Dx()),
+		gl.RGB, gl.FLOAT, unsafe.Pointer(&p.Light[3*(lr.Min.X*p.LightH+lr.Min.Y)]))
+	gl.PixelStorei(gl.UNPACK_ROW_LENGTH, 0)
+}
+
 // Floor draws floor tiles in given screen spans (rectangles).
 func (r *Renderer) Floor(p *noxrender.FloorParams, spans []image.Rectangle) {
 	if r.cur == nil || len(spans) == 0 || p.Pitch <= 0 || len(p.Tiles) < p.Pitch {
@@ -147,12 +164,11 @@ func (r *Renderer) Floor(p *noxrender.FloorParams, spans []image.Rectangle) {
 	r.flush()
 	f.uploadTiles(p, rows)
 	if p.Lit && len(p.Light) >= 3*p.LightW*p.LightH && p.LightW > 0 && p.LightH > 0 {
-		// the light grid is column-major: the texture is transposed (see FloorParams.Light)
-		uploadTex(f.light, &f.lsize, image.Pt(p.LightH, p.LightW), gl.RGB32F, gl.RGB, gl.FLOAT, unsafe.Pointer(&p.Light[0]))
+		f.uploadLight(p)
 	}
 
 	f.verts = f.verts[:0]
-	f.rects = mergeSpans(f.rects[:0], spans)
+	f.rects = noxrender.MergeRows(f.rects[:0], spans)
 	for _, s := range f.rects {
 		x0, y0, x1, y1 := float32(s.Min.X), float32(s.Min.Y), float32(s.Max.X), float32(s.Max.Y)
 		f.verts = append(f.verts,
@@ -196,35 +212,6 @@ func (r *Renderer) Floor(p *noxrender.FloorParams, spans []image.Rectangle) {
 	gl.BufferData(gl.ARRAY_BUFFER, len(f.verts)*4, unsafe.Pointer(&f.verts[0]), gl.STREAM_DRAW) // gl.Ptr allocates
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(f.verts)/2))
 	r.restore()
-}
-
-// mergeSpans merges spans of the same columns in adjacent rows into rectangles: the floor is
-// drawn per pixel by the shader, so fewer and larger quads draw the same pixels.
-// Spans are given row by row, as the game makes them.
-func mergeSpans(out []image.Rectangle, spans []image.Rectangle) []image.Rectangle {
-	open := 0 // out[open:] may still grow down
-	for _, s := range spans {
-		merged := false
-		for i := open; i < len(out); i++ {
-			o := &out[i]
-			if o.Max.Y == s.Min.Y && o.Min.X == s.Min.X && o.Max.X == s.Max.X && s.Dy() == 1 {
-				o.Max.Y = s.Max.Y
-				merged = true
-				break
-			}
-		}
-		if !merged {
-			// rectangles that end above this row can't grow anymore: move them before the open ones
-			for i := open; i < len(out); i++ {
-				if out[i].Max.Y < s.Min.Y {
-					out[open], out[i] = out[i], out[open]
-					open++
-				}
-			}
-			out = append(out, s)
-		}
-	}
-	return out
 }
 
 const floorVert = `#version 330 core

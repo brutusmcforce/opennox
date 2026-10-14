@@ -257,7 +257,7 @@ func TestUploadColors(t *testing.T) {
 	}
 }
 
-// Fills between sprites on a later atlas page must not switch pages (each switch flushes the batch),
+// Sprite fills (scaled targets) between sprites on a later atlas page must not switch pages (each switch flushes the batch),
 // and still draw the right color.
 func TestFillKeepsPage(t *testing.T) {
 	r := withGL(t)
@@ -275,7 +275,7 @@ func TestFillKeepsPage(t *testing.T) {
 	}
 	full := image.Rect(0, 0, 64, 64)
 	r.setState(reg.page, full, blendOver, nil)
-	r.Fill(image.Rect(4, 4, 20, 20), color.NRGBA{R: 255, A: 255}, full)
+	r.fillSprite(image.Rect(4, 4, 20, 20), color.NRGBA{R: 255, A: 255}, full)
 	if r.state.page != reg.page {
 		t.Fatal("the fill switched the atlas page")
 	}
@@ -285,7 +285,7 @@ func TestFillKeepsPage(t *testing.T) {
 	}
 }
 
-// Solid fills (FillRects on an unscaled target) must draw exactly the pixels of Fill.
+// Solid fills (Fill and FillRects on an unscaled target) must draw exactly the pixels of the sprite shader.
 func TestSolidFillsMatchFill(t *testing.T) {
 	r := withGL(t)
 	full := image.Rect(0, 0, 128, 96)
@@ -307,15 +307,55 @@ func TestSolidFillsMatchFill(t *testing.T) {
 		r.SetTarget(img)
 		defer r.Forget(img)
 		r.Clear(color.NRGBA{R: 40, G: 90, B: 160, A: 255})
-		for _, f := range fills {
-			if solid {
+		for i, f := range fills {
+			switch {
+			case !solid:
+				r.fillSprite(f.rc, f.c, full)
+			case i%2 == 0:
 				r.FillRects([]image.Rectangle{f.rc}, f.c, full)
-			} else {
+			default:
 				r.Fill(f.rc, f.c, full)
 			}
 		}
-		if solid && !r.state.solid {
-			t.Fatal("FillRects didn't use the solid batch")
+		if solid != r.state.solid {
+			t.Fatal("the fills didn't use the expected batch")
+		}
+		return r.ReadPixels(img).Pix
+	}
+	want, got := draw(false), draw(true)
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("pixel %d channel %d: got %d, want %d", i/4, i%4, got[i], want[i])
+		}
+	}
+}
+
+// FillRects with more rectangles than a batch takes, and with ones that don't fit a solid instance
+// in between, must draw the same as filling them one by one.
+func TestFillRectsOverflow(t *testing.T) {
+	r := withGL(t)
+	full := image.Rect(0, 0, 128, 96)
+	rnd := rand.New(rand.NewPCG(9, 10))
+	var rcs []image.Rectangle
+	for i := 0; i < maxSolidQuad*2+100; i++ {
+		x, y := rnd.IntN(126), rnd.IntN(94)
+		rcs = append(rcs, image.Rect(x, y, x+1+rnd.IntN(2), y+1+rnd.IntN(2)))
+		if i%5000 == 0 {
+			rcs = append(rcs, image.Rect(-40000, y, 40000, y+1)) // not a solid instance
+		}
+	}
+	c := color.NRGBA{R: 200, G: 120, B: 30, A: 40}
+	draw := func(batched bool) []byte {
+		img := noximage.NewImage16(full)
+		r.SetTarget(img)
+		defer r.Forget(img)
+		r.Clear(color.NRGBA{R: 40, G: 90, B: 160, A: 255})
+		if batched {
+			r.FillRects(rcs, c, full)
+		} else {
+			for _, rc := range rcs {
+				r.fillSprite(rc, c, full)
+			}
 		}
 		return r.ReadPixels(img).Pix
 	}

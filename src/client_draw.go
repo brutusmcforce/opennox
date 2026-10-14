@@ -232,25 +232,13 @@ func (c *Client) sub_468F80(vp *noxrender.Viewport) {
 	legacy.Set_dword_5d4594_2650676(c.tiles.noxTilesGpx)
 	legacy.Set_dword_5d4594_2650680(c.tiles.noxTilesGpy)
 	if noxflags.HasEngine(noxflags.EngineNoSoftLights) {
-		for i := 0; i < lightGridW; i++ {
-			for j := 0; j < lightGridH; j++ {
-				c.tiles.nox_arr2_853BC0[i][j].R = 255 << 16
-				c.tiles.nox_arr2_853BC0[i][j].G = 255 << 16
-				c.tiles.nox_arr2_853BC0[i][j].B = 255 << 16
-			}
-		}
+		c.fillLightGrid(noxrender.RGB{R: 255 << 16, G: 255 << 16, B: 255 << 16})
 	} else {
 		cl := c.r.Data().GetLightColor()
 		if legacy.Nox_xxx_get_57AF20() != 0 {
 			cl = noxrender.RGB{R: 50, G: 50, B: 50}
 		}
-		for i := 0; i < lightGridW; i++ {
-			for j := 0; j < lightGridH; j++ {
-				c.tiles.nox_arr2_853BC0[i][j].R = cl.R << 16
-				c.tiles.nox_arr2_853BC0[i][j].G = cl.G << 16
-				c.tiles.nox_arr2_853BC0[i][j].B = cl.B << 16
-			}
-		}
+		c.fillLightGrid(noxrender.RGB{R: cl.R << 16, G: cl.G << 16, B: cl.B << 16})
 		const add = 100
 		padd := image.Pt(add, add)
 		rect := image.Rectangle{
@@ -259,6 +247,31 @@ func (c *Client) sub_468F80(vp *noxrender.Viewport) {
 		}
 		c.Objs.EachInRect(rect, c.nox_xxx_cliLight16_469140)
 	}
+}
+
+// fillLightGrid sets the whole light grid to a color. The grid is much larger than the screen, and only
+// the cells that lights changed (see sub_4695E0) differ from the color of the last fill.
+func (c *Client) fillLightGrid(cl noxrender.RGB) {
+	t := &c.tiles
+	g := &t.nox_arr2_853BC0
+	if t.lightAmbientOK && t.lightAmbient == cl {
+		d := t.lightDirty
+		for i := d.Min.X; i < d.Max.X; i++ {
+			col := g[i][d.Min.Y:d.Max.Y]
+			for j := range col {
+				col[j] = cl
+			}
+		}
+	} else {
+		for j := range g[0] {
+			g[0][j] = cl
+		}
+		for i := 1; i < len(g); i++ {
+			g[i] = g[0]
+		}
+		t.lightAmbient, t.lightAmbientOK = cl, true
+	}
+	t.lightDirty = image.Rectangle{}
 }
 
 func (c *Client) nox_xxx_drawAllMB_475810_draw(vp *noxrender.Viewport) {
@@ -357,6 +370,8 @@ func (c *Client) sub_4C5500(vp *noxrender.Viewport) {
 		c.r.DrawRectFilledOpaque(sxmin, symin, vp.Size.X, ymin-symin, nox_color_black_2650656)
 	}
 
+	// the area around the visible floor: thousands of short lines, drawn as fewer rectangles
+	lines := c.blackLines[:0]
 	for yval := c.tiles.dword_5d4594_3679320; yval < c.tiles.dword_5d4594_3798156; yval++ {
 		cur := &c.tiles.nox_arr_957820[yval]
 		lxs := sxmin
@@ -364,14 +379,16 @@ func (c *Client) sub_4C5500(vp *noxrender.Viewport) {
 		ptr2i := cur.arr[1:]
 		if pv := c.tiles.nox_arr_956A00[yval]; pv > 0 {
 			for i := 0; i < (pv+1)/2; i++ {
-				c.r.DrawLineHorizontal(lxs, yval, lxe, nox_color_black_2650656)
+				lines = append(lines, noxrender.HLine{X1: lxs, X2: lxe, Y: yval})
 				lxs = ptr2i[0]
 				lxe = ptr2i[1]
 				ptr2i = ptr2i[2:]
 			}
 		}
-		c.r.DrawLineHorizontal(lxs, yval, sxmin+vp.Size.X, nox_color_black_2650656)
+		lines = append(lines, noxrender.HLine{X1: lxs, X2: sxmin + vp.Size.X, Y: yval})
 	}
+	c.blackLines = lines
+	c.r.DrawLinesHorizontal(lines, nox_color_black_2650656)
 	if ymax := c.tiles.dword_5d4594_3798156; vp.Size.Y+symin > ymax { // bottom tile cutoff
 		c.r.DrawRectFilledOpaque(sxmin, ymax, vp.Size.X, vp.Size.Y+symin-ymax, nox_color_black_2650656)
 	}
@@ -788,6 +805,12 @@ func (c *Client) sub_4695E0(a1, a2 int, pcl noxrender.RGB, a4 int, flip bool) {
 	v8 := sub_4C1C60(v5, pcl.B) << 8
 
 	ptr := &c.tiles.nox_arr2_853BC0[a1][a2]
+	if d := &c.tiles.lightDirty; d.Empty() {
+		*d = image.Rect(a1, a2, a1+1, a2+1)
+	} else {
+		d.Min.X, d.Min.Y = min(d.Min.X, a1), min(d.Min.Y, a2)
+		d.Max.X, d.Max.Y = max(d.Max.X, a1+1), max(d.Max.Y, a2+1)
+	}
 
 	var res noxrender.RGB
 	res.R = v6 + ptr.R
@@ -856,29 +879,6 @@ func (c *Client) gpuDrawFloor(vp *noxrender.Viewport, dp image.Point) {
 		X: dp.X + int(legacy.Get_dword_5d4594_3798836()) - int(legacy.Get_dword_5d4594_3798820()),
 		Y: dp.Y + int(legacy.Get_dword_5d4594_3798840()) - int(legacy.Get_dword_5d4594_3798824()),
 	}
-	p.Lit = nox_client_texturedFloors_154956 && !noxflags.HasEngine(noxflags.EngineNoSoftLights)
-	if p.Lit {
-		p.LightW, p.LightH = lightGridW, lightGridH
-		if len(p.Light) != 3*lightGridW*lightGridH {
-			p.Light = make([]float32, 3*lightGridW*lightGridH)
-		}
-		// light values are 8.16 fixed point, where 256 is the full intensity
-		const scale = 1.0 / (1 << 24)
-		// in the grid's own (column-major) order, so both sides are sequential: see FloorParams.Light
-		k := 0
-		for i := range t.nox_arr2_853BC0 {
-			col := &t.nox_arr2_853BC0[i]
-			for j := range col {
-				cl := &col[j]
-				p.Light[k+0] = float32(cl.R) * scale
-				p.Light[k+1] = float32(cl.G) * scale
-				p.Light[k+2] = float32(cl.B) * scale
-				k += 3
-			}
-		}
-		p.LightOff = image.Point{X: dp.X - t.noxTilesGpx, Y: dp.Y - t.noxTilesGpy}
-		p.Step = common.GridStep
-	}
 	spans := c.gpuFloorSpans[:0]
 	for y := t.dword_5d4594_3679320; y < t.dword_5d4594_3798156; y++ {
 		n := t.nox_arr_956A00[y]
@@ -890,8 +890,56 @@ func (c *Client) gpuDrawFloor(vp *noxrender.Viewport, dp image.Point) {
 			}
 		}
 	}
+	p.Lit = nox_client_texturedFloors_154956 && !noxflags.HasEngine(noxflags.EngineNoSoftLights)
+	if p.Lit {
+		p.LightW, p.LightH = lightGridW, lightGridH
+		if len(p.Light) != 3*lightGridW*lightGridH {
+			p.Light = make([]float32, 3*lightGridW*lightGridH)
+		}
+		p.LightOff = image.Point{X: dp.X - t.noxTilesGpx, Y: dp.Y - t.noxTilesGpy}
+		p.Step = common.GridStep
+		// the grid is much larger than the screen: only the cells under the spans are used (see FloorParams.LightRect)
+		p.LightRect = floorLightRect(spans, p.LightOff, p.Step).Intersect(image.Rect(0, 0, lightGridW, lightGridH))
+		// light values are 8.16 fixed point, where 256 is the full intensity
+		const scale = 1.0 / (1 << 24)
+		// in the grid's own (column-major) order, so both sides are sequential: see FloorParams.Light
+		lr := p.LightRect
+		for i := lr.Min.X; i < lr.Max.X; i++ {
+			col := t.nox_arr2_853BC0[i][lr.Min.Y:lr.Max.Y]
+			k := 3 * (i*lightGridH + lr.Min.Y)
+			for j := range col {
+				cl := &col[j]
+				p.Light[k+0] = float32(cl.R) * scale
+				p.Light[k+1] = float32(cl.G) * scale
+				p.Light[k+2] = float32(cl.B) * scale
+				k += 3
+			}
+		}
+	}
 	c.gpuFloorSpans = spans
 	c.gpu.Floor(p, spans)
+}
+
+// floorLightRect returns the light grid cells that the floor shader samples for the spans:
+// the cell of each pixel and the next one (for the bilinear filter), with a cell of margin.
+func floorLightRect(spans []image.Rectangle, off image.Point, step int) image.Rectangle {
+	if len(spans) == 0 || step <= 0 {
+		return image.Rectangle{}
+	}
+	b := spans[0]
+	for _, s := range spans[1:] {
+		b = b.Union(s)
+	}
+	div := func(a int) int { // floor division
+		if a < 0 {
+			return -((-a + step - 1) / step)
+		}
+		return a / step
+	}
+	return image.Rect(
+		div(b.Min.X+off.X)-1, div(b.Min.Y+off.Y)-1,
+		div(b.Max.X-1+off.X)+3, div(b.Max.Y-1+off.Y)+3,
+	)
 }
 
 func (c *Client) Sub4C5630(a1 int, a2 int, a3 int) int {

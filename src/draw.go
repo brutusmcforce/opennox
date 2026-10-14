@@ -63,6 +63,10 @@ type clientTileData struct {
 	dword_5d4594_3798804 int
 
 	nox_arr2_853BC0 [lightGridW][lightGridH]noxrender.RGB
+	// The light grid is the ambient color, except for the cells in lightDirty (see fillLightGrid).
+	lightAmbient   noxrender.RGB
+	lightAmbientOK bool
+	lightDirty     image.Rectangle // X: column, Y: row
 	lightsOutBuf    []uint32
 }
 

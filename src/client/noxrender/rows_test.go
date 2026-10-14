@@ -1,4 +1,4 @@
-package gpu
+package noxrender
 
 import (
 	"image"
@@ -7,7 +7,7 @@ import (
 )
 
 // Merged spans must cover exactly the pixels of the spans, once each.
-func TestMergeSpans(t *testing.T) {
+func TestMergeRows(t *testing.T) {
 	rnd := rand.New(rand.NewPCG(3, 4))
 	for iter := 0; iter < 500; iter++ {
 		var spans []image.Rectangle
@@ -30,7 +30,7 @@ func TestMergeSpans(t *testing.T) {
 				want[image.Pt(x, s.Min.Y)]++
 			}
 		}
-		rects := mergeSpans(nil, spans)
+		rects := MergeRows(nil, spans)
 		got := make(map[image.Point]int)
 		for _, r := range rects {
 			for y := r.Min.Y; y < r.Max.Y; y++ {

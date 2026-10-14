@@ -19,6 +19,16 @@ func (r *NoxRender) DrawPixel(pos image.Point, cl color.Color) {
 }
 
 func (r *NoxRender) DrawLineHorizontal(x1, y, x2 int, cl color.Color) {
+	rc, ok := r.lineHorizontalRect(x1, y, x2)
+	if !ok || r.gpu == nil {
+		return
+	}
+	bc := SplitColor(noxcolor.ToRGBA5551Color(cl))
+	r.gpuFill(rc, bc, r.lineAlpha())
+}
+
+// lineHorizontalRect returns the pixels of a horizontal line from x1 to x2 (inclusive), clipped.
+func (r *NoxRender) lineHorizontalRect(x1, y, x2 int) (image.Rectangle, bool) {
 	xmin, xmax := x1, x2
 	if xmin > xmax {
 		xmin, xmax = xmax, xmin
@@ -27,13 +37,13 @@ func (r *NoxRender) DrawLineHorizontal(x1, y, x2 int, cl color.Color) {
 	if d.Clip() {
 		rect := d.ClipRect2()
 		if xmin > rect.Max.X {
-			return
+			return image.Rectangle{}, false
 		}
 		if xmax < rect.Min.X {
-			return
+			return image.Rectangle{}, false
 		}
 		if y < rect.Min.Y || y > rect.Max.Y {
-			return
+			return image.Rectangle{}, false
 		}
 		if xmin < rect.Min.X {
 			xmin = rect.Min.X
@@ -42,16 +52,48 @@ func (r *NoxRender) DrawLineHorizontal(x1, y, x2 int, cl color.Color) {
 			xmax = rect.Max.X
 		}
 	}
+	return image.Rect(xmin, y, xmax+1, y+1), true
+}
+
+// lineAlpha returns the alpha for gpuFill of lines.
+func (r *NoxRender) lineAlpha() int {
+	if r.Data().IsAlphaEnabled() {
+		// alpha is the weight of the destination color here
+		return 256 - int(r.Data().Alpha())
+	}
+	return 256
+}
+
+// HLine is a horizontal line from X1 to X2 (inclusive) in row Y.
+type HLine struct {
+	X1, X2, Y int
+}
+
+// DrawLinesHorizontal draws lines with DrawLineHorizontal in one color. The lines are given row by row:
+// lines of the same columns in adjacent rows are drawn as one rectangle.
+func (r *NoxRender) DrawLinesHorizontal(lines []HLine, cl color.Color) {
 	if r.gpu == nil {
 		return
 	}
+	rows := r.lineRows[:0]
+	for _, l := range lines {
+		if rc, ok := r.lineHorizontalRect(l.X1, l.Y, l.X2); ok {
+			rows = append(rows, rc)
+		}
+	}
+	rects := MergeRows(r.lineRects[:0], rows)
+	r.lineRows, r.lineRects = rows, rects
 	bc := SplitColor(noxcolor.ToRGBA5551Color(cl))
-	rc := image.Rect(xmin, y, xmax+1, y+1)
-	if r.Data().IsAlphaEnabled() {
-		// alpha is the weight of the destination color here
-		r.gpuFill(rc, bc, 256-int(r.Data().Alpha()))
-	} else {
-		r.gpuFill(rc, bc, 256)
+	alpha := r.lineAlpha()
+	if len(rects) == 0 || alpha <= 0 {
+		return
+	}
+	if rf, ok := r.gpu.(RectFiller); ok {
+		rf.FillRects(rects, color16NRGBA(bc, uint8(min(alpha, 255))), image.Rectangle{})
+		return
+	}
+	for _, rc := range rects {
+		r.gpuFill(rc, bc, alpha)
 	}
 }
 
@@ -264,9 +306,6 @@ func (r *NoxRender) DrawLineAlpha(p1, p2 image.Point, cl color.Color) {
 	}
 	run := pixelRun{r: r, c: SplitColor(noxcolor.ToRGBA5551Color(cl)), alpha: int(d.Alpha())}
 	defer run.finish()
-	blend := func(p image.Point) {
-		run.add(p.X, p.Y)
-	}
 
 	width := p2.X - p1.X
 	dx := 1
@@ -280,31 +319,40 @@ func (r *NoxRender) DrawLineAlpha(p1, p2 image.Point, cl color.Color) {
 		dy = -1
 		height = -height
 	}
+	// The pixels are added as runs: a steep line moves one row per pixel, so its runs are vertical,
+	// and the others are horizontal.
 	p := p1
+	start, n := p, 0 // the current run
 	if width < height {
 		v := 2*width - height
 		for i := 0; i < height; i++ {
-			blend(p)
+			n++
 			p.Y += dy
 			if v >= 0 {
+				run.addRun(start, n, image.Pt(0, dy))
 				p.X += dx
+				start, n = p, 0
 				v += 2 * (width - height)
 			} else {
 				v += 2 * width
 			}
 		}
+		run.addRun(start, n, image.Pt(0, dy))
 	} else {
 		v := 2*height - width
 		for i := 0; i < width; i++ {
-			blend(p)
+			n++
 			p.X += dx
 			if v >= 0 {
+				run.addRun(start, n, image.Pt(dx, 0))
 				v += 2 * (height - width)
 				p.Y += dy
+				start, n = p, 0
 			} else {
 				v += 2 * height
 			}
 		}
+		run.addRun(start, n, image.Pt(dx, 0))
 	}
 }
 
@@ -338,6 +386,18 @@ func (p *pixelRun) add(x, y int) {
 	}
 	p.flush()
 	*rc = image.Rect(x, y, x+1, y+1)
+}
+
+// addRun adds a run of n pixels from p in direction d (one of (±1, 0), (0, ±1)).
+func (p *pixelRun) addRun(start image.Point, n int, d image.Point) {
+	if n <= 0 {
+		return
+	}
+	p.flush()
+	end := start.Add(d.Mul(n - 1))
+	rc := image.Rect(start.X, start.Y, end.X, end.Y) // sorts the corners
+	rc.Max = rc.Max.Add(image.Pt(1, 1))
+	p.r.runRects = append(p.r.runRects, rc)
 }
 
 // flush ends the current run.

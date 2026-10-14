@@ -534,6 +534,18 @@ func (r *Renderer) Fill(rc image.Rectangle, c color.NRGBA, clip image.Rectangle)
 	if rc.Empty() || r.cur == nil {
 		return
 	}
+	// see FillRects
+	if t := r.cur; t.size == t.log && solidFits(rc) {
+		col := rgbaF(c)
+		r.setSolidState(clip, blendOver)
+		r.solid.add(rc, &col)
+		return
+	}
+	r.fillSprite(rc, c, clip)
+}
+
+// fillSprite fills a rectangle with the sprite shader (a white texel).
+func (r *Renderer) fillSprite(rc image.Rectangle, c color.NRGBA, clip image.Rectangle) {
 	white := r.whiteRegion()
 	r.setState(white.page, clip, blendOver, nil)
 	r.quad(rc, white, image.Rect(0, 0, 1, 1), rgbaF(c), modeNormal)
@@ -547,16 +559,22 @@ func (r *Renderer) FillRects(rcs []image.Rectangle, c color.NRGBA, clip image.Re
 	col := rgbaF(c)
 	// On scaled targets the sprite shader filters the white texel (sharp bilinear), so keep using it there.
 	if t := r.cur; t.size == t.log {
+		room := 0 // instances that the batch can still take
 		for _, rc := range rcs {
 			if rc.Empty() {
 				continue
 			}
 			if !solidFits(rc) {
-				r.Fill(rc, c, clip)
+				r.fillSprite(rc, c, clip)
+				room = 0
 				continue
 			}
-			r.setSolidState(clip, blendOver)
+			if room == 0 {
+				r.setSolidState(clip, blendOver)
+				room = (cap(r.solid.data) - len(r.solid.data)) / solidSize
+			}
 			r.solid.add(rc, &col)
+			room--
 		}
 		return
 	}
@@ -652,24 +670,41 @@ func (r *Renderer) Glyph(key noxrender.GlyphKey, dr image.Rectangle, mask image.
 	if r.cur == nil {
 		return
 	}
-	reg := r.glyphRegion(key, dr, mask, maskp)
+	r.glyph(r.glyphRegion(key, dr, mask, maskp), dr, c, clip)
+}
+
+func (r *Renderer) glyph(reg texRegion, dr image.Rectangle, c color.NRGBA, clip image.Rectangle) {
 	r.setState(reg.page, clip, blendOver, nil)
 	r.quad(dr, reg, image.Rect(0, 0, dr.Dx(), dr.Dy()), rgbaF(c), modeNormal)
 }
 
-// HasGlyph implements noxrender.GlyphCache.
-func (r *Renderer) HasGlyph(key noxrender.GlyphKey) bool {
-	_, ok := r.glyphs[key]
-	return ok
+// DrawCachedGlyph implements noxrender.GlyphCache.
+func (r *Renderer) DrawCachedGlyph(key noxrender.GlyphKey, dr image.Rectangle, c color.NRGBA, clip image.Rectangle, hiRes bool) bool {
+	reg, ok := r.glyphs[key]
+	if !ok {
+		return false
+	}
+	if r.cur == nil {
+		return true
+	}
+	if hiRes {
+		r.glyphHiRes(reg, dr, c, clip)
+	} else {
+		r.glyph(reg, dr, c, clip)
+	}
+	return true
 }
 
 // GlyphHiRes implements noxrender.GPU.
 func (r *Renderer) GlyphHiRes(key noxrender.GlyphKey, dr image.Rectangle, mask image.Image, maskp image.Point, c color.NRGBA, clip image.Rectangle) {
-	t := r.cur
-	if t == nil {
+	if r.cur == nil {
 		return
 	}
-	reg := r.glyphRegion(key, dr, mask, maskp)
+	r.glyphHiRes(r.glyphRegion(key, dr, mask, maskp), dr, c, clip)
+}
+
+func (r *Renderer) glyphHiRes(reg texRegion, dr image.Rectangle, c color.NRGBA, clip image.Rectangle) {
+	t := r.cur
 	r.setState(reg.page, clip, blendOver, nil)
 	sx := float32(t.log.X) / float32(t.size.X)
 	sy := float32(t.log.Y) / float32(t.size.Y)
