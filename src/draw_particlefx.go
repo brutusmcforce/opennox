@@ -544,8 +544,8 @@ func (fx *packetParticleFx) setImage() {
 func (fx *packetParticleFx) updatePos() {
 	dr := fx.dr
 	fx.pos = dr.Pos().Sub(image.Pt(
-		int(dr.Field_0),
-		int(dr.Field_1)+int(int16(dr.ZVal2))+int(int16(dr.ZVal)),
+		int(byte(dr.Field_0)), // half width, byte 0
+		int(byte(dr.Field_0>>8))+int(int16(dr.ZVal2))+int(int16(dr.ZVal)), // half height, byte 1
 	))
 }
 

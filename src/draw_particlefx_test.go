@@ -1,6 +1,11 @@
 package opennox
 
-import "testing"
+import (
+	"image"
+	"testing"
+
+	"github.com/brutusmcforce/opennox/client"
+)
 
 func TestMulDiv(t *testing.T) {
 	cases := []struct{ a, b, c, want int }{
@@ -34,5 +39,18 @@ func TestParticleRand(t *testing.T) {
 	}
 	if len(seen) < 50 {
 		t.Errorf("randU16 repeats too often: %d unique values out of 100", len(seen))
+	}
+}
+
+func TestParticleFxPos(t *testing.T) {
+	// as sub_4AF890: the position minus the half size (bytes 0 and 1 of the drawable) and the height
+	dr := &client.Drawable{PosVec: image.Pt(1000, 2000), ZVal: 0xFFF6, ZVal2: 3} // 10 below the ground
+	// half width 8, half height 12; the upper half is a flag, Field_1 is another field
+	dr.Field_0 = 0x0001_0C08
+	dr.Field_1 = 0x12345678
+	fx := &packetParticleFx{dr: dr}
+	fx.updatePos()
+	if want := image.Pt(1000-8, 2000-12-3+10); fx.pos != want {
+		t.Errorf("pos = %v, want %v", fx.pos, want)
 	}
 }
