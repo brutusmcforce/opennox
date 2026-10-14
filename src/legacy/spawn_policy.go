@@ -1,7 +1,6 @@
 package legacy
 
 import (
-	"math"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/common/memmap"
@@ -42,9 +41,8 @@ func spawnPolicyFarCull() {
 	}
 }
 func spawnPolicyCandidate(u, player *server.Object) {
-	// C numerically converts float views of these object words.
-	cl := uint8(math.Float32frombits(uint32(u.ObjClass)))
-	flags := uint32(math.Float32frombits(uint32(u.ObjFlags)))
+	cl := uint8(u.ObjClass)
+	flags := uint32(u.ObjFlags)
 	if cl&2 != 0 && flags&0x20 == 0 && (flags&0x8000 == 0 || monsterIsZombie(u)) && GetServer().S().MapTraceRay(player.PosVec, u.PosVec, 69) {
 		(*memmap.PtrUint32(0x5D4594, 2386208))++
 	}

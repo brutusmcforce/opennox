@@ -84,12 +84,11 @@ func projectileMonsterArrow(u, t *server.Object) {
 	GetServer().DelayedDelete(u)
 }
 func projectileChakramCandidate(t *server.Object, pos *types.Pointf) {
-	// These two decompiled expressions numerically convert the float
-	// interpretation of the flag words; they are not bit casts.
-	if uint32(effectsTruncWord(float64(math.Float32frombits(uint32(t.ObjClass)))))&0x20006 == 0 {
+	// The decompiled C converted these words as floats (LOBYTE of a float*); the game tests the bits.
+	if uint32(t.ObjClass)&0x20006 == 0 {
 		return
 	}
-	if uint32(effectsTruncWord(float64(math.Float32frombits(uint32(t.ObjFlags)))))&0x8020 != 0 || t.HasEnchant(0) {
+	if uint32(t.ObjFlags)&0x8020 != 0 || t.HasEnchant(0) {
 		return
 	}
 	if t == projectileChakramOwner || t == projectileChakramPrior {

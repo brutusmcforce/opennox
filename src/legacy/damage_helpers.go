@@ -141,7 +141,7 @@ func damageDurability(it, holder, source, weapon *server.Object, value float32, 
 		damageItemReport(int32(uint8(holder.UpdateDataPlayer().Player.PlayerInd)), it, old, it.HealthData.Cur)
 	}
 }
-func damageInventory(u, source, weapon *server.Object, amount int32, kindBits float32) {
+func damageInventory(u, source, weapon *server.Object, amount, kind int32) {
 	var coeff float32
 	if u.ObjClass&4 != 0 {
 		coeff = *(*float32)(unsafe.Pointer(&layout.As[server.PlayerUpdateData](u.UpdateData).Field57))
@@ -153,7 +153,7 @@ func damageInventory(u, source, weapon *server.Object, amount int32, kindBits fl
 	for it := u.InvFirstItem; it != nil; it = it.InvNextItem {
 		if it.ObjClass&0x2000000 != 0 && it.ObjFlags&0x100 != 0 {
 			value := float32(float64(equipmentDefend(it)) / float64(coeff) * float64(amount))
-			damageDurability(it, u, source, weapon, value, int32(math.Float32bits(kindBits)), false)
+			damageDurability(it, u, source, weapon, value, kind, false)
 		}
 	}
 }

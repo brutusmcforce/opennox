@@ -154,8 +154,7 @@ func worldElevator(u *server.Object) {
 	}
 }
 func worldTeleportCandidate(t *server.Object, pos *types.Pointf, visible bool) {
-	// This legacy filter converts the float interpretation of the class word.
-	if uint32(effectsTruncWord(float64(*(*float32)(unsafe.Pointer(&t.ObjClass)))))&0x420000 != 0 {
+	if uint32(t.ObjClass)&0x420000 != 0 {
 		return
 	}
 	if visible {
@@ -269,7 +268,7 @@ func worldIndexedDirection(u *server.Object) (int32, int32) {
 	return int32(out[0]), int32(out[1])
 }
 func worldBlowCandidate(t, u *server.Object) {
-	if byte(effectsTruncWord(float64(*(*float32)(unsafe.Pointer(&t.ObjFlags)))))&0x20 != 0 || uint32(effectsTruncWord(float64(*(*float32)(unsafe.Pointer(&t.ObjClass)))))&0x400000 != 0 {
+	if byte(t.ObjFlags)&0x20 != 0 || uint32(t.ObjClass)&0x400000 != 0 {
 		return
 	}
 	x := float32(float64(t.PosVec.X) - float64(u.PosVec.X))

@@ -2,7 +2,6 @@ package legacy
 
 import (
 	"github.com/brutusmcforce/opennox/libs/types"
-	"math"
 	"unsafe"
 )
 
@@ -132,7 +131,7 @@ func mapPopulationMonster(room, name uint32) uint32 {
 	mapPaintSelectObject((*byte)(mapRoomPointer(name)))
 	u := mapPaintPlaceObject(&pos)
 	// The original expression converts the class word interpreted as a float.
-	if u != nil && byte(math.Float32frombits(uint32(u.ObjClass)))&2 != 0 {
+	if u != nil && byte(u.ObjClass)&2 != 0 {
 		delta := types.Pointf{X: center.X - pos.X, Y: center.Y - pos.Y}
 		angle := geometryVectorAngle(&delta)
 		mapPaintOrientObject(u, geometryDirection4Index(angle))

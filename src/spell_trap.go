@@ -2,7 +2,6 @@ package opennox
 
 import (
 	"math"
-	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
 	"github.com/brutusmcforce/opennox/libs/object"
@@ -228,7 +227,7 @@ func triggerTrap(trap, a2 *server.Object) {
 	const dist = 100
 	rect := types.RectFromPointsf(pos.Sub(types.Ptf(dist, dist)), pos.Add(types.Ptf(dist, dist)))
 	s.Map.EachObjInRect(rect, func(it *server.Object) bool {
-		if it != trap && (int32(uint8(*(*float32)(unsafe.Pointer(&it.ObjFlags))))&0x20) == 0 {
+		if it != trap && (int32(uint8(it.ObjFlags))&0x20) == 0 {
 			if int(it.TypeInd) == s.Types.GlyphID() {
 				if s.MapTraceRayAt(trap.Pos(), it.Pos(), nil, nil, 5) {
 					_ = nox_xxx___mkgmtime_538280

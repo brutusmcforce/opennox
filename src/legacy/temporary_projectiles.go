@@ -41,8 +41,7 @@ func temporarySpark(pos, vel types.Pointf, stage, life int32, z float32, owner *
 	ud.Life = uint32(life)
 	ud.Stage = uint32(stage)
 	class := uint32(u.ObjClass)&^0x2000 | 0x80000
-	// The original expression converts the flag word's float interpretation.
-	flags := uint32(effectsTruncWord(float64(*(*float32)(unsafe.Pointer(&u.ObjFlags))))) & 0xff7fffbf
+	flags := uint32(u.ObjFlags) & 0xff7fffbf
 	u.ObjClass = object.Class(class)
 	u.ObjFlags = object.Flags(flags)
 	collision := uint32(0)

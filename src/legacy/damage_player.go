@@ -1,7 +1,6 @@
 package legacy
 
 import (
-	"math"
 	"unsafe"
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
@@ -176,14 +175,14 @@ func damagePlayer(u, source, weapon *server.Object, amount, kind int32) int32 {
 	switch kind {
 	case 0, 3, 7, 8, 10, 11:
 		damageFraction(u, &n, float32((1-float64(coeff))*float64(amount)))
-		damageInventory(u, source, weapon, amount-n, float32(kind))
+		damageInventory(u, source, weapon, amount-n, kind)
 		recordKind = true
 	case 1, 12:
-		damageInventory(u, source, weapon, amount, float32(kind))
+		damageInventory(u, source, weapon, amount, kind)
 		recordKind = true
 	case 2:
 		damageFraction(u, &n, float32((1-float64(coeff)*.5)*float64(amount)))
-		damageInventory(u, source, weapon, amount-n, math.Float32frombits(2))
+		damageInventory(u, source, weapon, amount-n, 2)
 		if *flagAt == 0 {
 			*flagAt = 2
 			*kindAt = 2
@@ -192,12 +191,12 @@ func damagePlayer(u, source, weapon *server.Object, amount, kind int32) int32 {
 		recordKind = true
 	case 9, 17:
 		damageFraction(u, &n, float32(damageConductivity(u)*float64(amount)))
-		damageInventory(u, source, weapon, amount, float32(kind))
+		damageInventory(u, source, weapon, amount, kind)
 		recordKind = true
 	}
 	if recordKind && *flagAt == 0 {
 		*flagAt = 2
-		*kindAt = math.Float32bits(float32(kind))
+		*kindAt = uint32(kind) // the original passes the type as the bits of a float argument
 	}
 	if amount > 0 && n == 0 {
 		n = 1

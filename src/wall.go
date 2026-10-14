@@ -312,7 +312,7 @@ func (s *Server) Nox_xxx_damageToMap_534BC0(gx, gy int, dmg int, dtyp object.Dam
 		v7 *server.Object
 		v8 int
 	)
-	if !noxflags.HasGame(4096) || who == nil || s.Walls.IsSysUse(wl) || (func() *server.Object {
+	if !noxflags.HasGame(4096) || who == nil || !s.Walls.IsSysUse(wl) || (func() *server.Object { // a player destroys magic walls at once in quests
 		v7 = who.FindOwnerChainPlayer()
 		return v7
 	}()) == nil || (func() bool {

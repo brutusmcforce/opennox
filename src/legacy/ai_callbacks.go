@@ -32,18 +32,9 @@ func monsterLoadCallback(def unsafe.Pointer, name string, table, field uintptr) 
 	}
 }
 
-// The original callback numerically converts the float interpretation of these
-// words to a byte. Its compiled x87 conversion uses a truncating signed word.
-func monsterCallbackByte(word uint32) byte {
-	v := math.Float32frombits(word)
-	if math.IsNaN(float64(v)) || v >= 32768 || v <= -32769 {
-		return 0
-	}
-	return byte(int32(v))
-}
 func monsterMeleeCandidate(t, u *server.Object) {
-	cl := monsterCallbackByte(uint32(t.Class()))
-	if t == u || (monsterCallbackByte(uint32(t.Flags()))&0x11 != 0 && cl&6 == 0) {
+	cl := byte(t.Class())
+	if t == u || (byte(t.Flags())&0x11 != 0 && cl&6 == 0) {
 		return
 	}
 	if cl&6 == 0 && (t.HealthData == nil || t.HealthData.Max == 0) {

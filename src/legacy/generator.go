@@ -13,8 +13,7 @@ func generatorOccupied(p types.Pointf) uint32 {
 	occupied := memmap.PtrUint32(0x5D4594, 2491708)
 	*occupied = 0
 	GetServer().S().Map.EachObjInRect(types.Rectf{Min: types.Pointf{X: p.X - 15, Y: p.Y - 15}, Max: types.Pointf{X: p.X + 15, Y: p.Y + 15}}, func(t *server.Object) bool {
-		// Decompiled C converts the float view numerically; it does not mask raw class bits.
-		if uint32(math.Float32frombits(uint32(t.ObjClass)))&0x20000 == 0 && t.Field5&0x800 == 0 && collisionObjectContains(t, &p) == 1 {
+		if uint32(t.ObjClass)&0x20000 == 0 && t.Field5&0x800 == 0 && collisionObjectContains(t, &p) == 1 {
 			*occupied = 1
 		}
 		return true
@@ -79,7 +78,7 @@ func generatorPick(u *server.Object, out *types.Pointf, descriptor *server.Objec
 	core := GetServer().S()
 	var choices []*server.Object
 	for p := core.Players.FirstUnit(); p != nil; p = core.Players.NextUnit(p) {
-		if uint32(math.Float32frombits(uint32(p.ObjFlags)))&0x8020 != 0 {
+		if uint32(p.ObjFlags)&0x8020 != 0 {
 			continue
 		}
 		info := p.UpdateDataPlayer().Player
