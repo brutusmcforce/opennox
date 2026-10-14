@@ -128,7 +128,7 @@ func (c *Client) DrawMonster(vp *noxrender.Viewport, dr *client.Drawable) int {
 		if drawDot {
 			cl := c.Server.Teams.GetTeamColor(ptm)
 			pos := dr.PosVec
-			pos = pos.Add(image.Point{Y: -(int(dr.ZVal) + int(dr.ZSizeMax)*2)})
+			pos = pos.Add(image.Point{Y: -(int(int16(dr.ZVal)) + int(dr.ZSizeMax)*2)})
 			pos = vp.ToScreenPos(pos)
 			c.r.DrawPointRad(pos, 3, cl)
 		}
@@ -198,7 +198,7 @@ func (c *Client) drawMonsterHP(vp *noxrender.Viewport, dr *client.Drawable, curH
 		return
 	}
 	pos := dr.PosVec
-	pos = pos.Add(image.Point{X: int(2 * dr.Shape.Circle.R), Y: -int(dr.ZVal)})
+	pos = pos.Add(image.Point{X: int(2 * dr.Shape.Circle.R), Y: -int(int16(dr.ZVal))})
 	pos = vp.ToScreenPos(pos)
 
 	zsz := int(dr.ZSizeMax - dr.ZSizeMin)

@@ -545,7 +545,7 @@ func (fx *packetParticleFx) updatePos() {
 	dr := fx.dr
 	fx.pos = dr.Pos().Sub(image.Pt(
 		int(dr.Field_0),
-		int(dr.Field_1)+int(dr.ZVal2)+int(dr.ZVal),
+		int(dr.Field_1)+int(int16(dr.ZVal2))+int(int16(dr.ZVal)),
 	))
 }
 

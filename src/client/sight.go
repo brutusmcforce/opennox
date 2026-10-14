@@ -707,19 +707,19 @@ func (c *clientSight) Nox_xxx_client_4984B0_drawable_A(vp *noxrender.Viewport, d
 		if *(*uint16)(unsafe.Add(unsafe.Pointer(&dr.Field_0), 2)) != 0 {
 			v35 := int(*(*uint16)(unsafe.Add(unsafe.Pointer(&dr.Field_1), 2)))
 			vec1.X = pos.X - (int(*(*uint16)(unsafe.Pointer(&dr.Field_1))) >> 1) - opos.X
-			vec1.Y = pos.Y + v12 + int(dr.ZVal) - v35 - opos.Y - int(dr.ZSizeMin)
+			vec1.Y = pos.Y + v12 + int(int16(dr.ZVal)) - v35 - opos.Y - int(dr.ZSizeMin)
 			vec2.X = vec1.X + int(*(*uint16)(unsafe.Pointer(&dr.Field_1)))
 			vec2.Y = vec1.Y + v35
 		} else {
 			vec1.X = pos.X - v12 - opos.X
 			vec1.Y = pos.Y - v12 - opos.Y - int(dr.ZSizeMax)
 			vec2.X = pos.X + v12 - opos2.X
-			vec2.Y = pos.Y + v12 + int(dr.ZVal) - opos2.Y - int(dr.ZSizeMin)
+			vec2.Y = pos.Y + v12 + int(int16(dr.ZVal)) - opos2.Y - int(dr.ZSizeMin)
 		}
 	} else {
 		if *(*uint16)(unsafe.Add(unsafe.Pointer(&dr.Field_0), 2)) != 0 {
 			vec1.X = pos.X - (int(*(*uint16)(unsafe.Pointer(&dr.Field_1))) >> 1) - opos.X
-			vec2.Y = int(dr.Shape.Box.RightTop2) + pos.Y + int(dr.ZVal) - opos.Y
+			vec2.Y = int(dr.Shape.Box.RightTop2) + pos.Y + int(int16(dr.ZVal)) - opos.Y
 			vec1.Y = vec2.Y - int(*(*uint16)(unsafe.Add(unsafe.Pointer(&dr.Field_1), 2)))
 			vec2.X = vec1.X + int(*(*uint16)(unsafe.Pointer(&dr.Field_1)))
 		} else {
@@ -727,7 +727,7 @@ func (c *clientSight) Nox_xxx_client_4984B0_drawable_A(vp *noxrender.Viewport, d
 			v17 := pos.Y - opos.Y - int(dr.ZSizeMax)
 			vec1.Y = int(dr.Shape.Box.LeftBottom) + v17
 			vec2.X = dx + int(dr.Shape.Box.RightTop)
-			vec2.Y = int(dr.Shape.Box.RightTop2) + pos.Y + int(dr.ZVal) - opos2.Y
+			vec2.Y = int(dr.Shape.Box.RightTop2) + pos.Y + int(int16(dr.ZVal)) - opos2.Y
 		}
 	}
 	scrOut := 0
@@ -1699,7 +1699,7 @@ func sub_414C50(ang int32) int {
 		if y <= 0 {
 			v3 = 1
 		}
-		return v3 + math.MaxInt32
+		return int(int32(v3 + math.MaxInt32)) // INT_MIN for y <= 0, like the 32-bit original
 	}
 }
 func sightFarAtAngleX(ang int32) int {

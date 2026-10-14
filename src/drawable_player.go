@@ -453,7 +453,7 @@ func (c *Client) drawOtherPlayerHP(vp *noxrender.Viewport, dr *client.Drawable, 
 	pos := vp.ToScreenPos(dr.PosVec)
 	pos = pos.Add(image.Point{
 		X: int(2 * dr.Shape.Circle.R),
-		Y: -int(dr.ZVal) - height,
+		Y: -int(int16(dr.ZVal)) - height,
 	})
 	c.r.DrawRectFilledOpaque(pos.X, pos.Y, border, height, nox_color_black_2650656)
 	cl := noxcolor.RGBA5551(memmap.Uint32(0x85B3FC, 940))

@@ -807,7 +807,7 @@ func (s *Drawable) HasTeam() bool {
 }
 
 func (s *Drawable) Z() int {
-	return int(s.ZVal)
+	return int(int16(s.ZVal)) // negative below the ground (signed in the original)
 }
 
 func (s *Drawable) SetActive() { // Nox_xxx_spriteSetActiveMB_45A990_drawable

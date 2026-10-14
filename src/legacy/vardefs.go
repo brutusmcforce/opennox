@@ -113,16 +113,16 @@ func Get_dword_5d4594_1193188() int {
 	return int(dword_5d4594_1193188)
 }
 func Get_dword_5d4594_3798840() int {
-	return int(dword_5d4594_3798840)
+	return int(int32(dword_5d4594_3798840)) // can be negative at the map's top/left edge
 }
 func Get_dword_5d4594_3798824() int {
-	return int(dword_5d4594_3798824)
+	return int(int32(dword_5d4594_3798824)) // can be negative at the map's top/left edge
 }
 func Get_dword_5d4594_3798836() int {
-	return int(dword_5d4594_3798836)
+	return int(int32(dword_5d4594_3798836)) // can be negative at the map's top/left edge
 }
 func Get_dword_5d4594_3798820() int {
-	return int(dword_5d4594_3798820)
+	return int(int32(dword_5d4594_3798820)) // can be negative at the map's top/left edge
 }
 func Get_nox_alloc_chat_1197364() unsafe.Pointer {
 	return chatBubblePool

@@ -279,6 +279,9 @@ func (g *lightGrid) add(l light) {
 }
 
 func fixDiv(a, b int) int {
+	if b == 0 {
+		return 0
+	}
 	return int(int32((uint64(a) << 16) / uint64(b)))
 }
 
@@ -287,6 +290,7 @@ func fixMul(a, b int) int {
 }
 
 func (g *lightGrid) addAt(x, y int, c [3]int, v int, subtract bool) {
+	v = int(int32(v)) // a C int
 	if subtract {
 		v = -v
 	}

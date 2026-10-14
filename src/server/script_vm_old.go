@@ -844,9 +844,9 @@ func (s *NoxScriptVM) callByFunc(sc *ScriptFunc, caller, trigger *Object, args [
 				case asm.OpStoreIntMod:
 					lhs %= rhs
 				case asm.OpStoreIntLSh:
-					lhs <<= rhs
+					lhs <<= uint32(rhs) & 31 // like x86 SHL
 				case asm.OpStoreIntRSh:
-					lhs >>= rhs
+					lhs >>= uint32(rhs) & 31 // like x86 SAR
 				case asm.OpStoreIntAnd:
 					lhs &= rhs
 				case asm.OpStoreIntOr:
@@ -915,12 +915,12 @@ func (s *NoxScriptVM) callByFunc(sc *ScriptFunc, caller, trigger *Object, args [
 		case asm.OpIntLSh:
 			rhs := s.PopI32()
 			lhs := s.PopI32()
-			s.PushI32(lhs << rhs)
+			s.PushI32(lhs << (uint32(rhs) & 31)) // like x86 SHL: the count is masked
 			continue
 		case asm.OpIntRSh:
 			rhs := s.PopI32()
 			lhs := s.PopI32()
-			s.PushI32(lhs >> rhs)
+			s.PushI32(lhs >> (uint32(rhs) & 31)) // like x86 SAR
 			continue
 		case asm.OpIntLt:
 			rhs := s.PopI32()

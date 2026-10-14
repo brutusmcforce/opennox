@@ -55,8 +55,9 @@ func nsRandomFloat(s VM) int {
 }
 
 func nsRandomInt(s VM) int {
-	max := int(s.PopU32())
-	min := int(s.PopU32())
+	// signed: on 64-bit, Random(-5, 5) took -5 as 4294967291
+	max := int(s.PopI32())
+	min := int(s.PopI32())
 	val := s.NoxScript().Random(min, max)
 	s.PushI32(int32(val))
 	return 0
@@ -74,7 +75,7 @@ func nsImmediateBlind(s VM) int {
 }
 
 func nsChangeScore(s VM) int {
-	val := int(s.PopU32())
+	val := int(s.PopI32()) // can be negative
 	u := s.PopObjectNS()
 	if u == nil {
 		return 0

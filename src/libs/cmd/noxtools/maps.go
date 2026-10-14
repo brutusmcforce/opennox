@@ -13,12 +13,15 @@ import (
 	"github.com/brutusmcforce/opennox/libs/maps"
 )
 
+// mapCmd is the parent command of the map commands.
+var mapCmd = &cobra.Command{
+	Use:     "map command",
+	Short:   "Tools for working with Nox maps",
+	Aliases: []string{"m", "maps"},
+}
+
 func init() {
-	cmd := &cobra.Command{
-		Use:     "map command",
-		Short:   "Tools for working with Nox maps",
-		Aliases: []string{"m", "maps"},
-	}
+	cmd := mapCmd
 	Root.AddCommand(cmd)
 
 	cmdCompress := &cobra.Command{

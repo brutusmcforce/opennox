@@ -687,10 +687,11 @@ func (c *Client) nox_xxx_cliLight16_469140(dr *client.Drawable) {
 	if !(legacy.Nox_xxx_get_57AF20() == 0 || dr == c.ClientPlayerUnit() || dr.DrawFuncPtr == legacy.Get_nox_thing_glow_orb_draw()) {
 		return
 	}
-	intens := int(dr.LightIntensityU16)
+	// signed (see map_drawables_types.go): a negative intensity is not a light
+	intens := int(int32(dr.LightIntensityU16))
 	rad := int(dr.LightIntensityRad)
 	if dr.Flags()&0x20000000 != 0 {
-		intens += c.srv.Rand.Other.Int(0, int(dr.LightIntensityU16)>>18) << 16
+		intens += c.srv.Rand.Other.Int(0, intens>>18) << 16
 		rad = client.LightRadius(float32(intens) / 0x10000)
 	}
 	if intens <= int(lightMinIntensity*0x10000) {
@@ -777,9 +778,10 @@ func sub_4C1C60(a1, a2 int) int {
 }
 
 func (c *Client) sub_4695E0(a1, a2 int, pcl noxrender.RGB, a4 int, flip bool) {
-	v5 := a4
+	// a C int: overflowed light values wrap like in the original
+	v5 := int(int32(a4))
 	if flip {
-		v5 = -a4
+		v5 = int(-int32(a4))
 	}
 	v6 := sub_4C1C60(v5, pcl.R) << 8
 	v7 := sub_4C1C60(v5, pcl.G) << 8
@@ -1243,7 +1245,8 @@ func (c *Client) sub_4696B0(a1, a2, a3, a4 image.Point, a5 int, pcl noxrender.RG
 			v8 = a2
 		}
 	}
-	var v13, v14, v15 [2 * common.GridStep]int
+	// one entry per light grid row, after the start row and the count
+	var v13, v14, v15 [lightGridH + 2]int
 	sub_484DC0(v9, v10, v15[:])
 	sub_484DC0(v9, v8, v14[:])
 	c.sub_4697C0(v15[:], v14[:], a4, a5, pcl)
@@ -1285,7 +1288,7 @@ func (c *Client) sub_4697C0(a1, a2 []int, a3 image.Point, a4 int, pcl noxrender.
 		if v13 < *v10 {
 			v16 := v8 * v8
 			for jj := v13; jj < *v10; jj++ {
-				v17 := sub_4C1C70(v12+v23, int(66*int32(memmap.Uint32(0x587000, 142312))*int32(v16+v14*v14)/int32(v21))+0x10000) // 32-bit like the original
+				v17 := sub_4C1C70(v12+v23, int(66*int32(memmap.Uint32(0x587000, 142312))*int32(v16+v14*v14)/int32(v21)+0x10000)) // 32-bit like the original
 				v12 = dword_587000_142316
 				if v17 > dword_587000_142316 {
 					c.sub_4695E0(jj, ii, pcl, 8*(v17-dword_587000_142316), false)
@@ -1311,9 +1314,10 @@ func sub_484DC0(a1, a2 image.Point, a3 []int) {
 		a3[0] = 0
 		a3[1] = v6
 	}
-	if v6 > 44 {
-		a3[1] += 44 - v6
-		v6 = 44
+	// OpenNox: the original clamped to its light grid of 57x45 points, cutting off cones at high resolutions
+	if v6 > lightGridH-1 {
+		a3[1] += lightGridH - 1 - v6
+		v6 = lightGridH - 1
 	}
 	v7 := a3[0]
 	if v7 >= v6 {
@@ -1326,8 +1330,8 @@ func sub_484DC0(a1, a2 image.Point, a3 []int) {
 		if v8>>16 < 0 {
 			v9[0] = 0
 		}
-		if v9[0] >= 56 {
-			v9[0] = 55
+		if v9[0] >= lightGridW-1 {
+			v9[0] = lightGridW - 2
 		}
 		v8 += dn
 		v9 = v9[1:]
@@ -1335,5 +1339,9 @@ func sub_484DC0(a1, a2 image.Point, a3 []int) {
 }
 
 func sub_4C1C70(a1, a2 int) int {
+	if a2 == 0 {
+		// the original faults; only reachable with a wrapped light falloff
+		return 0
+	}
 	return int(int32((uint64(a1) << 16) / uint64(a2)))
 }
