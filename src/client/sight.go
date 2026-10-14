@@ -120,16 +120,8 @@ func (c *Client) sub_498B50(cl color.Color, p1, p2 image.Point) {
 		v11 &= 0xFFFFFFFE
 		sy = int(int32(v11 + 1)) // -1 or 1
 	}
-	alpha := byte(208)
-	cp := p1
-	vpt := p2.Sub(p1)
-	for i := 0; i < 10; i++ {
-		r.Data().SetAlpha(alpha)
-		alpha -= 20
-		r.DrawVector(cp, vpt, cl)
-		cp.X += sx
-		cp.Y += sy
-	}
+	// 10 lines, each moved by a pixel and fainter
+	r.DrawLineFade(p1, p2, image.Pt(sx, sy), 10, 208, 20, cl)
 }
 
 func (c *Client) sub_497260(vp *noxrender.Viewport) {

@@ -136,3 +136,83 @@ func TestLineRunsBatched(t *testing.T) {
 		}
 	}
 }
+
+// colorRecorder records the colors filled into each pixel, in order.
+type colorRecorder struct {
+	GPU
+	px map[image.Point][]color.NRGBA
+}
+
+func (g *colorRecorder) Fill(rc image.Rectangle, c color.NRGBA, clip image.Rectangle) {
+	for y := rc.Min.Y; y < rc.Max.Y; y++ {
+		for x := rc.Min.X; x < rc.Max.X; x++ {
+			p := image.Pt(x, y)
+			g.px[p] = append(g.px[p], c)
+		}
+	}
+}
+
+func (g *colorRecorder) FillRects(rcs []image.Rectangle, c color.NRGBA, clip image.Rectangle) {
+	for _, rc := range rcs {
+		g.Fill(rc, c, clip)
+	}
+}
+
+// DrawLineFade must draw what the loop it replaces (sub_498B50) draws, also when the copies are clipped.
+func TestLineFade(t *testing.T) {
+	r := NewRender(slog.New(slog.DiscardHandler), nil)
+	data, free := NewRenderData()
+	defer free()
+	r.SetData(data)
+	data.SetAlphaEnabled(true)
+	data.SetClip(true)
+	data.SetClipRect2(image.Rect(20, 20, 380, 380))
+	rnd := rand.New(rand.NewPCG(11, 12))
+	cl := color.NRGBA{R: 10, G: 20, B: 30, A: 255}
+	fast := 0
+	for i := 0; i < 1000; i++ {
+		p1 := image.Pt(rnd.IntN(400), rnd.IntN(400))
+		p2 := image.Pt(rnd.IntN(400), rnd.IntN(400))
+		if i%2 == 0 { // mostly inside, like the sight edges
+			p1 = image.Pt(40+rnd.IntN(320), 40+rnd.IntN(320))
+			p2 = image.Pt(40+rnd.IntN(320), 40+rnd.IntN(320))
+		}
+		step := []image.Point{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}[rnd.IntN(4)]
+		want := &colorRecorder{px: make(map[image.Point][]color.NRGBA)}
+		r.gpu = want
+		alpha := byte(208)
+		for k := 0; k < 10; k++ {
+			data.SetAlpha(alpha)
+			alpha -= 20
+			r.DrawVector(p1.Add(step.Mul(k)), p2.Sub(p1), cl)
+		}
+		wantAlpha := data.Alpha()
+		got := &colorRecorder{px: make(map[image.Point][]color.NRGBA)}
+		r.gpu = got
+		r.DrawLineFade(p1, p2, step, 10, 208, 20, cl)
+		if data.Alpha() != wantAlpha {
+			t.Fatalf("alpha after: %d, want %d", data.Alpha(), wantAlpha)
+		}
+		if len(got.px) != len(want.px) {
+			t.Fatalf("%v-%v: %d pixels, want %d", p1, p2, len(got.px), len(want.px))
+		}
+		for p, w := range want.px {
+			g := got.px[p]
+			if len(g) != len(w) {
+				t.Fatalf("%v-%v: pixel %v: %v, want %v", p1, p2, p, g, w)
+			}
+			for j := range w {
+				if g[j] != w[j] {
+					t.Fatalf("%v-%v: pixel %v: %v, want %v", p1, p2, p, g, w)
+				}
+			}
+		}
+		r1 := data.ClipRect2()
+		if clipFlags(p1, r1)|clipFlags(p2, r1)|clipFlags(p1.Add(step.Mul(9)), r1)|clipFlags(p2.Add(step.Mul(9)), r1) == 0 {
+			fast++
+		}
+	}
+	if fast < 400 {
+		t.Fatalf("only %d lines took the fast path", fast)
+	}
+}

@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"unsafe"
 
+	"golang.org/x/image/font"
+
 	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/libs/log"
 	"github.com/brutusmcforce/opennox/libs/noximage"
@@ -360,8 +362,9 @@ type NoxRender struct {
 	gpu   GPU
 
 	spriteSt  SpriteState // reused by the GPU sprite calls
-	glyphInfo map[GlyphKey]glyphInfo
+	glyphInfo map[font.Face]glyphMap
 	runRects  []image.Rectangle // reused by pixelRun
+	fadeRuns  []image.Rectangle // reused by DrawLineFade
 	lineRows  []image.Rectangle // reused by DrawLinesHorizontal
 	lineRects []image.Rectangle // reused by DrawLinesHorizontal
 

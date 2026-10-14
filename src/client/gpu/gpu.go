@@ -18,6 +18,7 @@ import (
 	"log/slog"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -33,8 +34,8 @@ var _ noxrender.GPU = (*Renderer)(nil)
 const (
 	// A quad is drawn as an instance: the vertex shader makes its 6 vertices. That uploads 17 floats per quad
 	// instead of 6 vertices of 9 floats (the shadow edges alone are thousands of quads per frame).
-	instSize     = 17 // x0, y0, x1, y1, u0, v0, u1, v1, left r, g, b, a, right r, g, b, a, mode
-	maxBatchQuad = 4096
+	instSize     = 17    // x0, y0, x1, y1, u0, v0, u1, v1, left r, g, b, a, right r, g, b, a, mode
+	maxBatchQuad = 16384 // sprite instances recorded before they are drawn (see submit)
 )
 
 const (
@@ -91,20 +92,25 @@ type Renderer struct {
 	emptyVAO uint32 // used for drawing fullscreen quads
 	libsVAO  int32
 
-	verts []float32
-	state batchState
-	glc   glCache
-	pal   [16][3]uint8
-	palF  [16 * 3]float32
-	palOK bool
+	verts      []float32 // sprite instances of the recorded batches
+	cmds       []drawCmd // recorded batches (see submit)
+	batchStart int       // the first instance of the current sprite batch in verts
+	attribOff  int       // the byte offset that the sprite attributes point to
+	state      batchState
+	glc        glCache
+	pal        [16][3]uint8
+	palF       [16 * 3]float32
+	palOK      bool
 
-	atlas   atlas
-	floor   floorRenderer
-	solid   solidRenderer
-	white   texRegion
-	sprites map[noxrender.Image16]texRegion
-	broken  map[noxrender.Image16]struct{}
-	glyphs  map[noxrender.GlyphKey]texRegion
+	atlas     atlas
+	floor     floorRenderer
+	solid     solidRenderer
+	white     texRegion
+	sprites   map[noxrender.Image16]texRegion
+	broken    map[noxrender.Image16]struct{}
+	glyphs    map[noxrender.GlyphKey]int32 // index in glyphRegs
+	glyphRegs []texRegion
+	gen       uint64 // see GlyphGen
 
 	targets map[*noximage.Image16]*target
 	phys    map[*noximage.Image16]image.Point // physical sizes of render targets, if they differ from the image size
@@ -123,7 +129,8 @@ func New(log *slog.Logger) (*Renderer, error) {
 		log:     log,
 		sprites: make(map[noxrender.Image16]texRegion),
 		broken:  make(map[noxrender.Image16]struct{}),
-		glyphs:  make(map[noxrender.GlyphKey]texRegion),
+		glyphs:  make(map[noxrender.GlyphKey]int32),
+		gen:     rendererGen.Add(1),
 		targets: make(map[*noximage.Image16]*target),
 		Gamma:   1,
 	}
@@ -164,21 +171,11 @@ func New(log *slog.Logger) (*Renderer, error) {
 	gl.BindVertexArray(r.vao)
 	gl.GenBuffers(1, &r.vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, r.vbo)
-	const stride = instSize * 4
-	for _, a := range []struct {
-		loc, size int32
-		off       uintptr
-	}{
-		{0, 4, 0},      // aDst
-		{1, 4, 4 * 4},  // aUV
-		{2, 4, 8 * 4},  // aCol (left)
-		{4, 4, 12 * 4}, // aColR
-		{3, 1, 16 * 4}, // aMode
-	} {
-		gl.EnableVertexAttribArray(uint32(a.loc))
-		gl.VertexAttribPointerWithOffset(uint32(a.loc), a.size, gl.FLOAT, false, stride, a.off)
-		gl.VertexAttribDivisor(uint32(a.loc), 1)
+	for _, a := range spriteAttribs {
+		gl.EnableVertexAttribArray(a.loc)
+		gl.VertexAttribDivisor(a.loc, 1)
 	}
+	r.setSpriteAttribs(0)
 	gl.GenVertexArrays(1, &r.emptyVAO)
 	r.restore()
 
@@ -190,6 +187,28 @@ func New(log *slog.Logger) (*Renderer, error) {
 	}
 	log.Info("GPU renderer initialized", "renderer", gl.GoStr(gl.GetString(gl.RENDERER)))
 	return r, nil
+}
+
+var spriteAttribs = [...]struct {
+	loc  uint32
+	size int32
+	off  uintptr
+}{
+	{0, 4, 0},      // aDst
+	{1, 4, 4 * 4},  // aUV
+	{2, 4, 8 * 4},  // aCol (left)
+	{4, 4, 12 * 4}, // aColR
+	{3, 1, 16 * 4}, // aMode
+}
+
+// setSpriteAttribs points the instance attributes to a given byte offset of the sprite vertex buffer,
+// which must be bound to gl.ARRAY_BUFFER (with the vertex array).
+func (r *Renderer) setSpriteAttribs(off int) {
+	const stride = instSize * 4
+	for _, a := range spriteAttribs {
+		gl.VertexAttribPointerWithOffset(a.loc, a.size, gl.FLOAT, false, stride, a.off+uintptr(off))
+	}
+	r.attribOff = off
 }
 
 // Close releases all GPU resources.
@@ -240,7 +259,7 @@ func (r *Renderer) targetFor(img *noximage.Image16) *target {
 	}
 	if t != nil {
 		if r.cur == t {
-			r.flush()
+			r.submit()
 			r.cur = nil
 		}
 		t.free()
@@ -322,7 +341,7 @@ func (r *Renderer) pruneTargets() {
 func (r *Renderer) Forget(img *noximage.Image16) {
 	if t := r.targets[img]; t != nil {
 		if r.cur == t {
-			r.flush()
+			r.submit()
 			r.cur = nil
 		}
 		t.free()
@@ -345,7 +364,7 @@ func (r *Renderer) clearTarget(cr, cg, cb, ca float32) {
 	if r.cur == nil {
 		return
 	}
-	r.flush()
+	r.submit()
 	gl.BindFramebuffer(gl.FRAMEBUFFER, r.cur.fbo)
 	gl.Disable(gl.SCISSOR_TEST)
 	gl.ClearColor(cr, cg, cb, ca)
@@ -363,8 +382,11 @@ func (r *Renderer) setState(page *atlasPage, clip image.Rectangle, blend blendMo
 	} else {
 		st.palette = r.state.palette
 	}
-	if st != r.state || len(r.verts)+instSize > cap(r.verts) {
+	if full := len(r.verts)+instSize > cap(r.verts); st != r.state || full {
 		r.flush()
+		if full {
+			r.submit()
+		}
 		r.state = st
 	}
 }
@@ -375,6 +397,9 @@ func (r *Renderer) setSolidState(clip image.Rectangle, blend blendMode) {
 		return
 	}
 	r.flush()
+	if len(r.solid.data)+solidSize > cap(r.solid.data) {
+		r.submit()
+	}
 	// the page and the palette stay, so a sprite batch after this can continue with them
 	st := r.state
 	st.solid, st.clip, st.blend = true, clip, blend
@@ -406,19 +431,69 @@ func (r *Renderer) quadGradF(x0, y0, x1, y1 float32, reg texRegion, src image.Re
 	)
 }
 
+// drawCmd is a recorded batch: instances [off, off+n) of verts (or of solid.data for solid batches).
+type drawCmd struct {
+	st     batchState
+	t      *target
+	off, n int
+}
+
+// flush ends the current batch. Batches are recorded and drawn by submit: the instances of all of them
+// are uploaded at once, as uploading each batch separately took more time than drawing them.
 func (r *Renderer) flush() {
-	n := len(r.verts)
 	if r.state.solid {
-		n = len(r.solid.data)
-	}
-	if n == 0 || r.cur == nil {
-		r.verts = r.verts[:0]
-		r.solid.data = r.solid.data[:0]
+		d := &r.solid
+		n := len(d.data)/solidSize - d.batchStart
+		if n > 0 && r.cur != nil {
+			r.cur.used = r.frame
+			r.cmds = append(r.cmds, drawCmd{st: r.state, t: r.cur, off: d.batchStart, n: n})
+		} else {
+			d.data = d.data[:d.batchStart*solidSize]
+		}
+		d.batchStart = len(d.data) / solidSize
 		return
 	}
-	t := r.cur
-	t.used = r.frame
-	st := &r.state
+	n := len(r.verts)/instSize - r.batchStart
+	if n > 0 && r.cur != nil {
+		r.cur.used = r.frame
+		r.cmds = append(r.cmds, drawCmd{st: r.state, t: r.cur, off: r.batchStart, n: n})
+	} else {
+		r.verts = r.verts[:r.batchStart*instSize]
+	}
+	r.batchStart = len(r.verts) / instSize
+}
+
+// submit draws the recorded batches. It must be called before anything else uses OpenGL in a way
+// that depends on the order (drawing directly, reading or freeing render targets).
+func (r *Renderer) submit() {
+	r.flush()
+	if len(r.cmds) == 0 {
+		return
+	}
+	c := &r.glc
+	// the buffer bindings change here
+	c.prog = 0
+	if len(r.verts) > 0 {
+		gl.BindBuffer(gl.ARRAY_BUFFER, r.vbo)
+		gl.BufferData(gl.ARRAY_BUFFER, len(r.verts)*4, unsafe.Pointer(&r.verts[0]), gl.STREAM_DRAW) // gl.Ptr allocates
+	}
+	if d := &r.solid; len(d.data) > 0 {
+		gl.BindBuffer(gl.ARRAY_BUFFER, d.vbo)
+		gl.BufferData(gl.ARRAY_BUFFER, len(d.data)*4, unsafe.Pointer(&d.data[0]), gl.STREAM_DRAW)
+	}
+	for i := range r.cmds {
+		r.drawCmd(&r.cmds[i])
+	}
+	r.cmds = r.cmds[:0]
+	r.verts = r.verts[:0]
+	r.batchStart = 0
+	r.solid.data = r.solid.data[:0]
+	r.solid.batchStart = 0
+}
+
+func (r *Renderer) drawCmd(cmd *drawCmd) {
+	t := cmd.t
+	st := &cmd.st
 	// The OpenGL state stays set between batches (see glCache): a frame has many batches, and setting
 	// all of the state for each of them took more time than drawing.
 	c := &r.glc
@@ -429,15 +504,19 @@ func (r *Renderer) flush() {
 		*c = glCache{valid: true, target: t, size: t.size, log: t.log}
 	}
 	if st.solid {
-		if c.prog != r.solid.prog {
-			gl.UseProgram(r.solid.prog)
-			gl.BindVertexArray(r.solid.vao)
-			gl.BindBuffer(gl.ARRAY_BUFFER, r.solid.vbo)
-			gl.Uniform2f(r.solid.locSize, float32(t.log.X), float32(t.log.Y))
-			c.prog = r.solid.prog
+		d := &r.solid
+		if c.prog != d.prog {
+			gl.UseProgram(d.prog)
+			gl.BindVertexArray(d.vao)
+			gl.BindBuffer(gl.ARRAY_BUFFER, d.vbo)
+			gl.Uniform2f(d.locSize, float32(t.log.X), float32(t.log.Y))
+			c.prog = d.prog
 		}
 		r.setBlendClip(t, st)
-		r.solid.draw()
+		if off := cmd.off * solidSize * 4; off != d.attribOff {
+			d.setAttribs(off)
+		}
+		gl.DrawArraysInstanced(gl.TRIANGLES, 0, 6, int32(cmd.n))
 		return
 	}
 	if c.prog != r.prog {
@@ -474,9 +553,10 @@ func (r *Renderer) flush() {
 		c.page = st.page
 	}
 	r.setBlendClip(t, st)
-	gl.BufferData(gl.ARRAY_BUFFER, len(r.verts)*4, unsafe.Pointer(&r.verts[0]), gl.STREAM_DRAW) // gl.Ptr allocates
-	gl.DrawArraysInstanced(gl.TRIANGLES, 0, 6, int32(len(r.verts)/instSize))
-	r.verts = r.verts[:0]
+	if off := cmd.off * instSize * 4; off != r.attribOff {
+		r.setSpriteAttribs(off)
+	}
+	gl.DrawArraysInstanced(gl.TRIANGLES, 0, 6, int32(cmd.n))
 }
 
 func (r *Renderer) setBlendClip(t *target, st *batchState) {
@@ -678,21 +758,28 @@ func (r *Renderer) glyph(reg texRegion, dr image.Rectangle, c color.NRGBA, clip 
 	r.quad(dr, reg, image.Rect(0, 0, dr.Dx(), dr.Dy()), rgbaF(c), modeNormal)
 }
 
-// DrawCachedGlyph implements noxrender.GlyphCache.
-func (r *Renderer) DrawCachedGlyph(key noxrender.GlyphKey, dr image.Rectangle, c color.NRGBA, clip image.Rectangle, hiRes bool) bool {
-	reg, ok := r.glyphs[key]
-	if !ok {
-		return false
-	}
-	if r.cur == nil {
-		return true
+// rendererGen numbers renderers, so glyph handles of one are not used with another (see GlyphGen).
+var rendererGen atomic.Uint64
+
+// GlyphGen implements noxrender.GlyphCache.
+func (r *Renderer) GlyphGen() uint64 { return r.gen }
+
+// GlyphID implements noxrender.GlyphCache.
+func (r *Renderer) GlyphID(key noxrender.GlyphKey) (int32, bool) {
+	id, ok := r.glyphs[key]
+	return id, ok
+}
+
+// DrawGlyphID implements noxrender.GlyphCache.
+func (r *Renderer) DrawGlyphID(id int32, dr image.Rectangle, c color.NRGBA, clip image.Rectangle, hiRes bool) {
+	if r.cur == nil || id < 0 || int(id) >= len(r.glyphRegs) {
+		return
 	}
 	if hiRes {
-		r.glyphHiRes(reg, dr, c, clip)
+		r.glyphHiRes(r.glyphRegs[id], dr, c, clip)
 	} else {
-		r.glyph(reg, dr, c, clip)
+		r.glyph(r.glyphRegs[id], dr, c, clip)
 	}
-	return true
 }
 
 // GlyphHiRes implements noxrender.GPU.
@@ -715,28 +802,29 @@ func (r *Renderer) glyphHiRes(reg texRegion, dr image.Rectangle, c color.NRGBA, 
 
 // glyphRegion returns an atlas region with a glyph mask, uploading it if necessary.
 func (r *Renderer) glyphRegion(key noxrender.GlyphKey, dr image.Rectangle, mask image.Image, maskp image.Point) texRegion {
-	reg, ok := r.glyphs[key]
-	if !ok {
-		w, h := dr.Dx(), dr.Dy()
-		rgba := make([]byte, 4*w*h)
-		mat := make([]byte, w*h)
-		for y := 0; y < h; y++ {
-			for x := 0; x < w; x++ {
-				_, _, _, a := mask.At(maskp.X+x, maskp.Y+y).RGBA()
-				p := rgba[4*(y*w+x):]
-				p[0], p[1], p[2], p[3] = 0xff, 0xff, 0xff, byte(a>>8)
-			}
-		}
-		reg = r.atlas.add(w, h, rgba, mat)
-		r.glc.valid = false // the upload changed the texture bindings
-		r.glyphs[key] = reg
+	if id, ok := r.glyphs[key]; ok {
+		return r.glyphRegs[id]
 	}
+	w, h := dr.Dx(), dr.Dy()
+	rgba := make([]byte, 4*w*h)
+	mat := make([]byte, w*h)
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			_, _, _, a := mask.At(maskp.X+x, maskp.Y+y).RGBA()
+			p := rgba[4*(y*w+x):]
+			p[0], p[1], p[2], p[3] = 0xff, 0xff, 0xff, byte(a>>8)
+		}
+	}
+	reg := r.atlas.add(w, h, rgba, mat)
+	r.glc.valid = false // the upload changed the texture bindings
+	r.glyphs[key] = int32(len(r.glyphRegs))
+	r.glyphRegs = append(r.glyphRegs, reg)
 	return reg
 }
 
 // ReadPixels implements noxrender.GPU.
 func (r *Renderer) ReadPixels(img *noximage.Image16) *image.NRGBA {
-	r.flush()
+	r.submit()
 	t := r.targetFor(img)
 	out := image.NewNRGBA(image.Rectangle{Max: t.size})
 	gl.BindFramebuffer(gl.FRAMEBUFFER, t.fbo)
@@ -760,7 +848,7 @@ func (r *Renderer) ReadPixels(img *noximage.Image16) *image.NRGBA {
 // Composite draws the content of one render target over another one, scaling it to fit.
 // The source must contain premultiplied colors (see ClearTransparent).
 func (r *Renderer) Composite(dst, src *noximage.Image16) {
-	r.flush()
+	r.submit()
 	ts := r.targetFor(src)
 	td := r.targetFor(dst)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, td.fbo)
@@ -775,7 +863,7 @@ func (r *Renderer) Composite(dst, src *noximage.Image16) {
 // Upload replaces the content of the render target associated with an image with the image pixels.
 // It's used for images decoded on the CPU, e.g. movie frames.
 func (r *Renderer) Upload(img *noximage.Image16) {
-	r.flush()
+	r.submit()
 	delete(r.phys, img)
 	t := r.targetFor(img)
 	sz := t.size
@@ -819,7 +907,7 @@ func rgbaLUT() *[1 << 16]uint32 {
 // Zoom replaces the content of the render target associated with an image with a part of it
 // (in top-left origin coordinates), scaled to fill the whole target.
 func (r *Renderer) Zoom(img *noximage.Image16, src image.Rectangle) {
-	r.flush()
+	r.submit()
 	t := r.targetFor(img)
 	if r.scratch == nil || r.scratch.size != t.size {
 		if r.scratch != nil {
@@ -851,7 +939,7 @@ func (r *Renderer) Zoom(img *noximage.Image16, src image.Rectangle) {
 // Present draws the render target associated with an image to the screen.
 // The view is a rectangle on the screen (top-left origin), and win is the window size.
 func (r *Renderer) Present(img *noximage.Image16, view image.Rectangle, win image.Point) {
-	r.flush()
+	r.submit()
 	r.frame++
 	if r.frame%300 == 0 {
 		r.pruneTargets()

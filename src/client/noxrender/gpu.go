@@ -51,11 +51,14 @@ type RectFiller interface {
 }
 
 // GlyphCache is implemented by GPUs that keep the glyphs they were given. Then glyphs they have
-// are drawn without rasterizing them again.
+// are drawn without rasterizing them again, by a handle.
 type GlyphCache interface {
-	// DrawCachedGlyph draws a glyph like Glyph (or GlyphHiRes) with a nil mask, if the GPU has it.
-	// It reports if the GPU had the glyph.
-	DrawCachedGlyph(key GlyphKey, dr image.Rectangle, c color.NRGBA, clip image.Rectangle, hiRes bool) bool
+	// GlyphGen identifies the GPU: handles are only valid with the GPU that returned them.
+	GlyphGen() uint64
+	// GlyphID returns the handle of a glyph, if the GPU has it.
+	GlyphID(key GlyphKey) (int32, bool)
+	// DrawGlyphID draws a glyph by its handle, like Glyph (or GlyphHiRes) with a nil mask.
+	DrawGlyphID(id int32, dr image.Rectangle, c color.NRGBA, clip image.Rectangle, hiRes bool)
 }
 
 // glyphInfo is a glyph's rectangle relative to the integer part of the dot, and its advance.
@@ -63,6 +66,29 @@ type glyphInfo struct {
 	rel     image.Rectangle
 	advance fixed.Int26_6
 	ok      bool
+	gen     uint64 // GlyphGen of the GPU that id belongs to; zero if id is not known yet
+	id      int32
+}
+
+// glyphMap has the glyphs of a face, by glyphMapKey.
+type glyphMap map[uint64]glyphInfo
+
+// glyphMapKey is the key of a rune at a fractional dot position in a glyphMap (faster than hashing a GlyphKey).
+func glyphMapKey(ch rune, frac fixed.Point26_6) uint64 {
+	return uint64(uint32(ch))<<16 | uint64(frac.X&0x3f)<<8 | uint64(frac.Y&0x3f)
+}
+
+// glyphMap returns the glyphs of a face.
+func (r *NoxRender) glyphMap(face font.Face) glyphMap {
+	if r.glyphInfo == nil {
+		r.glyphInfo = make(map[font.Face]glyphMap)
+	}
+	m := r.glyphInfo[face]
+	if m == nil {
+		m = make(glyphMap)
+		r.glyphInfo[face] = m
+	}
+	return m
 }
 
 func dotInt(dot fixed.Point26_6) image.Point {
@@ -71,25 +97,32 @@ func dotInt(dot fixed.Point26_6) image.Point {
 
 // drawCachedGlyph draws a glyph at dot that was drawn before, without rasterizing it again.
 // It reports false if the glyph must be rasterized.
-func (r *NoxRender) drawCachedGlyph(gc GlyphCache, key GlyphKey, dot fixed.Point26_6, c color.NRGBA, clip image.Rectangle, hiRes bool) (glyphInfo, bool) {
+func (r *NoxRender) drawCachedGlyph(gc GlyphCache, gen uint64, m glyphMap, key GlyphKey, dot fixed.Point26_6, c color.NRGBA, clip image.Rectangle, hiRes bool) (glyphInfo, bool) {
 	if gc == nil {
 		return glyphInfo{}, false
 	}
-	gi, ok := r.glyphInfo[key]
+	k := glyphMapKey(key.Rune, key.Frac)
+	gi, ok := m[k]
 	if !ok {
 		return glyphInfo{}, false
 	}
-	if gi.ok && !gi.rel.Empty() && !gc.DrawCachedGlyph(key, gi.rel.Add(dotInt(dot)), c, clip, hiRes) {
-		return glyphInfo{}, false
+	if !gi.ok || gi.rel.Empty() {
+		return gi, true // nothing to draw
 	}
+	if gi.gen != gen {
+		id, ok := gc.GlyphID(key)
+		if !ok {
+			return glyphInfo{}, false
+		}
+		gi.gen, gi.id = gen, id
+		m[k] = gi
+	}
+	gc.DrawGlyphID(gi.id, gi.rel.Add(dotInt(dot)), c, clip, hiRes)
 	return gi, true
 }
 
-func (r *NoxRender) saveGlyph(key GlyphKey, dot fixed.Point26_6, dr image.Rectangle, advance fixed.Int26_6, ok bool) {
-	if r.glyphInfo == nil {
-		r.glyphInfo = make(map[GlyphKey]glyphInfo)
-	}
-	r.glyphInfo[key] = glyphInfo{rel: dr.Sub(dotInt(dot)), advance: advance, ok: ok}
+func (r *NoxRender) saveGlyph(m glyphMap, key GlyphKey, dot fixed.Point26_6, dr image.Rectangle, advance fixed.Int26_6, ok bool) {
+	m[glyphMapKey(key.Rune, key.Frac)] = glyphInfo{rel: dr.Sub(dotInt(dot)), advance: advance, ok: ok}
 }
 
 // TileCell is the size of the cells in FloorParams.Dirty: one floor tile.
@@ -300,6 +333,15 @@ func (r *NoxRender) gpuDrawString(s string, dot fixed.Point26_6, clip image.Rect
 		}
 	}
 	gc, _ := r.gpu.(GlyphCache)
+	var gen uint64
+	if gc != nil {
+		gen = gc.GlyphGen()
+	}
+	glyphs := r.glyphMap(face.f)
+	var glyphsHi glyphMap
+	if hi != nil {
+		glyphsHi = r.glyphMap(hi)
+	}
 	prev := rune(-1)
 	for _, ch := range s {
 		if prev >= 0 {
@@ -308,9 +350,9 @@ func (r *NoxRender) gpuDrawString(s string, dot fixed.Point26_6, clip image.Rect
 		if hi != nil && of.hasGlyph(ch) {
 			pdot := fixed.Point26_6{X: fixed.Int26_6(float64(dot.X) * sx), Y: fixed.Int26_6(float64(dot.Y+of.yOff) * sy)}
 			key := GlyphKey{Face: hi, Rune: ch, Frac: fixed.Point26_6{X: pdot.X & 0x3f, Y: pdot.Y & 0x3f}}
-			if _, cached := r.drawCachedGlyph(gc, key, pdot, c, clip, true); !cached {
+			if _, cached := r.drawCachedGlyph(gc, gen, glyphsHi, key, pdot, c, clip, true); !cached {
 				dr, mask, maskp, adv, ok := hi.Glyph(pdot, ch)
-				r.saveGlyph(key, pdot, dr, adv, ok)
+				r.saveGlyph(glyphsHi, key, pdot, dr, adv, ok)
 				if ok && !dr.Empty() {
 					r.gpu.GlyphHiRes(key, dr, mask, maskp, c, clip)
 				}
@@ -327,7 +369,7 @@ func (r *NoxRender) gpuDrawString(s string, dot fixed.Point26_6, clip image.Rect
 			Frac: fixed.Point26_6{X: dot.X & 0x3f, Y: dot.Y & 0x3f},
 		}
 		var advance fixed.Int26_6
-		if gi, cached := r.drawCachedGlyph(gc, key, dot, c, clip, false); cached {
+		if gi, cached := r.drawCachedGlyph(gc, gen, glyphs, key, dot, c, clip, false); cached {
 			// already on the GPU: not rasterized again
 			if !gi.ok {
 				continue
@@ -335,7 +377,7 @@ func (r *NoxRender) gpuDrawString(s string, dot fixed.Point26_6, clip image.Rect
 			advance = gi.advance + fixed.I(r.text.advance) // the extra spacing changes between strings
 		} else {
 			dr, mask, maskp, adv, ok := face.Glyph(dot, ch)
-			r.saveGlyph(key, dot, dr, adv-fixed.I(r.text.advance), ok)
+			r.saveGlyph(glyphs, key, dot, dr, adv-fixed.I(r.text.advance), ok)
 			if !ok {
 				continue
 			}

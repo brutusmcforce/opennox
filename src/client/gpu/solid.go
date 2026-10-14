@@ -3,7 +3,6 @@ package gpu
 import (
 	"image"
 	"math"
-	"unsafe"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
@@ -14,8 +13,8 @@ import (
 // (a white texel without a material), so the pixels are the same.
 
 const (
-	solidSize    = 6 // uint32 words: x0|y0, x1|y1 (int16 each), r, g, b, a (float32 bits)
-	maxSolidQuad = 8192
+	solidSize    = 6     // uint32 words: x0|y0, x1|y1 (int16 each), r, g, b, a (float32 bits)
+	maxSolidQuad = 32768 // instances recorded before they are drawn (see Renderer.submit)
 )
 
 type solidRenderer struct {
@@ -23,7 +22,10 @@ type solidRenderer struct {
 	locSize int32
 	vao     uint32
 	vbo     uint32
-	data    []uint32
+	data    []uint32 // instances of the recorded batches
+
+	batchStart int // the first instance of the current batch in data
+	attribOff  int // the byte offset that the attributes point to
 }
 
 func (s *solidRenderer) init() error {
@@ -37,16 +39,23 @@ func (s *solidRenderer) init() error {
 	gl.BindVertexArray(s.vao)
 	gl.GenBuffers(1, &s.vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, s.vbo)
-	const stride = solidSize * 4
-	// shorts are converted to floats exactly
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointerWithOffset(0, 4, gl.SHORT, false, stride, 0)
 	gl.VertexAttribDivisor(0, 1)
 	gl.EnableVertexAttribArray(2)
-	gl.VertexAttribPointerWithOffset(2, 4, gl.FLOAT, false, stride, 2*4)
 	gl.VertexAttribDivisor(2, 1)
+	s.setAttribs(0)
 	s.data = make([]uint32, 0, maxSolidQuad*solidSize)
 	return nil
+}
+
+// setAttribs points the attributes to a given byte offset of the vertex buffer, which must be bound
+// to gl.ARRAY_BUFFER (with the vertex array).
+func (s *solidRenderer) setAttribs(off int) {
+	const stride = solidSize * 4
+	// shorts are converted to floats exactly
+	gl.VertexAttribPointerWithOffset(0, 4, gl.SHORT, false, stride, uintptr(off))
+	gl.VertexAttribPointerWithOffset(2, 4, gl.FLOAT, false, stride, uintptr(off)+2*4)
+	s.attribOff = off
 }
 
 func (s *solidRenderer) free() {
@@ -66,13 +75,6 @@ func (s *solidRenderer) add(rc image.Rectangle, c *[4]float32) {
 		uint32(uint16(int16(rc.Max.X)))|uint32(uint16(int16(rc.Max.Y)))<<16,
 		math.Float32bits(c[0]), math.Float32bits(c[1]), math.Float32bits(c[2]), math.Float32bits(c[3]),
 	)
-}
-
-// draw draws the batch; the program, the vertex array and the buffer must be bound.
-func (s *solidRenderer) draw() {
-	gl.BufferData(gl.ARRAY_BUFFER, len(s.data)*4, unsafe.Pointer(&s.data[0]), gl.STREAM_DRAW)
-	gl.DrawArraysInstanced(gl.TRIANGLES, 0, 6, int32(len(s.data)/solidSize))
-	s.data = s.data[:0]
 }
 
 // The same as spriteVert, with a white texel and modeNormal.

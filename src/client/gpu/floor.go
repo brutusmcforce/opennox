@@ -161,7 +161,7 @@ func (r *Renderer) Floor(p *noxrender.FloorParams, spans []image.Rectangle) {
 	}
 	f := &r.floor
 	rows := len(p.Tiles) / p.Pitch
-	r.flush()
+	r.submit()
 	f.uploadTiles(p, rows)
 	if p.Lit && len(p.Light) >= 3*p.LightW*p.LightH && p.LightW > 0 && p.LightH > 0 {
 		f.uploadLight(p)

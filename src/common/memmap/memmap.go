@@ -73,6 +73,7 @@ func (b *Blob) ContainsPtr(ptr unsafe.Pointer) (uintptr, bool) {
 
 var (
 	blobs      []*Blob
+	blobBases  [256]*Blob // blobs by the low byte of their address (see BlobByAddr)
 	variables  []Variable
 	varsSorted bool
 )
@@ -103,6 +104,7 @@ func RegisterBlob(addr uintptr, name string, size uintptr) {
 	sort.Slice(blobs, func(i, j int) bool {
 		return blobs[i].Addr < blobs[j].Addr
 	})
+	indexBlobs()
 }
 
 // RegisterBlobData registers a raw blob with a given address in original Nox binary and specified name and data.
@@ -121,6 +123,7 @@ func RegisterBlobData(addr uintptr, name string, data []byte) {
 	for i, b2 := range blobs {
 		if b.Addr == b2.Addr {
 			blobs[i] = b
+			indexBlobs()
 			return
 		}
 	}
@@ -128,10 +131,25 @@ func RegisterBlobData(addr uintptr, name string, data []byte) {
 	sort.Slice(blobs, func(i, j int) bool {
 		return blobs[i].Addr < blobs[j].Addr
 	})
+	indexBlobs()
+}
+
+// indexBlobs fills blobBases. Blobs are registered on start, before they are used.
+func indexBlobs() {
+	blobBases = [256]*Blob{}
+	for _, b := range blobs {
+		if blobBases[b.Addr&0xff] == nil {
+			blobBases[b.Addr&0xff] = b
+		}
+	}
 }
 
 // BlobByAddr find a blob containing an address. Returns nil if there's no such blob.
 func BlobByAddr(addr uintptr) *Blob {
+	// the game mostly passes the start of a blob and an offset
+	if b := blobBases[addr&0xff]; b != nil && b.Addr == addr {
+		return b
+	}
 	for _, b := range blobs {
 		if b.Contains(addr) {
 			return b

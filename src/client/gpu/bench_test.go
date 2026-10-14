@@ -366,3 +366,62 @@ func TestFillRectsOverflow(t *testing.T) {
 		}
 	}
 }
+
+// Recorded batches must draw the same as drawing each of them at once: in order, on their own targets,
+// also across clears and many batches.
+func TestDeferredBatchesOrder(t *testing.T) {
+	r := withGL(t)
+	full := image.Rect(0, 0, 96, 64)
+	imgs := []*noximage.Image16{noximage.NewImage16(full), noximage.NewImage16(full)}
+	defer func() {
+		for _, img := range imgs {
+			r.Forget(img)
+		}
+	}()
+	draw := func(eager bool) [][]byte {
+		rnd := rand.New(rand.NewPCG(13, 14))
+		for _, img := range imgs {
+			r.SetTarget(img)
+			r.Clear(color.NRGBA{R: 30, G: 60, B: 90, A: 255})
+		}
+		for i := 0; i < 3000; i++ {
+			x, y := rnd.IntN(90), rnd.IntN(60)
+			rc := image.Rect(x, y, x+1+rnd.IntN(8), y+1+rnd.IntN(4))
+			c := color.NRGBA{R: uint8(rnd.IntN(256)), G: uint8(rnd.IntN(256)), B: uint8(rnd.IntN(256)), A: uint8(rnd.IntN(256))}
+			clip := full
+			if rnd.IntN(4) == 0 {
+				clip = image.Rect(10, 10, 60, 50)
+			}
+			switch rnd.IntN(12) {
+			case 0:
+				r.SetTarget(imgs[rnd.IntN(2)])
+			case 1:
+				r.Subtract(rc, uint8(rnd.IntN(256)), clip)
+			case 2:
+				if rnd.IntN(20) == 0 {
+					r.Clear(c)
+				}
+			case 3, 4, 5:
+				r.fillSprite(rc, c, clip)
+			default:
+				r.Fill(rc, c, clip)
+			}
+			if eager {
+				r.submit()
+			}
+		}
+		var out [][]byte
+		for _, img := range imgs {
+			out = append(out, r.ReadPixels(img).Pix)
+		}
+		return out
+	}
+	want, got := draw(true), draw(false)
+	for k := range want {
+		for i := range want[k] {
+			if got[k][i] != want[k][i] {
+				t.Fatalf("target %d pixel %d channel %d: got %d, want %d", k, i/4, i%4, got[k][i], want[k][i])
+			}
+		}
+	}
+}

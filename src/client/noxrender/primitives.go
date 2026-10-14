@@ -304,9 +304,50 @@ func (r *NoxRender) DrawLineAlpha(p1, p2 image.Point, cl color.Color) {
 	if r.gpu == nil {
 		return
 	}
-	run := pixelRun{r: r, c: SplitColor(noxcolor.ToRGBA5551Color(cl)), alpha: int(d.Alpha())}
-	defer run.finish()
+	rects := lineRuns(r.runRects[:0], p1, p2)
+	r.runRects = rects[:0]
+	r.fillRuns(rects, SplitColor(noxcolor.ToRGBA5551Color(cl)), int(d.Alpha()))
+}
 
+// DrawLineFade draws n copies of a line, the same as calling SetAlpha(alpha) and DrawLine for each,
+// moving the line by step and decreasing the alpha by dAlpha after each copy (the soft edges of shadows).
+func (r *NoxRender) DrawLineFade(p1, p2, step image.Point, n int, alpha, dAlpha byte, cl color.Color) {
+	d := r.Data()
+	fast := n > 0 && d.IsAlphaEnabled() && r.gpu != nil
+	if fast && d.Clip() {
+		// no copy is clipped: the rectangle is convex, so checking the first and the last copy is enough
+		rect, last := d.ClipRect2(), step.Mul(n-1)
+		fast = clipFlags(p1, rect)|clipFlags(p2, rect)|clipFlags(p1.Add(last), rect)|clipFlags(p2.Add(last), rect) == 0
+	}
+	if !fast {
+		for i := 0; i < n; i++ {
+			d.SetAlpha(alpha)
+			alpha -= dAlpha
+			r.DrawLine(p1, p2, cl)
+			p1, p2 = p1.Add(step), p2.Add(step)
+		}
+		return
+	}
+	// the copies have the same pixels, moved
+	base := lineRuns(r.fadeRuns[:0], p1, p2)
+	r.fadeRuns = base[:0]
+	c := SplitColor(noxcolor.ToRGBA5551Color(cl))
+	for i := 0; i < n; i++ {
+		d.SetAlpha(alpha)
+		alpha -= dAlpha
+		sh := step.Mul(i)
+		rects := r.runRects[:0]
+		for _, rc := range base {
+			rects = append(rects, rc.Add(sh))
+		}
+		r.runRects = rects[:0]
+		r.fillRuns(rects, c, int(d.Alpha()))
+	}
+}
+
+// lineRuns appends the pixels of a line from p1 to p2 (without p2) as runs: a steep line moves
+// one row per pixel, so its runs are vertical, and the others are horizontal.
+func lineRuns(out []image.Rectangle, p1, p2 image.Point) []image.Rectangle {
 	width := p2.X - p1.X
 	dx := 1
 	if p2.X < p1.X {
@@ -319,8 +360,6 @@ func (r *NoxRender) DrawLineAlpha(p1, p2 image.Point, cl color.Color) {
 		dy = -1
 		height = -height
 	}
-	// The pixels are added as runs: a steep line moves one row per pixel, so its runs are vertical,
-	// and the others are horizontal.
 	p := p1
 	start, n := p, 0 // the current run
 	if width < height {
@@ -329,7 +368,7 @@ func (r *NoxRender) DrawLineAlpha(p1, p2 image.Point, cl color.Color) {
 			n++
 			p.Y += dy
 			if v >= 0 {
-				run.addRun(start, n, image.Pt(0, dy))
+				out = appendRun(out, start, n, image.Pt(0, dy))
 				p.X += dx
 				start, n = p, 0
 				v += 2 * (width - height)
@@ -337,14 +376,14 @@ func (r *NoxRender) DrawLineAlpha(p1, p2 image.Point, cl color.Color) {
 				v += 2 * width
 			}
 		}
-		run.addRun(start, n, image.Pt(0, dy))
+		out = appendRun(out, start, n, image.Pt(0, dy))
 	} else {
 		v := 2*height - width
 		for i := 0; i < width; i++ {
 			n++
 			p.X += dx
 			if v >= 0 {
-				run.addRun(start, n, image.Pt(dx, 0))
+				out = appendRun(out, start, n, image.Pt(dx, 0))
 				v += 2 * (height - width)
 				p.Y += dy
 				start, n = p, 0
@@ -352,7 +391,33 @@ func (r *NoxRender) DrawLineAlpha(p1, p2 image.Point, cl color.Color) {
 				v += 2 * height
 			}
 		}
-		run.addRun(start, n, image.Pt(dx, 0))
+		out = appendRun(out, start, n, image.Pt(dx, 0))
+	}
+	return out
+}
+
+// appendRun appends a run of n pixels from start in direction d (one of (±1, 0), (0, ±1)).
+func appendRun(out []image.Rectangle, start image.Point, n int, d image.Point) []image.Rectangle {
+	if n <= 0 {
+		return out
+	}
+	end := start.Add(d.Mul(n - 1))
+	rc := image.Rect(start.X, start.Y, end.X, end.Y) // sorts the corners
+	rc.Max = rc.Max.Add(image.Pt(1, 1))
+	return append(out, rc)
+}
+
+// fillRuns fills the runs of a line, with a single call if the GPU supports it.
+func (r *NoxRender) fillRuns(rects []image.Rectangle, c Color16, alpha int) {
+	if len(rects) == 0 || alpha <= 0 {
+		return
+	}
+	if rf, ok := r.gpu.(RectFiller); ok {
+		rf.FillRects(rects, color16NRGBA(c, uint8(min(alpha, 255))), image.Rectangle{})
+		return
+	}
+	for _, rc := range rects {
+		r.gpuFill(rc, c, alpha)
 	}
 }
 
@@ -388,18 +453,6 @@ func (p *pixelRun) add(x, y int) {
 	*rc = image.Rect(x, y, x+1, y+1)
 }
 
-// addRun adds a run of n pixels from p in direction d (one of (±1, 0), (0, ±1)).
-func (p *pixelRun) addRun(start image.Point, n int, d image.Point) {
-	if n <= 0 {
-		return
-	}
-	p.flush()
-	end := start.Add(d.Mul(n - 1))
-	rc := image.Rect(start.X, start.Y, end.X, end.Y) // sorts the corners
-	rc.Max = rc.Max.Add(image.Pt(1, 1))
-	p.r.runRects = append(p.r.runRects, rc)
-}
-
 // flush ends the current run.
 func (p *pixelRun) flush() {
 	if !p.rc.Empty() {
@@ -408,21 +461,12 @@ func (p *pixelRun) flush() {
 	}
 }
 
-// finish draws the runs of the line, with a single call if the GPU supports it.
+// finish draws the runs of the line.
 func (p *pixelRun) finish() {
 	p.flush()
 	rects := p.r.runRects
 	p.r.runRects = rects[:0]
-	if len(rects) == 0 || p.alpha <= 0 {
-		return
-	}
-	if rf, ok := p.r.gpu.(RectFiller); ok {
-		rf.FillRects(rects, color16NRGBA(p.c, uint8(min(p.alpha, 255))), image.Rectangle{})
-		return
-	}
-	for _, rc := range rects {
-		p.r.gpuFill(rc, p.c, p.alpha)
-	}
+	p.r.fillRuns(rects, p.c, p.alpha)
 }
 
 func clipFlags(p image.Point, r image.Rectangle) int {
