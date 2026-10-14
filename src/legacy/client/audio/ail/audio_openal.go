@@ -115,7 +115,8 @@ type audioSample struct {
 
 	next    *audioSample
 	source  openal.Source
-	hwbuf   openal.Buffers
+	hwbuf   openal.Buffers // hwbuf[:hwready] are free; unqueuing rewrites the names, so the rest may repeat them
+	hwall   openal.Buffers // all buffers, to delete them
 	hwready int
 
 	bmu     sync.Mutex
@@ -258,6 +259,7 @@ func (dig Driver) AllocateSample() Sample {
 	}
 
 	s.hwbuf = openal.NewBuffers(4)
+	s.hwall = slices.Clone(s.hwbuf)
 	s.hwready = 4
 	if !audioCheckError() {
 		s.source.Delete()
@@ -280,13 +282,29 @@ func (s Sample) Release() {
 		audioLog.Println("AIL_release_sample_handle")
 	}
 	handles.AssertValid(uintptr(s))
-	if v := audioSamples.byHandle[s]; v != nil {
-		v.source.Delete()
-		delete(audioSamples.byHandle, s)
-		if len(v.hwbuf) > 0 {
-			v.hwbuf.Delete()
+	audioSamples.Lock()
+	v := audioSamples.byHandle[s]
+	delete(audioSamples.byHandle, s)
+	audioSamples.Unlock()
+	if v == nil {
+		return
+	}
+	d := v.d
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	// the driver must not use it anymore; buffers can only be deleted once the source let go of them
+	for p := &d.sampleHead; *p != nil; p = &(*p).next {
+		if *p == v {
+			*p = v.next
+			break
 		}
 	}
+	atomic.StoreUint32(&v.playing, 0)
+	v.source.Stop()
+	v.source.Seti(openal.AlBuffer, 0)
+	v.hwall.Delete()
+	v.source.Delete()
+	audioCheckError()
 }
 
 func openAudio(path string) (audioDecoder, error) {

@@ -87,3 +87,36 @@ func TestADPCMSeek(t *testing.T) {
 		must.True(t, slices.Equal(all[start*ch:start*ch+len(got)], got), must.Sprintf("pos %d: start %d", pos, start))
 	}
 }
+
+// Voices are released when the audio device closes (e.g. sound turned off in the options).
+func TestSampleReleaseFrees(t *testing.T) {
+	t.Setenv("ALSOFT_DRIVERS", "null") // no sound
+	handles.Init()
+	dig := WaveOutOpen()
+	if dig == 0 {
+		t.Skip("no OpenAL device")
+	}
+	d := dig.get()
+	for i := 0; i < 600; i++ { // more than OpenAL Soft's 256 sources
+		s := dig.AllocateSample()
+		must.NonZero(t, s, must.Sprintf("sample %d", i))
+		d.doWork()
+		s.Release()
+		must.Nil(t, s.get())
+	}
+	d.mu.Lock()
+	head := d.sampleHead
+	d.mu.Unlock()
+	must.Nil(t, head)
+}
+
+// Corrupt music files must not crash the game (opennox#681: index 253 in the step table).
+func TestADPCMCorruptBlock(t *testing.T) {
+	block := make([]byte, 1024)
+	for i := range block {
+		block[i] = byte(i*37 + 253)
+	}
+	block[2], block[6] = 253, 255
+	must.NotEq(t, 0, len(decodeADPCMStereo(nil, block)))
+	must.NotEq(t, 0, len(decodeADPCMMono(nil, block)))
+}

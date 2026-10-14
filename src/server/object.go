@@ -1921,7 +1921,7 @@ func (s *Server) ItemsApplyUpdateEffect(obj *Object) {
 			idata := it.InitDataModifier()
 			for _, mod := range idata.Modifiers {
 				if mod != nil {
-					mod.CallUpdateNil(obj)
+					mod.CallUpdateNil(it) // the item, as in the original: the effects find the holder themselves
 				}
 			}
 		}
