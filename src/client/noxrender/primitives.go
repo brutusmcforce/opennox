@@ -209,7 +209,7 @@ func (r *NoxRender) DrawLine(p1, p2 image.Point, cl color.Color) {
 		return
 	}
 	run := pixelRun{r: r, c: SplitColor(noxcolor.ToRGBA5551Color(cl)), alpha: 256}
-	defer run.flush()
+	defer run.finish()
 	setPixel := run.add
 
 	y := p1.Y
@@ -263,7 +263,7 @@ func (r *NoxRender) DrawLineAlpha(p1, p2 image.Point, cl color.Color) {
 		return
 	}
 	run := pixelRun{r: r, c: SplitColor(noxcolor.ToRGBA5551Color(cl)), alpha: int(d.Alpha())}
-	defer run.flush()
+	defer run.finish()
 	blend := func(p image.Point) {
 		run.add(p.X, p.Y)
 	}
@@ -340,10 +340,28 @@ func (p *pixelRun) add(x, y int) {
 	*rc = image.Rect(x, y, x+1, y+1)
 }
 
+// flush ends the current run.
 func (p *pixelRun) flush() {
 	if !p.rc.Empty() {
-		p.r.gpuFill(p.rc, p.c, p.alpha)
+		p.r.runRects = append(p.r.runRects, p.rc)
 		p.rc = image.Rectangle{}
+	}
+}
+
+// finish draws the runs of the line, with a single call if the GPU supports it.
+func (p *pixelRun) finish() {
+	p.flush()
+	rects := p.r.runRects
+	p.r.runRects = rects[:0]
+	if len(rects) == 0 || p.alpha <= 0 {
+		return
+	}
+	if rf, ok := p.r.gpu.(RectFiller); ok {
+		rf.FillRects(rects, color16NRGBA(p.c, uint8(min(p.alpha, 255))), image.Rectangle{})
+		return
+	}
+	for _, rc := range rects {
+		p.r.gpuFill(rc, p.c, p.alpha)
 	}
 }
 

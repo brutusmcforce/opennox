@@ -44,6 +44,12 @@ type GlyphKey struct {
 	Frac fixed.Point26_6 // fractional part of the dot
 }
 
+// RectFiller is implemented by GPUs that can fill many rectangles with one color in one call
+// (the same as calling Fill for each of them, in order).
+type RectFiller interface {
+	FillRects(rcs []image.Rectangle, c color.NRGBA, clip image.Rectangle)
+}
+
 // GlyphCache is implemented by GPUs that keep the glyphs they were given. Then glyphs they have
 // are drawn without rasterizing them again (a mask of nil).
 type GlyphCache interface {
@@ -96,7 +102,7 @@ type FloorParams struct {
 	// Only those cells are uploaded, and the flags are cleared. Nil means the whole buffer changed.
 	Dirty     []byte
 	DirtyCols int
-	// Lit enables lighting. Light is a grid of RGB light multipliers, stored row by row.
+	// Lit enables lighting. Light is a grid of RGB light multipliers, stored column by column (as the game keeps it).
 	Lit      bool
 	Light    []float32
 	LightW   int

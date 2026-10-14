@@ -246,6 +246,18 @@ func (s *Server) RunLoopHooks() {
 	s.LoopSleep(time.Millisecond)
 }
 
+// RunPendingLoopHooks runs the functions queued with QueueInLoop without waiting for more.
+func (s *Server) RunPendingLoopHooks() {
+	for {
+		select {
+		case fnc := <-s.loopHooks:
+			fnc()
+		default:
+			return
+		}
+	}
+}
+
 func (s *Server) LoopSleep(dt time.Duration) {
 	if dt <= 0 {
 		return

@@ -361,6 +361,7 @@ type NoxRender struct {
 
 	spriteSt  SpriteState // reused by the GPU sprite calls
 	glyphInfo map[GlyphKey]glyphInfo
+	runRects  []image.Rectangle // reused by pixelRun
 
 	// noStep is set when drawing additional frames between game ticks.
 	// Animations (fades, etc) must not advance in this case.

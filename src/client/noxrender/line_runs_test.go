@@ -98,3 +98,41 @@ func TestLineRuns(t *testing.T) {
 	}
 	t.Logf("%d pixels in %d fills", pixels, fills)
 }
+
+// batchRecorder also implements RectFiller, the path the GPU renderer takes.
+type batchRecorder struct {
+	fillRecorder
+}
+
+func (g *batchRecorder) FillRects(rcs []image.Rectangle, c color.NRGBA, clip image.Rectangle) {
+	for _, rc := range rcs {
+		g.Fill(rc, c, clip)
+	}
+}
+
+func TestLineRunsBatched(t *testing.T) {
+	r := NewRender(slog.New(slog.DiscardHandler), nil)
+	data, free := NewRenderData()
+	defer free()
+	r.SetData(data)
+	data.SetAlphaEnabled(true)
+	data.SetAlpha(128)
+	g := &batchRecorder{}
+	r.gpu = g
+	rnd := rand.New(rand.NewPCG(5, 6))
+	for i := 0; i < 500; i++ {
+		p1 := image.Pt(rnd.IntN(400), rnd.IntN(400))
+		p2 := image.Pt(rnd.IntN(400), rnd.IntN(400))
+		g.cover = make(map[image.Point]int)
+		r.DrawLineAlpha(p1, p2, color.Black)
+		want := refLineAlpha(p1, p2)
+		if len(g.cover) != len(want) {
+			t.Fatalf("%v-%v: %d pixels, want %d", p1, p2, len(g.cover), len(want))
+		}
+		for _, p := range want {
+			if g.cover[p] != 1 {
+				t.Fatalf("%v-%v: pixel %v drawn %d times", p1, p2, p, g.cover[p])
+			}
+		}
+	}
+}

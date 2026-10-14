@@ -864,13 +864,16 @@ func (c *Client) gpuDrawFloor(vp *noxrender.Viewport, dp image.Point) {
 		}
 		// light values are 8.16 fixed point, where 256 is the full intensity
 		const scale = 1.0 / (1 << 24)
-		for i := 0; i < lightGridW; i++ {
-			for j := 0; j < lightGridH; j++ {
-				cl := t.nox_arr2_853BC0[i][j]
-				k := 3 * (j*lightGridW + i)
+		// in the grid's own (column-major) order, so both sides are sequential: see FloorParams.Light
+		k := 0
+		for i := range t.nox_arr2_853BC0 {
+			col := &t.nox_arr2_853BC0[i]
+			for j := range col {
+				cl := &col[j]
 				p.Light[k+0] = float32(cl.R) * scale
 				p.Light[k+1] = float32(cl.G) * scale
 				p.Light[k+2] = float32(cl.B) * scale
+				k += 3
 			}
 		}
 		p.LightOff = image.Point{X: dp.X - t.noxTilesGpx, Y: dp.Y - t.noxTilesGpy}

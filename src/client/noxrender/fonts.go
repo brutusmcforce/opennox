@@ -43,6 +43,8 @@ type outlineFace struct {
 	sharedOrig bool
 
 	mu     sync.Mutex
+	kern   map[[2]rune]fixed.Int26_6
+	has    map[rune]bool // see hasGlyph
 	buf    sfnt.Buffer
 	scaled map[float64]font.Face
 }
@@ -160,8 +162,16 @@ func (f *outlineFace) hasGlyph(r rune) bool {
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if has, ok := f.has[r]; ok {
+		return has
+	}
 	x, err := f.fnt.GlyphIndex(&f.buf, r)
-	return err == nil && x != 0
+	has := err == nil && x != 0
+	if f.has == nil {
+		f.has = make(map[rune]bool)
+	}
+	f.has[r] = has
+	return has
 }
 
 func (f *outlineFace) pick(r rune) font.Face {
@@ -230,10 +240,24 @@ func (f *outlineFace) GlyphAdvance(r rune) (advance fixed.Int26_6, ok bool) {
 }
 
 func (f *outlineFace) Kern(r0, r1 rune) fixed.Int26_6 {
-	if f.hasGlyph(r0) && f.hasGlyph(r1) {
-		return f.face.Kern(r0, r1)
+	// looking it up in the font is slow, and it's needed for every pair of letters drawn
+	key := [2]rune{r0, r1}
+	f.mu.Lock()
+	k, ok := f.kern[key]
+	f.mu.Unlock()
+	if ok {
+		return k
 	}
-	return 0
+	if f.hasGlyph(r0) && f.hasGlyph(r1) {
+		k = f.face.Kern(r0, r1)
+	}
+	f.mu.Lock()
+	if f.kern == nil {
+		f.kern = make(map[[2]rune]fixed.Int26_6)
+	}
+	f.kern[key] = k
+	f.mu.Unlock()
+	return k
 }
 
 func (f *outlineFace) Metrics() font.Metrics {

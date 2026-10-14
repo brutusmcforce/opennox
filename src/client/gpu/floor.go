@@ -17,7 +17,9 @@ type floorRenderer struct {
 	tsize image.Point
 	light uint32
 	lsize image.Point
-	verts []float32
+	verts []float32 // x, y of the vertices
+	vao   uint32
+	vbo   uint32
 	rects []image.Rectangle // reused for merging the spans
 	// reused buffers for merging dirty cells (see uploadTiles)
 	open, next []cellRect
@@ -34,6 +36,13 @@ func (f *floorRenderer) init() error {
 	if err != nil {
 		return err
 	}
+	// the floor has its own vertex array: only positions
+	gl.GenVertexArrays(1, &f.vao)
+	gl.BindVertexArray(f.vao)
+	gl.GenBuffers(1, &f.vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, f.vbo)
+	gl.EnableVertexAttribArray(0)
+	gl.VertexAttribPointerWithOffset(0, 2, gl.FLOAT, false, 2*4, 0)
 	f.loc = make(map[string]int32)
 	for _, name := range []string{"uSize", "uPhys", "uTiles", "uLight", "uOff", "uPitch", "uLen", "uLightOff", "uStep", "uLightSize", "uLit"} {
 		f.loc[name] = gl.GetUniformLocation(f.prog, gl.Str(name+"\x00"))
@@ -49,6 +58,8 @@ func (f *floorRenderer) init() error {
 
 func (f *floorRenderer) free() {
 	gl.DeleteProgram(f.prog)
+	gl.DeleteVertexArrays(1, &f.vao)
+	gl.DeleteBuffers(1, &f.vbo)
 	gl.DeleteTextures(1, &f.tiles)
 	gl.DeleteTextures(1, &f.light)
 }
@@ -136,7 +147,8 @@ func (r *Renderer) Floor(p *noxrender.FloorParams, spans []image.Rectangle) {
 	r.flush()
 	f.uploadTiles(p, rows)
 	if p.Lit && len(p.Light) >= 3*p.LightW*p.LightH && p.LightW > 0 && p.LightH > 0 {
-		uploadTex(f.light, &f.lsize, image.Pt(p.LightW, p.LightH), gl.RGB32F, gl.RGB, gl.FLOAT, unsafe.Pointer(&p.Light[0]))
+		// the light grid is column-major: the texture is transposed (see FloorParams.Light)
+		uploadTex(f.light, &f.lsize, image.Pt(p.LightH, p.LightW), gl.RGB32F, gl.RGB, gl.FLOAT, unsafe.Pointer(&p.Light[0]))
 	}
 
 	f.verts = f.verts[:0]
@@ -144,12 +156,12 @@ func (r *Renderer) Floor(p *noxrender.FloorParams, spans []image.Rectangle) {
 	for _, s := range f.rects {
 		x0, y0, x1, y1 := float32(s.Min.X), float32(s.Min.Y), float32(s.Max.X), float32(s.Max.Y)
 		f.verts = append(f.verts,
-			x0, y0, 0, 0, 0, 0, 0, 0, 0,
-			x1, y0, 0, 0, 0, 0, 0, 0, 0,
-			x0, y1, 0, 0, 0, 0, 0, 0, 0,
-			x1, y0, 0, 0, 0, 0, 0, 0, 0,
-			x1, y1, 0, 0, 0, 0, 0, 0, 0,
-			x0, y1, 0, 0, 0, 0, 0, 0, 0,
+			x0, y0,
+			x1, y0,
+			x0, y1,
+			x1, y0,
+			x1, y1,
+			x0, y1,
 		)
 	}
 	t := r.cur
@@ -157,7 +169,7 @@ func (r *Renderer) Floor(p *noxrender.FloorParams, spans []image.Rectangle) {
 	gl.BindFramebuffer(gl.FRAMEBUFFER, t.fbo)
 	gl.Viewport(0, 0, int32(t.size.X), int32(t.size.Y))
 	gl.UseProgram(f.prog)
-	gl.BindVertexArray(r.vao)
+	gl.BindVertexArray(f.vao)
 	// spans are in logical coordinates, while the target may be larger or smaller (see SetTargetSize)
 	gl.Uniform2f(f.loc["uSize"], float32(t.log.X), float32(t.log.Y))
 	gl.Uniform2f(f.loc["uPhys"], float32(t.size.X), float32(t.size.Y))
@@ -180,9 +192,9 @@ func (r *Renderer) Floor(p *noxrender.FloorParams, spans []image.Rectangle) {
 	gl.BindTexture(gl.TEXTURE_2D, f.light)
 	gl.Disable(gl.BLEND)
 	gl.Disable(gl.SCISSOR_TEST)
-	gl.BindBuffer(gl.ARRAY_BUFFER, r.vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, f.vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(f.verts)*4, unsafe.Pointer(&f.verts[0]), gl.STREAM_DRAW) // gl.Ptr allocates
-	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(f.verts)/vertSize))
+	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(f.verts)/2))
 	r.restore()
 }
 
@@ -250,7 +262,7 @@ void main() {
 	vec3 c = vec3(float((v >> 10) & 31u), float((v >> 5) & 31u), float(v & 31u)) * (8.0 / 255.0);
 	if (uLit != 0) {
 		vec2 g = (vec2(x, y) + vec2(uLightOff)) / uStep;
-		vec3 l = texture(uLight, (g + 0.5) / uLightSize).rgb;
+		vec3 l = texture(uLight, (g.yx + 0.5) / uLightSize).rgb; // the texture is transposed
 		c = min(c * l, vec3(1.0));
 	}
 	oColor = vec4(c, 1.0);

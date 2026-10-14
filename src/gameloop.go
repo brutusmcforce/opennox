@@ -209,7 +209,13 @@ func (s *Server) mainloopPre() {
 	if mainloopHook != nil {
 		mainloopHook()
 	}
-	s.RunLoopHooks()
+	if useFrameLimit {
+		// The frame limiter waits (and runs the hooks meanwhile), so don't sleep here: a millisecond on every
+		// game tick was the biggest part of the time of the frames that run a tick.
+		s.RunPendingLoopHooks()
+	} else {
+		s.RunLoopHooks() // the only wait of the loop
+	}
 }
 
 func (s *Server) MainLoop() error {

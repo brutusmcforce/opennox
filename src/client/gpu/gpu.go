@@ -31,8 +31,10 @@ import (
 var _ noxrender.GPU = (*Renderer)(nil)
 
 const (
-	vertSize     = 9 // x, y, u, v, r, g, b, a, mode
-	maxBatchVert = 6 * 4096
+	// A quad is drawn as an instance: the vertex shader makes its 6 vertices. That uploads 17 floats per quad
+	// instead of 6 vertices of 9 floats (the shadow edges alone are thousands of quads per frame).
+	instSize     = 17 // x0, y0, x1, y1, u0, v0, u1, v1, left r, g, b, a, right r, g, b, a, mode
+	maxBatchQuad = 4096
 )
 
 const (
@@ -90,6 +92,7 @@ type Renderer struct {
 
 	verts []float32
 	state batchState
+	glc   glCache
 	pal   [16][3]uint8
 	palF  [16 * 3]float32
 	palOK bool
@@ -156,21 +159,27 @@ func New(log *slog.Logger) (*Renderer, error) {
 	gl.BindVertexArray(r.vao)
 	gl.GenBuffers(1, &r.vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, r.vbo)
-	const stride = vertSize * 4
-	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointerWithOffset(0, 2, gl.FLOAT, false, stride, 0)
-	gl.EnableVertexAttribArray(1)
-	gl.VertexAttribPointerWithOffset(1, 2, gl.FLOAT, false, stride, 2*4)
-	gl.EnableVertexAttribArray(2)
-	gl.VertexAttribPointerWithOffset(2, 4, gl.FLOAT, false, stride, 4*4)
-	gl.EnableVertexAttribArray(3)
-	gl.VertexAttribPointerWithOffset(3, 1, gl.FLOAT, false, stride, 8*4)
+	const stride = instSize * 4
+	for _, a := range []struct {
+		loc, size int32
+		off       uintptr
+	}{
+		{0, 4, 0},      // aDst
+		{1, 4, 4 * 4},  // aUV
+		{2, 4, 8 * 4},  // aCol (left)
+		{4, 4, 12 * 4}, // aColR
+		{3, 1, 16 * 4}, // aMode
+	} {
+		gl.EnableVertexAttribArray(uint32(a.loc))
+		gl.VertexAttribPointerWithOffset(uint32(a.loc), a.size, gl.FLOAT, false, stride, a.off)
+		gl.VertexAttribDivisor(uint32(a.loc), 1)
+	}
 	gl.GenVertexArrays(1, &r.emptyVAO)
 	r.restore()
 
 	// a white pixel for solid fills
 	r.white = r.atlas.add(1, 1, []byte{0xff, 0xff, 0xff, 0xff}, []byte{0})
-	r.verts = make([]float32, 0, maxBatchVert*vertSize)
+	r.verts = make([]float32, 0, maxBatchQuad*instSize)
 	if errc := gl.GetError(); errc != gl.NO_ERROR {
 		return nil, fmt.Errorf("OpenGL error: 0x%x", errc)
 	}
@@ -199,6 +208,7 @@ func (r *Renderer) Close() {
 
 // restore OpenGL state expected by the window (libs/client/seat/opengl).
 func (r *Renderer) restore() {
+	r.glc.valid = false
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 	gl.BindVertexArray(uint32(r.libsVAO))
 	gl.Disable(gl.BLEND)
@@ -276,6 +286,7 @@ func (r *Renderer) newTarget(sz image.Point) *target {
 	gl.ClearColor(0, 0, 0, 1)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+	r.glc.valid = false // see glCache
 	r.log.Info("created render target", "size", sz)
 	return t
 }
@@ -337,7 +348,7 @@ func (r *Renderer) clearTarget(cr, cg, cb, ca float32) {
 }
 
 func (r *Renderer) setState(page *atlasPage, clip image.Rectangle, blend blendMode, pal *[16][3]uint8) {
-	if pal == nil && page == r.state.page && clip == r.state.clip && blend == r.state.blend && len(r.verts)+6*vertSize <= cap(r.verts) {
+	if pal == nil && page == r.state.page && clip == r.state.clip && blend == r.state.blend && len(r.verts)+instSize <= cap(r.verts) {
 		return // the same batch; fills and glyphs keep the palette, so skip copying and comparing it
 	}
 	st := batchState{page: page, clip: clip, blend: blend}
@@ -346,7 +357,7 @@ func (r *Renderer) setState(page *atlasPage, clip image.Rectangle, blend blendMo
 	} else {
 		st.palette = r.state.palette
 	}
-	if st != r.state || len(r.verts)+6*vertSize > cap(r.verts) {
+	if st != r.state || len(r.verts)+instSize > cap(r.verts) {
 		r.flush()
 		r.state = st
 	}
@@ -369,12 +380,11 @@ func (r *Renderer) quadGradF(x0, y0, x1, y1 float32, reg texRegion, src image.Re
 	u1 := float32(reg.rect.Min.X+src.Max.X) / ps
 	v1 := float32(reg.rect.Min.Y+src.Max.Y) / ps
 	r.verts = append(r.verts,
-		x0, y0, u0, v0, c[0], c[1], c[2], c[3], mode,
-		x1, y0, u1, v0, c2[0], c2[1], c2[2], c2[3], mode,
-		x0, y1, u0, v1, c[0], c[1], c[2], c[3], mode,
-		x1, y0, u1, v0, c2[0], c2[1], c2[2], c2[3], mode,
-		x1, y1, u1, v1, c2[0], c2[1], c2[2], c2[3], mode,
-		x0, y1, u0, v1, c[0], c[1], c[2], c[3], mode,
+		x0, y0, x1, y1,
+		u0, v0, u1, v1,
+		c[0], c[1], c[2], c[3],
+		c2[0], c2[1], c2[2], c2[3],
+		mode,
 	)
 }
 
@@ -386,20 +396,28 @@ func (r *Renderer) flush() {
 	t := r.cur
 	t.used = r.frame
 	st := &r.state
-	gl.BindFramebuffer(gl.FRAMEBUFFER, t.fbo)
-	gl.Viewport(0, 0, int32(t.size.X), int32(t.size.Y))
-	gl.UseProgram(r.prog)
-	gl.BindVertexArray(r.vao)
-	// coordinates are logical, the viewport is physical
-	gl.Uniform2f(r.locSize, float32(t.log.X), float32(t.log.Y))
-	gl.Uniform1i(r.locTex, 0)
-	gl.Uniform1i(r.locMat, 1)
-	// sprites are scaled when the target is larger than the image (e.g. scaled GUI)
-	sharp := int32(0)
-	if t.size != t.log {
-		sharp = 1
+	// The OpenGL state stays set between batches (see glCache): a frame has many batches, and setting
+	// all of the state for each of them took more time than drawing.
+	c := &r.glc
+	if !c.valid || c.target != t || c.size != t.size || c.log != t.log {
+		gl.BindFramebuffer(gl.FRAMEBUFFER, t.fbo)
+		gl.Viewport(0, 0, int32(t.size.X), int32(t.size.Y))
+		gl.UseProgram(r.prog)
+		gl.BindVertexArray(r.vao)
+		gl.BindBuffer(gl.ARRAY_BUFFER, r.vbo)
+		// coordinates are logical, the viewport is physical
+		gl.Uniform2f(r.locSize, float32(t.log.X), float32(t.log.Y))
+		gl.Uniform1i(r.locTex, 0)
+		gl.Uniform1i(r.locMat, 1)
+		// sprites are scaled when the target is larger than the image (e.g. scaled GUI)
+		sharp := int32(0)
+		if t.size != t.log {
+			sharp = 1
+		}
+		gl.Uniform1i(r.locSharp, sharp)
+		gl.Enable(gl.BLEND)
+		*c = glCache{valid: true, target: t, size: t.size, log: t.log}
 	}
-	gl.Uniform1i(r.locSharp, sharp)
 	if !r.palOK || r.pal != st.palette {
 		pal := &r.palF // a local would escape to the heap
 		for i, c := range st.palette {
@@ -410,38 +428,57 @@ func (r *Renderer) flush() {
 		gl.Uniform3fv(r.locPal, 16, &pal[0])
 		r.pal, r.palOK = st.palette, true
 	}
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, st.page.tex)
-	gl.ActiveTexture(gl.TEXTURE1)
-	gl.BindTexture(gl.TEXTURE_2D, st.page.mat)
-	gl.Enable(gl.BLEND)
-	switch st.blend {
-	case blendSubtract:
-		gl.BlendEquation(gl.FUNC_REVERSE_SUBTRACT)
-		gl.BlendFunc(gl.ONE, gl.ONE)
-	default:
-		gl.BlendEquation(gl.FUNC_ADD)
-		// colors are premultiplied by the shader
-		gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+	if c.page != st.page {
+		gl.ActiveTexture(gl.TEXTURE0)
+		gl.BindTexture(gl.TEXTURE_2D, st.page.tex)
+		gl.ActiveTexture(gl.TEXTURE1)
+		gl.BindTexture(gl.TEXTURE_2D, st.page.mat)
+		c.page = st.page
 	}
-	if !st.clip.Empty() {
-		clip := st.clip
-		if t.size != t.log {
-			clip = image.Rect(
-				clip.Min.X*t.size.X/t.log.X, clip.Min.Y*t.size.Y/t.log.Y,
-				(clip.Max.X*t.size.X+t.log.X-1)/t.log.X, (clip.Max.Y*t.size.Y+t.log.Y-1)/t.log.Y,
-			)
+	if !c.blendSet || c.blend != st.blend {
+		switch st.blend {
+		case blendSubtract:
+			gl.BlendEquation(gl.FUNC_REVERSE_SUBTRACT)
+			gl.BlendFunc(gl.ONE, gl.ONE)
+		default:
+			gl.BlendEquation(gl.FUNC_ADD)
+			// colors are premultiplied by the shader
+			gl.BlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 		}
-		gl.Enable(gl.SCISSOR_TEST)
-		gl.Scissor(int32(clip.Min.X), int32(t.size.Y-clip.Max.Y), int32(clip.Dx()), int32(clip.Dy()))
-	} else {
-		gl.Disable(gl.SCISSOR_TEST)
+		c.blend, c.blendSet = st.blend, true
 	}
-	gl.BindBuffer(gl.ARRAY_BUFFER, r.vbo)
+	if !c.clipSet || c.clip != st.clip {
+		if !st.clip.Empty() {
+			clip := st.clip
+			if t.size != t.log {
+				clip = image.Rect(
+					clip.Min.X*t.size.X/t.log.X, clip.Min.Y*t.size.Y/t.log.Y,
+					(clip.Max.X*t.size.X+t.log.X-1)/t.log.X, (clip.Max.Y*t.size.Y+t.log.Y-1)/t.log.Y,
+				)
+			}
+			gl.Enable(gl.SCISSOR_TEST)
+			gl.Scissor(int32(clip.Min.X), int32(t.size.Y-clip.Max.Y), int32(clip.Dx()), int32(clip.Dy()))
+		} else {
+			gl.Disable(gl.SCISSOR_TEST)
+		}
+		c.clip, c.clipSet = st.clip, true
+	}
 	gl.BufferData(gl.ARRAY_BUFFER, len(r.verts)*4, unsafe.Pointer(&r.verts[0]), gl.STREAM_DRAW) // gl.Ptr allocates
-	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(r.verts)/vertSize))
+	gl.DrawArraysInstanced(gl.TRIANGLES, 0, 6, int32(len(r.verts)/instSize))
 	r.verts = r.verts[:0]
-	r.restore()
+}
+
+// glCache is the OpenGL state that flush set. Anything else that changes the state (other drawing,
+// texture uploads, creating targets) must call restore, which invalidates it.
+type glCache struct {
+	valid     bool
+	target    *target
+	size, log image.Point
+	page      *atlasPage
+	blend     blendMode
+	blendSet  bool
+	clip      image.Rectangle
+	clipSet   bool
 }
 
 func rgbaF(c color.NRGBA) [4]float32 {
@@ -456,6 +493,22 @@ func (r *Renderer) Fill(rc image.Rectangle, c color.NRGBA, clip image.Rectangle)
 	white := r.whiteRegion()
 	r.setState(white.page, clip, blendOver, nil)
 	r.quad(rc, white, image.Rect(0, 0, 1, 1), rgbaF(c), modeNormal)
+}
+
+// FillRects implements noxrender.RectFiller.
+func (r *Renderer) FillRects(rcs []image.Rectangle, c color.NRGBA, clip image.Rectangle) {
+	if r.cur == nil {
+		return
+	}
+	col := rgbaF(c)
+	for _, rc := range rcs {
+		if rc.Empty() {
+			continue
+		}
+		white := r.whiteRegion()
+		r.setState(white.page, clip, blendOver, nil)
+		r.quadGradF(float32(rc.Min.X), float32(rc.Min.Y), float32(rc.Max.X), float32(rc.Max.Y), white, image.Rect(0, 0, 1, 1), col, col, modeNormal)
+	}
 }
 
 // Subtract implements noxrender.GPU.
@@ -494,6 +547,7 @@ func (r *Renderer) spriteRegion(img noxrender.Image16) (texRegion, bool) {
 		return texRegion{}, false
 	}
 	reg := r.atlas.add(d.W, d.H, d.RGBA, d.Mat)
+	r.glc.valid = false // the upload changed the texture bindings
 	r.sprites[img] = reg
 	return reg, true
 }
@@ -580,6 +634,7 @@ func (r *Renderer) glyphRegion(key noxrender.GlyphKey, dr image.Rectangle, mask 
 			}
 		}
 		reg = r.atlas.add(w, h, rgba, mat)
+		r.glc.valid = false // the upload changed the texture bindings
 		r.glyphs[key] = reg
 	}
 	return reg
@@ -784,9 +839,11 @@ func newProgram(vert, frag string) (uint32, error) {
 	gl.AttachShader(p, vs)
 	gl.AttachShader(p, fs)
 	gl.BindAttribLocation(p, 0, gl.Str("aPos\x00"))
+	gl.BindAttribLocation(p, 0, gl.Str("aDst\x00"))
 	gl.BindAttribLocation(p, 1, gl.Str("aUV\x00"))
 	gl.BindAttribLocation(p, 2, gl.Str("aCol\x00"))
 	gl.BindAttribLocation(p, 3, gl.Str("aMode\x00"))
+	gl.BindAttribLocation(p, 4, gl.Str("aColR\x00"))
 	gl.LinkProgram(p)
 	gl.DeleteShader(vs)
 	gl.DeleteShader(fs)
@@ -823,19 +880,25 @@ func compileShader(src string, typ uint32) (uint32, error) {
 }
 
 const spriteVert = `#version 330 core
-in vec2 aPos;
-in vec2 aUV;
-in vec4 aCol;
+in vec4 aDst;  // x0, y0, x1, y1
+in vec4 aUV;   // u0, v0, u1, v1
+in vec4 aCol;  // the color of the left side
+in vec4 aColR; // the color of the right side
 in float aMode;
 uniform vec2 uSize;
 out vec2 vUV;
 out vec4 vCol;
 flat out int vMode;
+// the corners of the two triangles of a quad, in the order the quads were drawn before instancing
+const vec2 corners[6] = vec2[6](vec2(0, 0), vec2(1, 0), vec2(0, 1), vec2(1, 0), vec2(1, 1), vec2(0, 1));
 void main() {
-	vUV = aUV;
-	vCol = aCol;
+	vec2 c = corners[gl_VertexID];
+	// mix with 0 or 1 gives the exact end values
+	vec2 pos = mix(aDst.xy, aDst.zw, c);
+	vUV = mix(aUV.xy, aUV.zw, c);
+	vCol = c.x == 0.0 ? aCol : aColR;
 	vMode = int(aMode + 0.5);
-	vec2 p = aPos / uSize * 2.0 - 1.0;
+	vec2 p = pos / uSize * 2.0 - 1.0;
 	gl_Position = vec4(p.x, -p.y, 0.0, 1.0);
 }
 `
