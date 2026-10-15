@@ -374,7 +374,8 @@ func (vm *VM) ExecFile(pkg string) error {
 	}
 	vm.curExports = vm.vm.Symbols(pkg)[pkg]
 	if len(vm.curExports) == 0 {
-		log.Warn("no exports from go; wrong package name?")
+		// common for scripts that only use init; the map's NoxScript can only call exported functions
+		log.Debug("no exported symbols in go scripts")
 	}
 	return nil
 }

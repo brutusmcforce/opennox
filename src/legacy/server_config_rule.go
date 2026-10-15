@@ -129,7 +129,7 @@ func serverConfigRuleEvent(_ *gui.Window, event int, arg uintptr, value int) int
 			p := (*byte)(unsafe.Pointer(serverConfigRuleText(child, 16413, 0)))
 			if p != nil && *p != 0 && value == 10171 {
 				text := alloc.GoString(p)
-				if serverConfigEqualFoldBytes(text, alloc.GoString(serverConfigSlotCurrent())) || serverConfigEqualFoldBytes(text, "user") {
+				if serverConfigEqualFoldBytes(text, mapNameField(serverConfigSlotCurrent())) || serverConfigEqualFoldBytes(text, "user") {
 					uiWindowEnable(serverConfigRuleWindow(3), 0)
 				}
 			}
@@ -185,7 +185,7 @@ func serverConfigRuleEvent(_ *gui.Window, event int, arg uintptr, value int) int
 		teamUIEvent(list, 16403, ^uintptr(0), 0)
 		serverOptionsDirty(1)
 	case 10175:
-		mapName := alloc.GoString(serverConfigSlotCurrent())
+		mapName := mapNameField(serverConfigSlotCurrent())
 		index := teamUIEvent(list, 16404, 0, 0)
 		name := fileName(serverConfigRuleText(list, 16406, index), 191624)
 		_ = ifs.Remove("maps\\" + mapName + "\\" + name)

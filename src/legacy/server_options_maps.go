@@ -26,8 +26,8 @@ func serverOptionsMapList(mode int, current string, update bool) {
 			continue
 		}
 		var base, custom server.Settings2
-		name := alloc.GoString(&it.Name[0])
-		alloc.StrCopyZero(base.Field0[:], name)
+		name := it.MapName()
+		mapNameSetField(&base.Field0[0], name)
 		custom = base
 		ruleLoad(&base, "", nil, 1, uint16(mode))
 		ruleLoad(&custom, "user.rul", nil, 3, uint16(mode))
@@ -55,7 +55,7 @@ func serverOptionsMapList(mode int, current string, update bool) {
 	if selected < 0 {
 		data[0] = 0
 	} else {
-		alloc.StrCopyZero(data[:9], serverOptionsMapToken(serverOptionsGetText(w, 16406, selected)))
+		mapNameSetField(&data[0], serverOptionsMapToken(serverOptionsGetText(w, 16406, selected)))
 	}
 	ruleLoad((*server.Settings2)(unsafe.Pointer(&data[0])), "user.rul", nil, 7, uint16(mode))
 	serverOptionsSettingsLabels(data)
@@ -72,7 +72,7 @@ func serverOptionsResetMap() int {
 	teamUIEvent(w, 16402, uintptr(selected), 0)
 	serverOptionsSetText(w, 16397, alloc.GoString16(&buf[0]), -1)
 	teamUIEvent(w, 16403, uintptr(selected), 0)
-	ifs.Remove("maps\\" + alloc.GoString(&data[0]) + "\\user.rul")
+	_ = ifs.Remove("maps\\" + mapNameField(&data[0]) + "\\user.rul")
 	ruleLoad((*server.Settings2)(unsafe.Pointer(&data[0])), "user.rul", nil, 5, binary.LittleEndian.Uint16(data[52:]))
 	serverOptionsSettingsLabels(data)
 	return serverOptionsDirty(1)

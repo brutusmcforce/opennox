@@ -567,6 +567,9 @@ type ObjectExt struct {
 
 	Label      string
 	LabelColor color.Color
+
+	// Hidden objects are not sent to other players' clients.
+	Hidden bool
 }
 
 func (obj *ObjectExt) defaults() {
@@ -1630,6 +1633,25 @@ func (obj *Object) ZombieStayDown() {
 	if obj.Class().Has(object.ClassMonster) {
 		obj.UpdateDataMonster().StatusFlags |= object.MonStatusStayDead
 	}
+}
+
+// IsHidden reports whether the object is hidden from players (see SetHidden).
+func (obj *Object) IsHidden() bool {
+	if obj == nil || obj.objectHandle == 0 {
+		return false
+	}
+	return obj.Server().Objs.getExt(obj.objectHandle).Hidden
+}
+
+// SetHidden hides the object from players: it is no longer sent to their clients,
+// except to the player whose unit it is. It still exists and acts on the server.
+func (obj *Object) SetHidden(hide bool) {
+	if obj == nil || hide == obj.IsHidden() {
+		return
+	}
+	obj.SetExt().Hidden = hide
+	// Players that see the object now need an update: it goes out of sight for them.
+	obj.Field38 |= obj.Field37
 }
 
 func (obj *Object) IsLocked() bool {

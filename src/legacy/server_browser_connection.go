@@ -1,10 +1,27 @@
 package legacy
 
 import (
+	"net/netip"
+
 	"github.com/brutusmcforce/opennox/client/gui"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
 )
+
+// BrowserJoinWaitHook is called on every frame while the client waits for the answer to its join request.
+var BrowserJoinWaitHook func()
+
+// SetSelectedServerAddr changes the address of the selected game, e.g. to a relay. The join and the connection that
+// follows it use the new address.
+func SetSelectedServerAddr(addr netip.AddrPort) {
+	if browserUI.hasSelection == 0 || browserUI.selected == nil {
+		return
+	}
+	sel := (*Nox_gui_server_ent_t)(browserUI.selected)
+	sel.SetAddr(addr.Addr().String())
+	sel.SetPort(addr.Port())
+	*memmap.PtrUint16(0x5D4594, 814604) = addr.Port()
+}
 
 func browserString(key string) string  { return serverPanelsText("noxworld.c", key) }
 func browserHidden(w *gui.Window) bool { return w == nil || w.GetFlags().IsHidden() }
@@ -22,6 +39,9 @@ func browserTick() int {
 		browserConnectionError()
 		browserUI.connectionState = 1
 	case 3:
+		if BrowserJoinWaitHook != nil {
+			BrowserJoinWaitHook()
+		}
 		if uint64(uint32(PlatformTicks())) >= uint64(browserUI.connectionDeadline) {
 			browserUI.connectionError = 8
 			browserUI.connectionState = 2

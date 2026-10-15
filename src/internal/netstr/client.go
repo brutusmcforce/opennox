@@ -70,6 +70,9 @@ func (ns *Client) Dial(host string, port int, cport int, opts encoding.BinaryMar
 		}
 		cport++
 	}
+	if ns.g.OnDial != nil {
+		ns.g.OnDial(ns.pc, addr)
+	}
 	ns.g.Responded = false
 	var v12 [1]byte // TODO: sending zero, is that correct? if so, set explicitly here
 	seq, err := ns.SendReliable(v12[:])

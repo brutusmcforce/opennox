@@ -55,9 +55,23 @@ func e2ePlayerTarget() (self, target image.Point, ok bool) {
 	return
 }
 
-// e2ePlayerLog logs every player's health and position (host only: the server state).
+// e2ePlayerLog logs every player's health and position from the server state on the host, and the other
+// players a client sees (the ones its server sent).
 func e2ePlayerLog() {
 	if !noxflags.HasGame(noxflags.GameHost) {
+		c := noxClient
+		own := c.ClientPlayerUnit()
+		if own == nil {
+			return
+		}
+		n := 0
+		c.Objs.EachInRect(c.Viewport().World.Inset(-200), func(dr *client.Drawable) {
+			if dr != own && dr.Class().Has(object.ClassPlayer) {
+				e2eLog.Printf("VISIBLE player at (%d,%d)", dr.PosVec.X, dr.PosVec.Y)
+				n++
+			}
+		})
+		e2eLog.Printf("VISIBLE players %d, self at (%d,%d)", n, own.PosVec.X, own.PosVec.Y)
 		return
 	}
 	for _, u := range noxServer.Players.ListUnits() {

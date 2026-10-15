@@ -130,6 +130,7 @@ type Object struct {
 	class          object.Class
 	flags          object.Flags
 	frozen         bool
+	hidden         bool
 	holder         *Object
 	inventory      map[*Object]struct{}
 	equipment      map[*Object]struct{}
@@ -210,6 +211,14 @@ func (obj *Object) IsLocked() bool {
 func (obj *Object) Lock(lock bool) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (obj *Object) IsHidden() bool {
+	return obj.hidden
+}
+
+func (obj *Object) Hide(hide bool) {
+	obj.hidden = hide
 }
 
 func (obj *Object) Class() object.Class {

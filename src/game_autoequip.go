@@ -28,7 +28,7 @@ func init() {
 	noxConsole.Register(&console.Command{
 		Token: "autoequip",
 		Help:  "autoequip: toggle equipping picked up weapons and armor automatically",
-		Flags: console.ClientServer,
+		Flags: console.ClientServer | console.NoDedicated,
 		Func: func(ctx context.Context, c *console.Console, tokens []string) bool {
 			if len(tokens) != 0 {
 				return false

@@ -68,6 +68,7 @@ type Player struct {
 	UnitPtr      *Object
 	ClassVal     player.Class
 	ScoreVal     int
+	LivesVal     int
 	CursorPosVec types.Pointf
 }
 
@@ -99,6 +100,14 @@ func (p *Player) GetScore() int {
 
 func (p *Player) ChangeScore(score int) {
 	p.ScoreVal = score
+}
+
+func (p *Player) GetLives() int {
+	return p.LivesVal
+}
+
+func (p *Player) SetLives(lives int) {
+	p.LivesVal = max(0, min(lives, 255))
 }
 
 func (p *Player) Print(message ns.StringID) {

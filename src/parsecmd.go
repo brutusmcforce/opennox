@@ -168,7 +168,7 @@ var (
 				return true
 			}},
 		}},
-		{Token: "menu", HelpID: "menuhelp", Flags: console.ClientServer, Sub: []*console.Command{
+		{Token: "menu", HelpID: "menuhelp", Flags: console.ClientServer | console.NoDedicated, Sub: []*console.Command{
 			{Token: "vidopt", HelpID: "menuvidopthelp", Flags: console.ClientServer, LegacyFunc: legacy.ConsoleCommand(legacy.Nox_cmd_menu_vidopt)},
 			{Token: "options", HelpID: "menuoptionshelp", Flags: console.ClientServer, LegacyFunc: legacy.ConsoleCommand(legacy.Nox_cmd_menu_options)},
 		}},
@@ -178,7 +178,7 @@ var (
 			return true
 		}},
 		{Token: "unmute", HelpID: "unmutehelp", Flags: console.ClientServer, LegacyFunc: legacy.ConsoleCommand(legacy.Nox_cmd_unmute)},
-		{Token: "window", HelpID: "windowhelp", Flags: console.ClientServer, LegacyFunc: legacy.ConsoleCommand(legacy.Nox_cmd_window)},
+		{Token: "window", HelpID: "windowhelp", Flags: console.ClientServer | console.NoDedicated, LegacyFunc: legacy.ConsoleCommand(legacy.Nox_cmd_window)},
 	}
 )
 

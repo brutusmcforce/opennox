@@ -1,6 +1,7 @@
 package opennox
 
 import (
+	"fmt"
 	"image/color"
 
 	noxcolor "github.com/brutusmcforce/opennox/libs/color"
@@ -26,14 +27,61 @@ type videoOpt struct {
 	Label  func() string
 	Def    bool
 	Hidden bool
+	// Slider shows the option as a label with the value and a slider below it, instead of a check box.
+	Slider *videoSlider
 }
+
+// videoSlider is an option that selects one of a list of values with a slider.
+type videoSlider struct {
+	Name    string
+	Choices []int
+	Get     func() int
+	Set     func(v int)
+	// Format returns the text of a value; by default, the number itself.
+	Format func(v int) string
+}
+
+// index returns the index of the choice closest to v.
+func (s *videoSlider) index(v int) int {
+	best := 0
+	for i, c := range s.Choices {
+		if abs(c-v) < abs(s.Choices[best]-v) {
+			best = i
+		}
+	}
+	return best
+}
+
+func (s *videoSlider) label() string {
+	v := s.Get()
+	if s.Format != nil {
+		return s.Name + ": " + s.Format(v)
+	}
+	return fmt.Sprintf("%s: %d", s.Name, v)
+}
+
+// The slider runs over twice the number of steps, so that a click selects the closest choice
+// (the slider truncates) and the arrow keys (which move by 2) select the next one.
+func sliderPos(i int) int   { return 2 * i }
+func sliderIndex(v int) int { return (v + 1) / 2 }
+
+// advOptsSliderLabelID is added to a slider option's ID to get the ID of its label.
+const advOptsSliderLabelID = 100
 
 type guiAdvOptions struct {
 	cli                          *Client
 	nox_win_advVideoOpts_1522600 *gui.Window
 	noxVideoAdvList              []*videoOpt
 	noxVideoAdvOpts              map[uint]*videoOpt
+
+	// options are split into pages when they don't fit the panel
+	pages    [][]*gui.Window
+	page     int // kept while the game runs
+	pageNext *gui.Window
 }
+
+// advOptsNextPageID is the ID of the button that switches option pages.
+const advOptsNextPageID = 2097
 
 func (c *guiAdvOptions) Init(cli *Client) {
 	c.cli = cli
@@ -81,6 +129,10 @@ func (c *guiAdvOptions) NewOn(par *gui.Window) {
 
 func (c *guiAdvOptions) nox_client_advVideoOptsLoad() {
 	for id, opt := range c.noxVideoAdvOpts {
+		if opt.Slider != nil {
+			c.syncSlider(opt)
+			continue
+		}
 		if w := c.nox_win_advVideoOpts_1522600.ChildByID(id); w != nil {
 			v := opt.Def
 			if opt.Get != nil {
@@ -100,8 +152,34 @@ func (c *guiAdvOptions) nox_client_advVideoOptsLoad() {
 	}
 }
 
+// syncSlider moves the slider of an option to its current value and updates its label.
+func (c *guiAdvOptions) syncSlider(opt *videoOpt) {
+	root := c.nox_win_advVideoOpts_1522600
+	s := opt.Slider
+	if w := root.ChildByID(opt.ID); w != nil {
+		w.Func94(gui.AsWindowEvent(0x400A, uintptr(sliderPos(s.index(s.Get()))), 0))
+	}
+	if w := root.ChildByID(opt.ID + advOptsSliderLabelID); w != nil {
+		w.Func94(&gui.StaticTextSetText{Str: s.label(), Val: -1})
+	}
+}
+
 func (c *guiAdvOptions) nox_client_advVideoOptsProc_4CB5D0(win *gui.Window, ev gui.WindowEvent) gui.WindowEventResp {
 	switch ev := ev.(type) {
+	case *WindowEvent0x4009:
+		// a slider was moved (sent when the mouse button is released, or by the arrow keys)
+		opt, ok := c.noxVideoAdvOpts[ev.Win.ID()]
+		if !ok || opt.Slider == nil {
+			return nil
+		}
+		s := opt.Slider
+		i := min(max(sliderIndex(ev.Val), 0), len(s.Choices)-1)
+		if v := s.Choices[i]; v != s.Get() {
+			s.Set(v)
+			clientPlaySoundSpecial(sound.SoundButtonPress, 100)
+		}
+		c.syncSlider(opt)
+		return nil
 	case *WindowEvent0x4005:
 		clientPlaySoundSpecial(sound.SoundShellSelect, 100)
 		return gui.RawEventResp(1)
@@ -120,6 +198,9 @@ func (c *guiAdvOptions) nox_client_advVideoOptsProc_4CB5D0(win *gui.Window, ev g
 			nox_client_texturedFloors_154956 = !v
 			nox_xxx_tileSetDrawFn_481420()
 			legacy.Set_dword_5d4594_1193156(0)
+			return nil
+		case advOptsNextPageID:
+			c.setPage(c.page + 1)
 			return nil
 		case 2099:
 			detectBestVideoSettings()
@@ -183,25 +264,48 @@ func (c *guiAdvOptions) newAdvVideoOpts() *gui.Window {
 	const (
 		pad     = 3
 		cheight = 15
+		crow    = 20
 	)
-	visible := 0
+	// a slider takes two rows: its label and the slider
+	rows := func(opt *videoOpt) int {
+		if opt.Slider != nil {
+			return 2
+		}
+		return 1
+	}
+	total := 0
 	for _, opt := range c.noxVideoAdvList {
 		if !opt.Hidden {
-			visible++
+			total += rows(opt)
 		}
 	}
-	// fit all options into the panel
-	crow := 20
-	if visible > 0 {
-		crow = min(crow, (height-2*pad)/visible)
+	// options that don't fit go to more pages, with a button in the last row to switch between them
+	perPage := (height - 2*pad) / crow
+	if total > perPage {
+		perPage--
 	}
+	c.pages = nil
+	c.pageNext = nil
 
-	n := 0
+	row := perPage
 	for _, opt := range c.noxVideoAdvList {
 		if opt.Hidden {
 			continue
 		}
-		y := pad + crow*n
+		if row+rows(opt) > perPage {
+			c.pages = append(c.pages, nil)
+			row = 0
+		}
+		y := pad + crow*row
+		row += rows(opt)
+		page := &c.pages[len(c.pages)-1]
+		if s := opt.Slider; s != nil {
+			label := c.cli.GUI.NewStaticText(root, opt.ID+advOptsSliderLabelID, pad, y, width-2*pad, cheight, false, false, s.label())
+			slider := NewHorizontalSlider(root, opt.ID, pad+12, y+crow+1, width-2*pad-24, 14, 0, sliderPos(len(s.Choices)-1))
+			slider.Func94(gui.AsWindowEvent(0x400A, uintptr(sliderPos(s.index(s.Get()))), 0))
+			*page = append(*page, label, slider)
+			continue
+		}
 		str := opt.Text
 		if opt.Label != nil {
 			str = opt.Label()
@@ -210,8 +314,28 @@ func (c *guiAdvOptions) newAdvVideoOpts() *gui.Window {
 				str = e.Value().Str
 			}
 		}
-		NewCheckBox(c.cli.GUI, root, opt.ID, pad, y, width, cheight, str)
-		n++
+		win := NewCheckBox(c.cli.GUI, root, opt.ID, pad, y, width, cheight, str)
+		*page = append(*page, win)
 	}
+	if len(c.pages) > 1 {
+		c.pageNext = NewTextButton(c.cli.GUI, root, advOptsNextPageID, pad, pad+crow*perPage, width-2*pad, cheight, "")
+	}
+	c.setPage(c.page)
 	return root
+}
+
+// setPage shows the given page of options (wrapping around) and hides the others.
+func (c *guiAdvOptions) setPage(page int) {
+	if len(c.pages) == 0 {
+		return
+	}
+	c.page = page % len(c.pages)
+	for i, list := range c.pages {
+		for _, win := range list {
+			win.SetHidden(i != c.page)
+		}
+	}
+	if c.pageNext != nil {
+		c.pageNext.DrawData().SetText(fmt.Sprintf("Next Page (%d/%d)", c.page+1, len(c.pages)))
+	}
 }

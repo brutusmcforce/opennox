@@ -68,6 +68,10 @@ type mapLoadOptions struct {
 
 func noxLoadMap(name string, opts mapLoadOptions) error {
 	ignoreMode := opts.Force
+	if base, _, _ := strings.Cut(name, ":"); len(strings.TrimSuffix(base, ".map")) > legacy.MaxMapNameLen {
+		base = strings.TrimSuffix(base, ".map")
+		return fmt.Errorf("map name %q is longer than %d characters", base, legacy.MaxMapNameLen)
+	}
 	if len(name) != 0 && name[0] != '#' {
 		if err := nox_common_checkMapFile(name); err != nil {
 			return fmt.Errorf("Error checking map file %q: %w", name, err)

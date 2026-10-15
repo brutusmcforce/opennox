@@ -51,6 +51,31 @@ func playerFileGUI() int {
 	}
 	return 1
 }
+
+// playerFileSaveName transfers the map name of a save (Player.SaveName). The historical format transfers twice
+// the length of the name, while the player only has room for 32 bytes (up to Field4792, the quest state), so it
+// goes through a buffer: long map names didn't fit otherwise. The file format doesn't change.
+func playerFileSaveName(r objectXferStream, p *server.Player, name string) {
+	const saveNameRoom = unsafe.Offsetof(p.Field4792) - unsafe.Offsetof(p.SaveNameBuf)
+	saveName := unsafe.Slice((*byte)(unsafe.Pointer(&p.SaveNameBuf)), saveNameRoom)
+	var buf []byte
+	if !r.read() {
+		buf = make([]byte, 2*len(name))
+		copy(buf, name)
+	}
+	n := int(r.short(uint16(len(buf) / 2)))
+	if r.read() {
+		buf = make([]byte, 2*n)
+	}
+	if n > 0 {
+		r.raw(unsafe.Pointer(&buf[0]), 2*n)
+	}
+	// writing also sets it, as the original
+	n = min(n, int(saveNameRoom)-1)
+	clear(saveName)
+	copy(saveName[:n], buf)
+}
+
 func playerFileGame(u *server.Object) int {
 	p := u.UpdateDataPlayer().Player
 	if noxflags.HasGame(8192) {
@@ -69,14 +94,7 @@ func playerFileGame(u *server.Object) int {
 			GetServer().S().Objs.SetLastObjectScriptID(server.ObjectScriptID(id))
 		}
 	}
-	name := unsafe.Pointer(&p.SaveNameBuf)
-	if !r.read() {
-		playerFileCopyString(name, alloc.GoString(sessionMapName()))
-	}
-	n := r.short(uint16(len(alloc.GoString((*byte)(name)))))
-	// The historical format transfers twice the byte-string length.
-	r.raw(name, 2*int(n))
-	*(*byte)(unsafe.Add(name, int(n))) = 0
+	playerFileSaveName(r, p, alloc.GoString(sessionMapName()))
 	if version >= 2 {
 		ret := 0
 		if r.read() {
@@ -159,9 +177,18 @@ func playerFileMetadata() int {
 	}
 	r.raw(field(1276), 1)
 	if version >= 11 {
-		playerFileCopyString(field(1156), alloc.GoString(sessionMapName()))
+		// SaveGameInfo.MapNameBuf has 32 bytes
+		name := alloc.GoString(sessionMapName())
+		playerFileCopyString(field(1156), name[:min(len(name), 31)])
 		n := int(r.byte(byte(len(alloc.GoString((*byte)(field(1156)))))))
-		r.raw(field(1156), n)
+		if n > 31 {
+			buf := make([]byte, n) // a damaged file: keep the start of the name
+			r.raw(unsafe.Pointer(&buf[0]), n)
+			copy(unsafe.Slice((*byte)(field(1156)), 31), buf)
+			n = 31
+		} else {
+			r.raw(field(1156), n)
+		}
 		*(*byte)(field(1156 + n)) = 0
 	}
 	if version < 12 {

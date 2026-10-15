@@ -14,6 +14,7 @@ var _ http.Handler = (*Server)(nil)
 // Server is an HTTP Nox lobby server.
 type Server struct {
 	l         Lobby
+	nat       *NATService
 	mux       *http.ServeMux
 	trustAddr bool // trust IP sent by a remote
 	// trustProxy takes the remote IP from the X-Real-IP or X-Forwarded-For headers of requests
@@ -48,7 +49,35 @@ func NewServer(l Lobby) *Server {
 	api.mux.HandleFunc("/api/v0/address", api.Address)
 	api.mux.HandleFunc("/api/v0/games/list", api.ServersList)
 	api.mux.HandleFunc("/api/v0/games/register", api.RegisterServer)
+	api.mux.HandleFunc("/api/v0/nat", api.NATInfo)
+	api.mux.HandleFunc("/api/v0/nat/relay", api.NATRelay)
 	return api
+}
+
+// SetNAT sets the NAT traversal service, which the NAT endpoints use.
+func (api *Server) SetNAT(n *NATService) {
+	api.nat = n
+}
+
+// NATInfoResp is a response to the NAT info request.
+type NATInfoResp struct {
+	// UDPPort is the port of the NAT service, on the lobby's host.
+	UDPPort uint16 `json:"udp_port"`
+	// Relay is set if the lobby can relay games.
+	Relay bool `json:"relay,omitempty"`
+}
+
+// NATRelayReq is a request for a relay session to a game.
+type NATRelayReq struct {
+	// Address and Port of the game, as the lobby lists it.
+	Address string `json:"addr"`
+	Port    int    `json:"port"`
+}
+
+// NATRelayResp is a response to the relay request.
+type NATRelayResp struct {
+	// Port is the UDP port of the relay session, on the lobby's host. The client uses it as the game address.
+	Port uint16 `json:"port"`
 }
 
 func (api *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -166,4 +195,58 @@ func (api *Server) ServersList(w http.ResponseWriter, r *http.Request) {
 	default:
 		api.jsonError(w, http.StatusMethodNotAllowed, nil)
 	}
+}
+
+func (api *Server) NATInfo(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet, http.MethodHead:
+		if api.nat == nil {
+			api.jsonError(w, http.StatusNotFound, errors.New("no NAT service"))
+			return
+		}
+		api.jsonResponse(w, 0, NATInfoResp{UDPPort: api.nat.Port(), Relay: api.nat.HasRelay()})
+	default:
+		api.jsonError(w, http.StatusMethodNotAllowed, nil)
+	}
+}
+
+func (api *Server) NATRelay(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		api.jsonError(w, http.StatusMethodNotAllowed, nil)
+		return
+	}
+	if api.nat == nil {
+		api.jsonError(w, http.StatusNotFound, errors.New("no NAT service"))
+		return
+	}
+	var req NATRelayReq
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&req); err != nil {
+		api.jsonError(w, http.StatusBadRequest, err)
+		return
+	}
+	host, err := netip.ParseAddr(req.Address)
+	if err != nil || req.Port <= 0 || req.Port > 0xffff {
+		api.jsonError(w, http.StatusBadRequest, errors.New("invalid game address"))
+		return
+	}
+	caddr, err := api.getAddress(r)
+	if err != nil {
+		api.jsonError(w, http.StatusBadRequest, err)
+		return
+	}
+	client, err := netip.ParseAddr(caddr)
+	if err != nil {
+		api.jsonError(w, http.StatusBadRequest, err)
+		return
+	}
+	port, err := api.nat.OpenRelay(client, netip.AddrPortFrom(host, uint16(req.Port)))
+	switch {
+	case errors.Is(err, ErrNATRelayLimit):
+		api.jsonError(w, http.StatusServiceUnavailable, err)
+		return
+	case err != nil:
+		api.jsonError(w, http.StatusBadRequest, err)
+		return
+	}
+	api.jsonResponse(w, 0, NATRelayResp{Port: port})
 }

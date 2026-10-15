@@ -150,11 +150,11 @@ func (s *Nox_gui_server_ent_t) MapName() string {
 	if s == nil {
 		return ""
 	}
-	return alloc.GoStringS(s.MapNameBuf[:])
+	return mapNameField(&s.MapNameBuf[0])
 }
 
 func (s *Nox_gui_server_ent_t) SetMapName(v string) {
-	alloc.StrCopyZero(s.MapNameBuf[:], v)
+	mapNameSetField(&s.MapNameBuf[0], v)
 }
 
 func (s *Nox_gui_server_ent_t) Flags() noxflags.GameFlag {

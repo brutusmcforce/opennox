@@ -14,6 +14,7 @@ import (
 	"github.com/brutusmcforce/opennox/noxscript/ns/v4/enchant"
 	"github.com/brutusmcforce/opennox/noxscript/ns/v4/subclass"
 
+	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/legacy"
 	"github.com/brutusmcforce/opennox/server"
 )
@@ -66,6 +67,11 @@ func (s noxScriptNS) createObject(typ ns4.ObjTypeName, p ns4.Positioner) *server
 		return nil
 	}
 	s.s.CreateObjectAt(obj, nil, p.Pos())
+	if noxflags.HasGame(noxflags.GameModeQuest) {
+		if item := legacy.RewardFromScriptMarker(obj); item != nil {
+			return item
+		}
+	}
 	return obj
 }
 

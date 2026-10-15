@@ -19,12 +19,18 @@ func sessionModeIndex(value int16) int32 {
 func sessionMapFilename() *byte { return memmap.PtrUint8(0x5D4594, 2598188) }
 func sessionMapName() *byte     { return memmap.PtrUint8(0x85B3FC, 36) }
 func sessionSelectedMap() *byte { return memmap.PtrUint8(0x5D4594, 3452) }
+
+// sessionSetSelectedMap sets the selected map. The buffer has room for 12 bytes, so a long name is stored
+// as a token (see mapNameToken).
 func sessionSetSelectedMap(name *byte) uint32 {
 	text := alloc.GoString(name)
-	dst := unsafe.Slice(sessionSelectedMap(), len(text)+1)
-	copy(dst, text)
-	dst[len(text)] = 0
-	return uint32(len(dst))
+	mapNameSetField(sessionSelectedMap(), text)
+	return uint32(len(text) + 1)
+}
+
+// sessionSelectedMapName returns the selected map.
+func sessionSelectedMapName() string {
+	return mapNameField(sessionSelectedMap())
 }
 func sessionSetMapPath(name *byte) *byte {
 	text := alloc.GoString(name)

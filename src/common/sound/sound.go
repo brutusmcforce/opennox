@@ -17,14 +17,14 @@ func ByName(name string) ID {
 type ID int
 
 func (id ID) String() string {
-	if id >= 0 || int(id) < len(soundNames) {
+	if id >= 0 && int(id) < len(soundNames) {
 		return soundNames[id]
 	}
 	return "sound.ID(" + strconv.Itoa(int(id)) + ")"
 }
 
 func (id ID) GoString() string {
-	if id >= 0 || int(id) < len(soundNames) {
+	if id >= 0 && int(id) < len(soundNames) {
 		if id == 0 {
 			return "sound.SoundNone"
 		}

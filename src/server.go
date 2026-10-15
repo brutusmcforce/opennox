@@ -74,6 +74,8 @@ func NewServer(log *slog.Logger, pr console.Printer, sm *strman.StringManager) *
 	s.NetSendPacketXxx = legacy.Nox_xxx_netSendPacket_4E5030
 	s.NetStr.OnDiscover = nox_xxx_servNetInitialPackets_552A80_discover
 	s.NetStr.OnExtPacket = MixRecvFromReplacer
+	s.NetStr.OnNATPacket = natOnPacket
+	s.NetStr.OnDial = natOnDial
 	s.NetStr.GetMaxPlayers = func() int {
 		return s.getServerMaxPlayers()
 	}

@@ -22,9 +22,9 @@ func mapCatalogNext(p *Nox_map_list_item) *Nox_map_list_item {
 	return (*Nox_map_list_item)(unsafe.Pointer(listNext((*legacyListNode)(unsafe.Pointer(p)))))
 }
 func mapCatalogAdd(p *Nox_map_list_item) {
-	name := alloc.GoString(&p.Name[0])
+	name := p.MapName()
 	for it := mapCatalogFirst(); it != nil; it = mapCatalogNext(it) {
-		if name <= alloc.GoString(&it.Name[0]) {
+		if name <= it.MapName() {
 			listAppend((*legacyListNode)(unsafe.Pointer(it)), (*legacyListNode)(unsafe.Pointer(p)))
 			return
 		}
@@ -200,6 +200,30 @@ type mapQuestRow struct {
 
 
 
+// name returns the map file name of the row, with the extension. A long map name is a token (see mapNameToken).
+func (r *mapQuestRow) name() string {
+	v := alloc.GoString(&r.Name[0])
+	if base, ok := strings.CutSuffix(v, ".map"); ok && mapNameIsToken(base) {
+		return mapNameResolve(base) + ".map"
+	}
+	return v
+}
+
+func (r *mapQuestRow) setName(v string) {
+	if len(v) >= len(r.Name) {
+		v = mapNameToken(strings.TrimSuffix(v, ".map")) + ".map"
+	}
+	alloc.StrCopyZero(r.Name[:], v)
+}
+
+// namePtr returns the name of the row as a C string.
+func (r *mapQuestRow) namePtr() *byte {
+	if v := r.name(); v != alloc.GoString(&r.Name[0]) {
+		return (*byte)(unsafe.Pointer(internCStr(v)))
+	}
+	return &r.Name[0]
+}
+
 func mapQuestRows() []mapQuestRow {
 	return unsafe.Slice((*mapQuestRow)(memmap.PtrOff(0x5D4594, 1525132)), 128)
 }
@@ -212,7 +236,7 @@ func mapQuestBuild() int {
 			continue
 		}
 		row := &rows[count]
-		alloc.StrCopyZero(row.Name[:], alloc.GoString(&p.Name[0])+".map")
+		row.setName(p.MapName() + ".map")
 		row.Group = 0
 		count++
 		dword_5d4594_1548476 = uint32(count)
@@ -226,7 +250,7 @@ func mapQuestBuild() int {
 		rows[i].Group = group
 		group++
 		for j := i + 1; j < count; j++ {
-			a, b := alloc.GoString(&rows[i].Name[0]), alloc.GoString(&rows[j].Name[0])
+			a, b := rows[i].name(), rows[j].name()
 			a = a[:min(len(a), 6)]
 			b = b[:min(len(b), 6)]
 			if mapASCIIEqual(a, b) {
@@ -250,7 +274,7 @@ func mapQuestChoose() *byte {
 	}
 	rows := mapQuestRows()
 	if count == 1 {
-		return &rows[0].Name[0]
+		return rows[0].namePtr()
 	}
 	maximum := uint32(0)
 	// The C maximum comparison promotes its signed local to unsigned.
@@ -260,7 +284,7 @@ func mapQuestChoose() *byte {
 		}
 	}
 	if maximum == 0 {
-		return &rows[GetServer().S().Rand.Logic.IntClamp(0, count-1)].Name[0]
+		return rows[GetServer().S().Rand.Logic.IntClamp(0, count-1)].namePtr()
 	}
 	equal := true
 	for i := 1; i < count; i++ {
@@ -285,19 +309,19 @@ func mapQuestChoose() *byte {
 	}
 	// The baseline correction falls back when family/history exclusions exhaust the catalog.
 	if candidates == 0 {
-		return &rows[GetServer().S().Rand.Logic.IntClamp(0, count-1)].Name[0]
+		return rows[GetServer().S().Rand.Logic.IntClamp(0, count-1)].namePtr()
 	}
 	choice := GetServer().S().Rand.Logic.IntClamp(0, candidates-1)
 	index := 0
 	for i := 0; i < count; i++ {
 		if eligible(i) {
 			if index == choice {
-				return &rows[i].Name[0]
+				return rows[i].namePtr()
 			}
 			index++
 		}
 	}
-	return &rows[choice].Name[0]
+	return rows[choice].namePtr()
 }
 func mapQuestPlayed(name *byte) {
 	if name == nil {
@@ -306,7 +330,7 @@ func mapQuestPlayed(name *byte) {
 	rows := mapQuestRows()
 	count := int(dword_5d4594_1548476)
 	for i := 0; i < count; i++ {
-		if !mapASCIIEqual(alloc.GoString(&rows[i].Name[0]), alloc.GoString(name)) {
+		if !mapASCIIEqual(rows[i].name(), alloc.GoString(name)) {
 			continue
 		}
 		*memmap.PtrUint32(0x587000, 191880) = uint32(i)

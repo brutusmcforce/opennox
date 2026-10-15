@@ -125,7 +125,11 @@ func worldCollideExit(a, b *server.Object) {
 	}
 	ready := true
 	if quest {
-		mapName = mapQuestChoose()
+		// The exits of the original quest maps have no map name and go to a random quest level. An exit with a map
+		// name goes to that map, which lets custom quests link their maps (opennox#726).
+		if *mapName == 0 {
+			mapName = mapQuestChoose()
+		}
 		for ability := 1; ability < 6; ability++ {
 			if core.Abils.IsActive(b, server.Ability(ability)) {
 				Sub_4FC300(b, int(int32(ability)))

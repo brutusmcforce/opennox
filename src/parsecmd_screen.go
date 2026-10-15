@@ -16,7 +16,7 @@ func init() {
 	noxConsole.Register(&console.Command{
 		Token:  "image",
 		HelpID: "imagehelp",
-		Flags:  console.ClientServer,
+		Flags:  console.ClientServer | console.NoDedicated,
 		Func:   cmdScreenshot,
 	})
 }

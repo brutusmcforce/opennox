@@ -48,6 +48,12 @@ type Player interface {
 	GetScore() int
 	// ChangeScore adds or removes player's score(s).
 	ChangeScore(score int)
+	// GetLives gets player's extra lives (ankhs).
+	GetLives() int
+	// SetLives sets player's extra lives (ankhs). The value is limited to 0-255.
+	//
+	// Extra lives are only used in Quest mode: a player who dies with extra lives left loses one instead of the progress.
+	SetLives(lives int)
 	// Print displays a localized string on the screen of the player.
 	//
 	// If the string is not in the string database, it will instead print an error message with "MISSING:".

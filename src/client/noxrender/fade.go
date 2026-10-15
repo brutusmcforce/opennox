@@ -86,6 +86,9 @@ func (r *NoxRender) DrawFade(menu bool) int {
 }
 
 func (r *NoxRender) newFade(key FadeKey, t int, flags fadeFlags) *fade {
+	if r.pix == nil {
+		return nil // nothing to draw on, e.g. a dedicated server running a map script's cinema
+	}
 	for i := range r.fade.arr {
 		it := &r.fade.arr[i]
 		if !it.flags.Has(fadeActive) {

@@ -37,7 +37,7 @@ func clientSessionSettings(op int, data []byte) {
 		slot[56] = data[19]
 		if int8(data[9]) >= 0 {
 			binary.LittleEndian.PutUint16(slot[52:], uint16(dword(9)))
-			alloc.StrCopy(slot, alloc.GoString(sessionMapName()))
+			mapNameSetField(&slot[0], alloc.GoString(sessionMapName()))
 		}
 		if !ctf && noxflags.HasGame(32) {
 			teamUICTFOpen(2)
@@ -91,6 +91,10 @@ func clientSessionSettings(op int, data []byte) {
 		slot := unsafe.Slice(serverConfigSlot(int32(data[1])), 58)
 		old := slot[52]
 		copy(slot, data[2:60])
+		if mapNameIsToken(alloc.GoStringS(slot[:mapNameFieldLen])) {
+			// a long map name of the server: its token means nothing here, but it's the map the client has
+			mapNameSetField(&slot[0], alloc.GoString(sessionMapName()))
+		}
 		if (old>>5)&1 != (data[54]>>5)&1 {
 			teamUIPlayersRefreshOpen()
 		}

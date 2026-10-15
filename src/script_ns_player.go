@@ -218,6 +218,23 @@ func (p nsPlayer) GetScore() int {
 	return int(p.p.Lessons)
 }
 
+func (p nsPlayer) GetLives() int {
+	u := p.p.PlayerUnit
+	if u == nil {
+		return 0
+	}
+	return int(u.UpdateDataPlayer().Field80)
+}
+
+func (p nsPlayer) SetLives(lives int) {
+	u := p.p.PlayerUnit
+	if u == nil {
+		return
+	}
+	// Quest mode sends the new value to the clients when it differs from the last one sent.
+	u.UpdateDataPlayer().Field80 = uint32(max(0, min(lives, 255)))
+}
+
 func (p nsPlayer) ChangeScore(score int) {
 	u := p.p.PlayerUnit
 	if u == nil {

@@ -22,7 +22,7 @@ func init() {
 	noxConsole.Register(&console.Command{
 		Token: "fps",
 		Help:  "fps: toggle frame rate display in the upper left corner",
-		Flags: console.ClientServer,
+		Flags: console.ClientServer | console.NoDedicated,
 		Func: func(ctx context.Context, c *console.Console, tokens []string) bool {
 			if len(tokens) != 0 {
 				return false

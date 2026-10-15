@@ -23,9 +23,7 @@ func browserHostDescription() *byte {
 	}
 	clear(r[120:135])
 	copy(r[120:135], alloc.GoString(serverConfigNameGet()))
-	name := Nox_xxx_mapGetMapName_409B40()
-	copy(r[111:], name)
-	r[111+len(name)] = 0
+	mapNameSetField(&r[111], Nox_xxx_mapGetMapName_409B40())
 	if memmap.Uint32(0x5D4594, 1556160) != 0 {
 		stage := uint32(1)
 		if onlineRetryActive != 0 {

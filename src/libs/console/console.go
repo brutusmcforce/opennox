@@ -109,7 +109,7 @@ func AsServer(ctx context.Context) context.Context {
 
 // AsDedicated marks the commands as executed in a dedicated server context.
 func AsDedicated(ctx context.Context) context.Context {
-	return context.WithValue(ctx, isDedicatedKey{}, false)
+	return context.WithValue(ctx, isDedicatedKey{}, true)
 }
 
 // WithCheats forces a cheats-enabled flag for this context.
@@ -415,6 +415,10 @@ func (cn *Console) ParseToken(ctx context.Context, tokInd int, tokens []string, 
 		}
 	}
 	if cmd.Flags.Has(FlagDedicated) && !IsDedicated(ctx) {
+		return true
+	}
+	if cmd.Flags.Has(NoDedicated) && IsDedicated(ctx) {
+		cn.Print(ColorRed, "not available on a dedicated server")
 		return true
 	}
 	var res bool

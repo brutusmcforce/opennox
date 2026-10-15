@@ -42,6 +42,9 @@ const (
 	FlagDedicated = Flags(1 << 6)
 	// Secret flag is used when the command token should be encrypted.
 	Secret = Flags(1 << 7)
+	// NoDedicated marks a command that needs the game window (menus, video settings),
+	// so it does nothing on a dedicated server.
+	NoDedicated = Flags(1 << 8)
 )
 
 const (

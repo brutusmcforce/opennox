@@ -166,7 +166,7 @@ func browserDetails(record unsafe.Pointer) {
 	}
 	separator(89580)
 	title("Map")
-	add(browserNarrowText(browserCappedString(unsafe.Pointer(&(*Nox_gui_server_ent_t)(record).MapNameBuf[0]), 255)), -1)
+	add(browserNarrowText((*Nox_gui_server_ent_t)(record).MapName()), -1)
 	separator(89636)
 	if uint16(rec.Flags())&0xc000 != 0 {
 		key := "Clan"

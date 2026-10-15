@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -736,6 +737,9 @@ func sub_470550() {
 }
 
 func sub_4703F0() {
+	if legacy.Get_dword_5d4594_1090048() == nil || legacy.Get_dword_5d4594_1090100() == nil {
+		return // no scoreboard windows, e.g. "show rank" on a dedicated server
+	}
 	legacy.Set_dword_5d4594_1090120((legacy.Get_dword_5d4594_1090120() + 1) % 6)
 	v1 := int32(legacy.Get_dword_5d4594_1090120())
 	if false || v1 != 5 {
@@ -960,6 +964,9 @@ func nox_xxx_cliDrawConnectedLoop_43B360() int {
 	} else {
 		v1 := legacy.ClientGetServerPort()
 		v5 := fmt.Sprintf("%s:%d", v0, v1)
+		if ap, err := netip.ParseAddrPort(v5); err == nil {
+			v5 = natClientListedAddr(ap).String() // remember the game, not the relay
+		}
 		legacy.Nox_xxx_copyServerIPAndPort_431790(v5)
 		clientSetServerHost(v0)
 	}

@@ -42,7 +42,7 @@ func cycleMap() {
 // configLargeMapOpacity is the opacity of the large map in percent.
 const configLargeMapOpacity = "video.large_map_opacity"
 
-var largeMapOpacityChoices = []int{20, 40, 60, 80, 100}
+var largeMapOpacityChoices = []int{10, 20, 30, 40, 50, 60, 70, 80, 90, 100}
 
 func init() {
 	viper.SetDefault(configLargeMapOpacity, legacy.MinimapLargeOpacity)

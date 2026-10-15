@@ -30,17 +30,30 @@ func TestRelayoutShift(t *testing.T) {
 	}
 }
 
-func TestNextChoice(t *testing.T) {
-	list := []int{100, 125, 150}
-	for _, c := range []struct{ cur, want int }{
-		{100, 125},
-		{125, 150},
-		{150, 100},
-		{110, 125}, // not in the list
-		{300, 100},
+func TestVideoSliderIndex(t *testing.T) {
+	s := &videoSlider{Choices: []int{100, 125, 150}}
+	for _, c := range []struct{ v, want int }{
+		{100, 0},
+		{125, 1},
+		{150, 2},
+		{110, 0}, // not in the list: the closest one
+		{140, 2},
+		{50, 0},
+		{300, 2},
 	} {
-		if got := nextChoice(list, c.cur); got != c.want {
-			t.Errorf("nextChoice(%d) = %d, want %d", c.cur, got, c.want)
+		if got := s.index(c.v); got != c.want {
+			t.Errorf("index(%d) = %d, want %d", c.v, got, c.want)
+		}
+	}
+	// slider positions run over twice the steps; a position selects the closest choice
+	for _, c := range []struct{ pos, want int }{{0, 0}, {1, 1}, {2, 1}, {3, 2}, {4, 2}} {
+		if got := sliderIndex(c.pos); got != c.want {
+			t.Errorf("sliderIndex(%d) = %d, want %d", c.pos, got, c.want)
+		}
+	}
+	for i := range s.Choices {
+		if got := sliderIndex(sliderPos(i)); got != i {
+			t.Errorf("sliderIndex(sliderPos(%d)) = %d", i, got)
 		}
 	}
 }

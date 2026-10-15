@@ -52,6 +52,27 @@ func (c *Client) RegisterGame(ctx context.Context, s *Game) error {
 	return nil
 }
 
+// NATInfo returns the NAT traversal service of the lobby.
+func (c *Client) NATInfo(ctx context.Context) (*NATInfoResp, error) {
+	var out NATInfoResp
+	if err := c.sendRequest(ctx, http.MethodGet, "/api/v0/nat", nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// OpenRelay asks for a relay session to a game, and returns the relay port on the lobby's host.
+func (c *Client) OpenRelay(ctx context.Context, addr string, port int) (uint16, error) {
+	var out NATRelayResp
+	if err := c.sendRequest(ctx, http.MethodPost, "/api/v0/nat/relay", NATRelayReq{Address: addr, Port: port}, &out); err != nil {
+		return 0, err
+	}
+	return out.Port, nil
+}
+
+// ServerURL returns the lobby URL.
+func (c *Client) ServerURL() string { return c.serverURL }
+
 func (c *Client) sendRequest(ctx context.Context, meth string, path string, body interface{}, dst interface{}) error {
 	var rbody io.Reader
 	if body != nil {

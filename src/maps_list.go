@@ -35,8 +35,10 @@ func nox_common_scanAllMaps_4D07F0(log *slog.Logger) error {
 
 func nox_common_scanAddMap(filename string) {
 	name := filename
-	if len(name) > 9 {
-		name = name[:8] // FIXME: can we split by path separator? extension?
+	if len(name) > legacy.MaxMapNameLen {
+		// a shorter name would point to another map, or none
+		gameLog.Printf("map list: %q: the name is longer than %d characters", name, legacy.MaxMapNameLen)
+		return
 	}
 	if err := nox_common_checkMapFile(name); err != nil {
 		gameLog.Println("map list:", err)
@@ -44,7 +46,7 @@ func nox_common_scanAddMap(filename string) {
 	}
 	mp, _ := alloc.New(legacy.Nox_map_list_item{})
 	legacy.Sub_425770(mp)
-	alloc.StrCopyZero(mp.Name[:], name)
+	mp.SetMapName(name)
 	mp.Field_6 = 1
 	mp.Field_7 = memmap.Uint32(0x973F18, 3800)
 	mp.Field_8_0 = memmap.Uint8(0x973F18, 3804)

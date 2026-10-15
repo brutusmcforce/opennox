@@ -370,13 +370,24 @@ func noxCmdSetBool(c *console.Console, tokens []string, fnc func(v bool)) bool {
 	return true
 }
 
+// cheatHost returns the local player for the cheats that apply to it. A dedicated server has none.
+func cheatHost(c *console.Console) *Player {
+	p := noxServer.Players.Host()
+	if p == nil {
+		c.Printf(console.ColorLightRed, "there is no local player on this server")
+	}
+	return p
+}
+
 func noxCmdSetPlayerUnitParam(c *console.Console, tokens []string, param string, fnc func(u *server.Object, v int), def func(u *server.Object)) bool {
-	s := noxServer
 	if len(tokens) > 2 {
 		return false
 	}
 	if len(tokens) == 0 {
-		p := s.Players.Host()
+		p := cheatHost(c)
+		if p == nil {
+			return true
+		}
 		u := p.PlayerUnit
 		if u == nil {
 			c.Printf(console.ColorLightRed, "player %q doesn't have a unit", p.Name())
@@ -388,7 +399,9 @@ func noxCmdSetPlayerUnitParam(c *console.Console, tokens []string, param string,
 	}
 	var p *Player
 	if len(tokens) == 1 {
-		p = s.Players.Host()
+		if p = cheatHost(c); p == nil {
+			return true
+		}
 	} else {
 		p = noxCmdPlayerByIndex(c, tokens[0])
 		if p == nil {
@@ -575,7 +588,11 @@ func noxCheatSpawn(ctx context.Context, c *console.Console, tokens []string) boo
 		c.Printf(console.ColorLightRed, "unknown object: %q", tokens[0])
 		return true
 	}
-	pos := s.Players.Host().Pos()
+	host := cheatHost(c)
+	if host == nil {
+		return true
+	}
+	pos := host.Pos()
 	for i := 0; i < cnt; i++ {
 		s.createObject(typ, pos)
 	}

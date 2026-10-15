@@ -79,6 +79,9 @@ func objectReportRecipient(viewer, u *server.Object) int {
 			ret = uint32(bool2int(visible))
 		}
 	}
+	if visible && u != viewer && u.IsHidden() {
+		visible = false
+	}
 	if visible {
 		if u.Field37&bit != 0 {
 			if u.Field5&0x20 != 0 {

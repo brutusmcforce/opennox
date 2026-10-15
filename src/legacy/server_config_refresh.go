@@ -1,7 +1,6 @@
 package legacy
 
 import (
-	"bytes"
 	"encoding/binary"
 	"unsafe"
 
@@ -68,10 +67,8 @@ func serverConfigRefresh() int32 {
 		copy(record[9:24], name[:])
 		serverConfigRecordDirty = 1
 	}
-	var mapName [9]byte
-	copy(mapName[:8], Nox_xxx_mapGetMapName_409B40())
-	if !bytes.Equal(record[:9], mapName[:]) {
-		copy(record[:9], mapName[:])
+	if mapName := Nox_xxx_mapGetMapName_409B40(); mapNameField(&record[0]) != mapName {
+		mapNameSetField(&record[0], mapName)
 		serverConfigRecordDirty = 1
 	}
 	for i, v := range spells {

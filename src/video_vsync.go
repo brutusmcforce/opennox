@@ -33,7 +33,7 @@ func init() {
 	noxConsole.Register(&console.Command{
 		Token: "vsync",
 		Help:  "vsync [off|on|adaptive]: get or set vertical synchronization",
-		Flags: console.ClientServer,
+		Flags: console.ClientServer | console.NoDedicated,
 		Func: func(ctx context.Context, c *console.Console, tokens []string) bool {
 			if len(tokens) > 1 {
 				return false
@@ -45,7 +45,7 @@ func init() {
 				}
 				setVSyncMode(mode)
 			}
-			c.Printf(console.ColorLightYellow, "vsync = %s", viper.GetString(configVideoVSync))
+			c.Printf(console.ColorLightYellow, "vsync = %s", vsyncMode())
 			return true
 		},
 	})
@@ -60,6 +60,16 @@ func isVSyncMode(mode string) bool {
 	return false
 }
 
+// vsyncMode returns the configured vsync mode. Unknown or missing values mean off
+// (e2e mode resets the config, defaults included).
+func vsyncMode() string {
+	mode := strings.ToLower(viper.GetString(configVideoVSync))
+	if !isVSyncMode(mode) {
+		return vsyncOff
+	}
+	return mode
+}
+
 // setVSyncMode changes and saves the vsync mode. It's applied on the main loop, which owns the OpenGL context.
 //
 // It may be called from any goroutine, including the main loop itself (e.g. from the GUI),
@@ -72,7 +82,7 @@ func setVSyncMode(mode string) {
 
 // applyVSync sets the swap interval of the current OpenGL context according to the config.
 func applyVSync() {
-	mode := strings.ToLower(viper.GetString(configVideoVSync))
+	mode := vsyncMode()
 	interval := 0
 	switch mode {
 	case vsyncOn:

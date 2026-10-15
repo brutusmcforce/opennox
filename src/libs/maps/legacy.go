@@ -31,7 +31,7 @@ type NativeDownloader struct {
 	dir        string
 	path       string
 	downloadOK bool
-	file       *os.File
+	file       *atomicFile
 	curPart    uint
 	sizeCur    uint
 	sizeTotal  uint
@@ -101,17 +101,16 @@ func (d *NativeDownloader) WritePart(ind uint, data []byte) {
 	}
 }
 
+// CancelAndCleanup stops the download. The map that was there before stays.
 func (d *NativeDownloader) CancelAndCleanup() {
-	if d.file != nil {
-		d.file.Close()
-	}
-	mapDownloadCleanupDir(d.path)
 	d.Reset()
 }
 
+// CancelAndDelete stops the download. The map that was there before stays.
 func (d *NativeDownloader) CancelAndDelete() {
-	d.file.Close()
-	ifs.Remove(d.path)
+	if d.file != nil {
+		d.file.Abort()
+	}
 	d.file = nil
 	d.downloadOK = false
 	d.curPart = 1
@@ -141,9 +140,22 @@ func (d *NativeDownloader) Progress() float64 {
 	return float64(d.sizeCur) / float64(d.sizeTotal)
 }
 
+// Finish saves a complete download as the map file.
+func (d *NativeDownloader) Finish() error {
+	if !d.Complete() || d.file == nil {
+		d.Reset()
+		return fmt.Errorf("map download incomplete: %d of %d bytes", d.sizeCur, d.sizeTotal)
+	}
+	f := d.file
+	d.file = nil
+	d.Reset()
+	return f.Commit()
+}
+
+// Reset stops the download, if any. The map that was there before stays.
 func (d *NativeDownloader) Reset() {
 	if d.file != nil {
-		d.file.Close()
+		d.file.Abort()
 	}
 	d.file = nil
 	d.downloadOK = false
@@ -167,7 +179,7 @@ func (d *NativeDownloader) Start(path string, sz uint) error {
 		ifs.MkdirAll(mdir)
 	}
 	d.path = path
-	f, err := ifs.Create(d.path)
+	f, err := createAtomic(d.path)
 	if err != nil {
 		return err
 	}
@@ -176,10 +188,4 @@ func (d *NativeDownloader) Start(path string, sz uint) error {
 	d.downloadOK = true
 	d.sizeTotal = sz
 	return nil
-}
-
-func mapDownloadCleanupDir(path string) {
-	if _, err := os.Stat(path); err == nil {
-		ifs.Remove(path)
-	}
 }

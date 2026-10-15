@@ -28,7 +28,7 @@ func serverOptionsQuest(value int) int {
 	return serverOptionsHidden(serverOptionsChild(10183), value)
 }
 func serverOptionsLabels(data []byte) int {
-	serverOptionsStoreText(1045968, 64, serverOptionsFormat("SettingsMsg", alloc.GoString(&data[0])))
+	serverOptionsStoreText(1045968, 64, serverOptionsFormat("SettingsMsg", mapNameField(&data[0])))
 	modeText := serverOptionsText("GameType")
 	if !noxflags.HasGame(128) {
 		modeText = serverOptionsFormat("GameTypeIs", serverOptionsModeName(uint16(noxflags.GetGame())))
@@ -106,7 +106,7 @@ func serverOptionsRead(data []byte) uintptr {
 		return uintptr(selected)
 	}
 	name = serverOptionsMapToken(serverOptionsGetText(serverOptionsWindow(1046496), 16406, selected))
-	alloc.StrCopyZero(data[:9], name)
+	mapNameSetField(&data[0], name)
 	return 0
 }
 func serverOptionsMapToken(text string) string {
@@ -126,7 +126,7 @@ func serverOptionsRefresh() int {
 	}
 	serverOptionsSettingsLabels(data)
 	serverPanelsAdvancedUpdate(unsafe.Pointer(&data[0]))
-	serverOptionsMapList(int(binary.LittleEndian.Uint16(data[52:])), alloc.GoString(&data[0]), false)
+	serverOptionsMapList(int(binary.LittleEndian.Uint16(data[52:])), mapNameField(&data[0]), false)
 	serverOptionsLimits(data)
 	return serverOptionsSetText(serverOptionsChild(10119), 16385, serverOptionsModeName(binary.LittleEndian.Uint16(data[52:])), 0)
 }

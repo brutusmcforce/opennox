@@ -1,6 +1,7 @@
 package netstr
 
 import (
+	"encoding/binary"
 	"errors"
 	"net"
 	"net/netip"
@@ -40,20 +41,27 @@ func WaitForLobbyResults(conn net.PacketConn, srvAddr netip.Addr, flag RecvFlags
 			return 0, err
 		}
 		buf = buf[:n]
-		op := netmsg.Op(buf[2])
+		var op netmsg.Op
+		if n >= 3 && binary.LittleEndian.Uint16(buf) != 0xF13A { // too short, or an extension packet (e.g. NAT)
+			op = netmsg.Op(buf[2])
+		} else {
+			op = netmsg.MSG_CLIENT_ACCEPT // skipped below
+		}
 		if op < netmsg.MSG_CLIENT_ACCEPT {
 			if op == netmsg.MSG_SERVER_INFO || srvAddr == from.Addr() {
 				switch op {
 				case netmsg.MSG_SERVER_INFO:
-					if from.Addr().IsValid() {
+					if from.Addr().IsValid() && n > 72 { // the server name starts at 72
 						opts.OnResult(from, buf)
 					}
 				case netmsg.MSG_PASSWORD_REQUIRED:
 					opts.OnPassRequired()
 				case netmsg.MSG_SERVER_PING:
-					opts.OnPing(from, buf)
+					if n >= 8 {
+						opts.OnPing(from, buf)
+					}
 				case netmsg.MSG_SERVER_ERROR:
-					if !opts.OnConnectErr(noxnet.ConnectError(buf[3])) {
+					if n >= 4 && !opts.OnConnectErr(noxnet.ConnectError(buf[3])) {
 						break
 					}
 				case netmsg.MSG_SERVER_JOIN_OK:

@@ -199,11 +199,13 @@ func RegisterThingParse(name string, fnc ThingFieldFunc) {
 	clientThingParseFuncs[name] = fnc
 }
 
+// The original thing.bin has a few unknown names or names of a different field (e.g. SMALL_SPIDER in CLASS), which
+// the game ignores, so they are only logged in debug mode (see also server.ObjectType).
 var clientThingParseFuncs = map[string]ThingFieldFunc{
 	"CLASS": func(typ *ObjectType, f *binfile.MemFile, str string, buf []byte) error {
 		v, err := object.ParseClassSet(str)
 		if err != nil {
-			thingsLog.Printf("%q (%d): %v", typ.ID(), typ.Index(), err)
+			thingsLog.Debug("cannot parse", "type", typ.ID(), "id", typ.Index(), "err", err)
 		}
 		typ.ObjClass = v
 		return nil
@@ -211,7 +213,7 @@ var clientThingParseFuncs = map[string]ThingFieldFunc{
 	"SUBCLASS": func(typ *ObjectType, f *binfile.MemFile, str string, buf []byte) error {
 		v, err := object.ParseSubClassSet(str)
 		if err != nil {
-			thingsLog.Printf("%q (%d): %v", typ.ID(), typ.Index(), err)
+			thingsLog.Debug("cannot parse", "type", typ.ID(), "id", typ.Index(), "err", err)
 		}
 		typ.ObjSubClass = v
 		return nil
@@ -219,7 +221,7 @@ var clientThingParseFuncs = map[string]ThingFieldFunc{
 	"FLAGS": func(typ *ObjectType, f *binfile.MemFile, str string, buf []byte) error {
 		v, err := object.ParseFlagSet(str)
 		if err != nil {
-			thingsLog.Printf("%q (%d): %v", typ.ID(), typ.Index(), err)
+			thingsLog.Debug("cannot parse", "type", typ.ID(), "id", typ.Index(), "err", err)
 		}
 		typ.ObjFlags = v
 		return nil

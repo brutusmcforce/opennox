@@ -9,6 +9,7 @@ import (
 	"github.com/brutusmcforce/opennox/libs/script"
 	"github.com/brutusmcforce/opennox/libs/types"
 
+	"github.com/brutusmcforce/opennox/common/sound"
 	"github.com/brutusmcforce/opennox/legacy"
 	"github.com/brutusmcforce/opennox/server"
 )
@@ -296,8 +297,11 @@ func (noxScriptImpl) Console(error bool) script.Printer {
 	return scriptConsole(console.ColorYellow)
 }
 
-func (noxScriptImpl) AudioEffect(name string, pos script.Positioner) {
-	// FIXME: trigger audio event
+func (g noxScriptImpl) AudioEffect(name string, pos script.Positioner) {
+	if pos == nil {
+		return
+	}
+	g.s.Audio.EventPos(sound.ByName(name), pos.Pos(), 0, 0)
 }
 
 type scriptGlobalPrint struct{}

@@ -192,7 +192,7 @@ func Sub_46DCC0() {
 	scoreboardCollect()
 }
 func Sub_409B80() string {
-	return GoStringP(unsafe.Pointer(sessionSelectedMap()))
+	return sessionSelectedMapName()
 }
 func Sub_4EDD70() {
 	orchestrationDropFlags()

@@ -82,6 +82,30 @@ func NewCheckBox(g *gui.GUI, par *gui.Window, id uint, px, py, w, h int, text st
 	return gui.NewCheckBoxImg(g, par, id, px, py, w, h, text, nox_xxx_gLoadImg("UICheckBox"), nox_xxx_gLoadImg("UICheckBoxLit"), nox_xxx_gLoadImg("UICheckBox"))
 }
 
+// NewTextButton creates a push button that shows a text, highlighted under the mouse.
+func NewTextButton(g *gui.GUI, par *gui.Window, id uint, px, py, w, h int, text string) *gui.Window {
+	draw, dfree := gui.NewWindowData()
+	defer dfree()
+	*draw = *par.DrawData()
+
+	draw.Window = par
+	draw.Style = gui.StylePushButton | gui.StyleMouseTrack
+	draw.SetTextColor(noxcolor.RGB5551Color(240, 180, 42))
+	draw.SetEnabledColor(noxcolor.RGB5551Color(128, 96, 64))
+	draw.SetHighlightColor(noxcolor.RGB5551Color(240, 180, 42))
+	draw.SetBackgroundColor(color.Transparent)
+	draw.SetSelectedColor(color.Transparent)
+	draw.SetText(text)
+	status := gui.StatusEnabled | gui.StatusNoFocus
+
+	win := gui.NewButtonRaw(g, par, status, px, py, w, h, draw)
+	win.SetID(id)
+	if par != nil {
+		par.Func94(gui.WindowNewChild{ID: id})
+	}
+	return win
+}
+
 func NewRadioButton(g *gui.GUI, par *gui.Window, id uint, px, py, w, h int, group int, text string) *gui.Window {
 	draw, dfree := gui.NewWindowData()
 	defer dfree()

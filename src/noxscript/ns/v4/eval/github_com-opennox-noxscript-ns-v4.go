@@ -900,6 +900,7 @@ type _github_com_opennox_noxscript_ns_v4_Obj struct {
 	WHasOwnerIn             func(owners ns.ObjGroup) bool
 	WHasSubclass            func(subclass subclass.SubClass) bool
 	WHasTeam                func(t ns.Team) bool
+	WHide                   func(hide bool)
 	WHitMelee               func(p types.Pointf)
 	WHitRanged              func(p types.Pointf)
 	WHunt                   func()
@@ -909,6 +910,7 @@ type _github_com_opennox_noxscript_ns_v4_Obj struct {
 	WInventoryWeight        func() int
 	WIsAttackedBy           func(by ns.Obj) bool
 	WIsEnabled              func() bool
+	WIsHidden               func() bool
 	WIsLocked               func() bool
 	WItems                  func(conditions ...ns.ObjCond) []ns.Obj
 	WLock                   func(lock bool)
@@ -1144,6 +1146,9 @@ func (W _github_com_opennox_noxscript_ns_v4_Obj) HasSubclass(subclass subclass.S
 func (W _github_com_opennox_noxscript_ns_v4_Obj) HasTeam(t ns.Team) bool {
 	return W.WHasTeam(t)
 }
+func (W _github_com_opennox_noxscript_ns_v4_Obj) Hide(hide bool) {
+	W.WHide(hide)
+}
 func (W _github_com_opennox_noxscript_ns_v4_Obj) HitMelee(p types.Pointf) {
 	W.WHitMelee(p)
 }
@@ -1170,6 +1175,9 @@ func (W _github_com_opennox_noxscript_ns_v4_Obj) IsAttackedBy(by ns.Obj) bool {
 }
 func (W _github_com_opennox_noxscript_ns_v4_Obj) IsEnabled() bool {
 	return W.WIsEnabled()
+}
+func (W _github_com_opennox_noxscript_ns_v4_Obj) IsHidden() bool {
+	return W.WIsHidden()
 }
 func (W _github_com_opennox_noxscript_ns_v4_Obj) IsLocked() bool {
 	return W.WIsLocked()
@@ -1596,12 +1604,14 @@ type _github_com_opennox_noxscript_ns_v4_Player struct {
 	WBlind       func(blind bool)
 	WChangeScore func(score int)
 	WCursorPos   func() types.Pointf
+	WGetLives    func() int
 	WGetScore    func() int
 	WHasTeam     func(t ns.Team) bool
 	WName        func() string
 	WPos         func() types.Pointf
 	WPrint       func(message string)
 	WPrintStr    func(message string)
+	WSetLives    func(lives int)
 	WStore       func(typ ns.StorageType) ns.Storage
 	WTeam        func() ns.Team
 	WUnit        func() ns.Obj
@@ -1615,6 +1625,9 @@ func (W _github_com_opennox_noxscript_ns_v4_Player) ChangeScore(score int) {
 }
 func (W _github_com_opennox_noxscript_ns_v4_Player) CursorPos() types.Pointf {
 	return W.WCursorPos()
+}
+func (W _github_com_opennox_noxscript_ns_v4_Player) GetLives() int {
+	return W.WGetLives()
 }
 func (W _github_com_opennox_noxscript_ns_v4_Player) GetScore() int {
 	return W.WGetScore()
@@ -1633,6 +1646,9 @@ func (W _github_com_opennox_noxscript_ns_v4_Player) Print(message string) {
 }
 func (W _github_com_opennox_noxscript_ns_v4_Player) PrintStr(message string) {
 	W.WPrintStr(message)
+}
+func (W _github_com_opennox_noxscript_ns_v4_Player) SetLives(lives int) {
+	W.WSetLives(lives)
 }
 func (W _github_com_opennox_noxscript_ns_v4_Player) Store(typ ns.StorageType) ns.Storage {
 	return W.WStore(typ)

@@ -68,7 +68,7 @@ func Nox_cmd_list_maps(_ int, _ []string) bool {
 	row := ""
 	n := 0
 	for p := mapCatalogFirst(); p != nil; p = mapCatalogNext(p) {
-		row += consoleCommandWiden(alloc.GoString(&p.Name[0])+alloc.GoString(memmap.PtrUint8(0x587000, 103292))) + "\t\t"
+		row += consoleCommandWiden(p.MapName()+alloc.GoString(memmap.PtrUint8(0x587000, 103292))) + "\t\t"
 		n++
 		if n%4 == 0 {
 			GetConsole().Print(console.ColorRed, consoleCommandFormat(alloc.GoString16(memmap.PtrUint16(0x587000, 103276)), row))

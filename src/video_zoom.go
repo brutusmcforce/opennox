@@ -45,7 +45,7 @@ func init() {
 	noxConsole.Register(&console.Command{
 		Token: "zoom",
 		Help:  "zoom [percent]: get or set the world zoom (50-300)",
-		Flags: console.ClientServer,
+		Flags: console.ClientServer | console.NoDedicated,
 		Func: func(ctx context.Context, c *console.Console, tokens []string) bool {
 			if len(tokens) == 0 {
 				c.Printf(console.ColorLightYellow, "zoom = %.0f%%", noxClient.zoom.target*100)

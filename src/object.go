@@ -1259,6 +1259,14 @@ func (obj *Object) Lock(lock bool) {
 	obj.SObj().Lock(lock)
 }
 
+func (obj *Object) IsHidden() bool {
+	return obj.SObj().IsHidden()
+}
+
+func (obj *Object) Hide(hide bool) {
+	obj.SObj().SetHidden(hide)
+}
+
 func (obj *Object) RestoreHealth(amount int) {
 	if amount <= 0 {
 		return

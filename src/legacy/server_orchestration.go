@@ -220,7 +220,14 @@ func orchestrationResetPlayer(u *server.Object) uint32 {
 	return memmap.PtrWord(mapPolygonActorInit(pl.C()))
 }
 
+// levelRewardsPlaced is set when the reward markers of the current quest level were turned into rewards.
+var levelRewardsPlaced bool
+
+// LevelRewardsPending marks the reward markers of the next level as not placed yet (see RewardFromScriptMarker).
+func LevelRewardsPending() { levelRewardsPlaced = false }
+
 func orchestrationRewards() {
+	levelRewardsPlaced = true
 	s := GetServer().S()
 	stage := memmap.Uint32(0x587000, 202028)
 	if orchestrationRewardMarker == 0 {
@@ -233,21 +240,11 @@ func orchestrationRewards() {
 	marker := func(u *server.Object) bool {
 		return uint32(u.TypeInd) == orchestrationRewardMarker || uint32(u.TypeInd) == memmap.Uint32(0x5D4594, 1568304)
 	}
-	bow := func(u *server.Object) bool { return u.ObjClass&0x1000000 != 0 && u.ObjSubClass&0xc != 0 }
 	for u := s.Objs.List; u != nil; {
 		next := u.ObjNext
 		if marker(u) {
 			if u.InitDataRewardMarker().Flags&0x80 != 0 {
-				if item := rewardMarker(u, stage); item != nil {
-					GetServer().CreateObjectAt(item, nil, u.PosVec)
-					if bow(item) {
-						if quiver := s.NewObjectByTypeID("Quiver"); quiver != nil {
-							pos := item.PosVec
-							inventoryRandomPlacement(30, &item.PosVec, &pos)
-							GetServer().CreateObjectAt(quiver, nil, pos)
-						}
-					}
-				}
+				rewardPlace(u, stage)
 			}
 			GetServer().DelayedDelete(u)
 		} else if u.Init == chestInit {
@@ -259,7 +256,7 @@ func orchestrationRewards() {
 					GetServer().DelayedDelete(it)
 					if item != nil {
 						inventoryInsert(u, item, 0)
-						if bow(item) {
+						if rewardIsBow(item) {
 							if quiver := s.NewObjectByTypeID("Quiver"); quiver != nil {
 								inventoryInsert(u, quiver, 0)
 							}
@@ -271,6 +268,45 @@ func orchestrationRewards() {
 		}
 		u = next
 	}
+}
+
+func rewardIsBow(u *server.Object) bool { return u.ObjClass&0x1000000 != 0 && u.ObjSubClass&0xc != 0 }
+
+// rewardPlace creates the reward of a marker in the world, at the marker's position.
+func rewardPlace(u *server.Object, stage uint32) *server.Object {
+	s := GetServer().S()
+	item := rewardMarker(u, stage)
+	if item == nil {
+		return nil
+	}
+	GetServer().CreateObjectAt(item, nil, u.PosVec)
+	if rewardIsBow(item) {
+		if quiver := s.NewObjectByTypeID("Quiver"); quiver != nil {
+			pos := item.PosVec
+			inventoryRandomPlacement(30, &item.PosVec, &pos)
+			GetServer().CreateObjectAt(quiver, nil, pos)
+		}
+	}
+	return item
+}
+
+// RewardFromScriptMarker turns a reward marker that a script created after the quest level started into its reward, like
+// the markers of the map are when the level starts (opennox#665). The marker is deleted. It returns the reward, if any.
+// Markers created before (e.g. while the map scripts load) are left to the level start.
+func RewardFromScriptMarker(u *server.Object) *server.Object {
+	if !levelRewardsPlaced {
+		return nil
+	}
+	if orchestrationRewardMarker == 0 {
+		orchestrationRewardMarker = uint32(GetServer().S().Types.IndByID("RewardMarker"))
+		*memmap.PtrUint32(0x5D4594, 1568304) = uint32(GetServer().S().Types.IndByID("RewardMarkerPlus"))
+	}
+	if uint32(u.TypeInd) != orchestrationRewardMarker && uint32(u.TypeInd) != memmap.Uint32(0x5D4594, 1568304) {
+		return nil
+	}
+	item := rewardPlace(u, memmap.Uint32(0x587000, 202028))
+	GetServer().DelayedDelete(u)
+	return item
 }
 
 func orchestrationWalls() {

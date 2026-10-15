@@ -276,11 +276,7 @@ func ruleReadFile(path string, st *server.Settings2, list *legacyListNode, mode 
 }
 
 func ruleMapName(st *server.Settings2) string {
-	b := st.Field0[:8]
-	if i := bytes.IndexByte(b, 0); i >= 0 {
-		b = b[:i]
-	}
-	return string(b)
+	return mapNameField(&st.Field0[0])
 }
 
 func ruleLoad(st *server.Settings2, user string, list *legacyListNode, selection byte, flags uint16) byte {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -12,10 +13,12 @@ import (
 	"github.com/brutusmcforce/opennox/libs/console"
 	"github.com/brutusmcforce/opennox/libs/datapath"
 	"github.com/brutusmcforce/opennox/libs/ifs"
+	"github.com/brutusmcforce/opennox/libs/maps"
 	"github.com/brutusmcforce/opennox/libs/noxnet/netmsg"
 	"github.com/brutusmcforce/opennox/libs/platform"
 
 	"github.com/brutusmcforce/opennox/common/ntype"
+	"github.com/brutusmcforce/opennox/legacy/cnxz"
 )
 
 const (
@@ -210,31 +213,46 @@ func (s *serverMapSend) ReadMapFile() error {
 	if s.Active() != 0 {
 		s.ForceCopy()
 	}
+	// never send the previous map to clients that join this one
+	s.mapName = ""
+	s.currentData = nil
 	if mname == "" {
 		str := s.s.Strings().GetStringInFile("CompressFail", "mapsend.c")
 		s.s.Print(console.ColorRed, str)
 		return errors.New("compress fail: empty map name")
 	}
 	mname2 := s.s.CurrentMapYyy()
-	fname := datapath.Maps(mname2, mname2+".nxz")
-	f, err := ifs.Open(fname)
+	data, err := readMapForSend(mname2)
 	if err != nil {
 		str := s.s.Strings().GetStringInFile("CompressFail", "mapsend.c")
 		s.s.Print(console.ColorRed, str)
 		return fmt.Errorf("compress fail: %w", err)
 	}
-	defer f.Close()
-
 	s.mapName = mname
-	data, err := io.ReadAll(f)
-	if err != nil {
-		s.currentData = nil
-		str := s.s.Strings().GetStringInFile("CompressFail", "mapsend.c")
-		s.s.Print(console.ColorRed, str)
-		return fmt.Errorf("compress fail: %w", err)
-	}
 	s.currentData = data
 	return nil
+}
+
+// readMapForSend returns the compressed map file for clients. Maps that have no .nxz (many custom maps only have the
+// .map) are compressed, like the original game did for every map.
+func readMapForSend(name string) ([]byte, error) {
+	f, err := ifs.Open(datapath.Maps(name, name+".nxz"))
+	if err == nil {
+		defer func() { _ = f.Close() }()
+		return io.ReadAll(f)
+	} else if !os.IsNotExist(err) {
+		return nil, err
+	}
+	m, err := ifs.Open(datapath.Maps(name, name+maps.Ext))
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = m.Close() }()
+	raw, err := io.ReadAll(m)
+	if err != nil {
+		return nil, err
+	}
+	return cnxz.Compress(raw)
 }
 
 func (s *serverMapSend) Update() {

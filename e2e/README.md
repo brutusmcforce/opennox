@@ -27,7 +27,8 @@ A multiplayer test runs two instances on loopback, a host ([mp-host.yaml](./mp-h
 ([mp-client.yaml](./mp-client.yaml)) that finds the host through `NOX_E2E_SERVERS`, joins and leaves observation
 mode. Then they fight: the host brings the client's player next to its own (`action: gather`, like the `tp` cheat,
 because the arena is a maze) and both attack the nearest player (`action: attack`) for a few rounds. The test checks
-that each player lost health or was killed by the other (`action: players` logs the health on the host), and that a
+that each player lost health or was killed by the other (`action: players` logs the health on the host, and the
+other players a client can see), and that a
 kill was also announced to the client. Two processes don't share timing, so it checks the logs (join, leave, no panics) instead of
 comparing screens; both switch to real-time pace (`action: slow`) once networking starts:
 

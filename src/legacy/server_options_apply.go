@@ -30,12 +30,12 @@ func serverOptionsApply() int8 {
 		}
 		noxflags.SetGamePlay(4)
 	}
-	selected := alloc.GoString(&data[0])
+	selected := mapNameField(&data[0])
 	cycle := data[57] != 0
 	result := int8(data[57])
 	if cycle {
 		p := sessionSelectedMap()
-		selected = alloc.GoString(p)
+		selected = sessionSelectedMapName()
 		result = int8(memmap.PtrWord(unsafe.Pointer(p)))
 	}
 	if selected == "" {
@@ -58,7 +58,7 @@ func serverOptionsApply() int8 {
 	// Selection may alias record zero, overwritten by the settings copy above.
 	// Keep the comparison from before that copy, but read the live requested name.
 	if !cycle {
-		selected = alloc.GoString(&data[0])
+		selected = mapNameField(&data[0])
 	}
 	if different {
 		suffix := alloc.GoString(memmap.PtrUint8(0x587000, 131668))

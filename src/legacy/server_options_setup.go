@@ -50,7 +50,7 @@ func serverOptionsSetup(data []byte) int {
 				last = 10331
 			}
 			serverOptionsEnableRange(teams, 10330, last, false)
-			serverOptionsMapList(int(binary.LittleEndian.Uint16(data[52:])), alloc.GoString(&data[0]), false)
+			serverOptionsMapList(int(binary.LittleEndian.Uint16(data[52:])), mapNameField(&data[0]), false)
 		}
 		mode := binary.LittleEndian.Uint16(data[52:])
 		serverOptionsSetText(serverOptionsWindow(1046516), 16414, strconv.Itoa(int(uint16(Nox_xxx_servGamedataGet_40A020(mode)))), 0)
@@ -63,7 +63,7 @@ func serverOptionsSetup(data []byte) int {
 		uiWindowEnable(serverOptionsWindow(1046504), 1)
 		serverOptionsEnableRange(serverOptionsWindow(1046504), 10134, 10135, false)
 		serverOptionsChild(10141).SetHidden(true)
-		serverOptionsMapList(int(binary.LittleEndian.Uint16(data[52:])), alloc.GoString(&data[0]), false)
+		serverOptionsMapList(int(binary.LittleEndian.Uint16(data[52:])), mapNameField(&data[0]), false)
 		serverOptionsLimits(data)
 	}
 	if noxflags.HasGamePlay(2) {

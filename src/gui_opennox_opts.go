@@ -14,62 +14,52 @@ import (
 
 // OpenNox-specific options, shown in the advanced video options list (see gui_video_adv.go).
 //
-// Options with multiple values are shown as a check box with the current value in the label;
-// clicking it switches to the next value. Changes are saved to the config right away.
+// Options with a range of values are sliders over a list of choices.
+// Changes are saved to the config right away.
 
 var (
-	uiScaleChoices = []int{100, 125, 150, 200, 250, 300}
-	maxFPSChoices  = []int{30, 60, 120, 144, 165, 240}
+	uiScaleChoices = []int{100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400}
+	maxFPSChoices  = []int{30, 60, 75, 90, 100, 120, 144, 165, 180, 200, 240, 360}
 )
-
-// nextChoice returns the value that follows the current one in the list, wrapping around.
-func nextChoice(list []int, cur int) int {
-	for _, v := range list {
-		if v > cur {
-			return v
-		}
-	}
-	return list[0]
-}
 
 func openNoxVideoOpts(c *Client) []*videoOpt {
 	return []*videoOpt{
 		{
 			ID: 2060,
-			Label: func() string {
-				return fmt.Sprintf("UI Scale: %d%%", videoGetUIScale())
-			},
-			Get: func() bool { return videoGetUIScale() > 100 },
-			Toggle: func() {
-				videoSetUIScaleOpts(nextChoice(uiScaleChoices, videoGetUIScale()))
-				_ = writeConfig()
-				c.applyUIScaleInGame()
+			Slider: &videoSlider{
+				Name:    "UI Scale",
+				Choices: uiScaleChoices,
+				Get:     videoGetUIScale,
+				Set: func(v int) {
+					videoSetUIScaleOpts(v)
+					_ = writeConfig()
+					c.applyUIScaleInGame()
+				},
+				Format: func(v int) string { return fmt.Sprintf("%d%%", v) },
 			},
 		},
 		{
 			ID: 2061,
-			Label: func() string {
-				if c.interp.maxFPS <= int(noxServer.TickRate()) {
-					return "Frame Rate Limit: 30 (no smoothing)"
-				}
-				return fmt.Sprintf("Frame Rate Limit: %d", c.interp.maxFPS)
-			},
-			Get: func() bool { return c.interp.enabled() },
-			Toggle: func() {
-				v := nextChoice(maxFPSChoices, c.interp.maxFPS)
-				c.interp.setMaxFPS(v)
-				viper.Set(configVideoMaxFPS, v)
-				_ = writeConfig()
+			// 30 (the tick rate) draws no frames between the ticks
+			Slider: &videoSlider{
+				Name:    "Frame Rate Limit",
+				Choices: maxFPSChoices,
+				Get:     func() int { return c.interp.maxFPS },
+				Set: func(v int) {
+					c.interp.setMaxFPS(v)
+					viper.Set(configVideoMaxFPS, v)
+					_ = writeConfig()
+				},
 			},
 		},
 		{
 			ID: 2062,
 			Label: func() string {
-				return "Vertical Sync: " + viper.GetString(configVideoVSync)
+				return "Vertical Sync: " + vsyncMode()
 			},
-			Get: func() bool { return viper.GetString(configVideoVSync) != vsyncOff },
+			Get: func() bool { return vsyncMode() != vsyncOff },
 			Toggle: func() {
-				cur := viper.GetString(configVideoVSync)
+				cur := vsyncMode()
 				next := vsyncModes[0]
 				for i, m := range vsyncModes {
 					if m == cur {
@@ -107,14 +97,16 @@ func openNoxVideoOpts(c *Client) []*videoOpt {
 		},
 		{
 			ID: 2066,
-			Label: func() string {
-				return fmt.Sprintf("Map Opacity: %d%%", legacy.MinimapLargeOpacity)
-			},
-			Get: func() bool { return legacy.MinimapLargeOpacity < 100 },
-			Toggle: func() {
-				setLargeMapOpacity(nextChoice(largeMapOpacityChoices, legacy.MinimapLargeOpacity))
-				viper.Set(configLargeMapOpacity, legacy.MinimapLargeOpacity)
-				_ = writeConfig()
+			Slider: &videoSlider{
+				Name:    "Map Opacity",
+				Choices: largeMapOpacityChoices,
+				Get:     func() int { return legacy.MinimapLargeOpacity },
+				Set: func(v int) {
+					setLargeMapOpacity(v)
+					viper.Set(configLargeMapOpacity, legacy.MinimapLargeOpacity)
+					_ = writeConfig()
+				},
+				Format: func(v int) string { return fmt.Sprintf("%d%%", v) },
 			},
 		},
 	}

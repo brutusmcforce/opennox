@@ -50,7 +50,7 @@ func serverOptionsEvent(_ *gui.Window, event int, arg uintptr, value int) int {
 			}
 			name := serverOptionsMapToken(serverOptionsGetText(child, 16406, value))
 			data := serverOptionsCurrent()
-			alloc.StrCopyZero(data[:9], name)
+			mapNameSetField(&data[0], name)
 			ruleLoad((*server.Settings2)(unsafe.Pointer(&data[0])), "user.rul", nil, 7, binary.LittleEndian.Uint16(data[52:]))
 			serverOptionsSettingsLabels(data)
 			serverOptionsDirty(1)

@@ -87,13 +87,18 @@ type Streams struct {
 	GetMaxPlayers    func() int
 	OnDiscover       func(src, dst []byte) int
 	OnExtPacket      func(pc net.PacketConn, buf1 []byte, from netip.AddrPort)
-	KeyRand          func(min, max int) int
-	PacketDropRand   func(min, max int) int
-	PacketDrop       int
-	MaxPacketLoss    int
-	Responded        bool
-	Xor              bool
-	Debug            bool
+	// OnNATPacket handles the NAT traversal messages, which use the extension packet framing (see lobby.NATOp).
+	// It reports if the packet was one.
+	OnNATPacket func(pc net.PacketConn, b []byte, from netip.AddrPort) bool
+	// OnDial is called when a client opened its socket, before it sends the first packet to the server.
+	OnDial         func(pc net.PacketConn, addr netip.AddrPort)
+	KeyRand        func(min, max int) int
+	PacketDropRand func(min, max int) int
+	PacketDrop     int
+	MaxPacketLoss  int
+	Responded      bool
+	Xor            bool
+	Debug          bool
 }
 
 func (g *Streams) reset() {
@@ -134,6 +139,14 @@ func (g *Streams) StreamByPlayerInd(pind ntype.PlayerInd) netlib.Stream {
 
 func (g *Streams) HostStream() netlib.Stream {
 	return g.Host()
+}
+
+// ListenConn returns the socket of the listening server, if any.
+func (g *Streams) ListenConn() net.PacketConn {
+	if g.lis.Conn == nil {
+		return nil
+	}
+	return g.lis.pc
 }
 
 func (g *Streams) Host() *Conn {
@@ -356,6 +369,9 @@ func (g *Streams) recvRaw(pc net.PacketConn, buf []byte) (int, netip.AddrPort, e
 		return n, src, err
 	}
 	if n >= 2 && binary.LittleEndian.Uint16(buf[:2]) == 0xF13A { // extension packet code
+		if g.OnNATPacket != nil && g.OnNATPacket(pc, buf[:n], src) {
+			return 0, src, nil
+		}
 		g.OnExtPacket(pc, buf, src)
 		return 0, src, nil
 	}

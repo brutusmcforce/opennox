@@ -128,7 +128,9 @@ func nox_client_joinGame() error {
 	addr := legacy.Nox_client_getServerAddr_43B300()
 	port := legacy.ClientGetServerPort()
 	netstr.Log.Printf("join server: %s:%d", addr.String(), port)
-	_, err := sendJoinGame(netip.AddrPortFrom(addr, uint16(port)), buf)
+	target := netip.AddrPortFrom(addr, uint16(port))
+	natClientJoinStart(target, buf)
+	_, err := sendJoinGame(target, buf)
 	return err
 }
 

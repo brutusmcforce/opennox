@@ -115,9 +115,12 @@ func (c *clientMapDownload) onMapDownloadPart(ind uint, data []byte) {
 	}
 	c.ndl.WritePart(ind, data)
 	if c.ndl.Complete() {
-		c.ndl.Reset() // closes the map file
+		err := c.ndl.Finish()
+		if err != nil {
+			c.log.Error("cannot save the downloaded map", "err", err)
+		}
 		c.setDownloading(false)
-		c.setDownloadOK(true)
+		c.setDownloadOK(err == nil)
 		c.setProgress(100)
 		c.iface.sendReceivedMap()
 	} else {

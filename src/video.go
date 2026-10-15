@@ -69,7 +69,7 @@ func init() {
 	noxConsole.Register(&console.Command{
 		Token: "ui_scale",
 		Help:  "ui_scale [percent]: get or set UI scale in percent (100-400), applied on the next game start",
-		Flags: console.ClientServer,
+		Flags: console.ClientServer | console.NoDedicated,
 		Func: func(ctx context.Context, c *console.Console, tokens []string) bool {
 			if len(tokens) == 0 {
 				c.Printf(console.ColorLightYellow, "ui_scale = %d%%", videoGetUIScale())
@@ -89,7 +89,7 @@ func init() {
 	noxConsole.Register(&console.Command{
 		Token:  "gamma",
 		HelpID: "gammahelp",
-		Flags:  console.ClientServer,
+		Flags:  console.ClientServer | console.NoDedicated,
 		Func: func(ctx context.Context, c *console.Console, tokens []string) bool {
 			if len(tokens) == 0 {
 				c.Printf(console.ColorLightYellow, "gamma = %d", getGammaSlider())

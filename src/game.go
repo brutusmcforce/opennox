@@ -461,6 +461,7 @@ func (s *Server) maybeRegisterGameOnline() {
 		return
 	}
 	info := s.getGameInfo()
+	s.natHostStart()
 	if s.srvReg.srv == nil {
 		s.srvReg.cur = info
 		s.srvReg.srv = discover.NewServer(info.GameInfo())
@@ -474,6 +475,7 @@ func (s *Server) maybeRegisterGameOnline() {
 }
 
 func (s *Server) maybeStopRegister() {
+	s.natHostStop()
 	if s.srvReg.srv != nil {
 		s.srvReg.srv.Close()
 		s.srvReg.srv = nil
@@ -656,7 +658,7 @@ func execConsoleCmdAuthed(ctx context.Context, cmd string) bool {
 	} else {
 		ctx = console.AsClient(ctx)
 	}
-	if noxflags.HasEngine(noxflags.EngineNoRendering) {
+	if isDedicatedServer || noxflags.HasEngine(noxflags.EngineNoRendering) {
 		ctx = console.AsDedicated(ctx)
 	}
 	return noxConsole.Exec(ctx, cmd)
@@ -680,7 +682,7 @@ func execServerCmd(cmd string) {
 	}
 	ctx := context.Background()
 	ctx = console.AsServer(ctx)
-	if noxflags.HasEngine(noxflags.EngineNoRendering) {
+	if isDedicatedServer || noxflags.HasEngine(noxflags.EngineNoRendering) {
 		ctx = console.AsDedicated(ctx)
 	}
 	ctx = console.WithCheats(ctx)
@@ -1073,6 +1075,7 @@ func (s *Server) nox_xxx_mapExitAndCheckNext_4D1860_server() error {
 		noxClient.Nox_client_setCursorType(gui.CursorBusy)
 	}
 	legacy.Sub_4D22B0()
+	legacy.LevelRewardsPending()
 	s.Nox_xxx_netMsgFadeBegin_4D9800(false, true)
 	s.scriptOnEvent(script.EventMapExit)
 	v2 := s.getServerMap()

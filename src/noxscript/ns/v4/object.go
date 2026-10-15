@@ -214,6 +214,15 @@ type Obj interface {
 	IsLocked() bool
 	// Lock or unlock the object.
 	Lock(lock bool)
+	// IsHidden checks if object is currently hidden from players.
+	IsHidden() bool
+	// Hide or show the object to players.
+	//
+	// Hidden objects are not sent to players' clients, so they disappear from the screen and the minimap.
+	// A player still sees their own unit. Hiding only affects what players see:
+	// the object still collides, and monsters still see it.
+	// The state is not kept in saved games.
+	Hide(hide bool)
 
 	// Class returns object class.
 	Class() object.Class

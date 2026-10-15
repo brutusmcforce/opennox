@@ -183,11 +183,11 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 				return fmt.Errorf("cannot create dir for map file %q: %w", path, err)
 			}
 			err := func() error {
-				w, err := ifs.Create(path)
+				w, err := createAtomic(path)
 				if err != nil {
 					return err
 				}
-				defer w.Close()
+				defer w.Abort() // nothing after Commit
 
 				r, err := zf.Open(f.Name)
 				if err != nil {
@@ -203,7 +203,7 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 				if budget < 0 {
 					return fmt.Errorf("map archive unpacks to more than %d bytes", mapUnpackLimit)
 				}
-				return w.Close()
+				return w.Commit()
 			}()
 			if err != nil {
 				return fmt.Errorf("cannot write map file %q: %w", path, err)
@@ -215,15 +215,15 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 			return ErrAPIUnsupported
 		}
 		// regular map files served directly
-		f, err := ifs.Create(filepath.Join(dest, name+Ext))
+		f, err := createAtomic(filepath.Join(dest, name+Ext))
 		if err != nil {
 			return fmt.Errorf("cannot create dest map file: %w", err)
 		}
-		defer f.Close()
+		defer f.Abort() // nothing after Commit
 		_, err = io.Copy(f, r)
 		if err != nil {
 			return fmt.Errorf("cannot write dest map file: %w", err)
 		}
-		return f.Close()
+		return f.Commit()
 	}
 }
