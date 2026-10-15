@@ -36,6 +36,7 @@ import "github.com/brutusmcforce/opennox/libs/client/keybind"
 // something,
 //                                         according to USB doc, so probably it doesn't need mapping here)
 
+// SDL3 has the same scancodes as SDL2 (USB HID usage IDs).
 // maps SDL2 scancodes to directinput keynums/scancodes - dinput_key = scanCodeToKeyNum[(int)your_sdl2_scancode];
 var scanCodeToKeyNum = []keybind.Key{
 	0x0,  //	SDL_SCANCODE_UNKNOWN = 0, => 0 should also work for dinput codes as "not assigned/unknown"

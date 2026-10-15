@@ -8,8 +8,21 @@ import (
 	"github.com/brutusmcforce/opennox/libs/common"
 )
 
+func TestFindUserMac(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("macOS paths")
+	}
+	t.Setenv("NOX_E2E", "")
+	t.Setenv("NOX_E2E_RECORD", "")
+	t.Setenv("HOME", "/Users/user")
+	t.Setenv("XDG_DATA_HOME", "/xdg/data") // not used on macOS
+	if got, want := FindUser(), filepath.Join("/Users/user", "Library", "Application Support", "OpenNox"); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
 func TestFindUser(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 		t.Skip("uses Linux paths")
 	}
 	t.Setenv("NOX_E2E", "")

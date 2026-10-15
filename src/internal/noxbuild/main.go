@@ -70,21 +70,18 @@ func buildTarget(target string) error {
 		return fmt.Errorf("unsupported target: %q", target)
 	case BinServer, "server":
 		return goBuild("opennox", BinServer, &buildOpts{
-			CGO: true, Tags: []string{"server"},
+			Tags: []string{"server"},
 		})
 	case BinOpenNox, "client", "client-hd", "hd":
 		return goBuild("opennox", BinOpenNox, &buildOpts{
-			CGO: true, GUI: true,
+			GUI: true,
 		})
 	case BinOpenNoxDebug, "client-debug", "client-hd-debug":
-		return goBuild("opennox", BinOpenNoxDebug, &buildOpts{
-			CGO: true,
-		})
+		return goBuild("opennox", BinOpenNoxDebug, &buildOpts{})
 	}
 }
 
 type buildOpts struct {
-	CGO  bool
 	GUI  bool
 	Tags []string
 }
@@ -98,7 +95,6 @@ func goBuild(cmd string, bin string, opts *buildOpts) error {
 		}
 	}
 	bin = filepath.Join(*fOut, bin)
-	isCross := goos != runtime.GOOS
 	if opts == nil {
 		opts = &buildOpts{}
 	}
@@ -150,24 +146,11 @@ func goBuild(cmd string, bin string, opts *buildOpts) error {
 	envs = append(envs,
 		"GOOS="+goos,
 	)
-	if opts.CGO {
-		envs = append(envs,
-			"GOARCH=amd64",
-			"CGO_ENABLED=1",
-			`CGO_CFLAGS_ALLOW=(-fshort-wchar)|(-fno-strict-aliasing)|(-fno-strict-overflow)`,
-		)
-		if isCross {
-			switch goos {
-			case "windows":
-				envs = append(envs,
-					"CXX_FOR_TARGET=x86_64-w64-mingw32-g++",
-					"CC_FOR_TARGET=x86_64-w64-mingw32-gcc",
-					"CC=x86_64-w64-mingw32-gcc",
-				)
-			}
-		}
-	} else {
-		envs = append(envs, "CGO_ENABLED=0")
+	// No C compiler is needed: SDL3 and OpenAL are loaded at runtime (see libs/dynlib), so every target
+	// cross-compiles from any system. The release builds are 64-bit x86.
+	envs = append(envs, "CGO_ENABLED=0")
+	if os.Getenv("GOARCH") == "" {
+		envs = append(envs, "GOARCH=amd64")
 	}
 	if len(opts.Tags) != 0 {
 		args = append(args, "-tags", strings.Join(opts.Tags, ","))

@@ -10,12 +10,12 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/veandco/go-sdl2/sdl"
+	"github.com/brutusmcforce/opennox/libs/gl"
 
 	"github.com/brutusmcforce/opennox/client/noxrender"
 	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/libs/noximage"
+	"github.com/brutusmcforce/opennox/libs/sdl"
 )
 
 // The benchmarks need an OpenGL 3.3 context, so they create a hidden SDL window.

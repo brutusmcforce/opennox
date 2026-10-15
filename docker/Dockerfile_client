@@ -5,11 +5,6 @@ ARG GID=1000
 ARG GIT_SHA=""
 ARG GIT_TAG=""
 
-RUN apt-get update && \
-    apt-get install -y \
-                        gcc \
-                        libsdl2-dev libopenal-dev
-
 RUN groupadd --gid $GID runner && \
     useradd --home-dir /home/runner --no-create-home --gid runner --uid $UID --shell /bin/sh runner
 

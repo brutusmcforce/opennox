@@ -2,7 +2,7 @@
 
 This is the main build procedure for Windows version.
 
-Note that this build mode requires GCC for Windows (MinGW), since MSVC compiler cannot be used with Go.
+No C compiler is needed: OpenNox loads SDL3 and OpenAL when it starts.
 
 For cross-compilation from Linux to Windows (including WSL), see [this page](./build-windows-on-linux.md).
 
@@ -12,18 +12,6 @@ See [official docs](https://go.dev/dl/).
 
 To check that installation was successful, open `cmd.exe` and write `go version`.
 It should print the version you installed.
-
-## Installing MSYS2, MinGW and other dependencies
-
-1. Install [MSYS2](https://www.msys2.org/).
-2. Run MSYS2 shell (search for `MSYS2 MSYS` shortcut in Start menu).
-3. Update default packages: `pacman -Syu`. Confirm by typing `Y`, when asked. 
-   If it asks for a restart and closes after the update, reopen the shell and update again.
-4. Install dependencies: `pacman -S --needed git base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-SDL2 mingw-w64-x86_64-openal`
-   (confirm by selection with Enter, then confirms installation with typing `Y`).
-5. Add Go compiler to MSYS2 `PATH` variable: `echo 'export PATH="/c/Program Files/Go/bin/:$PATH"' >> ~/.bashrc`
-6. Restart the shell again to apply `PATH` changes.
-7. Check if Go compiler is detected: `go version`.
 
 ## Downloading the project
 
@@ -48,74 +36,31 @@ We will assume the project is unpacked to `C:\Dev\opennox` for this guide. Prefe
 
 ## Building
 
-Run MINGW64 shell (search for `MSYS2 MINGW64` or `MSYS2 MinGW x64` shortcut in Start menu).
+Open `cmd.exe` (or PowerShell). Assuming OpenNox was downloaded into `C:\Dev\opennox`:
 
-NOTE: This is a different shell shortcut, not the one used for updates!
-
-Assuming OpenNox was downloaded into `C:\Dev\opennox`:
-
-```bash
-cd /c/Dev/opennox/src
+```bat
+cd C:\Dev\opennox\src
 go run ./internal/noxbuild
 ```
 
 You should see that the project dependencies are being downloaded and compiled.
+Build may take a while, especially when building for the first time.
 
-During this process you way see a lot of scary warnings. Don't panic! This is normal.
+Once finished, it should produce `opennox.exe`, `opennox-server.exe` and `opennox-debug.exe` in `C:\Dev\opennox\src`.
 
-Build may take a while, especially when building for the first time. Be patient.
-
-If you hit issues, see troubleshooting section below.
-
-Once finished, it should produce `opennox.exe` and `opennox-server.exe` binaries in `C:\Dev\opennox\src`.
-
-### Troubleshooting
-
-#### gcc not found
-
-Make sure you start the `MSYS2 MINGW64` shell, not `MSYS2 MSYS` (or any other).
-
-#### Cannot find OpenAL32
-
-1. Go to MSYS2 installation directory (`C:\msys64` by default).
-2. Open folder `mingw64\lib`.
-3. Find files `libopenal.a` and `libopenal.dll.a`.
-4. Make a copy of both files with a new names: `libopenal32.a` and `libopenal32.dll.a`.
-5. Rebuild the project.
-
-#### Following builds are still slow
-
-First, `noxbuild` builds all binaries: legacy, HD and server.
-
-You can set it to build only one of them. For example, for HD version only:
-
-```
-go run ./internal/noxbuild client-hd
-```
-
-For legacy only:
-
-```
-go run ./internal/noxbuild client
-```
-
-This should make it much faster, but it may still take a few minutes, unfortunately.
+To build only the game: `go run ./internal/noxbuild client`.
 
 ## Running
 
-You also need a few DLLs for these binaries to work.
+The game loads two DLLs, which must be next to `opennox.exe`:
 
-1. Create new folder for OpenNox, let's say `C:\Games\OpenNox`.
-2. Copy following binaries from `C:\Dev\opennox\src`:
-   - `opennox.exe`
-   - `opennox-server.exe`
-3. Copy following DLLs from `C:\msys64\mingw64\bin`:
-   - `libgcc_s_seh-1.dll`
-   - `libopenal-1.dll`
-   - `libstdc++-6.dll`
-   - `libwinpthread-1.dll`
-   - `SDL2.dll`
-4. Run `opennox.exe`.
-   - If it complains about more DDLs - copy them from MSYS.
-   - If it says that Nox directory not found - it works!
-     Check [this guide](https://mod.io/g/nox/r/how-to-install-opennox-windows) to set Nox game path.
+- `SDL3.dll`: from the SDL3 release for Windows (`SDL3-<version>-win32-x64.zip` on the [SDL releases page](https://github.com/libsdl-org/SDL/releases)).
+- `OpenAL32.dll`: OpenAL Soft's `bin/Win64/soft_oal.dll` from the [OpenAL Soft releases](https://github.com/kcat/openal-soft/releases), renamed to `OpenAL32.dll`.
+
+Both are also in every OpenNox release for Windows.
+
+1. Create a new folder for OpenNox, let's say `C:\Games\OpenNox`.
+2. Copy `opennox.exe` and `opennox-server.exe` from `C:\Dev\opennox\src`, and the two DLLs.
+3. Run `opennox.exe`.
+   - If it says that the Nox directory was not found, it works!
+     Check [this guide](https://mod.io/g/nox/r/how-to-install-opennox-windows) to set the Nox game path.

@@ -1,7 +1,0 @@
-OpenAL bindings for Go
-======================
-
-OpenNox uses this package for audio. It requires the OpenAL headers and library (e.g. openal-soft).
-
-History: forked by Tim Shannon from https://github.com/phf/go-openal as github.com/timshannon/go-openal,
-then by OpenNox as github.com/opennox/go-openal. It is now maintained here as part of OpenNox.

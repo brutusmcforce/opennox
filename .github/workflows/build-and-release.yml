@@ -20,7 +20,7 @@ env:
 
 jobs:
   hybrid_docker_mingw:
-    # Cross compile Windows binaries with MinGW in Debian, see scripts/ci/build-windows.sh
+    # Cross compile Windows binaries in Debian (no C compiler needed), see scripts/ci/build-windows.sh
     name: Cross compile for Windows
     runs-on: ubuntu-latest
     steps:
@@ -83,6 +83,39 @@ jobs:
           path: |
             build/opennox
             build/opennox-server
+          if-no-files-found: error
+          retention-days: 1
+
+  macos:
+    # Universal (Apple Silicon and Intel) OpenNox.app with SDL3, see scripts/ci/build-macos.sh
+    name: Build for macOS
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: src/go.mod
+          cache-dependency-path: src/go.sum
+
+      - name: Get dependency cache
+        uses: actions/cache@v4
+        with:
+          path: gocache/macos-deps
+          key: macos-deps-v1-${{ hashFiles('scripts/ci/build-macos.sh') }}
+
+      - name: Build
+        run: scripts/ci/build-macos.sh
+
+      - uses: actions/upload-artifact@v4
+        name: Upload artifacts
+        if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/dev') || (github.ref == 'refs/heads/ci_tests')
+        with:
+          name: opennox-release-macos
+          path: build/OpenNox-macos.zip
           if-no-files-found: error
           retention-days: 1
 
@@ -236,7 +269,7 @@ jobs:
           name: opennox-linux
           path: build
 
-      # bundles SDL2 and OpenAL from Debian 12, the same system the binaries are built on
+      # bundles SDL3 (built from source) and OpenAL from Debian 12, see scripts/appimage/build.sh
       - name: Build the AppImage
         run: docker run --rm --platform linux/amd64 -v "$PWD:/w" -w /w debian:bookworm scripts/appimage/build.sh
 
@@ -306,7 +339,7 @@ jobs:
     permissions:
       contents: write # create the release
     if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/dev')
-    needs: [release_repackage_linux_appimage, release_repackage_linux_gzip, release_repackage_win]
+    needs: [release_repackage_linux_appimage, release_repackage_linux_gzip, release_repackage_win, macos]
     # pushes to dev replace the same pre-release, so they must not run at the same time
     concurrency:
       group: release-${{ github.ref }}
@@ -334,6 +367,17 @@ jobs:
         with:
           name: opennox-release-win
           path: /tmp/release-tmp/
+
+      - uses: actions/download-artifact@v4
+        name: Preparing macOS (Zip archive) file for release.
+        with:
+          name: opennox-release-macos
+          path: /tmp/release-tmp/
+
+      - name: Name the macOS archive after the version
+        run: |
+          cd /tmp/release-tmp
+          mv OpenNox-macos.zip "OpenNox-macos-${GITHUB_REF_NAME//\//-}.zip"
 
       - name: Releasing prepared files.
         if: startsWith(github.ref, 'refs/tags/')

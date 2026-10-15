@@ -1,55 +1,27 @@
 # Building for Windows on Linux
 
-This is the main build procedure for Windows version cross-compiled on Linux.
+This is the main build procedure for the Windows version cross-compiled on Linux.
+No C compiler is needed: OpenNox loads SDL3 and OpenAL when it starts.
 
 For building on Windows, see [this page](./build-windows.md).
 
 ## Installing Go compiler
 
-### Fastest way
-
-```
-sudo snap install --classic go
-```
-
-### Longer way
-
-See [official docs](https://golang.org/doc/install).
-
-## Installing C cross-compiler
-
-```
-sudo apt update
-sudo apt install gcc-mingw-w64-x86-64
-```
-
-## Installing other dependencies
-
-### SDL for MinGW
-
-```
-cd /tmp
-curl -so ./sdl2.tar.gz https://www.libsdl.org/release/SDL2-devel-2.0.14-mingw.tar.gz
-tar -xzf ./sdl2.tar.gz
-sudo mv ./SDL2-2.0.14/x86_64-w64-mingw32/include/* /usr/x86_64-w64-mingw32/include/
-sudo mv ./SDL2-2.0.14/x86_64-w64-mingw32/lib/* /usr/x86_64-w64-mingw32/lib/
-```
-
-### OpenAL
-
-```
-cd /tmp
-curl -so openal.zip https://openal-soft.org/openal-binaries/openal-soft-1.21.1-bin.zip
-unzip ./openal.zip
-sudo mv ./openal-soft-1.21.1-bin/include/* /usr/x86_64-w64-mingw32/include/
-sudo mv ./openal-soft-1.21.1-bin/libs/Win64/* /usr/x86_64-w64-mingw32/lib/
-sudo ln -s ./libOpenAL32.dll.a /usr/x86_64-w64-mingw32/lib/libOpenAL.dll.a
-```
+See the [official docs](https://go.dev/doc/install). Go 1.25 or newer is needed.
 
 ## Building
 
-```
-make build-client-win
+```bash
+cd src
+go run ./internal/noxbuild --os windows
 ```
 
-This should produce the `opennox.exe` binary.
+This should produce `opennox.exe`, `opennox-server.exe` and `opennox-debug.exe`.
+
+`make build-client-win` builds only `opennox.exe`.
+
+## Running
+
+Put `SDL3.dll` and `OpenAL32.dll` next to the executables, see [building on Windows](./build-windows.md#running).
+
+The release build does the same in a container: `scripts/ci/build-windows.sh` downloads the DLLs and checks them.

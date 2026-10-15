@@ -203,9 +203,12 @@ func runArgs(args []string, loopFunc func() error) (gerr error) {
 		if path == "" {
 			err := errors.New("cannot find Nox data dir")
 			datapath.Log.Println(err)
-			if runtime.GOOS == "windows" {
+			switch runtime.GOOS {
+			case "windows":
 				errorMessage("Nox game data directory not found. Please install Nox from Origin or GoG.\nIf the problem persists, please check https://opennox.github.io/opennox-docs/opennox/install/windows/index.html")
-			} else {
+			case "darwin":
+				errorMessage("Nox game data directory not found. Please copy the Nox game files (from GoG) to a folder named Nox in your home folder or in ~/Library/Application Support.")
+			default:
 				errorMessage("Nox game data directory not found. Please install Nox from GoG (via Lutris or Heroic).\nIf the problem persists, please check https://opennox.github.io/opennox-docs/opennox/install/linux/index.html")
 			}
 			return err

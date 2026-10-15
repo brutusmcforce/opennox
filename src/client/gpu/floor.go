@@ -4,7 +4,7 @@ import (
 	"image"
 	"unsafe"
 
-	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/brutusmcforce/opennox/libs/gl"
 
 	"github.com/brutusmcforce/opennox/client/noxrender"
 )

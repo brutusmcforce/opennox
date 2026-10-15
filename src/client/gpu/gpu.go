@@ -21,7 +21,7 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/brutusmcforce/opennox/libs/gl"
 
 	noxcolor "github.com/brutusmcforce/opennox/libs/color"
 	"github.com/brutusmcforce/opennox/libs/noximage"

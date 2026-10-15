@@ -4,9 +4,8 @@ import (
 	"image"
 	"strings"
 
-	"github.com/veandco/go-sdl2/sdl"
-
 	"github.com/brutusmcforce/opennox/libs/client/seat"
+	"github.com/brutusmcforce/opennox/libs/sdl"
 	"github.com/brutusmcforce/opennox/libs/types"
 )
 
@@ -26,9 +25,9 @@ func (win *Window) SetTextInput(enable bool) {
 	}
 	win.textInp = enable
 	if enable {
-		sdl.StartTextInput()
+		win.win.StartTextInput()
 	} else {
-		sdl.StopTextInput()
+		win.win.StopTextInput()
 	}
 }
 
@@ -181,8 +180,15 @@ func (win *Window) processMotionEvent(ev *sdl.MouseMotionEvent) {
 }
 
 func (win *Window) processWheelEvent(ev *sdl.MouseWheelEvent) {
+	// a mouse wheel step is 1, touchpads scroll in fractions: report whole steps
+	win.wheel += ev.Y
+	n := int(win.wheel)
+	if n == 0 {
+		return
+	}
+	win.wheel -= float32(n)
 	win.inputEvent(&seat.MouseWheelEvent{
-		Wheel: int(ev.Y),
+		Wheel: n,
 	})
 }
 
@@ -237,14 +243,13 @@ func (win *Window) processGamepadAxisEvent(ev *sdl.ControllerAxisEvent) {
 func (win *Window) processGamepadDeviceEvent(ev *sdl.ControllerDeviceEvent) {
 	switch ev.Type {
 	case sdl.CONTROLLERDEVICEADDED:
-		// Which is the device index here
-		ind := int(ev.Which)
-		if !sdl.IsGameController(ind) {
+		// Which is the joystick instance ID here (SDL2 had the device index)
+		if !sdl.IsGameController(ev.Which) {
 			return
 		}
-		ctrl := sdl.GameControllerOpen(ind)
+		ctrl := sdl.GameControllerOpen(ev.Which)
 		if ctrl == nil {
-			win.log.Warn("cannot open game controller", "index", ind, "err", sdl.GetError())
+			win.log.Warn("cannot open game controller", "id", ev.Which, "err", sdl.GetError())
 			return
 		}
 		id := ctrl.Joystick().InstanceID()

@@ -6,12 +6,11 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/veandco/go-sdl2/sdl"
-
 	"github.com/brutusmcforce/opennox/libs/client/seat"
 	"github.com/brutusmcforce/opennox/libs/client/seat/opengl"
 	"github.com/brutusmcforce/opennox/libs/env"
 	noxlog "github.com/brutusmcforce/opennox/libs/log"
+	"github.com/brutusmcforce/opennox/libs/sdl"
 )
 
 var (
@@ -23,13 +22,11 @@ var _ seat.Seat = &Window{}
 // New creates a new SDL window which implements a Seat interface.
 func New(log *slog.Logger, title string, sz image.Point) (*Window, error) {
 	log = noxlog.WithSystem(log, "sdl")
-	// That hint won't work if it is called after sdl.Init
-	sdl.SetHint(sdl.HINT_WINDOWS_DPI_AWARENESS, "permonitorv2")
+	// SDL3 is per-monitor DPI aware on Windows by default.
 	// TODO: if we ever decide to use multiple windows, this will need to be moved elsewhere; same for sdl.Quit
-	if err := sdl.Init(sdl.INIT_VIDEO | sdl.INIT_TIMER); err != nil {
+	if err := sdl.Init(sdl.INIT_VIDEO); err != nil {
 		return nil, fmt.Errorf("SDL Initialization failed: %w", err)
 	}
-	sdl.SetHint(sdl.HINT_RENDER_SCALE_QUALITY, "1")
 	if err := sdl.GLSetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3); err != nil {
 		return nil, fmt.Errorf("cannot set OpenGL version: %w", err)
 	}
@@ -49,11 +46,11 @@ func New(log *slog.Logger, title string, sz image.Point) (*Window, error) {
 		return nil, fmt.Errorf("cannot set OpenGL attribute: %w", err)
 	}
 
-	var flags sdl.WindowFlags = sdl.WINDOW_RESIZABLE | sdl.WINDOW_OPENGL | sdl.WINDOW_ALLOW_HIGHDPI
+	flags := sdl.WINDOW_RESIZABLE | sdl.WINDOW_OPENGL | sdl.WINDOW_HIGH_PIXEL_DENSITY
 	if env.IsE2E() {
 		// E2E tests compare screenshots, so the size in pixels must not depend on the display scale
 		// and the window must not be resized by the window manager
-		flags &^= sdl.WINDOW_ALLOW_HIGHDPI | sdl.WINDOW_RESIZABLE
+		flags &^= sdl.WINDOW_HIGH_PIXEL_DENSITY | sdl.WINDOW_RESIZABLE
 	}
 	win, err := sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, int32(sz.X), int32(sz.Y), flags)
 	if err != nil {
@@ -72,7 +69,7 @@ func New(log *slog.Logger, title string, sz image.Point) (*Window, error) {
 	}
 	// game controllers: SDL reports the connected ones as added devices; E2E tests inject their own events
 	if !env.IsE2E() {
-		if err := sdl.InitSubSystem(sdl.INIT_GAMECONTROLLER); err != nil {
+		if err := sdl.InitSubSystem(sdl.INIT_GAMEPAD); err != nil {
 			log.Warn("game controllers are not available", "err", err)
 		}
 	}
@@ -92,6 +89,7 @@ type Window struct {
 	onResize []func(sz image.Point)
 	onInput  []func(ev seat.InputEvent)
 	pads     map[sdl.JoystickID]*sdl.GameController
+	wheel    float32 // fraction of a wheel step not reported yet (touchpads scroll in fractions)
 }
 
 func (win *Window) Close() error {
@@ -198,7 +196,9 @@ func (win *Window) SetScreenMode(mode seat.ScreenMode) {
 		win.win.SetResizable(false)
 		win.win.SetBordered(false)
 		win.setSize(win.ScreenMaxSize())
-		win.win.SetFullscreen(uint32(sdl.WINDOW_FULLSCREEN_DESKTOP))
+		if err := win.win.SetFullscreen(1); err != nil { // desktop fullscreen
+			win.log.Warn("cannot switch to fullscreen", "err", err)
+		}
 		// keep the cursor in the window, e.g. when there are multiple monitors
 		win.win.SetGrab(true)
 	case seat.Borderless:

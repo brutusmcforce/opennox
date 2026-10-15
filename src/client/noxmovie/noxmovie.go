@@ -15,7 +15,7 @@ import (
 
 	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
 
-	"github.com/brutusmcforce/opennox/go-openal/openal"
+	"github.com/brutusmcforce/opennox/libs/openal"
 	"github.com/brutusmcforce/opennox/vqa-decode/movies"
 	"github.com/youpy/go-wav"
 )
@@ -287,6 +287,13 @@ loop:
 	for {
 		// Process input events.
 		player.seat.InputTick()
+		// A key may have closed the player, which released the audio source. Check it before the select below:
+		// it picks randomly when a frame is ready too, and the loop would then use the released source.
+		select {
+		case <-player.stop:
+			break loop
+		default:
+		}
 
 		var nextFrame *Frame
 		// Run until movie player tells us to stop.

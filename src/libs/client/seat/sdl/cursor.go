@@ -6,10 +6,9 @@ import (
 	"image"
 	"image/draw"
 
-	"github.com/veandco/go-sdl2/sdl"
-
 	"github.com/brutusmcforce/opennox/libs/client/seat"
 	"github.com/brutusmcforce/opennox/libs/env"
+	"github.com/brutusmcforce/opennox/libs/sdl"
 )
 
 var _ seat.CursorScreen = &Window{}
@@ -32,7 +31,7 @@ func (win *Window) NewCursor(img image.Image, hot image.Point) (seat.Cursor, err
 		return nil, errors.New("empty cursor image")
 	}
 	// ABGR8888 is R, G, B, A in memory on little endian, same as NRGBA
-	surf, err := sdl.CreateRGBSurfaceWithFormat(0, int32(b.Dx()), int32(b.Dy()), 32, uint32(sdl.PIXELFORMAT_ABGR8888))
+	surf, err := sdl.CreateSurface(int32(b.Dx()), int32(b.Dy()), sdl.PIXELFORMAT_ABGR8888)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create cursor surface: %w", err)
 	}
@@ -67,9 +66,5 @@ func (win *Window) updateCursor() {
 		sdl.SetCursor(sdl.GetDefaultCursor())
 		show = true
 	}
-	if show {
-		sdl.ShowCursor(sdl.ENABLE)
-	} else {
-		sdl.ShowCursor(sdl.DISABLE)
-	}
+	_ = sdl.ShowCursor(show)
 }

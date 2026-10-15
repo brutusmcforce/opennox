@@ -2,7 +2,8 @@
 # Builds build/opennox-bundle-x86_64.AppImage from build/opennox and build/opennox-server.
 # Runs in a 64-bit (amd64) Debian container from the repository root, see .github/workflows/build-and-release.yml:
 #   docker run --rm --platform linux/amd64 -v "$PWD:/w" -w /w debian:bookworm scripts/appimage/build.sh
-# The AppImage bundles SDL2, OpenAL and their dependencies from Debian 12, the same system the binaries are built on.
+# The AppImage bundles SDL3 (built from source here: Debian 12 has no SDL3 package, and a newer Debian would raise the
+# glibc version the AppImage needs) and OpenAL from Debian 12.
 set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 BUILD="$ROOT/build"
@@ -14,6 +15,8 @@ APPIMAGETOOL_VERSION=1.9.1
 APPIMAGETOOL_SHA256=ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
 RUNTIME_VERSION=20251108
 RUNTIME_SHA256=2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d
+SDL3_VERSION=3.4.18
+SDL3_SHA256=9c75cf16330322c217dedd2e0609f1124f1b54b8633e763467b4684d0f4334a3
 
 # paths relative to the XDG directories
 OPENNOX_CFG="opennox/opennox.yml"
@@ -21,7 +24,12 @@ OPENNOX_DATA="opennox"
 OPENNOX_STATEFILES="opennox"
 
 apt-get update -qq
-apt-get install -y -qq --no-install-recommends ca-certificates curl file libsdl2-2.0-0 libopenal1 >/dev/null
+# SDL3 is built with its X11 and Wayland backends; it loads their libraries at runtime, so it works on systems
+# with either. OpenNox doesn't use SDL's audio, renderer or GPU API.
+apt-get install -y -qq --no-install-recommends ca-certificates curl file libopenal1 \
+	cmake ninja-build gcc libc6-dev pkg-config \
+	libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev libxss-dev libxtst-dev libxkbcommon-dev \
+	libwayland-dev libwayland-bin wayland-protocols libdecor-0-dev libegl-dev libgl-dev libdbus-1-dev libudev-dev >/dev/null
 
 # download <url> <sha256> <file>: downloads a file once and checks it
 download() {
@@ -40,6 +48,25 @@ download "https://github.com/AppImage/type2-runtime/releases/download/$RUNTIME_V
 	"$RUNTIME_SHA256" "$RUNTIME"
 chmod +x "$TOOL"
 
+SDL3_LIB="$CACHE/sdl3-$SDL3_VERSION/libSDL3.so.0"
+if [ ! -f "$SDL3_LIB" ]; then
+	echo "Building SDL3 $SDL3_VERSION..."
+	download "https://github.com/libsdl-org/SDL/releases/download/release-$SDL3_VERSION/SDL3-$SDL3_VERSION.tar.gz" \
+		"$SDL3_SHA256" "$CACHE/SDL3-$SDL3_VERSION.tar.gz"
+	src="$CACHE/sdl3-src"
+	rm -rf "$src"
+	mkdir -p "$src"
+	tar -xzf "$CACHE/SDL3-$SDL3_VERSION.tar.gz" -C "$src" --strip-components=1
+	cmake -S "$src" -B "$src/build" -G Ninja -DCMAKE_BUILD_TYPE=Release \
+		-DSDL_SHARED=ON -DSDL_STATIC=OFF -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF \
+		-DSDL_AUDIO=OFF -DSDL_RENDER=OFF -DSDL_GPU=OFF -DSDL_CAMERA=OFF -DSDL_KMSDRM=OFF -DSDL_VULKAN=OFF \
+		-DSDL_X11=ON -DSDL_WAYLAND=ON -DSDL_OPENGL=ON >/dev/null
+	cmake --build "$src/build" >/dev/null
+	mkdir -p "$(dirname "$SDL3_LIB")"
+	cp -L "$src/build/libSDL3.so.0" "$SDL3_LIB"
+	rm -rf "$src"
+fi
+
 echo "Preparing the AppDir..."
 rm -rf "$APPDIR"
 mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/lib"
@@ -47,10 +74,9 @@ for bin in opennox opennox-server; do
 	install -m 755 "$BUILD/$bin" "$APPDIR/usr/bin/$bin"
 done
 
-# SDL2, OpenAL and everything they link to (ldd lists all of it), except the libraries that must come from the
+# SDL3, OpenAL and everything they link to (ldd lists all of it), except the libraries that must come from the
 # user's system: glibc, and the graphics libraries that belong to the driver.
-for lib in libSDL2-2.0.so.0 libopenal.so.1; do
-	path="/usr/lib/x86_64-linux-gnu/$lib"
+for path in "$SDL3_LIB" /usr/lib/x86_64-linux-gnu/libopenal.so.1; do
 	echo "$path"
 	ldd "$path" | sed -n 's/.* => \(\/[^ ]*\) .*/\1/p'
 done | sort -u | while read -r path; do

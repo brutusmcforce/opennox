@@ -46,6 +46,9 @@ A package for Arch Linux is available on the AUR: <a href="https://aur.archlinux
 - [Windows](./docs/build-windows.md)
 - [Windows (on Linux)](./docs/build-windows-on-linux.md)
 
+### macOS
+- [macOS](./docs/build-macos.md)
+
 ## Contributing
 Read [CONTRIBUTING](CONTRIBUTING.md)!
 

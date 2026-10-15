@@ -54,7 +54,8 @@ func SetUser(dir string) {
 // FindUser returns the default directory for the user's game data.
 // It does not affect the directory returned by User.
 //
-// On Linux it's ~/.local/share/opennox (or $XDG_DATA_HOME/opennox), on Windows it's %AppData%\OpenNox.
+// On Linux it's ~/.local/share/opennox (or $XDG_DATA_HOME/opennox), on Windows it's %AppData%\OpenNox,
+// on macOS it's ~/Library/Application Support/OpenNox.
 // In tests, and if no such directory can be determined, it's the game data directory.
 func FindUser() string {
 	if env.IsE2E() {
@@ -64,7 +65,7 @@ func FindUser() string {
 	if dir := env.AppUserDir(); dir != "" {
 		return dir
 	}
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 		dir, err := os.UserConfigDir()
 		if err != nil {
 			return Data()

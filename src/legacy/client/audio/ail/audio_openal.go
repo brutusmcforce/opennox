@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/brutusmcforce/opennox/go-openal/openal"
+	"github.com/brutusmcforce/opennox/libs/openal"
 
 	"github.com/brutusmcforce/opennox/libs/env"
 	"github.com/brutusmcforce/opennox/libs/log"

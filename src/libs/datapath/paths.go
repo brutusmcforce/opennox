@@ -58,7 +58,12 @@ func pathPrefixes() []string {
 	if rhome := os.Getenv("SNAP_REAL_HOME"); rhome != "" {
 		home = rhome
 	}
-	return []string{
+	var mac []string
+	if runtime.GOOS == "darwin" {
+		// the usual place for application data on macOS: ~/Library/Application Support/Nox
+		mac = append(mac, filepath.Join(home, "Library", "Application Support"))
+	}
+	return append(mac,
 		// Linux Snapcraft installation user common dir
 		os.Getenv("SNAP_USER_COMMON"),
 		// XDG environment variable
@@ -78,5 +83,5 @@ func pathPrefixes() []string {
 		filepath.Join(home, "Games/Heroic"),
 		// fallback to home as a last resort
 		home,
-	}
+	)
 }

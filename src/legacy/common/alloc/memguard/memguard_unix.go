@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package memguard
 
@@ -10,7 +10,7 @@ func newPage(size int) ([]byte, func()) {
 	if size%page != 0 {
 		num++
 	}
-	b, err := syscall.Mmap(0, 0, num*page, syscall.PROT_NONE, syscall.MAP_ANONYMOUS|syscall.MAP_PRIVATE)
+	b, err := syscall.Mmap(0, 0, num*page, syscall.PROT_NONE, syscall.MAP_ANON|syscall.MAP_PRIVATE)
 	if err != nil {
 		panic(err)
 	}

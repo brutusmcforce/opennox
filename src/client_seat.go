@@ -5,6 +5,9 @@ package opennox
 import (
 	"fmt"
 	"image"
+	"os/exec"
+	"runtime"
+	"strings"
 	"unicode/utf16"
 
 	"github.com/spf13/viper"
@@ -72,6 +75,8 @@ func (c *Client) initGPU() error {
 func (c *Client) initSeat(sz image.Point) error {
 	sst, err := sdl.New(c.Log, "OpenNox "+version.ClientVersion(), sz)
 	if err != nil {
+		// e.g. SDL is missing: the Windows and macOS apps have no console to print it to
+		errorMessage("%s", err.Error())
 		return err
 	}
 	c.Seat = sst
@@ -134,5 +139,12 @@ func (c *Client) freeSeat() {
 }
 
 func errorMessage(format string, args ...any) {
+	if runtime.GOOS == "darwin" {
+		// the dialog package only knows the Linux tools (zenity...); macOS has AppleScript
+		msg := fmt.Sprintf(format, args...)
+		quote := strings.NewReplacer(`\`, `\\`, `"`, `\"`)
+		_ = exec.Command("osascript", "-e", `display alert "OpenNox" message "`+quote.Replace(msg)+`" as critical`).Run()
+		return
+	}
 	dialog.Error(format, args...)
 }

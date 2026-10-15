@@ -4,8 +4,8 @@ go 1.25.0
 
 require (
 	github.com/JoshuaDoes/adpcm-go v0.0.0-20190311011514-2274d526c08b
+	github.com/ebitengine/purego v0.11.1
 	github.com/fxamacker/cbor/v2 v2.7.0
-	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6
 	github.com/huin/goupnp v1.3.0
 	github.com/icza/bitio v1.1.0
 	github.com/jpillora/backoff v1.0.0
@@ -17,7 +17,6 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/tawesoft/golib/v2 v2.6.1
 	github.com/traefik/yaegi v0.16.2-0.20240730175404-e686f55767b9
-	github.com/veandco/go-sdl2 v0.5.0-alpha.4
 	github.com/youpy/go-wav v0.3.2
 	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64
 	golang.org/x/crypto v0.53.0

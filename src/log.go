@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"runtime/debug"
 
 	"github.com/brutusmcforce/opennox/libs/env"
@@ -40,11 +41,16 @@ func setLogFile(w io.WriteCloser) {
 }
 
 func defaultLogDir() string {
-	logDir := filepath.Dir(os.Args[0])
 	if sdir := env.AppUserDir(); sdir != "" {
-		logDir = sdir
+		return filepath.Join(sdir, "logs")
 	}
-	return filepath.Join(logDir, "logs")
+	if runtime.GOOS == "darwin" {
+		// not next to the binary: inside an app bundle that breaks its signature, and /Applications is read-only
+		if home, err := os.UserHomeDir(); err == nil {
+			return filepath.Join(home, "Library", "Logs", "OpenNox")
+		}
+	}
+	return filepath.Join(filepath.Dir(os.Args[0]), "logs")
 }
 
 func writeLogsToDir(dir string) error {

@@ -13,8 +13,13 @@ on:
 
 jobs:
   libs:
-    name: Vet and test libraries
-    runs-on: ubuntu-latest
+    name: Vet and test libraries (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-14 is Apple Silicon (arm64)
+        os: [ubuntu-latest, macos-14]
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: src
@@ -29,7 +34,7 @@ jobs:
           cache-dependency-path: src/go.sum
 
       - name: List packages
-        # packages that need cgo (the SDL/OpenGL seats) are covered by the game build
+        # library packages; the game itself is covered by the build and the e2e test
         run: |
           go list -e -f '{{if not .Error}}{{if not .DepsErrors}}{{.ImportPath}}{{end}}{{end}}' \
             ./libs/... ./noxcrypt/... ./lobby/... ./nat/... ./noxscript/... ./opennoxcontrol/... ./vqa-decode/... \
@@ -41,6 +46,31 @@ jobs:
 
       - name: Test
         run: go test -short -timeout 10m $(cat "$RUNNER_TEMP/packages.txt")
+
+  cross:
+    name: Build for all platforms
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: src/go.mod
+          cache-dependency-path: src/go.sum
+
+      # no cgo: every target builds from Linux
+      - name: Build
+        run: |
+          for target in linux/amd64 linux/arm64 windows/amd64 darwin/amd64 darwin/arm64; do
+            echo "== $target"
+            GOOS=${target%/*} GOARCH=${target#*/} go build -o /dev/null ./cmd/opennox
+            GOOS=${target%/*} GOARCH=${target#*/} go build -tags server -o /dev/null ./cmd/opennox-server
+          done
 
   lint64:
     name: 64-bit layout lint

@@ -2,26 +2,23 @@
 
 package netstr
 
-/*
-#cgo windows LDFLAGS: -lws2_32
-
-#include <winsock2.h>
-*/
-import "C"
 import (
-	"errors"
 	"syscall"
+	"unsafe"
 )
 
+var procIoctlSocket = syscall.NewLazyDLL("ws2_32.dll").NewProc("ioctlsocket")
+
+const fionread = 0x4004667F // FIONREAD in winsock2.h
+
 func netCanRead(fd uintptr) (uint32, syscall.Errno) {
-	var n C.ulong
-	r, err := C.ioctlsocket(C.SOCKET(fd), C.FIONREAD, &n)
+	var n uint32 // u_long is 32 bits on Windows
+	r, _, err := procIoctlSocket.Call(fd, fionread, uintptr(unsafe.Pointer(&n)))
 	if r != 0 {
-		var ierr syscall.Errno
-		if errors.As(err, &ierr) {
-			return uint32(n), ierr
+		if errno, ok := err.(syscall.Errno); ok && errno != 0 {
+			return n, errno
 		}
-		return uint32(n), 12345 // TODO
+		return n, 12345 // TODO
 	}
-	return uint32(n), 0
+	return n, 0
 }

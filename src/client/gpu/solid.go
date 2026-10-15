@@ -4,7 +4,7 @@ import (
 	"image"
 	"math"
 
-	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/brutusmcforce/opennox/libs/gl"
 )
 
 // Solid fills (the edges of the line-of-sight shadows are thousands of them per frame) are drawn with
