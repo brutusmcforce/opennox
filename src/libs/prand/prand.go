@@ -40,9 +40,13 @@ func (r *Rand) Int(min, max int) int {
 }
 
 // Float returns a float in given bounds and advances the generator.
+//
+// The product is converted explicitly, which forces it to be rounded before the addition: without it arm64
+// fuses the two into a single FMADD that rounds once, and the generator returns different numbers there than
+// on amd64 (the game has to produce the same values on every platform).
 func (r *Rand) Float(min, max float64) float64 {
 	i := r.step()
-	return min + (max-min)*(float64(table[i])*0.000030518509)
+	return min + float64((max-min)*(float64(table[i])*0.000030518509))
 }
 
 func (r *Rand) IntClamp(min, max int) int {

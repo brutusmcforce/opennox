@@ -20,6 +20,7 @@
 - The e2e screenshots are compared with a tolerance (`NOX_E2E_MAX_DELTA`, `NOX_E2E_MAX_DIFF_PCT`, `NOX_E2E_EXACT` for the old exact comparison). They are rasterized by the GPU, and OpenGL does not promise bit-identical results across drivers: against references recorded on AMD, 102 of the 123 screens differ on NVIDIA, Intel and llvmpipe, nearly always by one.
 - Windows: the socket `ioctl` is plain Go now. The raw mmap and memguard files are `unix` rather than linux-only, and `netstr` has a BSD socket path, so macOS and linux/arm64 build.
 - CI: a macOS job, a job that cross-builds all five targets, and an AppImage that builds SDL3 from source on Debian 12 (which has no SDL3 package) and bundles it with OpenAL.
+- arm64 fuses a multiply and an add into one FMA instruction and amd64 does not, so Apple Silicon computes slightly different floats than the other platforms. `libs/prand` converts the product explicitly to prevent it, because the generator has to produce the same numbers everywhere; the rest of the engine has about 660 such expressions that are still fused, which is one reason the macOS build is experimental. See `docs/build-macos.md`.
 
 ## v1.10.0-alpha2
 

@@ -98,7 +98,9 @@ codesign --force --sign - "$app"
 codesign --force --sign - "$tmp/opennox-server"
 codesign --verify --deep --strict "$app"
 
-pkg="$tmp/OpenNox"
+# in a directory of its own: the macOS file system is case insensitive, so "OpenNox" next to the "opennox"
+# binary that lipo wrote above is the same path, and the mkdir fails
+pkg="$tmp/zip/OpenNox"
 mkdir -p "$pkg"
 ditto "$app" "$pkg/OpenNox.app"
 cp "$tmp/opennox-server" "$root/CHANGELOG.md" "$pkg/"
