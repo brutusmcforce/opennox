@@ -168,7 +168,16 @@ func sub_4CBBF0() {
 }
 
 func (c *Client) nox_client_processInput_4308A0() {
+	if c.Inp.SeqDelay() <= 2700 {
+		c.afkNext = 0
+	}
 	if noxflags.HasGame(noxflags.GameOnline) && !noxflags.HasGame(noxflags.GameModeQuest) && c.Inp.SeqDelay() > 2700 {
+		// ask once and again every 30 s, not every frame: the server may not allow it (opennox#691)
+		if d := c.Inp.SeqDelay(); d < c.afkNext {
+			return
+		} else {
+			c.afkNext = d + 900
+		}
 		if !noxflags.HasGame(noxflags.GameHost) {
 			nox_xxx_netServerCmd_440950(0, alloc.GoString16((*uint16)(memmap.PtrOff(0x587000, 80784))))
 			return

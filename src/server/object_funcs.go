@@ -161,6 +161,12 @@ func RegisterObjectUpdate(name string, fnc unsafe.Pointer, sz DataDef) {
 
 type UpdateFunc func(obj *Object)
 
+// HasUpdate checks if the object uses the update function registered with a given name.
+func (obj *Object) HasUpdate(name string) bool {
+	def, ok := updateFuncs[name]
+	return ok && obj.Update == def.Func
+}
+
 var objUpdate = ccall.NewFuncs(func(cfnc unsafe.Pointer) UpdateFunc {
 	return func(obj *Object) { panic("unregistered object update callback") }
 })

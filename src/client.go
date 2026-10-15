@@ -53,6 +53,7 @@ type gpuBackend interface {
 }
 
 func NewClient(log *slog.Logger, pr console.Printer, srv *Server) (*Client, error) {
+	srv.OnXferExt(handleScriptAudio)
 	cl := client.NewClient(log, pr, srv.Server)
 	c := &Client{
 		Client: cl,
@@ -77,6 +78,7 @@ type Client struct {
 	gamepad                *gamepadSeat
 	mapsend                clientMapDownload
 	guiAdv                 guiAdvOptions
+	afkNext                int // input delay at which to ask the server for observer mode again (see processInput)
 	guiFPS                 guiFPS
 	interp                 renderInterp
 	gpu                    gpuBackend // OpenGL renderer; nil before the window is created

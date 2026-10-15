@@ -86,6 +86,11 @@ type LoadMapOptions struct {
 	HideScores bool
 	// HideTitleScreen hides boot/title screen of the map when loading it.
 	HideTitleScreen bool
+	// KeepQuestStage loads the next Quest map at the current stage. By default, each map is one stage
+	// further, and the monsters get stronger.
+	KeepQuestStage bool
+	// QuestStage loads the next Quest map at the given stage, if it's above 0.
+	QuestStage int
 }
 
 // LoadMap loads a map with a given name and options.

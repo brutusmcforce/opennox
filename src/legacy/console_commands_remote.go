@@ -9,6 +9,9 @@ import (
 	"github.com/brutusmcforce/opennox/server"
 )
 
+// AFKObserver lets idle players go to observer mode automatically (the clients ask for it after 90 s without input).
+var AFKObserver = true
+
 func consoleCommandRemote(pl *server.Player, action byte, text string) int {
 	if pl == nil || pl.PlayerUnit == nil {
 		return 0
@@ -25,6 +28,9 @@ func consoleCommandRemote(pl *server.Player, action byte, text string) int {
 			return 1
 		}
 		force := text == "\uf00d\uf0ad"
+		if force && !AFKObserver {
+			return 1 // the automatic request of an idle client (opennox#691)
+		}
 		if Nox_xxx_playerGoObserver_4E6860(pl, bool2int(force), 0) != 1 {
 			return 1
 		}

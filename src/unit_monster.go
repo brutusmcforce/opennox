@@ -86,7 +86,7 @@ func objectMonsterInit(obj *server.Object) {
 		ud.HealthGraph103[i] = h.Cur
 	}
 	if obj.SubClass().AsMonster().HasAny(object.MonsterNPC | object.MonsterFemaleNPC) {
-		obj.SpeedBase = float32(1.7 + float64(ud.Field332)*0.5)
+		obj.SpeedBase = float32(1.7 + float64(ud.NPCSpeed)*0.5)
 	} else {
 		obj.SpeedBase = float32(float64(obj.SpeedBase) * s.Rand.Logic.FloatClamp(0.94999999, 1.05))
 	}
@@ -131,7 +131,7 @@ func nox_xxx_monsterCreateFn_54C480(u *server.Object) {
 	ud.Aggression = 0.5
 	ud.Aggression2 = 0.5
 	ud.Field330 = 0.5
-	ud.Field332 = 0.5
+	ud.NPCSpeed = 0.5
 	ud.SightRange = 150.0
 	ud.Field329 = 30.0
 	ud.Field333 = math.MaxUint8

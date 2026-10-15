@@ -361,6 +361,9 @@ type Obj interface {
 
 	// SetColor sets NPC or player color, given its index.
 	//
+	// For a weapon or armor, it sets the modifier with the given index (0-3, see ItemModifiers) to the closest of the
+	// 32 user colors. Which parts of the item it colors depends on the item.
+	//
 	// Example:
 	//
 	// 		obj.SetColor(0, ns.RGB(80, 0, 0)) // dark red
@@ -461,6 +464,50 @@ type Obj interface {
 
 	// DeleteAfter delete object after a delay.
 	DeleteAfter(dt Duration)
+
+	// Lifetime returns how long the object has left before it expires (e.g. a Force of Nature ball or a decaying corpse).
+	// It returns an infinite duration for objects that don't expire.
+	Lifetime() Duration
+
+	// SetLifetime makes the object expire after a given time from now. An infinite duration makes it never expire.
+	//
+	// It works on objects with a limited life (missiles, Force of Nature and Death balls, ...);
+	// for other objects it works like DeleteAfter.
+	SetLifetime(dt Duration)
+
+	// PlayerAction returns what a player is doing (e.g. PlayerIdle, PlayerRun). It returns "" for other objects.
+	PlayerAction() PlayerAction
+
+	// SetPlayerAction makes a player stop (PlayerIdle) or do an emote (PlayerLaugh, PlayerShakeFist, PlayerPoint).
+	// It returns false if the player can't do it now, or for other actions.
+	SetPlayerAction(a PlayerAction) bool
+
+	// MonsterAction returns the current AI action of a monster or NPC (e.g. "ACTION_HUNT").
+	// It returns "" for other objects.
+	MonsterAction() MonsterAction
+
+	// IsRunning checks if a player or a monster is running.
+	IsRunning() bool
+
+	// ItemModifiers returns the modifiers of a weapon or armor: effectiveness, material, primary and secondary
+	// enchantment ("" if none). The names are the ones in modifier.db, e.g. "Material7", "Replenishment1".
+	ItemModifiers() [4]string
+
+	// SetItemModifier sets one modifier of a weapon or armor (slot 0-3, see ItemModifiers).
+	// An empty name removes it. It returns false if the name is unknown or the object has no modifiers.
+	//
+	// The color modifiers "UserColor1" to "UserColor32" change the color of the item (see also SetColor).
+	SetItemModifier(slot int, name string) bool
+
+	// TriggerClasses returns the classes of objects that can press a trigger or a pressure plate (none means any),
+	// and the classes of objects that can't.
+	TriggerClasses() (allow, ignore []class.Class)
+
+	// SetTriggerClasses sets the classes of objects that can press a trigger or a pressure plate (none means any),
+	// and the classes of objects that can't. For example, class.MONSTER lets monsters and NPCs press it.
+	//
+	// Missiles have no weight, so they only press it when class.MISSILE is allowed here.
+	SetTriggerClasses(allow, ignore []class.Class)
 
 	// Idle causes creature to idle.
 	Idle()
@@ -664,6 +711,14 @@ type Obj interface {
 
 	// DestroyChat destroys object's speech bubble.
 	DestroyChat()
+
+	// ChatTeam sends a localized string to the team chat of the object's team, like a player's team message.
+	// It does nothing if the object has no team.
+	ChatTeam(message StringID)
+
+	// ChatStrTeam sends a string to the team chat of the object's team, like a player's team message.
+	// It does nothing if the object has no team.
+	ChatStrTeam(message string)
 
 	// CreateMover creates a Mover for an object.
 	CreateMover(wp WaypointObj, speed float32) Obj

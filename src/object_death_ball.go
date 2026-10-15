@@ -49,7 +49,11 @@ func nox_xxx_updateDeathBall_53D080(obj *server.Object) {
 		dmg := int(s.Balance.Float("DeathBallNearbyDamage"))
 		s.Nox_xxx_mapDamageUnitsAround(obj.PosVec, r1, r2, dmg, object.DamageCrush, obj, nil, doDamageWalls)
 	}
-	if df > s.SecToFrames(4) {
+	life := uint32(s.SecToFrames(4))
+	if v := obj.LifetimeOverride(); v != 0 {
+		life = v // set by a script
+	}
+	if df > life {
 		sobj.Delete()
 	}
 }

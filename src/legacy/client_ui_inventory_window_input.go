@@ -316,6 +316,11 @@ func uiInventoryMainEvents(w *gui.Window, event int, a, b uintptr) int {
 		if Nox_xxx_playerAnimCheck_4372B0() != 0 {
 			return 1
 		}
+		// The inventory keeps the mouse captured (e.g. with the magnifying glass), so the wheel over the
+		// shopkeeper's stock comes here: scroll the stock instead (opennox#675).
+		if uiShopActive() != 0 && uiShopMode() == 2 && uiShopInside(uiInventoryPackedPoint(a)) {
+			return uiShopMouse(uiShopWindow(), event, a, b)
+		}
 		if hit(136384) || hit(136400) {
 			return bool2int(uiInventoryMode() == 5)
 		}

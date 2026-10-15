@@ -233,18 +233,19 @@ func (s *serverMapSend) ReadMapFile() error {
 	return nil
 }
 
-// readMapForSend returns the compressed map file for clients. Maps that have no .nxz (many custom maps only have the
-// .map) are compressed, like the original game did for every map.
+// readMapForSend returns the compressed map file for clients. The server loads the .map and announces its CRC, so
+// the .map is compressed (like the original game did for every map; it takes a few ms): a .nxz next to it may be
+// older and would make clients download again on every join (opennox#639). The .nxz is sent only without a .map.
 func readMapForSend(name string) ([]byte, error) {
-	f, err := ifs.Open(datapath.Maps(name, name+".nxz"))
-	if err == nil {
+	m, err := ifs.Open(datapath.Maps(name, name+maps.Ext))
+	if os.IsNotExist(err) {
+		f, err := ifs.Open(datapath.Maps(name, name+".nxz"))
+		if err != nil {
+			return nil, err
+		}
 		defer func() { _ = f.Close() }()
 		return io.ReadAll(f)
-	} else if !os.IsNotExist(err) {
-		return nil, err
-	}
-	m, err := ifs.Open(datapath.Maps(name, name+maps.Ext))
-	if err != nil {
+	} else if err != nil {
 		return nil, err
 	}
 	defer func() { _ = m.Close() }()

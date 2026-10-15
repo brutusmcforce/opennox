@@ -44,6 +44,11 @@ func damageSetSource(u, source *server.Object, kind int32) {
 	u.Field131 = uint32(kind)
 	u.Frame134 = GetServer().S().Frame()
 }
+
+// SpellFriendlyFire makes players' spells and ranged attacks hurt themselves and their allies in every game mode,
+// whatever the team damage setting (which still decides for melee) (opennox#734).
+var SpellFriendlyFire bool
+
 func damageDefault(u, source, weapon *server.Object, amount, kind int32) int32 {
 	if u == nil {
 		return 1
@@ -73,7 +78,11 @@ func damageDefault(u, source, weapon *server.Object, amount, kind int32) int32 {
 	}
 	if !bool(nox_xxx_CheckGameplayFlags_417DA0(1)) {
 		if owner := source.FindOwnerChainPlayer(); owner != nil && owner.ObjClass&6 != 0 && !GetServer().S().IsEnemyTo(u, owner) && (u != owner || bool(nox_common_gameFlags_check_40A5C0(4096))) {
-			return 1
+			// with friendly fire, spells and ranged attacks (anything but melee) hurt the caster and allies too;
+			// spells and missiles come here with the player as the source and themselves as the weapon
+			if !SpellFriendlyFire || damageMelee(source, weapon) {
+				return 1
+			}
 		}
 	}
 	if source != nil && weapon != nil && !GetServer().S().IsEnemyTo(u, source) && u.ObjClass&6 != 0 && damageMelee(source, weapon) && !damageFriendlyWeapon(weapon) || u.ObjFlags&2 != 0 {

@@ -16,6 +16,7 @@ import (
 
 func init() {
 	RegisterNetXferExt(&XferObjectSetLabel{})
+	RegisterNetXferExt(&XferPlayAudio{})
 }
 
 const (
@@ -78,14 +79,17 @@ func (s *Server) netXferSend(pli ntype.PlayerInd, data netxfer.Data, remote bool
 	if !noxflags.HasGame(noxflags.GameHost) {
 		conn = s.ClientConn().Conn
 	} else {
-		if !noxflags.HasGame(noxflags.GameClient) {
-			return false
-		}
 		if !remote || pli == HostPlayerIndex {
+			if !noxflags.HasGame(noxflags.GameClient) {
+				return false // a dedicated server has no local client
+			}
 			s.NetXferLocal(data)
 			return true
 		}
 		conn = s.NetStr.ConnByPlayerInd(pli)
+		if conn == nil {
+			return false
+		}
 	}
 	_, ok := s.NetXfer.StartSend(XferConn{conn}, data, onDone, onAbort)
 	return ok
@@ -158,6 +162,11 @@ func (s *Server) netXferHandleCBOR(ind ntype.PlayerInd, data []byte) {
 }
 
 func (s *Server) handleCBORXfer(ind ntype.PlayerInd, m NetXferExt) {
+	// these are sent by the server to players: on a host, only our own local player may deliver them
+	if noxflags.HasGame(noxflags.GameHost) && ind != HostPlayerIndex {
+		s.Log.Warn("CBOR xfer from a player ignored", "player", ind, "type", m.CBORType())
+		return
+	}
 	switch m := m.(type) {
 	case *XferObjectSetLabel:
 		if u := s.ObjectByNetCode(m.Object); u != nil {
@@ -213,6 +222,19 @@ type XferObjectSetLabel struct {
 
 func (m *XferObjectSetLabel) CBORType() string {
 	return "Obj.SetLabel"
+}
+
+// XferPlayAudio makes OpenNox clients play an audio file from the map folder (see ns4 PlayAudioFile).
+// The file is sent once per player (Data), later messages only name it.
+type XferPlayAudio struct {
+	Map    string `cbor:"1,keyasint"`
+	Name   string `cbor:"2,keyasint"`
+	Data   []byte `cbor:"3,keyasint,omitempty"`
+	Volume int    `cbor:"4,keyasint,omitempty"`
+}
+
+func (m *XferPlayAudio) CBORType() string {
+	return "Audio.PlayFile"
 }
 
 func (s *Server) netSendObjectLabel(obj *Object, label string, cl color.Color) {

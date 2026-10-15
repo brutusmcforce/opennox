@@ -11,6 +11,7 @@ import (
 	"github.com/brutusmcforce/opennox/libs/script"
 	"github.com/brutusmcforce/opennox/libs/types"
 	"github.com/brutusmcforce/opennox/libs/wall"
+	ns4 "github.com/brutusmcforce/opennox/noxscript/ns/v4"
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
@@ -198,6 +199,31 @@ func (w *Wall) toggle() {
 }
 
 // Destroy (break) the wall.
+// magicWall returns the record of a wall that a Wall spell created or changed, if any.
+func (w *Wall) magicWall() *server.MagicWall {
+	for it := w.Server().spells.walls.list; it != nil; it = it.Next24 {
+		if it.Wall8 == w.S() {
+			return it
+		}
+	}
+	return nil
+}
+
+// IsMagic checks if the wall was made by a Wall spell (opennox#725).
+func (w *Wall) IsMagic() bool {
+	return w.magicWall() != nil || w.Server().Walls.IsSysUse(w.S())
+}
+
+// MagicCaster returns who cast the Wall spell that made this wall, if any.
+func (w *Wall) MagicCaster() ns4.Obj {
+	m := w.magicWall()
+	if m == nil || m.Spell20 == nil || m.Spell20.Caster16 == nil {
+		return nil
+	}
+	s := w.Server()
+	return s.noxScriptP().toObj(m.Spell20.Caster16)
+}
+
 func (w *Wall) Destroy() {
 	w.Server().nox_xxx_wallPreDestroy_534DA0(w.GridPos())
 }

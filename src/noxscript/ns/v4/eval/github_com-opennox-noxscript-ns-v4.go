@@ -26,6 +26,21 @@ import (
 func init() {
 	Symbols["github.com/opennox/noxscript/ns/v4/ns"] = map[string]reflect.Value{
 		// function, constant and variable definitions
+		"PlayAudioFile":        reflect.ValueOf(ns.PlayAudioFile),
+		"QuestStage":           reflect.ValueOf(ns.QuestStage),
+		"PlayerAttack":         reflect.ValueOf(ns.PlayerAttack),
+		"PlayerBlock":          reflect.ValueOf(ns.PlayerBlock),
+		"PlayerCast":           reflect.ValueOf(ns.PlayerCast),
+		"PlayerDead":           reflect.ValueOf(ns.PlayerDead),
+		"PlayerDying":          reflect.ValueOf(ns.PlayerDying),
+		"PlayerIdle":           reflect.ValueOf(ns.PlayerIdle),
+		"PlayerJump":           reflect.ValueOf(ns.PlayerJump),
+		"PlayerLaugh":          reflect.ValueOf(ns.PlayerLaugh),
+		"PlayerOther":          reflect.ValueOf(ns.PlayerOther),
+		"PlayerPoint":          reflect.ValueOf(ns.PlayerPoint),
+		"PlayerRun":            reflect.ValueOf(ns.PlayerRun),
+		"PlayerShakeFist":      reflect.ValueOf(ns.PlayerShakeFist),
+		"PlayerWalk":           reflect.ValueOf(ns.PlayerWalk),
 		"AnswerGoodbye":        reflect.ValueOf(ns.AnswerGoodbye),
 		"AnswerNo":             reflect.ValueOf(ns.AnswerNo),
 		"AnswerYes":            reflect.ValueOf(ns.AnswerYes),
@@ -220,6 +235,8 @@ func init() {
 		"WithRuntime":          reflect.ValueOf(ns.WithRuntime),
 
 		// type definitions
+		"MonsterAction":       reflect.ValueOf((*ns.MonsterAction)(nil)),
+		"PlayerAction":        reflect.ValueOf((*ns.PlayerAction)(nil)),
 		"AND":                 reflect.ValueOf((*ns.AND)(nil)),
 		"ChatFunc":            reflect.ValueOf((*ns.ChatFunc)(nil)),
 		"Color":               reflect.ValueOf((*ns.Color)(nil)),
@@ -480,6 +497,15 @@ type _github_com_opennox_noxscript_ns_v4_Implementation struct {
 	WWaypointGroupByHandle func(h ns.WaypointGroupHandle) ns.WaypointGroupObj
 	WWaypoints             func() []ns.WaypointObj
 	WWideScreen            func(enable bool)
+	WPlayAudioFile         func(name string)
+	WQuestStage            func() int
+}
+
+func (W _github_com_opennox_noxscript_ns_v4_Implementation) PlayAudioFile(name string) {
+	W.WPlayAudioFile(name)
+}
+func (W _github_com_opennox_noxscript_ns_v4_Implementation) QuestStage() int {
+	return W.WQuestStage()
 }
 
 func (W _github_com_opennox_noxscript_ns_v4_Implementation) AudioEvent(audio audio.Name, p ns.Positioner) {
@@ -973,6 +999,55 @@ type _github_com_opennox_noxscript_ns_v4_Obj struct {
 	WWeight                 func() int
 	WZ                      func() float32
 	WZombieStayDown         func()
+	WChatStrTeam            func(message string)
+	WChatTeam               func(message ns.StringID)
+	WIsRunning              func() bool
+	WItemModifiers          func() [4]string
+	WLifetime               func() ns.Duration
+	WMonsterAction          func() ns.MonsterAction
+	WPlayerAction           func() ns.PlayerAction
+	WSetItemModifier        func(slot int, name string) bool
+	WSetLifetime            func(dt ns.Duration)
+	WSetPlayerAction        func(a ns.PlayerAction) bool
+	WSetTriggerClasses      func(allow []class.Class, ignore []class.Class)
+	WTriggerClasses         func() (allow []class.Class, ignore []class.Class)
+}
+
+func (W _github_com_opennox_noxscript_ns_v4_Obj) ChatStrTeam(message string) {
+	W.WChatStrTeam(message)
+}
+func (W _github_com_opennox_noxscript_ns_v4_Obj) ChatTeam(message ns.StringID) {
+	W.WChatTeam(message)
+}
+func (W _github_com_opennox_noxscript_ns_v4_Obj) IsRunning() bool {
+	return W.WIsRunning()
+}
+func (W _github_com_opennox_noxscript_ns_v4_Obj) ItemModifiers() [4]string {
+	return W.WItemModifiers()
+}
+func (W _github_com_opennox_noxscript_ns_v4_Obj) Lifetime() ns.Duration {
+	return W.WLifetime()
+}
+func (W _github_com_opennox_noxscript_ns_v4_Obj) MonsterAction() ns.MonsterAction {
+	return W.WMonsterAction()
+}
+func (W _github_com_opennox_noxscript_ns_v4_Obj) PlayerAction() ns.PlayerAction {
+	return W.WPlayerAction()
+}
+func (W _github_com_opennox_noxscript_ns_v4_Obj) SetItemModifier(slot int, name string) bool {
+	return W.WSetItemModifier(slot, name)
+}
+func (W _github_com_opennox_noxscript_ns_v4_Obj) SetLifetime(dt ns.Duration) {
+	W.WSetLifetime(dt)
+}
+func (W _github_com_opennox_noxscript_ns_v4_Obj) SetPlayerAction(a ns.PlayerAction) bool {
+	return W.WSetPlayerAction(a)
+}
+func (W _github_com_opennox_noxscript_ns_v4_Obj) SetTriggerClasses(allow []class.Class, ignore []class.Class) {
+	W.WSetTriggerClasses(allow, ignore)
+}
+func (W _github_com_opennox_noxscript_ns_v4_Obj) TriggerClasses() (allow []class.Class, ignore []class.Class) {
+	return W.WTriggerClasses()
 }
 
 func (W _github_com_opennox_noxscript_ns_v4_Obj) AggressionLevel(level float32) {
@@ -1845,6 +1920,15 @@ type _github_com_opennox_noxscript_ns_v4_WallObj struct {
 	WScriptID     func() int
 	WToggle       func() bool
 	WWallScriptID func() int
+	WIsMagic      func() bool
+	WMagicCaster  func() ns.Obj
+}
+
+func (W _github_com_opennox_noxscript_ns_v4_WallObj) IsMagic() bool {
+	return W.WIsMagic()
+}
+func (W _github_com_opennox_noxscript_ns_v4_WallObj) MagicCaster() ns.Obj {
+	return W.WMagicCaster()
 }
 
 func (W _github_com_opennox_noxscript_ns_v4_WallObj) Destroy() {

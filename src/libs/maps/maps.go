@@ -75,7 +75,7 @@ func Scan(log *slog.Logger, path string, opts *ScanOptions) (MapList, error) {
 			}
 			name := fi.Name()
 			lname := strings.ToLower(name)
-			if !opts.Solo && (strings.HasPrefix(lname, SoloPrefixWar) || strings.HasPrefix(lname, SoloPrefixWiz) || strings.HasPrefix(lname, SoloPrefixCon)) {
+			if !opts.Solo && IsSoloName(lname) {
 				continue
 			}
 			info, err := ReadMapInfo(filepath.Join(path, name))
@@ -91,6 +91,22 @@ func Scan(log *slog.Logger, path string, opts *ScanOptions) (MapList, error) {
 	}
 	list.Sort()
 	return list, last
+}
+
+// IsSoloName reports whether a map name is one of the solo campaign maps: con, war or wiz,
+// a two-digit chapter and a letter (e.g. con01a). Other maps may start with these letters too.
+func IsSoloName(name string) bool {
+	name = strings.ToLower(name)
+	if len(name) != 6 {
+		return false
+	}
+	switch name[:3] {
+	case SoloPrefixCon, SoloPrefixWar, SoloPrefixWiz:
+	default:
+		return false
+	}
+	isDigit := func(c byte) bool { return c >= '0' && c <= '9' }
+	return isDigit(name[3]) && isDigit(name[4]) && name[5] >= 'a' && name[5] <= 'z'
 }
 
 func ReadMapInfo(dir string) (*Info, error) {

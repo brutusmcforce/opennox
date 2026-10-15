@@ -102,6 +102,7 @@ type Server struct {
 	noxScript       noxScript
 	ai              aiData
 	quest           questServer
+	audio           scriptAudio
 	springs         serverSprings
 	mapSwitchWPName string
 	// spellInvertFrame is when each player last held the "invert spell target" key (Shift) while

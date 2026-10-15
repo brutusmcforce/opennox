@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"os"
+	"path/filepath"
 
 	"github.com/brutusmcforce/opennox/libs/ifs"
 )
@@ -41,15 +43,32 @@ func DecompressFile(src, dst string) error {
 		return err
 	}
 
-	w, err := ifs.Create(dst)
+	return writeAtomic(dst, dbuf)
+}
+
+// writeAtomic writes a file next to dst and renames it over dst when complete,
+// so an existing map is never left half-written (and never written through a link).
+func writeAtomic(dst string, data []byte) error {
+	dst = ifs.Normalize(dst)
+	w, err := os.CreateTemp(filepath.Dir(dst), "."+filepath.Base(dst)+".*.part")
 	if err != nil {
 		return err
 	}
-	defer w.Close()
-	if _, err = w.Write(dbuf); err != nil {
+	_ = w.Chmod(0644)
+	if _, err = w.Write(data); err != nil {
+		_ = w.Close()
+		_ = os.Remove(w.Name())
 		return err
 	}
-	return w.Close()
+	if err = w.Close(); err != nil {
+		_ = os.Remove(w.Name())
+		return err
+	}
+	if err = os.Rename(w.Name(), dst); err != nil {
+		_ = os.Remove(w.Name())
+		return err
+	}
+	return nil
 }
 
 func CompressFile(src, dst string) error {

@@ -354,6 +354,14 @@ func (r *Runtime) GetAnswer(obj ns.Obj) ns.DialogAnswer {
 	panic("implement me")
 }
 
+func (r *Runtime) PlayAudioFile(name string) {
+	//TODO implement me
+}
+
+func (r *Runtime) QuestStage() int {
+	return 0
+}
+
 func (r *Runtime) AudioEvent(audio audio.Name, p ns.Positioner) {
 	//TODO implement me
 }

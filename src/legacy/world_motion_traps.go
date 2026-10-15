@@ -106,7 +106,11 @@ func motionTrigger(u, target *server.Object) {
 		d.Flags &^= 1
 		return
 	}
-	if d.State == 5 || target == nil || !(target.Mass > 0) {
+	if d.State == 5 || target == nil {
+		return
+	}
+	// objects without mass can't press it, except missiles (class 1) when a script allowed them
+	if !(target.Mass > 0) && (target.ObjClass&1 == 0 || !u.TriggerMissiles()) {
 		return
 	}
 	if d.AllowClass != 0 && d.AllowClass&uint32(target.ObjClass) == 0 || d.IgnoreClass != 0 && d.IgnoreClass&uint32(target.ObjClass) != 0 {

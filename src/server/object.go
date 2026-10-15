@@ -570,6 +570,13 @@ type ObjectExt struct {
 
 	// Hidden objects are not sent to other players' clients.
 	Hidden bool
+
+	// TriggerMissiles lets missiles (which have no mass) press a trigger, see ns4 SetTriggerClasses.
+	TriggerMissiles bool
+
+	// Lifetime overrides the lifetime of objects with a fixed one (e.g. DeathBall),
+	// in frames after creation; 0 means the default.
+	Lifetime uint32
 }
 
 func (obj *ObjectExt) defaults() {
@@ -1273,6 +1280,10 @@ func (obj *Object) BaseSpeed() float32 {
 func (obj *Object) SetBaseSpeed(v float32) {
 	// TODO: do we need to update any cheksums?
 	obj.SpeedBase = v
+	if obj.Class().Has(object.ClassMonster) && obj.SubClass().AsMonster().HasAny(object.MonsterNPC|object.MonsterFemaleNPC) {
+		// the init of NPCs (also after loading a save) computes the base speed from this stat (opennox#730)
+		obj.UpdateDataMonster().NPCSpeed = (v - 1.7) / 0.5
+	}
 }
 
 func (obj *Object) Strength() int {
@@ -1633,6 +1644,22 @@ func (obj *Object) ZombieStayDown() {
 	if obj.Class().Has(object.ClassMonster) {
 		obj.UpdateDataMonster().StatusFlags |= object.MonStatusStayDead
 	}
+}
+
+// LifetimeOverride returns the lifetime set for objects with a fixed lifetime, or 0 for the default (see ObjectExt.Lifetime).
+func (obj *Object) LifetimeOverride() uint32 {
+	if obj == nil || obj.objectHandle == 0 {
+		return 0
+	}
+	return obj.Server().Objs.getExt(obj.objectHandle).Lifetime
+}
+
+// TriggerMissiles reports whether missiles can press the trigger (see ObjectExt.TriggerMissiles).
+func (obj *Object) TriggerMissiles() bool {
+	if obj == nil || obj.objectHandle == 0 {
+		return false
+	}
+	return obj.Server().Objs.getExt(obj.objectHandle).TriggerMissiles
 }
 
 // IsHidden reports whether the object is hidden from players (see SetHidden).

@@ -109,6 +109,8 @@ type Implementation interface {
 	GetAnswer(obj Obj) DialogAnswer
 
 	AudioEvent(audio audio.Name, p Positioner)
+	PlayAudioFile(name string)
+	QuestStage() int
 	Music(music int, volume int)
 	MusicPushEvent()
 	MusicPopEvent()

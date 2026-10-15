@@ -207,7 +207,7 @@ type MonsterUpdateData struct {
 	Field329              float32              // 329, 1316
 	Field330              float32              // 330, 1320
 	Field331              uint32               // 331, 1324, TODO: strength stat?
-	Field332              float32              // 332, 1328, TODO: speed stat?
+	NPCSpeed              float32              // 332, 1328; NPC speed stat: base speed is 1.7 + 0.5*NPCSpeed
 	Field333              uint32               // 333, 1332, TODO: roam flags?
 	RetreatLevel          float32              // 334, 1336
 	Field335              uint32               // 335, 1340

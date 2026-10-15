@@ -2,6 +2,7 @@ package opennox
 
 import (
 	"fmt"
+	"image/color"
 	"math"
 
 	"github.com/brutusmcforce/opennox/libs/object"
@@ -15,6 +16,7 @@ import (
 	"github.com/brutusmcforce/opennox/noxscript/ns/v4/subclass"
 
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
+	"github.com/brutusmcforce/opennox/common/unit/ai"
 	"github.com/brutusmcforce/opennox/legacy"
 	"github.com/brutusmcforce/opennox/server"
 )
@@ -463,6 +465,248 @@ func (obj nsObj) Damage(source ns4.Obj, amount int, typ damage.Type) bool {
 		src = obj.s.noxScriptP().asObj(source)
 	}
 	return obj.Object.DoDamage(src, amount, object.DamageType(typ))
+}
+
+// playerActions maps player states to actions, see controlActionState for all states.
+var playerActions = map[server.PlayerState]ns4.PlayerAction{
+	server.PlayerState13:        ns4.PlayerIdle,
+	server.PlayerState0:         ns4.PlayerWalk,
+	server.PlayerState5:         ns4.PlayerRun,
+	server.PlayerState1:         ns4.PlayerAttack,
+	server.PlayerState14:        ns4.PlayerAttack,
+	server.PlayerState22:        ns4.PlayerAttack,
+	server.PlayerState2:         ns4.PlayerCast,
+	server.PlayerState10:        ns4.PlayerCast,
+	server.PlayerState12:        ns4.PlayerJump,
+	server.PlayerState15:        ns4.PlayerBlock,
+	server.PlayerState16:        ns4.PlayerBlock,
+	server.PlayerState17:        ns4.PlayerBlock,
+	server.PlayerState3:         ns4.PlayerDying,
+	server.PlayerState4:         ns4.PlayerDead,
+	server.PlayerStateShakeFist: ns4.PlayerShakeFist,
+	server.PlayerStateLaugh:     ns4.PlayerLaugh,
+	server.PlayerStatePoint:     ns4.PlayerPoint,
+}
+
+func (obj nsObj) PlayerAction() ns4.PlayerAction {
+	u := obj.SObj()
+	if !u.Class().Has(object.ClassPlayer) {
+		return ""
+	}
+	if a, ok := playerActions[u.UpdateDataPlayer().State]; ok {
+		return a
+	}
+	return ns4.PlayerOther
+}
+
+func (obj nsObj) SetPlayerAction(a ns4.PlayerAction) bool {
+	u := obj.SObj()
+	if !u.Class().Has(object.ClassPlayer) {
+		return false
+	}
+	// only actions that don't need more state (like a target or a spell)
+	var st server.PlayerState
+	switch a {
+	case ns4.PlayerIdle:
+		st = server.PlayerState13
+	case ns4.PlayerShakeFist:
+		st = server.PlayerStateShakeFist
+	case ns4.PlayerLaugh:
+		st = server.PlayerStateLaugh
+	case ns4.PlayerPoint:
+		st = server.PlayerStatePoint
+	default:
+		return false
+	}
+	return nox_xxx_playerSetState_4FA020(u, st)
+}
+
+func (obj nsObj) MonsterAction() ns4.MonsterAction {
+	u := obj.SObj()
+	if !u.Class().Has(object.ClassMonster) {
+		return ""
+	}
+	it := u.UpdateDataMonster().AIStackHead()
+	if it == nil {
+		return ns4.MonsterAction(ai.ACTION_IDLE.String())
+	}
+	return ns4.MonsterAction(ai.ActionType(it.Action).String())
+}
+
+func (obj nsObj) IsRunning() bool {
+	u := obj.SObj()
+	switch {
+	case u.Class().Has(object.ClassPlayer):
+		return u.UpdateDataPlayer().State == server.PlayerState5
+	case u.Class().Has(object.ClassMonster):
+		return u.UpdateDataMonster().StatusFlags.Has(object.MonStatusRunning)
+	}
+	return false
+}
+
+// itemClasses are the classes of items with modifiers (weapons, armor, wands, flags).
+const itemClasses = object.ClassWeapon | object.ClassArmor | object.ClassWand | object.ClassFlag
+
+// itemModifiers returns the modifiers of an item, or nil if it has none.
+func (obj nsObj) itemModifiers() *server.ModifierInitData {
+	u := obj.SObj()
+	if !u.Class().HasAny(itemClasses) || u.InitData == nil {
+		return nil
+	}
+	return u.InitDataModifier()
+}
+
+func (obj nsObj) ItemModifiers() [4]string {
+	var out [4]string
+	if d := obj.itemModifiers(); d != nil {
+		for i, m := range d.Modifiers {
+			if m != nil {
+				out[i] = m.Name()
+			}
+		}
+	}
+	return out
+}
+
+func (obj nsObj) SetItemModifier(slot int, name string) bool {
+	d := obj.itemModifiers()
+	if d == nil || slot < 0 || slot >= len(d.Modifiers) {
+		return false
+	}
+	var m *server.ModifierEff
+	if name != "" {
+		if m = obj.s.Modif.Nox_xxx_modifGetDescById413330(obj.s.Modif.Nox_xxx_modifGetIdByName413290(name)); m == nil {
+			return false
+		}
+	}
+	attrs := *d
+	attrs.Modifiers[slot] = m
+	// this also sends the change to the clients
+	legacy.Nox_xxx_modifSetItemAttrs_4E4990(obj.SObj(), &attrs)
+	return true
+}
+
+// setItemColor sets a modifier slot of an item to the closest user color (UserColor1-32), like the game colors clothes.
+func (obj nsObj) setItemColor(slot int, cl color.Color) {
+	r, g, b, _ := cl.RGBA()
+	best, bestDist := 0, -1
+	for i, c := range obj.s.Modif.Colors[0] {
+		dr, dg, db := int(c.R)-int(r>>8), int(c.G)-int(g>>8), int(c.B)-int(b>>8)
+		if d := dr*dr + dg*dg + db*db; bestDist < 0 || d < bestDist {
+			best, bestDist = i, d
+		}
+	}
+	obj.SetItemModifier(slot, fmt.Sprintf("UserColor%d", best+1))
+}
+
+func (obj nsObj) SetColor(ind int, cl ns4.Color) {
+	if cl != nil && obj.itemModifiers() != nil {
+		obj.setItemColor(ind, cl)
+		return
+	}
+	obj.Object.SetColor(ind, cl)
+}
+
+// triggerData returns the data of triggers and pressure plates, or nil for other objects.
+func (obj nsObj) triggerData() *server.TriggerUpdateData {
+	u := obj.SObj()
+	if u.HasUpdate("TriggerUpdate") || u.HasUpdate("ToggleUpdate") {
+		return u.UpdateDataTrigger()
+	}
+	return nil
+}
+
+func classesOf(mask uint32) []class.Class {
+	var out []class.Class
+	for _, c := range object.Class(mask).Split() {
+		out = append(out, class.Class(c.String()))
+	}
+	return out
+}
+
+func classMask(list []class.Class) uint32 {
+	var mask object.Class
+	for _, c := range list {
+		if cls, err := object.ParseClass(string(c)); err == nil {
+			mask |= cls
+		}
+	}
+	return uint32(mask)
+}
+
+func (obj nsObj) TriggerClasses() (allow, ignore []class.Class) {
+	d := obj.triggerData()
+	if d == nil {
+		return nil, nil
+	}
+	return classesOf(d.AllowClass), classesOf(d.IgnoreClass)
+}
+
+func (obj nsObj) SetTriggerClasses(allow, ignore []class.Class) {
+	d := obj.triggerData()
+	if d == nil {
+		return
+	}
+	d.AllowClass = classMask(allow)
+	d.IgnoreClass = classMask(ignore)
+	missiles := d.AllowClass&uint32(object.ClassMissile) != 0
+	if missiles != obj.SObj().TriggerMissiles() {
+		obj.SObj().SetExt().TriggerMissiles = missiles
+	}
+}
+
+// deathBallLifetime returns the lifetime of a DeathBall (the ball of Force of Nature) in frames after creation.
+func (obj nsObj) deathBallLifetime() uint32 {
+	if v := obj.SObj().LifetimeOverride(); v != 0 {
+		return v
+	}
+	return obj.s.SecToFrames(4)
+}
+
+func (obj nsObj) Lifetime() ns4.Duration {
+	u := obj.SObj()
+	s := obj.s
+	age := s.Frame() - u.Field32 // creation frame
+	left := func(life uint32) ns4.Duration {
+		if life == math.MaxUint32 {
+			return ns4.Infinite()
+		} else if life <= age {
+			return ns4.Frames(0)
+		}
+		return ns4.Frames(int(life - age))
+	}
+	switch {
+	case u.HasUpdate("LifetimeUpdate"):
+		return left(u.UpdateDataLifetime().Lifetime)
+	case int(u.TypeInd) == s.Types.DeathBallID():
+		return left(obj.deathBallLifetime())
+	case u.ObjFlags&0x400000 != 0: // in the decay list, see DeleteAfter
+		if u.Field34 <= s.Frame() {
+			return ns4.Frames(0)
+		}
+		return ns4.Frames(int(u.Field34 - s.Frame()))
+	}
+	return ns4.Infinite()
+}
+
+func (obj nsObj) SetLifetime(dt ns4.Duration) {
+	u := obj.SObj()
+	s := obj.s
+	age := s.Frame() - u.Field32
+	life := uint32(math.MaxUint32)
+	if !dt.IsInfinite() {
+		life = age + uint32(max(s.AsFrames(dt), 1))
+	}
+	switch {
+	case u.HasUpdate("LifetimeUpdate"):
+		u.UpdateDataLifetime().Lifetime = life
+	case int(u.TypeInd) == s.Types.DeathBallID():
+		u.SetExt().Lifetime = life
+	case dt.IsInfinite():
+		legacy.ObjectDecayCancel(u)
+	default:
+		s.DeleteAfter(u, life-age)
+	}
 }
 
 func (obj nsObj) DeleteAfter(dt ns4.Duration) {

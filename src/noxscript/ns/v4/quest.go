@@ -1,5 +1,13 @@
 package ns
 
+// QuestStage returns the stage of the current Quest game.
+func QuestStage() int {
+	if impl == nil {
+		return 0
+	}
+	return impl.QuestStage()
+}
+
 // GetQuestStatus gets quest status (int).
 func GetQuestStatus(name string) int {
 	if impl == nil {

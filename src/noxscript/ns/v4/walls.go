@@ -30,6 +30,11 @@ type WallObj interface {
 
 	// Destroy breaks a wall.
 	Destroy()
+
+	// IsMagic checks if the wall was made by a Wall spell.
+	IsMagic() bool
+	// MagicCaster returns who cast the Wall spell that made this wall, if any.
+	MagicCaster() Obj
 }
 
 // Wall gets a wall by its grid coordinates.

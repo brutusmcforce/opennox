@@ -872,3 +872,57 @@ func (obj *Object) Update() {
 		obj.FlagsEnable(object.FlagStill)
 	}
 }
+
+func (obj *Object) Lifetime() ns.Duration {
+	return ns.Infinite()
+}
+
+func (obj *Object) SetLifetime(dt ns.Duration) {
+	//TODO implement me
+}
+
+func (obj *Object) PlayerAction() ns.PlayerAction {
+	if obj.class.Has(object.ClassPlayer) {
+		return ns.PlayerIdle
+	}
+	return ""
+}
+
+func (obj *Object) SetPlayerAction(a ns.PlayerAction) bool {
+	return false
+}
+
+func (obj *Object) MonsterAction() ns.MonsterAction {
+	if obj.class.Has(object.ClassMonster) {
+		return "ACTION_IDLE"
+	}
+	return ""
+}
+
+func (obj *Object) IsRunning() bool {
+	return false
+}
+
+func (obj *Object) ItemModifiers() [4]string {
+	return [4]string{}
+}
+
+func (obj *Object) SetItemModifier(slot int, name string) bool {
+	return false
+}
+
+func (obj *Object) TriggerClasses() (allow, ignore []class.Class) {
+	return nil, nil
+}
+
+func (obj *Object) SetTriggerClasses(allow, ignore []class.Class) {
+	//TODO implement me
+}
+
+func (obj *Object) ChatTeam(message ns.StringID) {
+	//TODO implement me
+}
+
+func (obj *Object) ChatStrTeam(message string) {
+	//TODO implement me
+}

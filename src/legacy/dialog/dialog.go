@@ -255,7 +255,10 @@ func (d *Dialog) sub_44D640() {
 func (d *Dialog) playFile(name string) bool {
 	d.sub_44D640()
 	*d.isFallbackMode = 0
-	path := filepath.Join(d.dir, name)
+	path := name
+	if !filepath.IsAbs(name) {
+		path = filepath.Join(d.dir, name)
+	}
 	if !strings.Contains(path, ".") {
 		path += ".wav"
 	}

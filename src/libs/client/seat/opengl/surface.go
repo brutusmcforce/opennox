@@ -52,7 +52,8 @@ func (s *Surface) Draw(vp image.Rectangle) {
 	gl.Viewport(int32(vp.Min.X), int32(vp.Min.Y), int32(vp.Dx()), int32(vp.Dy()))
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, s.tex)
-	//gl.BindVertexArray(s.win.vao)
+	// a core profile can only draw with a vertex array bound; the renderer may have bound its own
+	gl.BindVertexArray(s.win.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, s.win.vbo)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, s.win.ebo)
 	gl.UseProgram(s.win.prog)

@@ -29,6 +29,8 @@ const (
 type questServer struct {
 	mapName                   string // 0x5D4594, 1563104
 	nox_xxx_questFlag_1556148 int
+	// nextStage is the stage of the next map, set by a script's LoadMap (0: the next stage, as usual)
+	nextStage int
 }
 
 var (
@@ -205,7 +207,12 @@ func (s *Server) nox_server_questMapNextLevel() {
 	// server loading next quest level
 	legacy.Sub_51A920(s.Rand.Logic.IntClamp(0, 2))
 	lvl := s.nox_game_getQuestStage_4E3CC0()
-	lvl += questLevelInc
+	if s.quest.nextStage > 0 {
+		lvl = s.quest.nextStage // set by a script (opennox#727)
+		s.quest.nextStage = 0
+	} else {
+		lvl += questLevelInc
+	}
 	questLog.Printf("switching level to %d", lvl)
 	questLevel.Set(float64(lvl))
 	s.nox_game_setQuestStage_4E3CD0(lvl)

@@ -37,7 +37,7 @@ func controlBotCreate(u *server.Object) uint32 {
 	b.SightRange = math.Float32frombits(1125515264)
 	b.Field329 = math.Float32frombits(1106247680)
 	b.Field330 = math.Float32frombits(1065353216)
-	b.Field332 = math.Float32frombits(1056964608)
+	b.NPCSpeed = math.Float32frombits(1056964608)
 	b.Field338 = math.Float32frombits(1065353216)
 	b.Field510 = 3
 	b.DialogStartFunc = -1

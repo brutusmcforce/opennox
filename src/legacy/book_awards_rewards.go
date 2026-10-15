@@ -141,6 +141,11 @@ func bookQuestSingleLevel(id int32) bool {
 	}
 	return false
 }
+
+// BookMaxSpellLevel is the highest spell level that spell books give, set by the server (0: 3 in Quest and Coop,
+// 5 otherwise, as in the original game).
+var BookMaxSpellLevel int
+
 func bookAwardSpell(u *server.Object, id, notify, auto, force int32) int {
 	if uint32(u.ObjClass)&4 == 0 {
 		return 0
@@ -150,11 +155,17 @@ func bookAwardSpell(u *server.Object, id, notify, auto, force int32) int {
 		return 0
 	}
 	p := u.UpdateDataPlayer().Player
-	if noxflags.HasGame(6144) && p.SpellLvl[id] == 3 || p.SpellLvl[id] == 5 {
+	if lvl := BookMaxSpellLevel; lvl > 0 {
+		// set by the server (opennox#731): the same limit in every mode
+		if p.SpellLvl[id] >= uint32(lvl) && force == 0 {
+			bookAwardError(u, "MaxSpellLevel", "plyrspel.c")
+			return 0
+		}
+	} else if noxflags.HasGame(6144) && p.SpellLvl[id] == 3 || p.SpellLvl[id] == 5 {
 		bookAwardError(u, "MaxSpellLevel", "plyrspel.c")
 		return 0
 	}
-	if noxflags.HasGame(4096) && bookQuestSingleLevel(id) && p.SpellLvl[id] != 0 {
+	if BookMaxSpellLevel == 0 && noxflags.HasGame(4096) && bookQuestSingleLevel(id) && p.SpellLvl[id] != 0 {
 		bookAwardError(u, "MaxSpellLevel", "plyrspel.c")
 		return 0
 	}
@@ -164,6 +175,9 @@ func bookAwardSpell(u *server.Object, id, notify, auto, force int32) int {
 	}
 	if noxflags.HasGame(4096) && p.SpellLvl[id] > 3 {
 		p.SpellLvl[id] = 3
+	}
+	if lvl := BookMaxSpellLevel; lvl > 0 {
+		p.SpellLvl[id] = min(p.SpellLvl[id], uint32(lvl))
 	}
 	if force != 0 {
 		p.SpellLvl[id] = uint32(force)
@@ -191,6 +205,9 @@ func bookAwardSpell(u *server.Object, id, notify, auto, force int32) int {
 			}
 			if p.SpellLvl[i] > 5 {
 				p.SpellLvl[i] = 5
+			}
+			if lvl := BookMaxSpellLevel; lvl > 0 && force == 0 {
+				p.SpellLvl[i] = min(p.SpellLvl[i], uint32(lvl))
 			}
 			// Preserve the original-ID cap and bookkeeping in historical family awards.
 			if noxflags.HasGame(4096) && p.SpellLvl[id] > 3 {

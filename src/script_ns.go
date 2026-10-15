@@ -61,9 +61,19 @@ func (s noxScriptNS) loadMap(name string, opts *ns4.LoadMapOptions) error {
 	}
 	name = path.Clean(name)
 	// TODO: support other map loading options
-	return noxLoadMap(name, mapLoadOptions{
+	if err := noxLoadMap(name, mapLoadOptions{
 		Force: opts.IgnoreMapType,
-	})
+	}); err != nil {
+		return err
+	}
+	switch {
+	case !noxflags.HasGame(noxflags.GameModeQuest):
+	case opts.QuestStage > 0:
+		s.s.quest.nextStage = opts.QuestStage
+	case opts.KeepQuestStage:
+		s.s.quest.nextStage = max(s.s.nox_game_getQuestStage_4E3CC0(), 1)
+	}
+	return nil
 }
 
 func (s noxScriptNS) LoadMap(name string, opts *ns4.LoadMapOptions) {

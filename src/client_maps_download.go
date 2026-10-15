@@ -19,6 +19,7 @@ import (
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/common/memmap"
 	"github.com/brutusmcforce/opennox/common/sound"
+	"github.com/brutusmcforce/opennox/legacy/cnxz"
 )
 
 type clientMapDownload struct {
@@ -29,6 +30,7 @@ type clientMapDownload struct {
 	done       <-chan error
 	native     bool
 	ndl        *maps.NativeDownloader
+	nativePath string // the .nxz being downloaded
 	win        *gui.Window
 	iface      struct {
 		setMapPath      func(path string)
@@ -94,7 +96,16 @@ func (c *clientMapDownload) startNative(name string, sz uint) error {
 	if err := c.ndl.Start(fpath, sz); err != nil {
 		return err
 	}
+	c.nativePath = fpath
 	return nil
+}
+
+// unpackNative replaces the .map with the downloaded .nxz. The game loads the .map and only unpacks the .nxz when
+// there's no .map, so an old .map would be kept and fail the CRC check on every join (opennox#639).
+func (c *clientMapDownload) unpackNative() error {
+	zpath := c.nativePath
+	mpath := strings.TrimSuffix(zpath, ".nxz") + maps.Ext
+	return cnxz.DecompressFile(zpath, mpath)
 }
 
 func (c *clientMapDownload) onMapDownloadStart(name string, sz uint) {
@@ -118,6 +129,8 @@ func (c *clientMapDownload) onMapDownloadPart(ind uint, data []byte) {
 		err := c.ndl.Finish()
 		if err != nil {
 			c.log.Error("cannot save the downloaded map", "err", err)
+		} else if err = c.unpackNative(); err != nil {
+			c.log.Error("cannot unpack the downloaded map", "err", err)
 		}
 		c.setDownloading(false)
 		c.setDownloadOK(err == nil)

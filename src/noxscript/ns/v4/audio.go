@@ -12,6 +12,16 @@ func AudioEvent(audio audio.Name, p Positioner) {
 	impl.AudioEvent(audio, p)
 }
 
+// PlayAudioFile plays a WAV file from the map folder (e.g. "voice/intro.wav") for all players, like a speech.
+//
+// The file is sent to each player the first time it plays (OpenNox players only), so keep it small.
+func PlayAudioFile(name string) {
+	if impl == nil {
+		return
+	}
+	impl.PlayAudioFile(name)
+}
+
 // Music plays music.
 func Music(music int, volume int) {
 	if impl == nil {

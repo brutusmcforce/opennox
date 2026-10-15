@@ -1125,6 +1125,15 @@ func (obj *Object) ChatStrTimer(message string, dt ns4.Duration) {
 	legacy.Nox_xxx_netSendChat_528AC0(obj.SObj(), message, uint16(obj.Server().AsFrames(dt)))
 }
 
+func (obj *Object) ChatTeam(message ns4.StringID) {
+	v, _ := obj.Server().Strings().GetVariantInFile(strman.ID(message), "CScrFunc.c")
+	legacy.NetSendChatTeam(obj.SObj(), v.Str, 0)
+}
+
+func (obj *Object) ChatStrTeam(message string) {
+	legacy.NetSendChatTeam(obj.SObj(), message, 0)
+}
+
 func (obj *Object) DestroyChat() {
 	obj.SObj().DestroyChat()
 }

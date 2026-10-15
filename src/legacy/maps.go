@@ -164,6 +164,11 @@ func Nox_xxx_unitSetDecayTime_511660(obj *server.Object, a2 int) {
 	motionDecaySet(obj, int32(a2))
 }
 
+// ObjectDecayCancel removes the object from the decay list (see Nox_xxx_unitSetDecayTime_511660), so it doesn't expire.
+func ObjectDecayCancel(obj *server.Object) {
+	motionDecayRemove(obj)
+}
+
 func Nox_xxx_tileFreeTileOne_4221E0(p unsafe.Pointer) {
 	mapPaintSubtileFree((*[5]uint32)(p))
 }

@@ -243,7 +243,7 @@ func temporaryCloudCandidate(t, u *server.Object, small bool) {
 	owner := u.FindOwnerChainPlayer()
 	_ = t.CallDamageValue(owner, u, int32(damage), 5)
 	owner = u.FindOwnerChainPlayer()
-	if GetServer().S().IsEnemyTo(owner, t) {
+	if GetServer().S().IsEnemyTo(owner, t) || SpellFriendlyFire && owner != nil {
 		resourcePoison(t, 1, 1)
 	}
 }

@@ -32,7 +32,9 @@ run() { # side binary port [env...]
 	wine="" z=""
 	case "$bin" in *.exe) wine=wine z="Z:" ;; esac
 	echo "$side: $bin"
-	(cd "$work/$side" && env HOME="$work/$side/home" NOX_E2E="$z$work/$side/mp-$side.yaml" NOX_E2E_FAILFAST=false \
+	(cd "$work/$side" && env HOME="$work/$side/home" XDG_CONFIG_HOME="$work/$side/home/.config" \
+		XDG_DATA_HOME="$work/$side/home/.local/share" XDG_CACHE_HOME="$work/$side/home/.cache" \
+		XDG_STATE_HOME="$work/$side/home/.local/state" NOX_E2E="$z$work/$side/mp-$side.yaml" NOX_E2E_FAILFAST=false \
 		NOX_E2E_OVERRIDE=true WINEDEBUG=-all "$@" timeout 300 $wine "$bin" -port "$port" -data "$z$work/$side/data" \
 		>"$work/$side.log" 2>&1)
 }

@@ -1,5 +1,38 @@
 # Changelog
 
+## v1.10.0-alpha2
+
+- Multiplayer without port forwarding: the lobby helps players behind routers connect directly, and relays the game when that fails (`network.nat_punch`).
+- Fix: Clients got the previous or a broken map when the server's map had no `.nxz` file; the server now compresses it.
+- Fix: Clients downloaded the map again on every join (#639); interrupted downloads no longer leave a broken map.
+- Map names can be up to 28 characters long.
+- Fix: Multiplayer maps starting with "con", "war" or "wiz" were missing from the map list (#651).
+- Large map view: the map key cycles small, large and closed, with an opacity option (#716).
+- Option to turn off auto-equipping picked-up items (`game.auto_equip`, #741).
+- Options menu: OpenNox options on a second page; sliders for UI Scale, Frame Rate Limit and Map Opacity.
+- Server settings: friendly fire for spells (`set friendlyfire`, #734), observer mode for idle players (`set afkobserver`, #691), the highest spell book level (`set spelllevel`, #731).
+- `set mode` changes the game mode of the next map (#674).
+- Spell book pages show the phonemes (#565).
+- The mouse wheel over a shop's stock scrolls the stock (#675).
+- A clear message when joining a server that runs another version (#419).
+- NS4: lives (#669), hiding objects (#724), object lifetime (#619), playing WAV files from the map folder (#620), NPC team chat (#645), item modifiers and colors (#647), trigger activators (#652), player and monster actions (#723), magic walls (#725), quest stage across maps (#727).
+- NS4 fixes: the killer in death events (#678), scripted Magic Missile targets (#689), `SetBaseSpeed()` on NPCs after loading (#730), Go scripts in map folders with capital letters.
+- Dedicated servers: clear messages for client-only commands, and fixes for crashes in several console commands.
+- Fix: A joined player could rename objects on the host.
+
+## v1.10.0-alpha1
+
+- The engine is written entirely in Go and runs as a native 64-bit program (amd64 Linux, x86_64 Windows); 32-bit, Snap and Windows 7 builds were dropped.
+- XWIS is no longer supported; the default lobby is `https://nox.thunraz.se`.
+- Older OpenNox versions can't play with this one; the software renderer was removed (OpenGL 3.3 is required).
+- UI scaling, camera zoom, smooth fonts, vsync, an FPS limit and counter, hardware cursors, and graphics options in the options menu.
+- Experimental gamepad support, the original random map generator, map rendering tools and many new NS4 functions.
+- Many multiplayer, gameplay, sound and rendering fixes; see the GitHub release for the full list.
+
+## v1.9.0 alphas
+
+See the GitHub releases.
+
 ## v1.8.11
 
 - Preparations to make more spells moddable.
