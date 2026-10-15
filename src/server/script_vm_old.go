@@ -212,6 +212,12 @@ func (s *NoxScriptVM) AsFuncIndex(defname string, fnc ns4.Func) int {
 	}
 }
 
+// IsGoFunc reports if the script function index is a Go function (NS4), not a function of the map's NoxScript.
+func (s *NoxScriptVM) IsGoFunc(ind int32) bool {
+	cb, ok := s.virtual.funcs[int(ind)]
+	return ok && cb.Fnc != nil
+}
+
 // addVirtual assigns a virtual function index for NoxScript.
 func (s *NoxScriptVM) addVirtual(name string, fnc func() error) int {
 	// Are we conflicting with the original NoxScript func indexes?

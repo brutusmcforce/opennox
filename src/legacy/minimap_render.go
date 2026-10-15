@@ -60,6 +60,14 @@ func minimapDrawAndMessages() int {
 	}
 	return int(interactionMessagesDraw())
 }
+
+// MinimapLarge shows the map large in the middle of the screen instead of its normal size on the left (opennox#716).
+// The large map has no background, so the game stays visible, and is drawn with MinimapLargeOpacity (percent).
+var (
+	MinimapLarge        bool
+	MinimapLargeOpacity = 60
+)
+
 func minimapDraw(_ *client.Drawable, level int) int {
 	c, s := GetClient(), GetServer().S()
 	r := c.R2()
@@ -72,11 +80,19 @@ func minimapDraw(_ *client.Drawable, level int) int {
 	objectRenderSaveClip()
 	width, height := int(nox_win_width), int(nox_win_height)
 	size := width / 6
+	xoff := 0
+	if MinimapLarge {
+		size = max(size, min(width, height)*9/10)
+		xoff = (width - size) / 2
+	}
 	top := (height - size) / 2
 	uiRenderCopyRect(0, 0, width, height)
 	left := drawViewport().Screen.Min.X
-	if left == 0 {
-		r.DrawRectFilledAlpha(0, top, size, size)
+	if MinimapLarge {
+		r.SetOpacity(MinimapLargeOpacity * 256 / 100)
+		defer r.SetOpacity(0)
+	} else if left == 0 {
+		r.DrawRectFilledAlpha(xoff, top, size, size)
 	} else {
 		d.SetColor2(noxcolor.RGBA5551(nox_color_black_2650656))
 		if left >= size {
@@ -89,16 +105,21 @@ func minimapDraw(_ *client.Drawable, level int) int {
 	d.SetAlphaEnabled(true)
 	d.SetColor2(noxcolor.RGBA5551(nox_color_black_2650656))
 	for i, a := range []byte{90, 60, 40} {
+		if MinimapLarge {
+			break // no shadow border without the background
+		}
 		n := i + 1
 		d.SetAlpha(a)
-		minimapOutline(-n, top-n, size+2*n, size+2*n)
+		minimapOutline(xoff-n, top-n, size+2*n, size+2*n)
 	}
 	d.SetAlphaEnabled(false)
-	uiRenderCopyRect(0, top, size, size)
+	uiRenderCopyRect(xoff, top, size, size)
 	zoom := int(minimapZoom)
 	span := size * zoom / 100
 	origin := drawViewport().World.Max.Sub(image.Pt(span/2, span/2))
-	project := func(p image.Point) image.Point { return image.Pt(100*(p.X-origin.X)/zoom, top+100*(p.Y-origin.Y)/zoom) }
+	project := func(p image.Point) image.Point {
+		return image.Pt(xoff+100*(p.X-origin.X)/zoom, top+100*(p.Y-origin.Y)/zoom)
+	}
 	xMin, xMax := origin.X/23, (origin.X+span)/23
 	yMin, yMax := origin.Y/23, (origin.Y+span)/23
 	for y := yMin; y <= yMax; y++ {

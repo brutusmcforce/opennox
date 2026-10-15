@@ -1,7 +1,6 @@
 package legacy
 
 import (
-	"encoding/binary"
 	"strings"
 	"unsafe"
 
@@ -188,20 +187,3 @@ func Nox_cmd_set_qual_isdn(_ int, _ []string) bool  { return consoleCommandQuali
 func Nox_cmd_set_qual_cable(_ int, _ []string) bool { return consoleCommandQuality(2, 1) }
 func Nox_cmd_set_qual_t1(_ int, _ []string) bool    { return consoleCommandQuality(1, 1) }
 func Nox_cmd_set_qual_lan(_ int, _ []string) bool   { return consoleCommandQuality(1, 0) }
-func Nox_cmd_offonly2(i int, t []string) bool {
-	if len(t) != 3 {
-		return false
-	}
-	for off := uintptr(0); ; off += 8 {
-		p := memmap.LoadPtr(0x587000, 94400+off)
-		if p == nil {
-			return true
-		}
-		if mapASCIIEqual(alloc.GoString16((*uint16)(p)), t[i]) {
-			data := unsafe.Slice(serverConfigSlot(1), 58)
-			mode := binary.LittleEndian.Uint16(data[52:])&0xe80f | memmap.Uint16(0x587000, 94404+off)
-			binary.LittleEndian.PutUint16(data[52:], mode)
-			return true
-		}
-	}
-}

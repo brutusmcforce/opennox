@@ -440,11 +440,22 @@ func (s *Server) castSpell(spellInd spell.ID, lvl int, u *server.Object, a3 *ser
 	return true
 }
 
+// castSpellBy casts a spell for a script.
 func (s *Server) castSpellBy(spellInd spell.ID, lvl int, caster *server.Object, targ server.Obj, targPos types.Pointf) bool {
 	sa, freeArg := alloc.New(server.SpellAcceptArg{})
 	defer freeArg()
 	sa.Obj = server.ToObject(targ)
 	sa.Pos = targPos
+	if lvl < 0 {
+		// the caster's level, but a caster that doesn't know the spell (e.g. a warrior) still casts it
+		lvl = max(1, legacy.Nox_xxx_spellGetPower_4FE7B0(spellInd, caster))
+	}
+	aim := &missilesAim{pos: targPos}
+	if sa.Obj != nil && sa.Obj.Class().HasAny(object.MaskUnits) {
+		aim.target = sa.Obj
+	}
+	s.spells.missiles.scriptAim = aim
+	defer func() { s.spells.missiles.scriptAim = nil }()
 	return s.nox_xxx_castSpellByUser4FDD20(spellInd, lvl, caster, sa)
 }
 

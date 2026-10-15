@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -22,6 +23,7 @@ func NewTextHandler(w io.Writer) *TextHandler {
 type TextHandler struct {
 	w   atomic.Pointer[io.Writer]
 	lvl atomic.Int32
+	mu  sync.Mutex // records are logged from several goroutines
 }
 
 func (h *TextHandler) Level() slog.Level {
@@ -56,7 +58,15 @@ func (h *TextHandler) Handle(ctx context.Context, r slog.Record) error {
 	if w == nil {
 		return nil
 	}
-	return PrintRecord(w, PrintDefault, r)
+	// each record is written with a single call, so records don't interleave and an unbuffered file gets whole lines
+	var buf bytes.Buffer
+	if err := PrintRecord(&buf, PrintDefault, r); err != nil {
+		return err
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	_, err := w.Write(buf.Bytes())
+	return err
 }
 
 type PrintFlags uint32

@@ -43,10 +43,15 @@ func init() {
 				Log:     log,
 				MapsDir: maps,
 			})
-			err := vm.ExecFile(name)
-			if os.IsNotExist(err) {
-				log.Warn("no go files")
+			dir, ok := mapScriptDir(maps, name)
+			if !ok {
+				log.Debug("no go files")
 				return vm, nil // still run the empty script for commands
+			}
+			err := vm.ExecFile(dir)
+			if os.IsNotExist(err) {
+				log.Debug("no go files")
+				return vm, nil
 			} else if err != nil {
 				return nil, err
 			}
@@ -54,6 +59,27 @@ func init() {
 			return vm, nil
 		},
 	})
+}
+
+// mapScriptDir returns the name of the map's folder in the maps dir. The server uses lower case map names,
+// but the folders keep the case of the original maps (e.g. BluDeath), which matters on Linux.
+func mapScriptDir(maps, name string) (string, bool) {
+	if fi, err := os.Stat(filepath.Join(maps, name)); err == nil && fi.IsDir() {
+		return name, true
+	}
+	list, err := os.ReadDir(maps)
+	if err != nil {
+		return "", false
+	}
+	for _, e := range list {
+		if !strings.EqualFold(e.Name(), name) {
+			continue
+		}
+		if fi, err := os.Stat(filepath.Join(maps, e.Name())); err == nil && fi.IsDir() {
+			return e.Name(), true
+		}
+	}
+	return "", false
 }
 
 type scriptPrinter struct {

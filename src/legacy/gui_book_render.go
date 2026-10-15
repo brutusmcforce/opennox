@@ -7,8 +7,10 @@ import (
 	"github.com/brutusmcforce/opennox/client/gui"
 	noxflags "github.com/brutusmcforce/opennox/common/flags"
 	"github.com/brutusmcforce/opennox/legacy/common/alloc"
+	"github.com/brutusmcforce/opennox/libs/spell"
 	"image"
 	"strconv"
+	"strings"
 	"unsafe"
 )
 
@@ -22,6 +24,22 @@ func bookFormatInt(format string, number int) string {
 	var dst [256]uint16
 	textFormatBuffer(dst[:], (*uint16)(unsafe.Pointer(internWStr(format))), textFormatWord(uint32(number)))
 	return alloc.GoString16(&dst[0])
+}
+// bookPhonemes returns the phonemes that cast the spell, e.g. "Un Ro Do", for casting it by hand (opennox#565).
+func bookPhonemes(id int) string {
+	def := GetServer().S().Spells.DefByInd(spell.ID(id))
+	if def == nil {
+		return ""
+	}
+	var parts []string
+	for _, ph := range def.Def.Phonemes {
+		if ph == spell.PhonEnd || !ph.Valid() {
+			break
+		}
+		name := ph.String()
+		parts = append(parts, strings.ToUpper(name[:1])+name[1:])
+	}
+	return strings.Join(parts, " ")
 }
 func bookCreatureName(id int) string {
 	return GoWStringP(memmap.WordPtr(uint32(bookGuideCreatureName(int32(id)))))
@@ -164,6 +182,9 @@ func bookDrawList(w *gui.Window) int {
 			}
 		}
 		centered(bookRankText(*bookPlayerWord(p, 3696, id)), y+height)
+		if ph := bookPhonemes(id); ph != "" {
+			centered(ph, y+2*height+4)
+		}
 		raw := nox_xxx_spellDescription_424A30(id)
 		hasDesc = raw != nil
 		desc = GoWString(raw)

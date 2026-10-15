@@ -12,7 +12,7 @@ import (
 	"github.com/brutusmcforce/opennox/legacy"
 )
 
-// OpenNox-specific video options, shown in the advanced video options list (see gui_video_adv.go).
+// OpenNox-specific options, shown in the advanced video options list (see gui_video_adv.go).
 //
 // Options with multiple values are shown as a check box with the current value in the label;
 // clicking it switches to the next value. Changes are saved to the config right away.
@@ -96,6 +96,24 @@ func openNoxVideoOpts(c *Client) []*videoOpt {
 			Get:  func() bool { return viper.GetBool(configVideoSmoothFonts) },
 			Toggle: func() {
 				viper.Set(configVideoSmoothFonts, !viper.GetBool(configVideoSmoothFonts))
+				_ = writeConfig()
+			},
+		},
+		{
+			ID:     2065,
+			Text:   "Auto-Equip Pickups",
+			Get:    func() bool { return gameAutoEquip },
+			Toggle: func() { setGameAutoEquip(!gameAutoEquip) },
+		},
+		{
+			ID: 2066,
+			Label: func() string {
+				return fmt.Sprintf("Map Opacity: %d%%", legacy.MinimapLargeOpacity)
+			},
+			Get: func() bool { return legacy.MinimapLargeOpacity < 100 },
+			Toggle: func() {
+				setLargeMapOpacity(nextChoice(largeMapOpacityChoices, legacy.MinimapLargeOpacity))
+				viper.Set(configLargeMapOpacity, legacy.MinimapLargeOpacity)
 				_ = writeConfig()
 			},
 		},

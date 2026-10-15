@@ -76,10 +76,31 @@ func lifecyclePickup(u *server.Object) {
 func lifecycleDyingStart(u *server.Object) {
 	ud := u.UpdateDataMonster()
 	combatSound(u, 15)
-	GetServer().NoxScriptC().ScriptCallback(&ud.ScriptDeath, nil, u, server.ScriptEventType(7))
+	// The game passes no caller. Go scripts get the killer instead, e.g. to keep score (opennox#678);
+	// the map's NoxScript keeps the original behavior.
+	var killer *server.Object
+	if GetServer().S().NoxScriptVM.IsGoFunc(ud.ScriptDeath.Func) {
+		killer = lifecycleKiller(u)
+	}
+	GetServer().NoxScriptC().ScriptCallback(&ud.ScriptDeath, killer, u, server.ScriptEventType(7))
 	if p := ud.MonsterDef.DieFunc228; p != nil {
 		monsterCallbackResult(p, u)
 	}
+}
+// lifecycleKiller returns the unit that dealt the last damage to u: the topmost unit owning the source (the caster
+// of a missile, the master of a summoned creature), or the source itself if no unit owns it (e.g. a trap).
+func lifecycleKiller(u *server.Object) *server.Object {
+	src := u.Obj130
+	killer := src
+	for it := src; it != nil; it = it.ObjOwner {
+		if it.Class().HasAny(object.MaskUnits) {
+			killer = it
+		}
+	}
+	if killer == u {
+		return nil
+	}
+	return killer
 }
 func lifecycleIsZombie(u *server.Object) bool {
 	return monsterIsZombie(u)

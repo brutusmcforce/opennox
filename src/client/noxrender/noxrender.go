@@ -361,6 +361,8 @@ type NoxRender struct {
 	pix   *noximage.Image16
 	gpu   GPU
 
+	opacity int // scales the alpha of fills, lines and pixels (1-256); 0 means unchanged
+
 	spriteSt  SpriteState // reused by the GPU sprite calls
 	glyphInfo map[font.Face]glyphMap
 	runRects  []image.Rectangle // reused by pixelRun

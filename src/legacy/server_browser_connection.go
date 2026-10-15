@@ -68,7 +68,12 @@ func browserConnectionError() int {
 		code = uint32(browserUI.connectionError)
 	}
 	key := alloc.GoString((*byte)(memmap.LoadPtr(0x587000, 87416+uintptr(code)*4)))
-	Sub_449E30(browserString(key))
+	text := browserString(key)
+	if code == 13 && text == "Your version does not match the server's." {
+		// ErrWrongVer: say what differs (opennox#419); the dialog only fits a few lines
+		text = "The server runs another version of the game, such as the original Nox."
+	}
+	Sub_449E30(text)
 	browserUI.transition = 0
 	Sub_449EA0(1)
 	Sub_44A360(1)

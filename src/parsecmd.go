@@ -2,6 +2,7 @@ package opennox
 
 import (
 	"context"
+	"strings"
 
 	"github.com/brutusmcforce/opennox/libs/env"
 	"github.com/brutusmcforce/opennox/libs/log"
@@ -84,7 +85,7 @@ var (
 		{Token: "time", HelpID: "settimehelp", Flags: console.Server, LegacyFunc: legacy.ConsoleCommand(legacy.Nox_cmd_set_time)},
 		{Token: "weapons", HelpID: "setweaponshelp", Flags: console.Server | console.Cheat, LegacyFunc: legacy.ConsoleCommand(legacy.Nox_cmd_set_weapons)},
 		{Token: "team", HelpID: "officialonly", Flags: console.Server | console.Cheat | console.FlagDedicated, LegacyFunc: legacy.ConsoleCommand(legacy.Nox_cmd_offonly1)},
-		{Token: "mode", HelpID: "officialonly", Flags: console.Server | console.Cheat | console.FlagDedicated, LegacyFunc: legacy.ConsoleCommand(legacy.Nox_cmd_offonly2)},
+		{Token: "mode", Help: "set mode <arena|elimination|ctf|kotr|flagball>: game mode for the next map, if the map supports it", Flags: console.Server, Func: consoleSetGameMode},
 	}}
 	noxCmdUnSet = &console.Command{Token: "unset", HelpID: "unsethelp", Flags: console.ClientServer, Sub: []*console.Command{
 		{Token: "frameratelimiter", HelpID: "unsetfrhelp", Flags: console.Server, Func: func(ctx context.Context, c *console.Console, tokens []string) bool {
@@ -180,3 +181,33 @@ var (
 		{Token: "window", HelpID: "windowhelp", Flags: console.ClientServer, LegacyFunc: legacy.ConsoleCommand(legacy.Nox_cmd_window)},
 	}
 )
+
+// consoleGameModes are the modes "set mode" accepts, as in the original game's table.
+var consoleGameModes = []struct {
+	name string
+	mode noxflags.GameFlag
+}{
+	{"Arena", noxflags.GameModeArena},
+	{"Elimination", noxflags.GameModeElimination},
+	{"CTF", noxflags.GameModeCTF},
+	{"KOTR", noxflags.GameModeKOTR},
+	{"Flagball", noxflags.GameModeFlagBall},
+}
+
+// consoleSetGameMode is "set mode". The original command was for official servers only, and it changed settings that
+// the server doesn't use, so it did nothing (opennox#674).
+func consoleSetGameMode(ctx context.Context, c *console.Console, tokens []string) bool {
+	if len(tokens) != 1 {
+		return false
+	}
+	for _, m := range consoleGameModes {
+		if !strings.EqualFold(m.name, tokens[0]) {
+			continue
+		}
+		stt := getCurrentSettings2()
+		stt.Field52 = stt.Field52&0xE80F | uint16(m.mode)
+		c.Printf(console.ColorLightYellow, "Game mode for the next map: %s", m.name)
+		return true
+	}
+	return false
+}

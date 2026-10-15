@@ -503,7 +503,7 @@ func (c *CtrlEventHandler) nox_xxx_clientControl_42D6B0_B() {
 			}
 			ce.Active = false
 		case player.CCReadMap:
-			nox_client_toggleMap_473610()
+			cycleMap()
 			ce.Active = false
 		case player.CCInventory:
 			legacy.Nox_client_toggleInventory_467C60()

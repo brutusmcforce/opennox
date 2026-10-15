@@ -12,6 +12,11 @@ import (
 func inventoryPriMessage(u *server.Object, key string) {
 	gameplayTextPrivate(u, (*byte)(unsafe.Pointer(internCStr(key))), 0)
 }
+
+// AutoEquip reports if weapons and armor that the player unit u picks up are equipped automatically,
+// as the game always did (opennox#741).
+var AutoEquip = func(u *server.Object) bool { return true }
+
 func inventoryWeaponPickup(u, it *server.Object, arg, equip int) int {
 	if u.ObjClass&4 != 0 && noxflags.HasGame(4096) && it.ObjSubClass&0x200000 != 0 {
 		limit := float32(nox_xxx_gamedataGetFloat_419D40(internCStr("ForceOfNatureStaffLimit")))
@@ -50,10 +55,11 @@ func inventoryWeaponPickup(u, it *server.Object, arg, equip int) int {
 	if u.ObjClass&4 != 0 {
 		ud := u.UpdateData
 		equipped := 0
-		if layout.As[server.PlayerUpdateData](ud).Field26 == nil && sub_419E60(asObjectC(u)) == 0 && nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(it)) != 2 {
+		auto := AutoEquip(u)
+		if auto && layout.As[server.PlayerUpdateData](ud).Field26 == nil && sub_419E60(asObjectC(u)) == 0 && nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(it)) != 2 {
 			equipped = equipmentEquipWeapon(u, it, equip, 0)
 		}
-		if sub_419E60(asObjectC(u)) == 0 && nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(it)) == 2 {
+		if auto && sub_419E60(asObjectC(u)) == 0 && nox_xxx_weaponInventoryEquipFlags_415820(asObjectC(it)) == 2 {
 			flags := u.UpdateDataPlayer().Player.WeaponEquip
 			if flags&0xC != 0 && flags&2 == 0 {
 				equipped = equipmentEquipWeapon(u, it, equip, 0)
@@ -140,7 +146,7 @@ func inventoryArmorPickup(u, it *server.Object, arg, equip int) int {
 	}
 	if u.ObjClass&4 != 0 {
 		old := equipmentSameArmor(u, it)
-		if sub_419E60(asObjectC(u)) == 0 {
+		if sub_419E60(asObjectC(u)) == 0 && AutoEquip(u) {
 			wood, steel := uint32(dword_5d4594_2488720), uint32(dword_5d4594_2488724)
 			sneakers, robe := *memmap.PtrUint32(0x5D4594, 2488712), *memmap.PtrUint32(0x5D4594, 2488716)
 			replace := false

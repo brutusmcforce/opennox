@@ -53,6 +53,7 @@ type Client interface {
 
 type Render2 interface {
 	Data() *noxrender.RenderData
+	SetOpacity(v int)
 	SetRectFullScreen()
 	SetTextSmooting(enabled bool)
 	SetColorMultAndIntensityRGB(cr, cg, cb byte) byte

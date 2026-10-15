@@ -14,6 +14,7 @@ type Wall struct {
 	OpenSound  string            `json:"open_sound,omitempty"`
 	CloseSound string            `json:"close_sound,omitempty"`
 	BreakSound string            `json:"break_sound,omitempty"`
+	Debris     []string          `json:"debris,omitempty"` // object types spawned when the wall breaks
 	Directions [15]WallDirection `json:"directions,omitempty"`
 }
 
@@ -160,6 +161,7 @@ func (f *Reader) readWALL() ([]Wall, error) {
 			OpenSound:  sopen,
 			CloseSound: sclose,
 			BreakSound: sbreak,
+			Debris:     debris,
 		}
 		for i := 0; i < 15; i++ {
 			vn, err := f.readU64align()

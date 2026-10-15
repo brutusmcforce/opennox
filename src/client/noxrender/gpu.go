@@ -211,8 +211,23 @@ func color16NRGBA(c Color16, a uint8) color.NRGBA {
 	return color.NRGBA{R: uint8(c.R), G: uint8(c.G), B: uint8(c.B), A: a}
 }
 
+// SetOpacity scales the opacity of the fills, lines and pixels drawn after it (1-256, 256 is opaque).
+// 0 resets it. Sprites and text are not affected.
+func (r *NoxRender) SetOpacity(v int) {
+	r.opacity = min(max(v, 0), 256)
+}
+
+// fillAlpha applies the opacity set by SetOpacity to the alpha of a fill.
+func (r *NoxRender) fillAlpha(alpha int) int {
+	if r.opacity == 0 {
+		return alpha
+	}
+	return alpha * r.opacity / 256
+}
+
 // gpuFill fills a rectangle. Alpha is an opacity of the color (0-256).
 func (r *NoxRender) gpuFill(rc image.Rectangle, c Color16, alpha int) {
+	alpha = r.fillAlpha(alpha)
 	if alpha <= 0 || rc.Empty() {
 		return
 	}

@@ -12,6 +12,15 @@ import (
 type spellMissiles struct {
 	s    *Server
 	proj map[spell.ID]int // map[spellID]typeID, 0x5D4594, 2489136
+
+	// scriptAim is set while a script casts the spell (see castSpellBy): the missiles go for the script's target,
+	// not for an enemy near the caster (opennox#689).
+	scriptAim *missilesAim
+}
+
+type missilesAim struct {
+	target *server.Object // a unit, or nil to search around pos
+	pos    types.Pointf
 }
 
 func (sp *spellMissiles) Init(s *Server) {
@@ -76,12 +85,20 @@ func (sp *spellMissiles) CastCustom(spellID spell.ID, owner, caster *server.Obje
 		msl.SetDir(dir)
 		msl.VelVec = cvel.Add(dv.Mul(mspeed * opts.VelMult))
 		var ppos *types.Pointf
-		if caster.Class().Has(object.ClassPlayer) {
+		if aim := sp.scriptAim; aim != nil {
+			pos := aim.pos
+			ppos = &pos
+		} else if caster.Class().Has(object.ClassPlayer) {
 			pl := caster.ControllingPlayer()
 			cur := pl.CursorPos()
 			ppos = &cur
 		}
-		targ := sp.s.Nox_xxx_spellFlySearchTarget(ppos, msl, 0x20, opts.SearchDist, 0, owner)
+		var targ *server.Object
+		if aim := sp.scriptAim; aim != nil && aim.target != nil {
+			targ = aim.target
+		} else {
+			targ = sp.s.Nox_xxx_spellFlySearchTarget(ppos, msl, 0x20, opts.SearchDist, 0, owner)
+		}
 		mud.Owner = owner
 		mud.Target = targ
 		mud.SpellID = int32(spellID)

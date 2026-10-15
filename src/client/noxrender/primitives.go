@@ -89,7 +89,9 @@ func (r *NoxRender) DrawLinesHorizontal(lines []HLine, cl color.Color) {
 		return
 	}
 	if rf, ok := r.gpu.(RectFiller); ok {
-		rf.FillRects(rects, color16NRGBA(bc, uint8(min(alpha, 255))), image.Rectangle{})
+		if a := r.fillAlpha(alpha); a > 0 {
+			rf.FillRects(rects, color16NRGBA(bc, uint8(min(a, 255))), image.Rectangle{})
+		}
 		return
 	}
 	for _, rc := range rects {
@@ -413,7 +415,9 @@ func (r *NoxRender) fillRuns(rects []image.Rectangle, c Color16, alpha int) {
 		return
 	}
 	if rf, ok := r.gpu.(RectFiller); ok {
-		rf.FillRects(rects, color16NRGBA(c, uint8(min(alpha, 255))), image.Rectangle{})
+		if a := r.fillAlpha(alpha); a > 0 {
+			rf.FillRects(rects, color16NRGBA(c, uint8(min(a, 255))), image.Rectangle{})
+		}
 		return
 	}
 	for _, rc := range rects {

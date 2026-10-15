@@ -1,19 +1,19 @@
 package opennox
 
 import (
-	"bufio"
 	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 
 	"github.com/brutusmcforce/opennox/libs/env"
 	"github.com/brutusmcforce/opennox/libs/log"
 )
 
 var (
+	// logFile isn't buffered: the log must be complete when the game crashes or is killed.
 	logFile    io.Closer
-	logBuf     bufio.Writer
 	logFileHnd = log.NewTextHandler(nil)
 )
 
@@ -28,10 +28,7 @@ func closeLog() {
 
 func setLogFile(w io.WriteCloser) {
 	if f := logFile; f != nil {
-		defer func() {
-			logBuf.Flush()
-			f.Close()
-		}()
+		defer func() { _ = f.Close() }()
 	}
 	if w == nil {
 		logFile = nil
@@ -39,8 +36,7 @@ func setLogFile(w io.WriteCloser) {
 		return
 	}
 	logFile = w
-	logBuf.Reset(w)
-	logFileHnd.SetWriter(&logBuf)
+	logFileHnd.SetWriter(w)
 }
 
 func defaultLogDir() string {
@@ -64,5 +60,10 @@ func writeLogsToDir(dir string) error {
 		return err
 	}
 	setLogFile(f)
+	// Panics and fatal errors only go to stderr, which players usually don't see (e.g. the Windows build started
+	// from the file manager), so the log wouldn't say why the game crashed.
+	if err := debug.SetCrashOutput(f, debug.CrashOptions{}); err != nil {
+		slog.Warn("cannot write crashes to the log", "err", err)
+	}
 	return nil
 }
