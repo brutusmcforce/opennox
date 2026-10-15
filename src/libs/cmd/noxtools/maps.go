@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slices"
 
 	"github.com/brutusmcforce/opennox/libs/maps"
 )

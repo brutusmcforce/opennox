@@ -5,10 +5,9 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/brutusmcforce/opennox/libs/metrics"
 	"github.com/brutusmcforce/opennox/libs/object"
 	"github.com/brutusmcforce/opennox/libs/player"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/brutusmcforce/opennox/libs/ifs"
 	"github.com/brutusmcforce/opennox/libs/log"
@@ -34,7 +33,7 @@ type questServer struct {
 }
 
 var (
-	questLevel = promauto.NewGauge(prometheus.GaugeOpts{
+	questLevel = metrics.NewGauge(metrics.Opts{
 		Name: "nox_quest_level",
 		Help: "The level of Quest game",
 	})

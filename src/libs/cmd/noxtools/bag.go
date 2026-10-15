@@ -15,15 +15,15 @@ import (
 	_ "image/png"
 	"io"
 	"log"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 
 	"github.com/brutusmcforce/opennox/libs/bag"
 	"github.com/brutusmcforce/opennox/libs/noximage/pcx"
@@ -595,12 +595,10 @@ func (e *extractor) ExtractObjects(thg *things.Reader, all bool, names ...string
 				continue
 			}
 		case things.PlayerDraw:
-			anims := maps.Keys(dr.Anims)
-			slices.Sort(anims)
+			anims := slices.Sorted(maps.Keys(dr.Anims))
 			for _, aname := range anims {
 				a := dr.Anims[aname]
-				parts := maps.Keys(a.Parts)
-				slices.Sort(parts)
+				parts := slices.Sorted(maps.Keys(a.Parts))
 				for _, pname := range parts {
 					p := a.Parts[pname]
 					frames := make([]things.ImageRef, 0, len(p)*int(a.FramesPerDir))

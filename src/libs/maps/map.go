@@ -7,8 +7,7 @@ import (
 	"image"
 	"math"
 	"reflect"
-
-	"golang.org/x/exp/slices"
+	"slices"
 
 	"github.com/brutusmcforce/opennox/libs/binenc"
 )

@@ -77,6 +77,7 @@ var fn struct {
 	DestroyCursor         uintptr
 	ShowCursor            uintptr
 	HideCursor            uintptr
+	ShowSimpleMessageBox  uintptr
 }
 
 var (
@@ -136,12 +137,23 @@ func Load() error {
 			"SDL_DestroyCursor":         &fn.DestroyCursor,
 			"SDL_ShowCursor":            &fn.ShowCursor,
 			"SDL_HideCursor":            &fn.HideCursor,
+			"SDL_ShowSimpleMessageBox":  &fn.ShowSimpleMessageBox,
 		})
 	})
 	return loadErr
 }
 
+// call invokes a native function. Arguments that are Go pointers converted to uintptr are kept alive (and moved to
+// the heap) for the duration of the call: purego.SyscallN promises that only for its own call site, and the promise
+// does not reach through a wrapper, so the pragma has to be repeated here.
+//
+//go:uintptrescapes
 func call(f uintptr, args ...uintptr) uintptr {
+	if f == 0 {
+		// the library was never loaded, or the function is missing: calling address zero would be a segfault
+		// in native code, with nothing to report it; Load (and Init) report what is missing.
+		return 0
+	}
 	r, _, _ := purego.SyscallN(f, args...)
 	return r
 }
@@ -242,4 +254,20 @@ func GetDisplayBounds(display int) (Rect, error) {
 	var r Rect
 	err := errorFrom(call(fn.GetDisplayBounds, uintptr(display), uintptr(unsafe.Pointer(&r))))
 	return r, err
+}
+
+// MessageBox flags (SDL_MessageBoxFlags).
+const (
+	MESSAGEBOX_ERROR = 0x00000010
+)
+
+// ShowSimpleMessageBox shows a modal message box, using whatever the platform provides (and, on Linux, falling
+// back to zenity and friends). It works before Init, but not if SDL cannot be loaded at all.
+func ShowSimpleMessageBox(flags uint32, title, message string) error {
+	if err := Load(); err != nil {
+		return err
+	}
+	t, m := dynlib.CString(title), dynlib.CString(message)
+	return errorFrom(call(fn.ShowSimpleMessageBox, uintptr(flags),
+		uintptr(unsafe.Pointer(t)), uintptr(unsafe.Pointer(m)), 0))
 }

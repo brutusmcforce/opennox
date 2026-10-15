@@ -5,13 +5,11 @@ package opennox
 import (
 	"fmt"
 	"image"
-	"os/exec"
-	"runtime"
-	"strings"
 	"unicode/utf16"
 
 	"github.com/spf13/viper"
-	"github.com/tawesoft/golib/v2/dialog"
+
+	libsdl "github.com/brutusmcforce/opennox/libs/sdl"
 
 	"github.com/brutusmcforce/opennox/libs/client/seat/sdl"
 	"github.com/brutusmcforce/opennox/libs/env"
@@ -138,13 +136,12 @@ func (c *Client) freeSeat() {
 	}
 }
 
+// errorMessage shows an error in a message box. SDL does it natively on every platform we ship; the fallback is
+// for the errors that SDL itself cannot be loaded for.
 func errorMessage(format string, args ...any) {
-	if runtime.GOOS == "darwin" {
-		// the dialog package only knows the Linux tools (zenity...); macOS has AppleScript
-		msg := fmt.Sprintf(format, args...)
-		quote := strings.NewReplacer(`\`, `\\`, `"`, `\"`)
-		_ = exec.Command("osascript", "-e", `display alert "OpenNox" message "`+quote.Replace(msg)+`" as critical`).Run()
+	msg := fmt.Sprintf(format, args...)
+	if err := libsdl.ShowSimpleMessageBox(libsdl.MESSAGEBOX_ERROR, "OpenNox", msg); err == nil {
 		return
 	}
-	dialog.Error(format, args...)
+	nativeErrorMessage(msg)
 }

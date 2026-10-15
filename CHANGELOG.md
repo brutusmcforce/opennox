@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.10.0-alpha3
+
+- The engine no longer uses cgo, and the game moved from SDL2 to SDL3; SDL3, OpenGL and OpenAL are loaded when the game starts.
+- Experimental macOS build: a universal `OpenNox.app` for Apple Silicon and Intel.
+- The Linux archive needs SDL3 to be installed (Debian 12 and Ubuntu 24.04 do not package it yet; the AppImage bundles SDL3 and OpenAL and needs nothing). The Windows archive ships `SDL3.dll` and `OpenAL32.dll` next to the executable.
+- Errors shown before the game window opens, such as missing game data, now use a native message box on Windows, macOS and Linux.
+- Fix: the game could crash when opening the multiplayer server list if the socket used to ping servers could not be opened.
+- Fix: builds that were not made from a release tag reported version v1.9.0-dev.
+- Dedicated servers and the lobby: `/metrics` no longer reports the `go_*` and `process_*` Go runtime metrics; the `nox_*` metrics are unchanged.
+
+### Internal
+
+- No cgo anywhere (`CGO_ENABLED=0` for every target). New packages load the native libraries at runtime with [purego](https://github.com/ebitengine/purego): `libs/dynlib` (dlopen/LoadLibrary), `libs/sdl` (SDL3), `libs/gl` (OpenGL 3.3) and `libs/openal`. `go-gl/gl`, `veandco/go-sdl2` and the vendored `go-openal` are gone.
+- The wrappers that call the native functions are marked `//go:uintptrescapes`. `purego.SyscallN` only promises to keep its own arguments alive, and that promise does not reach through a wrapper, so the Go pointers handed to SDL, OpenGL and OpenAL — window size out-parameters, OpenAL buffer and source IDs, uniform values, texture and vertex data — could be collected or moved during the call.
+- Dependencies dropped: `julienschmidt/httprouter` (the map server uses `net/http` routing), `tawesoft/golib` (message boxes come from SDL), `golang.org/x/exp` (stdlib `slices`/`maps`), and `prometheus/client_golang`, which took eight more modules with it: the counters and gauges moved to the new `libs/metrics`, which writes the Prometheus text format. The binaries are about 3 MB smaller.
+- Map server: `net/http` URL-unescapes a path wildcard, unlike the router it replaced, so a map name from the path is now checked to be a plain file name before it reaches a file path.
+- `go vet` runs with `-unsafeptr=false`: the native bindings turn addresses that come from SDL, OpenGL and OpenAL into pointers, which is what the check warns about. It cannot be scoped to those packages, because `go vet` also reports a package's dependencies.
+- The e2e screenshots are compared with a tolerance (`NOX_E2E_MAX_DELTA`, `NOX_E2E_MAX_DIFF_PCT`, `NOX_E2E_EXACT` for the old exact comparison). They are rasterized by the GPU, and OpenGL does not promise bit-identical results across drivers: against references recorded on AMD, 102 of the 123 screens differ on NVIDIA, Intel and llvmpipe, nearly always by one.
+- Windows: the socket `ioctl` is plain Go now. The raw mmap and memguard files are `unix` rather than linux-only, and `netstr` has a BSD socket path, so macOS and linux/arm64 build.
+- CI: a macOS job, a job that cross-builds all five targets, and an AppImage that builds SDL3 from source on Debian 12 (which has no SDL3 package) and bundles it with OpenAL.
+
 ## v1.10.0-alpha2
 
 - Multiplayer without port forwarding: the lobby helps players behind routers connect directly, and relays the game when that fails (`network.nat_punch`).
