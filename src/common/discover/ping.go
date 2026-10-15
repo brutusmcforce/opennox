@@ -3,6 +3,7 @@ package discover
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"log/slog"
 	"math/rand"
 	"net"
@@ -69,7 +70,12 @@ loop:
 	return last
 }
 
+// ErrNoPingSocket is returned by Pinger.SendPing when there is no socket to ping servers with.
+var ErrNoPingSocket = errors.New("discover: no socket to ping servers with")
+
 // NewPinger creates a pinger for game servers with an existing net.PacketConn.
+// The connection may be nil, e.g. when the broadcast socket could not be opened: pinging then fails with
+// ErrNoPingSocket, and the servers are still listed, without a ping time.
 func NewPinger(log *slog.Logger, pc *net.UDPConn) *Pinger {
 	p := &Pinger{
 		log:     log,
@@ -78,6 +84,11 @@ func NewPinger(log *slog.Logger, pc *net.UDPConn) *Pinger {
 		done:    make(chan struct{}),
 		rnd:     rand.New(rand.NewSource(time.Now().UnixNano())),
 		byToken: make(map[uint32]chan<- *lobby.Game),
+	}
+	if pc == nil {
+		p.err = ErrNoPingSocket
+		close(p.done) // nothing will read, so Close must not wait for it
+		return p
 	}
 	go p.read()
 	return p
@@ -100,9 +111,13 @@ func (p *Pinger) Close() error {
 		return nil
 	}
 	close(p.stop)
-	p.pc.SetReadDeadline(time.Now())
+	if p.pc != nil {
+		p.pc.SetReadDeadline(time.Now())
+	}
 	<-p.done
-	p.pc.SetReadDeadline(time.Time{})
+	if p.pc != nil {
+		p.pc.SetReadDeadline(time.Time{})
+	}
 	p.stop = nil
 	return nil
 }

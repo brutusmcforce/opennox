@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
+
+	"github.com/brutusmcforce/opennox/libs/metrics"
 
 	"github.com/brutusmcforce/opennox/lobby"
 )
@@ -71,7 +72,7 @@ func init() {
 		log.Println("serving lobby on", srv.Addr)
 		if *fMonitor != "" {
 			mon := http.NewServeMux()
-			mon.Handle("/metrics", promhttp.Handler())
+			mon.Handle("/metrics", metrics.Handler())
 			if *fPprof {
 				mon.HandleFunc("/debug/pprof/", pprof.Index)
 				mon.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)

@@ -15,10 +15,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/brutusmcforce/opennox/libs/metrics"
 	"github.com/brutusmcforce/opennox/libs/platform"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 
 	"github.com/brutusmcforce/opennox/libs/client/keybind"
@@ -40,9 +38,9 @@ import (
 )
 
 func init() {
-	http.Handle("/metrics", promhttp.Handler())
+	http.Handle("/metrics", metrics.Handler())
 	viper.SetDefault(configManualSpellCastDelay, 0.5)
-	promauto.NewCounterVec(prometheus.CounterOpts{
+	metrics.NewCounterVec(metrics.Opts{
 		Name: "opennox_version",
 		Help: "OpenNox version",
 	}, []string{"vers", "commit"}).WithLabelValues(

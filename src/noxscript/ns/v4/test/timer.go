@@ -1,10 +1,10 @@
 package nstest
 
 import (
+	"maps"
+	"slices"
 	"sync/atomic"
 	"time"
-
-	"golang.org/x/exp/maps"
 )
 
 type Timers struct {
@@ -27,7 +27,7 @@ func (s *Timers) NewDur(t time.Duration, fnc func()) *Timer {
 }
 
 func (s *Timers) Update() {
-	for _, t := range maps.Values(s.byID) {
+	for _, t := range slices.Collect(maps.Values(s.byID)) {
 		t.Update()
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -122,6 +123,65 @@ func TestMapServer(t *testing.T) {
 
 			err = cli.DownloadMap(ctx, dstdir, name)
 			must.NoError(t, err)
+		})
+	}
+}
+
+// TestMapServerRoutes checks the routes and that a map name from the URL cannot escape the maps folder.
+// It needs no game data: the maps folder is empty.
+func TestMapServerRoutes(t *testing.T) {
+	dir := t.TempDir()
+	srv := NewServer(slog.Default(), dir)
+
+	get := func(path string) *http.Response {
+		t.Helper()
+		req := httptest.NewRequest("GET", path, nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+		return rec.Result()
+	}
+
+	resp := get("/api/v0/maps/")
+	must.EqOp(t, http.StatusOK, resp.StatusCode)
+	must.EqOp(t, "application/json", resp.Header.Get("Content-Type"))
+
+	for _, path := range []string{
+		"/api/v0/maps/missing",
+		"/api/v0/maps/missing/download",
+		"/api/v0/maps/missing/other",
+	} {
+		resp := get(path)
+		must.EqOp(t, http.StatusNotFound, resp.StatusCode)
+	}
+}
+
+// TestMapName checks the map names that are rejected. The router unescapes the path wildcard, so a request for
+// "/api/v0/maps/..%2F..%2Fetc" arrives with the name "../../etc": it must not reach the file paths.
+func TestMapName(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		exp  bool
+	}{
+		{"estate", true},
+		{"!estate", true},
+		{"Estate", true},
+		{"so.me", true},
+		{"", false},
+		{".", false},
+		{"..", false},
+		{"../../etc", false},
+		{"a/b", false},
+		{`..\..\etc`, false},
+		{"a\x00b", false},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			r := httptest.NewRequest("GET", "/api/v0/maps/x", nil)
+			r.SetPathValue("map", c.name)
+			got, ok := mapName(r)
+			must.EqOp(t, c.exp, ok)
+			if ok {
+				must.EqOp(t, c.name, got)
+			}
 		})
 	}
 }

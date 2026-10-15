@@ -5,8 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/brutusmcforce/opennox/libs/metrics"
 )
 
 const (
@@ -15,20 +14,20 @@ const (
 
 var (
 	serverLabelNames = []string{"src", "addr", "port", "name", "vers", "mode", "map"}
-	cntGameSeen      = promauto.NewCounterVec(prometheus.CounterOpts{
+	cntGameSeen      = metrics.NewCounterVec(metrics.Opts{
 		Name: "nox_game_seen",
 		Help: "Number of times the game was seen online",
 	}, serverLabelNames)
 	// not per game: a series for every game that ever expired would never be deleted
-	cntGameExpired = promauto.NewCounter(prometheus.CounterOpts{
+	cntGameExpired = metrics.NewCounter(metrics.Opts{
 		Name: "nox_game_expired",
 		Help: "Number of times a game registration expired",
 	})
-	cntGamePlayers = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	cntGamePlayers = metrics.NewGaugeVec(metrics.Opts{
 		Name: "nox_game_players",
 		Help: "Number of players in the game",
 	}, serverLabelNames)
-	cntRequests = promauto.NewCounterVec(prometheus.CounterOpts{
+	cntRequests = metrics.NewCounterVec(metrics.Opts{
 		Name: "nox_http_requests",
 		Help: "Number of HTTP requests to the API",
 	}, []string{"method", "endpoint", "agent"})

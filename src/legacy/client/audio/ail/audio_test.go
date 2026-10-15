@@ -10,17 +10,17 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/brutusmcforce/opennox/libs/ifs"
 	"github.com/brutusmcforce/opennox/libs/noxtest"
 	"github.com/shoenig/test/must"
-	"golang.org/x/exp/maps"
 )
 
 type testFile struct {
@@ -50,8 +50,7 @@ func TestAudioDecode(t *testing.T) {
 			must.NoError(t, err)
 			all := make(map[string]testFile)
 			t.Cleanup(func() {
-				keys := maps.Keys(all)
-				sort.Strings(keys)
+				keys := slices.Sorted(maps.Keys(all))
 				var buf strings.Builder
 				for _, name := range keys {
 					v := all[name]

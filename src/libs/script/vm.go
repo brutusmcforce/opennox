@@ -2,10 +2,9 @@ package script
 
 import (
 	"log/slog"
+	"maps"
 	"reflect"
-	"sort"
-
-	"golang.org/x/exp/maps"
+	"slices"
 )
 
 // EventType is a type of script events.
@@ -37,8 +36,7 @@ func RegisterVM(r VMRuntime) {
 
 // VMRuntimes returns all registered VM runtimes.
 func VMRuntimes() []VMRuntime {
-	keys := maps.Keys(vms)
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(vms))
 	var out []VMRuntime
 	for _, k := range keys {
 		out = append(out, vms[k])

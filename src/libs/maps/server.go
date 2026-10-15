@@ -10,12 +10,10 @@ import (
 	"os"
 	lpath "path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/julienschmidt/httprouter"
-	"golang.org/x/exp/slices"
 
 	"github.com/brutusmcforce/opennox/libs/ifs"
 )
@@ -159,18 +157,26 @@ func NewServer(log *slog.Logger, path string) *Server {
 	s := &Server{
 		log:  log,
 		path: path,
-		mux:  httprouter.New(),
+		mux:  http.NewServeMux(),
 	}
 	s.scan = func() (MapList, error) {
 		return Scan(s.log, s.path, nil)
 	}
-	s.mux.Handle("HEAD", "/api/v0/maps/", s.handleMapList)
-	s.mux.Handle("GET", "/api/v0/maps/", s.handleMapList)
-
-	s.mux.Handle("HEAD", "/api/v0/maps/:map", s.handleMap)
-	s.mux.Handle("GET", "/api/v0/maps/:map", s.handleMap)
-	s.mux.Handle("GET", "/api/v0/maps/:map/download", s.handleMapDownload)
+	// GET patterns also match HEAD requests
+	s.mux.HandleFunc("GET /api/v0/maps/{$}", s.handleMapList)
+	s.mux.HandleFunc("GET /api/v0/maps/{map}", s.handleMap)
+	s.mux.HandleFunc("GET /api/v0/maps/{map}/download", s.handleMapDownload)
 	return s
+}
+
+// mapName returns the map name from the request path. Path wildcards are URL-unescaped, so the name is checked
+// to be a single plain file name before it reaches the file paths below.
+func mapName(r *http.Request) (string, bool) {
+	name := r.PathValue("map")
+	if name == "" || name == "." || name == ".." || strings.ContainsAny(name, `/\`) || strings.ContainsRune(name, 0) {
+		return "", false
+	}
+	return name, true
 }
 
 // mapListTTL is how long the map list is cached: scanning reads every map in the folder,
@@ -179,7 +185,7 @@ const mapListTTL = 10 * time.Second
 
 type Server struct {
 	log  *slog.Logger
-	mux  *httprouter.Router
+	mux  *http.ServeMux
 	path string
 
 	scan   func() (MapList, error) // Scan of the path; replaced in tests
@@ -218,7 +224,7 @@ func (s *Server) serveJSON(w http.ResponseWriter, obj interface{}) {
 	enc.Encode(obj)
 }
 
-func (s *Server) handleMapList(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (s *Server) handleMapList(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -238,9 +244,9 @@ func (s *Server) handleMapList(w http.ResponseWriter, r *http.Request, p httprou
 	}
 }
 
-func (s *Server) handleMap(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	name := p.ByName("map")
-	if name == "" {
+func (s *Server) handleMap(w http.ResponseWriter, r *http.Request) {
+	name, ok := mapName(r)
+	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
@@ -256,12 +262,13 @@ func (s *Server) handleMap(w http.ResponseWriter, r *http.Request, p httprouter.
 	s.serveJSON(w, info)
 }
 
-func (s *Server) handleMapDownload(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	name := strings.ToLower(p.ByName("map"))
-	if name == "" {
+func (s *Server) handleMapDownload(w http.ResponseWriter, r *http.Request) {
+	name, ok := mapName(r)
+	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	name = strings.ToLower(name)
 	log := s.log.With("name", name)
 	base := filepath.Join(s.path, name)
 	base = ifs.Normalize(base)
@@ -271,12 +278,15 @@ func (s *Server) handleMapDownload(w http.ResponseWriter, r *http.Request, p htt
 	fpath = ifs.Normalize(fpath)
 
 	fi, err := os.Stat(fpath)
-	if os.IsNotExist(err) || fi.IsDir() || fi.Size() == 0 {
+	if os.IsNotExist(err) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	} else if err != nil {
 		log.Error("error serving map", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
+	} else if fi.IsDir() || fi.Size() == 0 {
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 	accept := r.Header.Get("Accept")

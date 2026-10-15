@@ -3,36 +3,35 @@ package opennox
 import (
 	"strconv"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/brutusmcforce/opennox/libs/metrics"
 )
 
 var (
-	cntMainloop = promauto.NewCounter(prometheus.CounterOpts{
+	cntMainloop = metrics.NewCounter(metrics.Opts{
 		Name: "nox_mainloop",
 		Help: "Mainloop iteration",
 	})
-	cntPlatformTick = promauto.NewGauge(prometheus.GaugeOpts{
+	cntPlatformTick = metrics.NewGauge(metrics.Opts{
 		Name: "nox_platform_tick",
 		Help: "Current platform tick",
 	})
-	cntGameTick = promauto.NewGauge(prometheus.GaugeOpts{
+	cntGameTick = metrics.NewGauge(metrics.Opts{
 		Name: "nox_game_tick",
 		Help: "Current game tick",
 	})
-	cntGameMap = promauto.NewCounterVec(prometheus.CounterOpts{
+	cntGameMap = metrics.NewCounterVec(metrics.Opts{
 		Name: "nox_map_played",
 		Help: "The number of times a specific map was played",
 	}, []string{"map"})
-	cntPlayers = promauto.NewGauge(prometheus.GaugeOpts{
+	cntPlayers = metrics.NewGauge(metrics.Opts{
 		Name: "nox_players_online",
 		Help: "The number of online players",
 	})
-	cntPlayerHealth = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	cntPlayerHealth = metrics.NewGaugeVec(metrics.Opts{
 		Name: "nox_player_health",
 		Help: "Current health of the player",
 	}, []string{"ind", "name"})
-	cntPlayerMana = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	cntPlayerMana = metrics.NewGaugeVec(metrics.Opts{
 		Name: "nox_player_mana",
 		Help: "Current mana of the player",
 	}, []string{"ind", "name"})

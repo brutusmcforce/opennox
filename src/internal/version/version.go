@@ -12,7 +12,9 @@ func LogVersion() {
 }
 
 const (
-	DefVersion = "v1.9.0-dev"
+	// DefVersion is the version of builds that are not on a tag. Bump it right after a release, or every
+	// local and latest-dev build claims to be older than what was already released.
+	DefVersion = "v1.10.0-dev"
 )
 
 const (

@@ -3,12 +3,12 @@ package nstest
 import (
 	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"sync/atomic"
 
 	"github.com/brutusmcforce/opennox/libs/player"
 	"github.com/brutusmcforce/opennox/libs/types"
-	"golang.org/x/exp/maps"
 
 	"github.com/brutusmcforce/opennox/noxscript/ns/v4"
 )
@@ -24,8 +24,7 @@ func (r *Runtime) HostPlayer() ns.Player {
 }
 
 func (r *Runtime) Players() []ns.Player {
-	ids := maps.Keys(r.PlayersData.ByID)
-	slices.Sort(ids)
+	ids := slices.Sorted(maps.Keys(r.PlayersData.ByID))
 	var out []ns.Player
 	for _, id := range ids {
 		pl := r.PlayersData.ByID[id]

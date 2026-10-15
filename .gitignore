@@ -41,3 +41,5 @@ src/opennox
 src/opennox-debug
 src/opennox-server
 
+src/noxscript/ns/v3/noxast/.out/
+src/libs/modifiers/modifiers.json

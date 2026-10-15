@@ -41,7 +41,17 @@ func Init() error {
 	return nil
 }
 
+// call invokes a native function. Arguments that are Go pointers converted to uintptr are kept alive (and moved to
+// the heap) for the duration of the call: purego.SyscallN promises that only for its own call site, and the promise
+// does not reach through a wrapper, so the pragma has to be repeated here.
+//
+//go:uintptrescapes
 func call(f uintptr, args ...uintptr) uintptr {
+	if f == 0 {
+		// the library was never loaded, or the function is missing: calling address zero would be a segfault
+		// in native code, with nothing to report it; Load (and Init) report what is missing.
+		return 0
+	}
 	r, _, _ := purego.SyscallN(f, args...)
 	return r
 }
