@@ -10,6 +10,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"unsafe"
 
@@ -214,7 +215,7 @@ func (s *Server) nox_xxx_serverParseEntireMap_4CFCE0(cf *cryptfile.CryptFile) er
 			if obj == nil {
 				return fmt.Errorf("cannot decode map object: invalid type: %q", sect)
 			}
-			if err := obj.CallXfer(nil); err != nil {
+			if err := mapRecover(func() error { return obj.CallXfer(nil) }); err != nil {
 				return fmt.Errorf("cannot decode map object: %q: %w", sect, err)
 			}
 			legacy.Nox_xxx_servMapLoadPlaceObj_4F3F50(obj, 0, nil)
@@ -237,10 +238,22 @@ func nox_xxx_mapReadSection(cf *cryptfile.CryptFile, a1 unsafe.Pointer, name str
 		mapLog.Printf("unsupported map section: %q", name)
 		return false, nil
 	}
-	if err := sect.Fnc(cf, a1); err != nil {
+	if err := mapRecover(func() error { return sect.Fnc(cf, a1) }); err != nil {
 		return false, fmt.Errorf("cannot parse map section: %q: %w", name, err)
 	}
 	return true, nil
+}
+
+// mapRecover runs a map file reader, turning a panic on broken data (a corrupted map or save)
+// into an error: the load fails instead of the game.
+func mapRecover(fnc func() error) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			mapLog.Printf("broken map data: %v\n%s", r, debug.Stack())
+			err = fmt.Errorf("broken map data: %v", r)
+		}
+	}()
+	return fnc()
 }
 
 func nox_xxx_mapWriteSectionsMB_426E20(a1 unsafe.Pointer) int {

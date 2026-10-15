@@ -286,6 +286,9 @@ func (s *NoxScriptVM) resetStack() {
 	s.vm.stack = s.vm.stack[:0]
 }
 
+// scriptMaxJumps limits the jumps of one script function call (about a second of a busy loop).
+const scriptMaxJumps = 1 << 24
+
 func (s *NoxScriptVM) saveStack() int {
 	return len(s.vm.stack)
 }
@@ -620,6 +623,17 @@ func (s *NoxScriptVM) callByFunc(sc *ScriptFunc, caller, trigger *Object, args [
 	}
 	bstack := s.saveStack()
 	code := sc.Code
+	// A map script that loops forever froze the server (as in the original). Loops need jumps:
+	// a call that jumps this many times is stopped with an error.
+	jumps := 0
+	jumped := func() error {
+		jumps++
+		if jumps > scriptMaxJumps {
+			s.adjustStack(bstack, sc.Return)
+			return fmt.Errorf("in %q: script runs too long, stopped", sc.Name())
+		}
+		return nil
+	}
 	readUint := func() uint32 {
 		v := code[0]
 		code = code[1:]
@@ -789,16 +803,25 @@ func (s *NoxScriptVM) callByFunc(sc *ScriptFunc, caller, trigger *Object, args [
 			s.PushI32(lhs ^ rhs)
 			continue
 		case asm.OpJump:
+			if err := jumped(); err != nil {
+				return err
+			}
 			jmpi := readInt()
 			code = sc.Code[jmpi:]
 			continue
 		case asm.OpJumpIf:
+			if err := jumped(); err != nil {
+				return err
+			}
 			jmpi := readInt()
 			if s.PopBool() {
 				code = sc.Code[jmpi:]
 			}
 			continue
 		case asm.OpJumpIfNot:
+			if err := jumped(); err != nil {
+				return err
+			}
 			jmpi := readInt()
 			if !s.PopBool() {
 				code = sc.Code[jmpi:]

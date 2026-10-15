@@ -91,6 +91,8 @@ func (e bindingEditor) construct() int {
 	(*gui.Window)(data.Field_9).SetID(920)
 	spacer.SetFunc94(e.route)
 	for i := 1; i < 4; i++ {
+		// One line per row: a long action name must not wrap, or the key columns next to it get out of line.
+		bindingWindow(base + 4*i).Flags |= gui.StatusOneLine
 		bindingWindow(base + 4*i).SetParent(spacer)
 	}
 	bindingWindow(base + 8).SetFunc93(bindingFilter)

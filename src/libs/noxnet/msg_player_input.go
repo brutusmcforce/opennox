@@ -60,6 +60,9 @@ func (m *MsgPlayerInput) Decode(data []byte) (int, error) {
 	}
 	m.Inputs = nil
 	psz := int(data[0])
+	if len(data) < 1+psz {
+		return 0, io.ErrUnexpectedEOF
+	}
 	data = data[1 : 1+psz]
 	for len(data) > 0 {
 		code := CtrlCode(data[0])

@@ -116,6 +116,7 @@ func (c *Client) mainloop_43E290(exitPath bool) {
 mainloop:
 	for mainloopContinue && !mainloopStopError {
 		c.srv.mainloopPre()
+		flushConfig()
 
 		if c.mapsend.Downloading() {
 			if done, err := noxClient.mapDownloadLoop(false); !done {

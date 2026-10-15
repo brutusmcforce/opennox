@@ -45,8 +45,10 @@ type Conn struct {
 	sendBuf   []byte
 	sendWrite int
 
-	max       uint32
-	accepted  int
+	max      uint32
+	accepted int // on the listener: accepted connections
+	// listener is the listening connection that accepted this one; it counts it as accepted
+	listener  *Conn
 	ticks22   time.Duration
 	ticks23   time.Duration
 	ticks24   time.Duration
@@ -164,9 +166,27 @@ func (ns *Conn) Close() error {
 		_ = ns.pc.Close()
 	}
 	ns.pc = nil
+	ns.releaseSlot()
 	ns.reset()
 	ns.g.streams[ns.ind] = nil
 	return nil
+}
+
+// releaseSlot gives the slot of an accepted connection back to its listener (once).
+// The count was decremented on the closed connection itself, so the listener counted every player
+// that ever joined: after enough joins and leaves the server answered that it is full (opennox#739).
+func (ns *Conn) releaseSlot() {
+	if l := ns.listener; l != nil {
+		if l.accepted > 0 {
+			l.accepted--
+		}
+		ns.listener = nil
+		// also on a timeout or a kick, not only when the client closes the connection
+		if _, ok := ns.g.playerIDs[ns.ind]; ok {
+			delete(ns.g.playerIDs, ns.ind)
+			ns.g.cntX--
+		}
+	}
 }
 
 func (ns *Conn) SendServerClose() {
@@ -178,7 +198,7 @@ func (ns *Conn) SendServerClose() {
 	buf[0] = byte(netmsg.MSG_SERVER_CLOSE)
 	_, _ = ns.SendUnreliable(buf[:], false)
 	ns.Flush()
-	ns.accepted--
+	ns.releaseSlot()
 	ns.reliable.Clear()
 	ns.reset()
 	ns.g.streams[ns.ind] = nil
@@ -229,6 +249,7 @@ func (ns *Conn) processStreamOp0(out []byte, pid handle, p1 byte, from netip.Add
 		CheckPass:  ns.checkPass,
 	})
 	ns.accepted++
+	ns2.listener = ns
 
 	hdr := ns2.data2hdr()
 	hdr[0] = byte(ns.ind)

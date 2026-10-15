@@ -90,3 +90,16 @@ func TestMapListCached(t *testing.T) {
 	srv.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/api/v0/maps/", nil))
 	must.EqOp(t, 2, scans)
 }
+
+// The map name comes from the server: ".." must not unpack the map next to the game data.
+func TestDownloadMapBadName(t *testing.T) {
+	root := t.TempDir()
+	dest := filepath.Join(root, "maps")
+	must.NoError(t, os.Mkdir(dest, 0o755))
+	cli := serveZip(t, map[string][]byte{"planted.lua": []byte("planted")})
+	for _, name := range []string{"..", ".", "", "../..", "..\\.."} {
+		must.Error(t, cli.DownloadMap(context.Background(), dest, name), must.Sprintf("%q", name))
+	}
+	_, err := os.Stat(filepath.Join(root, "planted.lua"))
+	must.True(t, os.IsNotExist(err))
+}

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/spf13/viper"
 
@@ -67,6 +68,7 @@ var (
 	configLog      = log.New("config")
 	configPath     string
 	configDirty    bool
+	configDirtyAt  time.Time
 	configReadOnly = isDedicatedServer
 	onConfigRead   []func()
 )
@@ -95,11 +97,25 @@ func maybeWriteConfig() {
 	if !configDirty {
 		return
 	}
-	_ = writeConfig()
+	if writeConfig() == nil {
+		configDirty = false
+	}
 }
 
 func writeConfigLater() {
 	configDirty = true
+	configDirtyAt = time.Now()
+}
+
+// configSaveDelay is how long changed settings wait before they are written.
+const configSaveDelay = 2 * time.Second
+
+// flushConfig writes changed settings a moment after the last change (called every frame). Writing them
+// only on exit lost them when the game was killed, e.g. a resolution picked on a Steam Deck (opennox#643).
+func flushConfig() {
+	if configDirty && time.Since(configDirtyAt) >= configSaveDelay {
+		maybeWriteConfig()
+	}
 }
 
 func configStrPtr(key, env string, def string, ptr *string) {

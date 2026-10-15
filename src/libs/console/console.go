@@ -374,11 +374,14 @@ func (cn *Console) Commands() []*Command {
 
 func cmdForToken(cmds []*Command, token string) *Command {
 	for i, cur := range cmds {
-		tok := token
 		if cur.Flags.Has(Secret) {
-			tok = EncodeSecret(tok)
+			if EncodeSecret(token) == cur.Token {
+				return cmds[i]
+			}
+			continue
 		}
-		if tok == cur.Token {
+		// case-insensitive, as in the original: map rule files have "SET SPELL ..."
+		if strings.EqualFold(token, cur.Token) {
 			return cmds[i]
 		}
 	}
@@ -480,7 +483,9 @@ func (cn *Console) Exec(ctx context.Context, cmd string) bool {
 	var ok bool
 	// TODO: properly support raw commands by searching sub-commands token-by-token
 	if c := cmdForToken(cn.Commands(), tokens[0]); c != nil && c.Raw {
-		raw = strings.TrimPrefix(raw, c.Token)
+		if len(raw) >= len(c.Token) && strings.EqualFold(raw[:len(c.Token)], c.Token) {
+			raw = raw[len(c.Token):]
+		}
 		raw = strings.TrimSpace(raw)
 		ok = cn.ParseToken(ctx, 0, []string{c.Token, raw}, cn.Commands())
 	} else {

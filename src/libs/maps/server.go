@@ -121,7 +121,18 @@ func CompressMap(w io.Writer, fss fs.FS, dir string) error {
 			return nil // Continue into directories.
 		}
 		if !d.Type().IsRegular() {
-			return nil // Skip symlinks and other non-regular files.
+			// A symlink is followed only to a regular .map or .rul file: map files linked from elsewhere
+			// (e.g. a shared game install) must not be left out of the archive.
+			if d.Type()&fs.ModeSymlink == 0 {
+				return nil // Skip other non-regular files.
+			}
+			// only the original map files: a linked text or script could be anything on the host
+			if !slices.Contains(lowerMapFileExt, strings.ToLower(lpath.Ext(name))) {
+				return nil
+			}
+			if fi, err := fs.Stat(fss, path); err != nil || !fi.Mode().IsRegular() {
+				return nil
+			}
 		}
 		ext := strings.ToLower(lpath.Ext(name))
 		if slices.Contains(lowerMapFileExt, ext) {

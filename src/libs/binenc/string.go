@@ -96,7 +96,8 @@ func (s *String) Encode(data []byte) {
 func (s *String) Decode(data []byte) {
 	s.Value = CString(data)
 	s.Junk = nil
-	if i := len(s.Value); !allZeros(data[i+1:]) {
+	// without a terminator the string fills the field, and there is no junk after it
+	if i := len(s.Value); i < len(data) && !allZeros(data[i+1:]) {
 		s.Junk = make([]byte, len(data)-i-1)
 		copy(s.Junk, data[i+1:])
 	}

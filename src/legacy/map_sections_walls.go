@@ -49,6 +49,10 @@ func mapSectionWallFields(w *server.Wall, version int16, merge bool) {
 		return
 	}
 	w.Tile1 = mapSectionByte(w.Tile1)
+	if defs.DefByInd(int(w.Tile1)) == nil {
+		// a broken map or save: an unknown tile, use the first one as for old map versions
+		w.Tile1 = 0
+	}
 	if version >= 3 {
 		w.Field2 = mapSectionByte(w.Field2)
 	} else {

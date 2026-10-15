@@ -111,6 +111,10 @@ func (c *Client) DownloadMap(ctx context.Context, dest string, name string) erro
 	name = filepath.ToSlash(name)
 	name = path.Base(name)
 	name = strings.TrimSuffix(strings.ToLower(name), Ext)
+	// the name comes from the server: ".." would unpack the map next to the game data
+	if name == "" || name == "." || name == ".." || strings.ContainsAny(name, `/\`) || !filepath.IsLocal(name) {
+		return fmt.Errorf("invalid map name: %q", name)
+	}
 	url := c.base + "/api/v0/maps/" + name + "/download"
 	c.log.Info("GET", "url", url)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
