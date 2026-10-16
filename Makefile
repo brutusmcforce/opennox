@@ -15,17 +15,17 @@ build-client-win:
 
 build-server-docker:
 	GIT_SHA=$$(git rev-parse --short HEAD); \
-	GIT_TAG=$$(git name-rev --tags --name-only $$GIT_SHA); \
+	GIT_TAG=$$(git tag --points-at $$GIT_SHA | grep -m1 '^v[0-9]' || true); \
 	docker build -t ghcr.io/brutusmcforce/opennox:dev -f ./docker/Dockerfile_server --target=server --build-arg GIT_SHA=$$GIT_SHA  --build-arg GIT_TAG=$$GIT_TAG ./src
 
 build-server-demo-docker:
 	GIT_SHA=$$(git rev-parse --short HEAD); \
-	GIT_TAG=$$(git name-rev --tags --name-only $$GIT_SHA); \
+	GIT_TAG=$$(git tag --points-at $$GIT_SHA | grep -m1 '^v[0-9]' || true); \
 	docker build -t ghcr.io/brutusmcforce/opennox:dev-demo -f ./docker/Dockerfile_server --target=demo --build-arg GIT_SHA=$$GIT_SHA  --build-arg GIT_TAG=$$GIT_TAG ./src
 
 build-client-docker:
 	GIT_SHA=$$(git rev-parse --short HEAD); \
-	GIT_TAG=$$(git name-rev --tags --name-only $$GIT_SHA); \
+	GIT_TAG=$$(git tag --points-at $$GIT_SHA | grep -m1 '^v[0-9]' || true); \
 	docker build -t ghcr.io/brutusmcforce/opennox-client:dev -f ./docker/Dockerfile_client --build-arg GIT_SHA=$$GIT_SHA  --build-arg GIT_TAG=$$GIT_TAG ./src
 	mkdir -p ./build
 	ID=$$(docker create ghcr.io/brutusmcforce/opennox-client:dev) && \

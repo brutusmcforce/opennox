@@ -57,7 +57,10 @@ for size in 16 32 128 256 512; do
 done
 iconutil -c icns -o "$app/Contents/Resources/opennox.icns" "$iconset"
 
-version="$(git -C "$root" describe --tags --always 2>/dev/null || echo dev)"
+# the version tag of this commit, if any: the commit can also have the latest-dev tag of the development
+# build, which git describe returns instead (the v1.10.0-alpha3 app said latest-dev)
+version="$(git -C "$root" tag --points-at HEAD 2>/dev/null | grep -m1 '^v[0-9]' ||
+	git -C "$root" describe --tags --always 2>/dev/null || echo dev)"
 short="$(echo "$version" | sed -E 's/^v?([0-9]+(\.[0-9]+)*).*/\1/')"
 cat >"$app/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>

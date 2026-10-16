@@ -186,7 +186,8 @@ jobs:
       - name: Push tagged
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          export VERSION=$(git name-rev --tags --name-only $(git rev-parse HEAD))
+          # the tag this build runs for, not the latest-dev tag that may point at the same commit
+          export VERSION=$(git tag --points-at HEAD | grep -m1 '^v[0-9]' || git describe --tags --always)
           docker tag $DOCKER_IMAGE_NAME:dev $DOCKER_IMAGE_NAME:${VERSION}
           docker push $DOCKER_IMAGE_NAME:${VERSION}
 
@@ -228,7 +229,10 @@ jobs:
           chmod 755 /tmp/opennox-linux/opennox /tmp/opennox-linux/opennox-server
           cp ./CHANGELOG.md /tmp/opennox-linux
 
-          export VERSION=$(git describe --tags --always)
+          # a version tag that points at this commit wins: the commit can also have the latest-dev tag of
+          # the development build, which git describe returns instead (the v1.10.0-alpha3 files were named
+          # latest-dev, and so was the version inside the binaries)
+          export VERSION=$(git tag --points-at HEAD | grep -m1 '^v[0-9]' || git describe --tags --always)
           cd /tmp/opennox-linux
           rm -rf /tmp/opennox-linux-release
           mkdir -p /tmp/opennox-linux-release
@@ -304,7 +308,10 @@ jobs:
 
           rm -rf /tmp/opennox-win-release
           mkdir -p /tmp/opennox-win-release
-          export VERSION=$(git describe --tags --always)
+          # a version tag that points at this commit wins: the commit can also have the latest-dev tag of
+          # the development build, which git describe returns instead (the v1.10.0-alpha3 files were named
+          # latest-dev, and so was the version inside the binaries)
+          export VERSION=$(git tag --points-at HEAD | grep -m1 '^v[0-9]' || git describe --tags --always)
           makensis -DVERSION="$VERSION" -DDATA="/tmp/opennox-win/" -DOUTDIR="/tmp/opennox-win-release/" ./scripts/opennox.nsi
 
           cd /tmp/opennox-win

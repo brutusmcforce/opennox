@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.10.0-alpha4
+
+- The game plays audio through SDL3; OpenAL is gone. The Windows archive ships only `SDL3.dll`, and the AppImage no longer bundles OpenAL.
+- Experimental build for 64-bit ARM Linux (Raspberry Pi and other ARM computers): `opennox-bundle-aarch64.AppImage`.
+- When the files of the original Nox are not found, OpenNox asks for the folder with the system's folder dialog, instead of only reporting that they are missing.
+- Fix: The game failed to start on graphics cards or drivers without OpenGL 3.3; it restarts itself with Mesa's software renderer now (#692).
+- Fix: A solo quest could crash when every preallocated drawable was in use; there can be more of them now, and the game logs the object types that use the most (#715).
+- Fix: A resolution the game cannot use in the config, such as the 0x0 left behind by the HD version, is replaced instead of starting the game with it (#668).
+- Fix: Items placed on a custom quest map were saved with their base durability instead of the quest one, so the character loaded them as damaged (#740).
+- Fix: A single item that cannot be found in quests, for example one from a custom quest map, made a quest character start over from level 1; only that item is dropped now, and `server.quest.allow_any_items` or `set questanyitems on` keeps such items (#670).
+- Fix: The frame rate limiter ran faster than the limit (144 fps ran at 150, and 165 at 180).
+- Fix: The v1.10.0-alpha3 builds reported their version as `latest-dev` (in the window title, the legal screen and to servers), and their files were named after it, because the release commit also carries the tag of the development build.
+- NS4: a monster generator created by a script can be given the monsters it spawns with `SetGeneratorMonsters` (#666); scripts keep their own data in saved games with `SetSaveData` and `SaveData`, which is stored next to the save (#618); the Quest stage and score screens can be hidden with `HideQuestScreens` and the `LoadMap` options (#721).
+
+### Internal
+
+- `libs/openal` is gone. Audio is `libs/sdl/audio.go` and `legacy/client/audio/ail/audio_sdl.go`: every sample, stream and movie is an SDL3 audio stream, and they all share one logical device, because opening a device per stream costs 6-9 ms and closing one 40-54 ms. `SDL_AUDIODRIVER=dummy` runs without audio, and `SDL_AUDIODRIVER=disk` with `SDL_AUDIO_DISK_OUTPUT_FILE` writes what the game plays to a file, which is what the audio tests check. The movie player reads its audio from an `ail.PCMStream` instead of OpenAL buffers.
+- The AppImage's SDL3 is built with its PipeWire, PulseAudio and ALSA backends, which it loads at runtime, so it plays on any of them. `scripts/appimage/build.sh` and `scripts/ci/build-linux.sh` build for the architecture they run on, and a new CI job on an ARM runner builds the ARM64 binaries and AppImage natively in a Debian 12 container, like the x86_64 ones. The ARM64 build carries the same caveat as the macOS one: arm64 fuses multiply-add and so computes slightly different floats (see `docs/build-macos.md`), which may desync multiplayer with x86_64 players. That is untested.
+- The folder dialog is `SDL_ShowFileDialogWithProperties` (`libs/sdl/dialog.go`): the desktop's own dialog through xdg-desktop-portal on Linux, with a zenity fallback, `NSOpenPanel` on macOS and `IFileDialog` on Windows.
+- Frames are presented on a fixed schedule (`nextFrameTime`): a frame delayed by a game tick is caught up later, and a frame drawn early for a game tick takes that slot. Restarting the schedule from an early frame added one frame per tick whenever the tick period was not a multiple of the frame period, which is what made the limiter overshoot.
+- The drawable pool grows instead of returning nothing when it is full, and logs the ten types that hold the most drawables the first time that happens. Quest maps alone use up to 4077 of the 5000 preallocated ones, so #715 was the pool size and not a leak.
+- e2e: a Quest scenario (`e2e/quest.yaml`, started with `-autoquest`) with actions that check the server's state - items, inventory, saving, loading and the exit (`src/e2e_quest.go`) - and `probe` actions that drive the game from a scenario: load a map, teleport, spawn objects, damage, save and load, generate a map (`src/e2e_probe.go`). A run with `NOX_E2E_FAILFAST=false` exits with an error now, instead of reporting the mismatches and exiting with 0.
+- The release workflow builds and repackages each target the same way (the jobs were renamed to match), and the disabled demo server image job is gone.
+
 ## v1.10.0-alpha3
 
 - The engine no longer uses cgo, and the game moved from SDL2 to SDL3; SDL3, OpenGL and OpenAL are loaded when the game starts.

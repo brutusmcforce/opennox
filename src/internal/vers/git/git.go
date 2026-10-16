@@ -41,12 +41,36 @@ func Version() (string, string) {
 	if v := os.Getenv("GIT_TAG"); v != "" {
 		vers = v
 	} else {
-		vers, _ = do("git", "name-rev", "--tags", "--name-only", sha)
+		vers = versionTag(sha)
 	}
 	if vers == "" || vers == "undefined" {
 		return defVersion, sha
 	}
 	return vers, ""
+}
+
+// versionTag returns the version tag that a commit has, if any.
+//
+// A commit can have more than one tag: the development build moves the latest-dev tag onto the commit it was
+// built from, and git name-rev (used here before) returns that one for a release commit, so the v1.10.0-alpha3
+// binaries reported their version as "latest-dev". Only a tag of this commit is used now: name-rev also named
+// commits BEFORE a tag after it (v1.10.0-alpha3~2).
+func versionTag(sha string) string {
+	out, err := do("git", "tag", "--points-at", sha)
+	if err != nil {
+		return ""
+	}
+	for _, tag := range strings.Fields(out) {
+		if isVersionTag(tag) {
+			return tag
+		}
+	}
+	return ""
+}
+
+// isVersionTag reports whether a tag names a version, like v1.10.0 or v1.10.0-alpha4, and not latest-dev.
+func isVersionTag(tag string) bool {
+	return len(tag) >= 2 && tag[0] == 'v' && tag[1] >= '0' && tag[1] <= '9'
 }
 
 func SHA() string {
