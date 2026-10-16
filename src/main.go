@@ -471,10 +471,16 @@ func runArgs(args []string, loopFunc func() error) (gerr error) {
 }
 
 func RunArgs(args []string) error {
-	return runArgs(args, func() error {
+	err := runArgs(args, func() error {
 		noxClient.cmainLoop()
 		return nil
 	})
+	if err == nil && e2e.err != nil {
+		// with NOX_E2E_FAILFAST=false the test goes on after an error; the window is closed before the quit step
+		// can report it, so it's reported here, and the test exits with an error
+		err = fmt.Errorf("e2e test failed: %w", e2e.err)
+	}
+	return err
 }
 
 func RunServerArgs(args []string) error {

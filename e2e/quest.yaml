@@ -1,0 +1,91 @@
+# A solo Quest game (run with -autoquest): the first map (g_swamp), a saved character that's loaded again (like
+# continuing a quest with a saved character, or a client joining with one), and the exit to the next stage.
+# Compared with testdata/quest-*.png, and checked through the server state:
+#   - quest-items: every weapon and armor (on the map, in chests, held by monsters and players) has full
+#     durability, scaled for quests (opennox#740: the map's items had the base durability, and were loaded as
+#     damaged after a save);
+#   - an item that can't be found in quests is dropped from the saved inventory, and the rest of the character
+#     is kept (opennox#670: the whole character was reset);
+#   - drawables: how many drawables the maps use (logged; opennox#715: the quest maps alone use up to 4077 of the
+#     5000 that the client preallocates, and a long fight ran out of them).
+steps:
+  - name: "Skip logo"
+    action: click
+    x: 100
+    y: 100
+    dt: 30
+  - name: "quest-000 How to play"
+    action: screen
+    dt: 5
+  - name: "Close how to play"
+    action: click
+    x: 512
+    y: 700
+    dt: 120
+  - name: "quest-001 Swamp"
+    action: screen
+    dt: 60
+  - name: "Map items"
+    action: quest-items
+  - name: "Drawables on the first map"
+    action: drawables
+  - name: "Place an item like a map file"
+    action: quest-map-item
+    item: GreatSword
+  - name: "Map item"
+    action: quest-items
+    dt: 2
+  - name: "Take the map item"
+    action: quest-take
+    item: GreatSword
+  - name: "Give an item that's not in quests"
+    action: quest-give
+    item: SulphorousShowerWand
+  - name: "Give a quest item"
+    action: quest-give
+    item: WarHammer
+  - name: "Save the character"
+    action: quest-save
+    dt: 5
+  - name: "Load the character"
+    action: quest-load
+    dt: 5
+  - name: "Items after loading"
+    action: quest-items
+    dt: 30
+  - name: "Quest item kept"
+    action: quest-has
+    item: WarHammer
+  - name: "Map item kept"
+    action: quest-has
+    item: GreatSword
+  - name: "Other item dropped"
+    action: quest-lacks
+    item: SulphorousShowerWand
+  - name: "Inventory"
+    action: inventory
+    dt: 90
+  - name: "quest-002 Inventory after loading"
+    action: screen
+    dt: 10
+  - name: "Close inventory"
+    action: inventory
+  - name: "Exit to the next stage"
+    action: quest-exit
+  - name: "Close how to play on the next stage"
+    action: click
+    x: 512
+    y: 700
+    dt: 300
+  - name: "quest-003 Next stage"
+    action: screen
+    dt: 120
+  - name: "Items on the next stage"
+    action: quest-items
+  - name: "Map item kept on the next stage"
+    action: quest-has
+    item: GreatSword
+  - name: "Drawables on the next stage"
+    action: drawables
+  - action: quit
+    dt: 5

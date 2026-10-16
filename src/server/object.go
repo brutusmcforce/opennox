@@ -216,6 +216,11 @@ func (s *serverObjects) SetObjects(list *Object) { // nox_set_server_objects_4DA
 	s.List = list
 }
 
+// Active returns the number of objects in use, and the size of the pool.
+func (s *serverObjects) Active() (n, max int) {
+	return s.alloc.Active(), s.alloc.Cap()
+}
+
 func (s *serverObjects) Init(cnt int) bool {
 	s.alloc = alloc.NewClassT("objectMemClass", Object{}, cnt)
 	s.alloc.Keep(unsafe.Offsetof(Object{}.NetCode))

@@ -23,6 +23,16 @@ spells, weapons, armor, general, access, teams) and starts an arena game on BluD
 NOX_E2E="$PWD/e2e/host.yaml" opennox -data /path/to/Nox
 ```
 
+A third scenario, [quest.yaml](./quest.yaml), plays a solo Quest (it needs `-autoquest`): the first map, a saved
+character that the host loads again (like continuing a quest with a saved character), and the exit to the next
+stage. Besides the screens, it checks the items through the server state (see the `quest-*` actions below): weapons
+and armor keep their quest durability, also an item placed like a map file has it, and an item that can't be found
+in quests is dropped from a loaded character instead of resetting it. A failed check fails the test:
+
+```bash
+NOX_E2E="$PWD/e2e/quest.yaml" opennox -autoquest -data /path/to/Nox
+```
+
 A multiplayer test runs two instances on loopback, a host ([mp-host.yaml](./mp-host.yaml)) and a client
 ([mp-client.yaml](./mp-client.yaml)) that finds the host through `NOX_E2E_SERVERS`, joins and leaves observation
 mode. Then they fight: the host brings the client's player next to its own (`action: gather`, like the `tp` cheat,
@@ -307,4 +317,37 @@ Simulates Esc key, which might be useful to close current UI elements.
 ```yaml
   - name: "Close book"
     action: esc
+```
+
+### Quest checks
+
+These actions check a Quest game (the host's player) through the server state, see [quest.yaml](./quest.yaml).
+A failed check is an error like a screen mismatch, and with `NOX_E2E_FAILFAST=false` the test exits with an error
+at the end.
+
+- `quest-items`: every weapon and armor (in the world, in containers, held by monsters and players) must have the full
+  durability of a new item of its type in quests. `NOX_E2E_QUEST_VERBOSE=true` logs each one.
+- `quest-map-item` (`item`): places a weapon or armor next to the host the way a map file has it (saved with the base
+  durability by the editor, then read with the map loader).
+- `quest-take` (`item` optional): the host picks up the first weapon or armor lying on the map or in a container.
+- `quest-give` (`item`): creates an item and gives it to the host; the log says whether quests allow it.
+- `quest-has` / `quest-lacks` (`item`): the host must carry (or not carry) an item of the type.
+- `quest-save` / `quest-load`: save the host's character, and queue it to be loaded into the host like a quest does
+  for a saved character (it replaces the inventory on the next frames).
+- `quest-exit`: moves the host onto the map's exit (not a warp gate), which loads the next stage.
+- `drawables`: logs how many drawables the client and objects the server use.
+
+**Example:**
+
+```yaml
+  - name: "Give an item that's not in quests"
+    action: quest-give
+    item: SulphorousShowerWand
+  - action: quest-save
+  - action: quest-load
+    dt: 5
+  - name: "Other item dropped"
+    action: quest-lacks
+    item: SulphorousShowerWand
+    dt: 30
 ```

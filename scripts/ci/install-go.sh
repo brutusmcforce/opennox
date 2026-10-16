@@ -8,6 +8,7 @@ root="$(cd "$(dirname "$0")/../.." && pwd)"
 version="go$(sed -n 's/^go \([0-9.]*\)$/\1/p' "$root/src/go.mod")"
 case "$(dpkg --print-architecture)" in
 amd64) arch=amd64 ;;
+arm64) arch=arm64 ;;
 *) echo "unsupported architecture: $(dpkg --print-architecture)" >&2; exit 1 ;;
 esac
 goroot="$dir/$version-$arch/go"

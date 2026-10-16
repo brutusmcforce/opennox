@@ -454,6 +454,7 @@ type e2eStepYML struct {
 	Y      int           `yaml:"y,omitempty"`
 	Ang    float64       `yaml:"ang,omitempty"`
 	Slot   int           `yaml:"slot,omitempty"`
+	Item   string        `yaml:"item,omitempty"`
 	Event  *e2eStepRaw   `yaml:"ev,omitempty"`
 }
 
@@ -520,6 +521,32 @@ func (sc *e2eScenario) Load(path string) {
 				sc.Wait(dt, "")
 			}
 			sc.Gather(l.Name)
+		case "quest-items", "quest-take", "quest-map-item", "quest-give", "quest-has", "quest-lacks", "quest-save", "quest-load", "quest-exit", "drawables":
+			if dt != 0 {
+				sc.Wait(dt, "")
+			}
+			switch l.Action {
+			case "quest-items":
+				sc.QuestItems(l.Name)
+			case "quest-take":
+				sc.QuestTake(l.Item, l.Name)
+			case "quest-map-item":
+				sc.QuestMapItem(l.Item, l.Name)
+			case "quest-give":
+				sc.QuestGive(l.Item, l.Name)
+			case "quest-has":
+				sc.QuestHas(l.Item, true, l.Name)
+			case "quest-lacks":
+				sc.QuestHas(l.Item, false, l.Name)
+			case "quest-save":
+				sc.QuestSave(l.Name)
+			case "quest-load":
+				sc.QuestLoad(l.Name)
+			case "quest-exit":
+				sc.QuestExit(l.Name)
+			case "drawables":
+				sc.Drawables(l.Name)
+			}
 		case "players":
 			if dt != 0 {
 				sc.Wait(dt, "")

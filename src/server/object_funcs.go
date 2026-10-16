@@ -219,6 +219,11 @@ func RegisterObjectCollideNative(name string, key unsafe.Pointer, fnc CollideRes
 	}
 }
 
+// CollideFuncByName returns the registered collide function (as stored in Object.Collide), or nil.
+func CollideFuncByName(name string) unsafe.Pointer {
+	return collideFuncs[name].Func
+}
+
 func RegisterObjectCollide(name string, fnc unsafe.Pointer, sz DataDef) {
 	if _, ok := collideFuncs[name]; ok {
 		panic("already registered")

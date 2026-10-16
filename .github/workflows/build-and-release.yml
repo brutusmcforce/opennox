@@ -8,7 +8,7 @@ on:
       - ci_tests
       - dennwc
     tags:
-      - '*'
+      - "*"
   pull_request:
     branches:
       - main
@@ -19,9 +19,9 @@ env:
   DOCKER_IMAGE_NAME: ghcr.io/brutusmcforce/opennox
 
 jobs:
-  hybrid_docker_mingw:
-    # Cross compile Windows binaries in Debian (no C compiler needed), see scripts/ci/build-windows.sh
-    name: Cross compile for Windows
+  windows_docker:
+    # Build Windows binaries in Debian (no C compiler needed), see scripts/ci/build-windows.sh
+    name: Build for Windows
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -54,8 +54,8 @@ jobs:
           retention-days: 1
 
   linux_docker:
-    # Compile Linux binaries in 64-bit Debian, see scripts/ci/build-linux.sh
-    name: Compile for Linux
+    # Build Linux binaries in 64-bit Debian, see scripts/ci/build-linux.sh
+    name: Build for Linux
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -196,51 +196,6 @@ jobs:
           docker tag $DOCKER_IMAGE_NAME:dev $DOCKER_IMAGE_NAME:latest
           docker push $DOCKER_IMAGE_NAME:latest
 
-  docker_server_demo:
-    name: Docker server build (demo)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write # push the image to ghcr.io
-    if: false # TODO: Internet Archive is down, can't download demo installer
-#    if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/dev') || (github.ref == 'refs/heads/ci_tests')
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: true
-
-      - name: Docker build
-        run: |
-          make build-server-demo-docker
-
-      - name: Log in to the Container registry
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
-        if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/dev')
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Push latest
-        if: github.ref == 'refs/heads/dev'
-        run: |
-          docker push $DOCKER_IMAGE_NAME:dev-demo
-
-      - name: Push tagged
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          export VERSION=$(git name-rev --tags --name-only $(git rev-parse HEAD))
-          docker tag $DOCKER_IMAGE_NAME:dev-demo $DOCKER_IMAGE_NAME:${VERSION}-demo
-          docker push $DOCKER_IMAGE_NAME:${VERSION}-demo
-
-      - name: Push latest
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          docker tag $DOCKER_IMAGE_NAME:dev-demo $DOCKER_IMAGE_NAME:demo
-          docker push $DOCKER_IMAGE_NAME:demo
-
   release_repackage_linux_gzip:
     name: Repackage Linux release (tar.gz)
     runs-on: ubuntu-latest
@@ -315,54 +270,54 @@ jobs:
           retention-days: 1
 
   release_repackage_win:
-      name: Repackage Windows release
-      runs-on: ubuntu-latest
-      if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/dev') || (github.ref == 'refs/heads/ci_tests')
-      needs: [hybrid_docker_mingw]
-      steps:
-        - name: Install NSIS
-          run: sudo apt-get install -y nsis
+    name: Repackage Windows release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/dev') || (github.ref == 'refs/heads/ci_tests')
+    needs: [windows_docker]
+    steps:
+      - name: Install NSIS
+        run: sudo apt-get install -y nsis
 
-        - uses: actions/checkout@v4
-          with:
-            fetch-depth: 0
-            submodules: true
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
 
-        - name: Cleanup
-          run: |
-            rm -rf /tmp/win-tmp
-            mkdir -p /tmp/win-tmp
+      - name: Cleanup
+        run: |
+          rm -rf /tmp/win-tmp
+          mkdir -p /tmp/win-tmp
 
-        - uses: actions/download-artifact@v4
-          with:
-            name: opennox-win
-            path: /tmp/win-tmp/
+      - uses: actions/download-artifact@v4
+        with:
+          name: opennox-win
+          path: /tmp/win-tmp/
 
-        - name: Repackage release
-          run: |
-            ls -lh /tmp/win-tmp/
-            rm -rf /tmp/opennox-win
-            mkdir -p /tmp/opennox-win
-            cp /tmp/win-tmp/*.exe /tmp/opennox-win/
-            cp /tmp/win-tmp/*.dll /tmp/opennox-win/
-            cp ./CHANGELOG.md /tmp/opennox-win/
+      - name: Repackage release
+        run: |
+          ls -lh /tmp/win-tmp/
+          rm -rf /tmp/opennox-win
+          mkdir -p /tmp/opennox-win
+          cp /tmp/win-tmp/*.exe /tmp/opennox-win/
+          cp /tmp/win-tmp/*.dll /tmp/opennox-win/
+          cp ./CHANGELOG.md /tmp/opennox-win/
 
-            rm -rf /tmp/opennox-win-release
-            mkdir -p /tmp/opennox-win-release
-            export VERSION=$(git describe --tags --always)
-            makensis -DVERSION="$VERSION" -DDATA="/tmp/opennox-win/" -DOUTDIR="/tmp/opennox-win-release/" ./scripts/opennox.nsi
+          rm -rf /tmp/opennox-win-release
+          mkdir -p /tmp/opennox-win-release
+          export VERSION=$(git describe --tags --always)
+          makensis -DVERSION="$VERSION" -DDATA="/tmp/opennox-win/" -DOUTDIR="/tmp/opennox-win-release/" ./scripts/opennox.nsi
 
-            cd /tmp/opennox-win
-            zip -9 -r /tmp/opennox-win-release/OpenNox-$VERSION.zip ./*
+          cd /tmp/opennox-win
+          zip -9 -r /tmp/opennox-win-release/OpenNox-$VERSION.zip ./*
 
-        - name: Upload the archive
-          uses: actions/upload-artifact@v4
-          with:
-            name: opennox-release-win
-            path: |
-              /tmp/opennox-win-release/OpenNox-*.zip
-              /tmp/opennox-win-release/OpenNox-*.exe
-            if-no-files-found: error
+      - name: Upload the archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: opennox-release-win
+          path: |
+            /tmp/opennox-win-release/OpenNox-*.zip
+            /tmp/opennox-win-release/OpenNox-*.exe
+          if-no-files-found: error
 
   github_release:
     name: Github release
@@ -370,7 +325,14 @@ jobs:
     permissions:
       contents: write # create the release
     if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/dev')
-    needs: [release_repackage_linux_appimage, release_repackage_linux_gzip, release_repackage_win, macos, linux_arm64_appimage]
+    needs:
+      [
+        release_repackage_linux_appimage,
+        release_repackage_linux_gzip,
+        release_repackage_win,
+        macos,
+        linux_arm64_appimage,
+      ]
     # pushes to dev replace the same pre-release, so they must not run at the same time
     concurrency:
       group: release-${{ github.ref }}
