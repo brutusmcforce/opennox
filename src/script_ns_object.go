@@ -840,6 +840,48 @@ func (obj nsObj) Pickup(item ns4.Obj) bool {
 	return obj.Object.DoPickup(server.ToObject(item.(server.Obj)))
 }
 
+func (obj nsObj) SetGeneratorMonsters(max int, types ...ns4.ObjTypeName) bool {
+	if !obj.Class().Has(object.ClassMonsterGenerator) || max < 0 || max > 255 || len(types) == 0 || len(types) > 4 {
+		return false
+	}
+	// every difficulty level has its own template monsters (like a generator from a map): they are freed with it
+	var rows [3][4]*server.Object
+	free := func() {
+		for _, row := range rows {
+			for _, m := range row {
+				if m != nil {
+					obj.s.Objs.FreeObject(m)
+				}
+			}
+		}
+	}
+	for row := range rows {
+		for i, t := range types {
+			m := obj.s.NewObjectByTypeID(string(t))
+			if m == nil || !m.Class().Has(object.ClassMonster) {
+				if m != nil {
+					obj.s.Objs.FreeObject(m)
+				}
+				free()
+				return false
+			}
+			rows[row][i] = m
+		}
+	}
+	ud := obj.UpdateDataMonsterGen()
+	for i, old := range ud.Field0 {
+		if old != nil {
+			obj.s.Objs.FreeObject(old)
+		}
+		ud.Field0[i] = rows[i/4][i%4]
+	}
+	ud.Max = byte(max)
+	// Field83 selects a maximum from gamedata.bin for each level, which the generator's init (when it's added
+	// to the world, after CreateObject) and the start of a quest level would set instead: none of them
+	ud.Field83 = [3]byte{0xff, 0xff, 0xff}
+	return true
+}
+
 func (obj nsObj) Drop(item ns4.Obj) bool {
 	if item == nil {
 		return false

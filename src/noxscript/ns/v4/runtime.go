@@ -156,6 +156,9 @@ type Implementation interface {
 	FindWalls(fnc func(it WallObj) bool, conditions ...WallCond) int
 
 	LoadMap(name string, opts *LoadMapOptions)
+	HideQuestScreens(title, scores bool)
+	SetSaveData(key string, data []byte)
+	SaveData(key string) []byte
 
 	OnFrame(fnc FrameFunc)
 	OnMapEvent(typ MapEvent, fnc MapEventFunc)

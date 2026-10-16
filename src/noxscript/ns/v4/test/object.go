@@ -124,6 +124,8 @@ func toObj(v ns.Obj) *Object {
 
 type Object struct {
 	r              *Runtime
+	genMax         int              // see SetGeneratorMonsters
+	genTypes       []ns.ObjTypeName // see SetGeneratorMonsters
 	id             uint32
 	name           string
 	typ            *ObjectType
@@ -685,6 +687,15 @@ func (obj *Object) Pickup(item ns.Obj) bool {
 		obj.inventory = make(map[*Object]struct{})
 	}
 	obj.inventory[it] = struct{}{}
+	return true
+}
+
+func (obj *Object) SetGeneratorMonsters(max int, types ...ns.ObjTypeName) bool {
+	if max < 0 || len(types) == 0 || len(types) > 4 {
+		return false
+	}
+	obj.genMax = max
+	obj.genTypes = append(obj.genTypes[:0], types...)
 	return true
 }
 

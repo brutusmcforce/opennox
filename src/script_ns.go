@@ -66,6 +66,10 @@ func (s noxScriptNS) loadMap(name string, opts *ns4.LoadMapOptions) error {
 	}); err != nil {
 		return err
 	}
+	if noxflags.HasGame(noxflags.GameModeQuest) {
+		s.s.quest.hideTitle = opts.HideTitleScreen
+		s.s.quest.hideScores = opts.HideScores
+	}
 	switch {
 	case !noxflags.HasGame(noxflags.GameModeQuest):
 	case opts.QuestStage > 0:
@@ -74,6 +78,10 @@ func (s noxScriptNS) loadMap(name string, opts *ns4.LoadMapOptions) error {
 		s.s.quest.nextStage = max(s.s.nox_game_getQuestStage_4E3CC0(), 1)
 	}
 	return nil
+}
+
+func (s noxScriptNS) HideQuestScreens(title, scores bool) {
+	s.s.quest.alwaysHideTitle, s.s.quest.alwaysHideScores = title, scores
 }
 
 func (s noxScriptNS) LoadMap(name string, opts *ns4.LoadMapOptions) {

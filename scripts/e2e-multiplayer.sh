@@ -19,11 +19,23 @@ for side in host client; do
 	rm -rf "$work/$side"
 	mkdir -p "$work/$side/testdata" "$work/$side/home" "$work/$side/data"
 	cp "$root/e2e/mp-$side.yaml" "$work/$side/"
+	# MP_HOST_YAML / MP_CLIENT_YAML: run other scenarios (e.g. to reproduce a bug), with the same setup
+	if [ "$side" = host ] && [ -n "${MP_HOST_YAML:-}" ]; then cp "$MP_HOST_YAML" "$work/$side/mp-$side.yaml"; fi
+	if [ "$side" = client ] && [ -n "${MP_CLIENT_YAML:-}" ]; then cp "$MP_CLIENT_YAML" "$work/$side/mp-$side.yaml"; fi
 	# e2e mode keeps saves and characters in the data dir: link the game files, keep Save separate
 	for f in "$data"/*; do
 		[ "$(basename "$f")" = Save ] || ln -s "$f" "$work/$side/data/"
 	done
 done
+# MP_DOWNLOAD=1: the client doesn't have the host's map (BluDeath), so it downloads it from the host
+# (opennox#673); the downloaded map is written into the client's own maps dir, not into the game data
+if [ -n "${MP_DOWNLOAD:-}" ]; then
+	rm "$work/client/data/maps"
+	mkdir "$work/client/data/maps"
+	for f in "$data"/maps/*; do
+		case "$(basename "$f" | tr '[:upper:]' '[:lower:]')" in bludeath) ;; *) ln -s "$f" "$work/client/data/maps/" ;; esac
+	done
+fi
 
 run() { # side binary port [env...]
 	side=$1 bin=$2 port=$3
@@ -61,6 +73,11 @@ check() { # description file pattern
 }
 [ $host_rc -eq 0 ] && echo "ok: host exited" || { echo "FAIL: host exit code $host_rc"; fail=1; }
 [ $client_rc -eq 0 ] && echo "ok: client exited" || { echo "FAIL: client exit code $client_rc"; fail=1; }
+if [ -n "${MP_DOWNLOAD:-}" ]; then
+	check "client downloaded the map" "$work/client.log" 'fade after map download'
+	[ -f "$work/client/data/maps/bludeath/bludeath.map" ] || [ -f "$work/client/data/maps/BluDeath/BluDeath.map" ] &&
+		echo "ok: the map file is there" || { echo "FAIL: no downloaded map file"; fail=1; }
+fi
 check "client found the server" "$work/client.log" 'server response info={"127.0.0.1:18700"'
 check "client joined (host side)" "$work/host.log" 'has joined the game'
 check "client in the game" "$work/client.log" 'You are in Observation Mode'

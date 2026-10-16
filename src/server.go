@@ -112,6 +112,8 @@ type Server struct {
 	sysopTries map[ntype.PlayerInd]time.Duration
 	// scriptObject is the raw script section of the current map. It's written back when the map is saved.
 	scriptObject []byte
+	// scriptData is the data that the current map's scripts keep in saved games (see script_savedata.go).
+	scriptData map[string][]byte
 
 	flag1548704 bool
 	flag3592    bool
@@ -824,6 +826,7 @@ func (s *Server) nox_server_loadMapFile_4CF5F0(mname string, noCrypt bool) error
 	// Script VM init must be done before map sections are read.
 	// This is done because object section will need to bind to script function names.
 	// Doing VMs init after map load is too late in this case.
+	s.loadScriptData(fname) // the scripts may read it when they start
 	s.vmsInitMap()
 	if err := s.nox_xxx_serverParseEntireMap_4CFCE0(cf); err != nil {
 		cryptfile.Close()
@@ -856,13 +859,27 @@ func (s *Server) maybeInitPlayerUnits() {
 		return
 	}
 	if noxflags.HasGame(noxflags.GameModeQuest) {
-		if s.nox_game_getQuestStage_4E3CC0() == 1 {
+		// a script's LoadMap may hide the screens of this map's start (opennox#721); the stage data is still sent
+		hideTitle := s.quest.hideTitle || s.quest.alwaysHideTitle
+		hideScores := s.quest.hideScores || s.quest.alwaysHideScores
+		s.quest.hideTitle, s.quest.hideScores = false, false
+		// without a screen to close, the client is told to start the map like in other modes
+		noScreen := func() { s.Nox_xxx_netMsgFadeBegin_4D9800(true, true) }
+		if s.nox_game_getQuestStage_4E3CC0() == 1 && hideTitle {
+			legacy.Sub_4D6880(255, 0)
+			noScreen()
+			legacy.Sub_4D7440(1)
+			legacy.Sub_4D60B0()
+		} else if s.nox_game_getQuestStage_4E3CC0() == 1 {
 			legacy.Nox_game_sendQuestStage_4D6960(255)
 			legacy.Sub_4D7440(1)
 			legacy.Sub_4D60B0()
 		} else if !sub4D6F30() || legacy.Sub_4D7430() != 0 {
 			if legacy.Sub_4D76F0() == 1 {
-				legacy.Sub_4D6880(255, 1)
+				legacy.Sub_4D6880(255, bool2int(!hideTitle))
+				if hideTitle {
+					noScreen()
+				}
 				legacy.Sub_4D76E0(0)
 				legacy.Sub_4D7440(1)
 				legacy.Sub_4D60B0()
@@ -880,12 +897,22 @@ func (s *Server) maybeInitPlayerUnits() {
 						}
 						ifs.Remove(fname)
 					}
-					legacy.Sub_4D6770(pi)
+					if !hideScores {
+						legacy.Sub_4D6770(pi)
+					}
 				}
 				legacy.Sub_4D6880(255, 0)
+				if hideScores {
+					noScreen()
+				}
 				legacy.Sub_4D7440(1)
 				legacy.Sub_4D60B0()
 			}
+		} else if hideTitle {
+			legacy.Sub_4D6880(255, 0)
+			noScreen()
+			legacy.Sub_4D7440(1)
+			legacy.Sub_4D60B0()
 		} else {
 			legacy.Nox_game_sendQuestStage_4D6960(255)
 			legacy.Sub_4D7440(1)
@@ -1126,6 +1153,8 @@ func sub_4DB0A0() {
 	legacy.Set_dword_5d4594_1563096(0)
 	*memmap.PtrUint32(0x5D4594, 1563100) = 0
 	noxServer.quest.mapName = ""
+	noxServer.quest.hideTitle, noxServer.quest.hideScores = false, false
+	noxServer.quest.alwaysHideTitle, noxServer.quest.alwaysHideScores = false, false
 	dword_5d4594_1563064 = false
 	questPlayerSet = false
 }

@@ -47,6 +47,7 @@ func GetRuntime() *Runtime {
 type Runtime struct {
 	frame    int
 	initDone bool
+	saveData map[string][]byte // see SetSaveData
 
 	Timers      Timers
 	Storage     Storage
@@ -561,6 +562,25 @@ func (r *Runtime) OnMapEvent(typ ns.MapEvent, fnc ns.MapEventFunc) {
 }
 
 func (r *Runtime) OnChat(fnc ns.ChatFunc) {
+	//TODO implement me
+}
+
+func (r *Runtime) SetSaveData(key string, data []byte) {
+	if data == nil {
+		delete(r.saveData, key)
+		return
+	}
+	if r.saveData == nil {
+		r.saveData = make(map[string][]byte)
+	}
+	r.saveData[key] = append([]byte(nil), data...)
+}
+
+func (r *Runtime) SaveData(key string) []byte {
+	return r.saveData[key]
+}
+
+func (r *Runtime) HideQuestScreens(title, scores bool) {
 	//TODO implement me
 }
 

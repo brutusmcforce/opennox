@@ -663,6 +663,13 @@ type Obj interface {
 	// Returns false if object cannot pick up the item.
 	Pickup(item Obj) bool
 
+	// SetGeneratorMonsters sets the monsters that a monster generator spawns (up to 4 types, for every
+	// difficulty level), and how many of them may be alive at once. A generator placed in the map editor has
+	// them from the map; one created by a script needs this to spawn anything.
+	//
+	// Returns false if the object is not a monster generator, or a type is not a monster.
+	SetGeneratorMonsters(max int, types ...ObjTypeName) bool
+
 	// Drop cause object to drop an item.
 	//
 	// Returns false if object cannot drop the item.

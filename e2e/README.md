@@ -46,6 +46,8 @@ comparing screens; both switch to real-time pace (`action: slow`) once networkin
 scripts/e2e-multiplayer.sh path/to/opennox /path/to/Nox [work dir] [client binary]
 ```
 
+`MP_DOWNLOAD=1` removes the host's map (BluDeath) from the client's data, so the client downloads it from the host.
+`MP_HOST_YAML` and `MP_CLIENT_YAML` run other scenarios with the same setup (e.g. to reproduce a bug).
 The client uses the host's binary unless a fourth argument is given. A binary ending in `.exe` runs under Wine
 (set `WINEPREFIX` for a separate prefix), so Linux and Windows players can be tested together, e.g. a Linux host
 with `build/opennox.exe` as the client, and the reverse.
@@ -350,4 +352,27 @@ at the end.
     action: quest-lacks
     item: SulphorousShowerWand
     dt: 30
+```
+
+### probe
+
+Runs a test-only probe for investigating bugs (see `e2eProbes` in `src/e2e_probe.go`): it acts on the server state
+directly, so a script gets to a situation quickly. `args` holds the probe's name and arguments, e.g.
+`load <map>` (any map), `tp <x> <y>`, `spawn <type> <x> <y> [vx vy]` (`~` for relative to the player),
+`list <type prefix>`, `types`, `walls [x y r]` (breakable walls), `damage <type prefix> <amount> [kind]`,
+`damageid <net code> <amount> [kind]`, `find <script name>`, `group <name>`, `names [substring]`,
+`save <name>` / `loadsave <name>` (solo saves), `gen <monster> <max>`, `genstat`, `loadmap <map> [hide]`,
+`hidequest <title> <scores>`, `savedata set|get ...`, `chat <string id>`, `dialog`. A failing probe is an error.
+
+Probes that switch maps or save write the game data like playing does (e.g. a map's `user.rul` when a hosted
+map is left), so run them on a copy of the data, not the one the other scenarios use.
+
+**Example:**
+
+```yaml
+  - action: probe
+    args: [load, wiz07c]
+  - action: probe
+    args: [walls, "4370", "4840", "700"]
+    dt: 200
 ```

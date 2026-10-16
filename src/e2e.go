@@ -455,6 +455,7 @@ type e2eStepYML struct {
 	Ang    float64       `yaml:"ang,omitempty"`
 	Slot   int           `yaml:"slot,omitempty"`
 	Item   string        `yaml:"item,omitempty"`
+	Args   []string      `yaml:"args,omitempty"`
 	Event  *e2eStepRaw   `yaml:"ev,omitempty"`
 }
 
@@ -547,6 +548,11 @@ func (sc *e2eScenario) Load(path string) {
 			case "drawables":
 				sc.Drawables(l.Name)
 			}
+		case "probe":
+			if dt != 0 {
+				sc.Wait(dt, "")
+			}
+			sc.Probe(l.Args, l.Name)
 		case "players":
 			if dt != 0 {
 				sc.Wait(dt, "")

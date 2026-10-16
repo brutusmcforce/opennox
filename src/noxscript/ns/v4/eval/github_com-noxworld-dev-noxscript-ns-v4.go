@@ -112,6 +112,9 @@ func init() {
 		"JournalEditStr":       reflect.ValueOf(ns.JournalEditStr),
 		"JournalEntry":         reflect.ValueOf(ns.JournalEntry),
 		"JournalEntryStr":      reflect.ValueOf(ns.JournalEntryStr),
+		"HideQuestScreens":     reflect.ValueOf(ns.HideQuestScreens),
+		"SetSaveData":          reflect.ValueOf(ns.SetSaveData),
+		"SaveData":             reflect.ValueOf(ns.SaveData),
 		"LoadMap":              reflect.ValueOf(ns.LoadMap),
 		"MakeEnemy":            reflect.ValueOf(ns.MakeEnemy),
 		"MakeFriendly":         reflect.ValueOf(ns.MakeFriendly),
@@ -387,6 +390,9 @@ type _github_com_noxworld_dev_noxscript_ns_v4_Implementation struct {
 	WJournalEntry          func(obj ns.Obj, message string, typ ns.EntryType)
 	WJournalEntryStr       func(obj ns.Obj, message string, typ ns.EntryType)
 	WLoadMap               func(name string, opts *ns.LoadMapOptions)
+	WHideQuestScreens      func(title bool, scores bool)
+	WSetSaveData           func(key string, data []byte)
+	WSaveData              func(key string) []byte
 	WMakeEnemy             func(obj ns.Obj)
 	WMakeFriendly          func(obj ns.Obj)
 	WMusic                 func(music int, volume int)
@@ -582,6 +588,15 @@ func (W _github_com_noxworld_dev_noxscript_ns_v4_Implementation) JournalEntryStr
 }
 func (W _github_com_noxworld_dev_noxscript_ns_v4_Implementation) LoadMap(name string, opts *ns.LoadMapOptions) {
 	W.WLoadMap(name, opts)
+}
+func (W _github_com_noxworld_dev_noxscript_ns_v4_Implementation) HideQuestScreens(title bool, scores bool) {
+	W.WHideQuestScreens(title, scores)
+}
+func (W _github_com_noxworld_dev_noxscript_ns_v4_Implementation) SetSaveData(key string, data []byte) {
+	W.WSetSaveData(key, data)
+}
+func (W _github_com_noxworld_dev_noxscript_ns_v4_Implementation) SaveData(key string) []byte {
+	return W.WSaveData(key)
 }
 func (W _github_com_noxworld_dev_noxscript_ns_v4_Implementation) MakeEnemy(obj ns.Obj) {
 	W.WMakeEnemy(obj)
@@ -881,6 +896,7 @@ type _github_com_noxworld_dev_noxscript_ns_v4_Obj struct {
 	WOnEvent                func(event ns.ObjectEvent, fnc any)
 	WPause                  func(dt ns.Duration)
 	WPickup                 func(item ns.Obj) bool
+	WSetGeneratorMonsters   func(max int, types ...ns.ObjTypeName) bool
 	WPlayer                 func() ns.Player
 	WPos                    func() types.Pointf
 	WPushTo                 func(pos ns.Positioner, force float32)
@@ -1166,6 +1182,9 @@ func (W _github_com_noxworld_dev_noxscript_ns_v4_Obj) Pause(dt ns.Duration) {
 }
 func (W _github_com_noxworld_dev_noxscript_ns_v4_Obj) Pickup(item ns.Obj) bool {
 	return W.WPickup(item)
+}
+func (W _github_com_noxworld_dev_noxscript_ns_v4_Obj) SetGeneratorMonsters(max int, types ...ns.ObjTypeName) bool {
+	return W.WSetGeneratorMonsters(max, types...)
 }
 func (W _github_com_noxworld_dev_noxscript_ns_v4_Obj) Player() ns.Player {
 	return W.WPlayer()

@@ -93,6 +93,35 @@ type LoadMapOptions struct {
 	QuestStage int
 }
 
+// SetSaveData keeps data of the map's scripts in saved games: when the game is saved and loaded again, the map's
+// objects are restored, but its scripts start again, so they read it back with SaveData. The data belongs to the
+// current map. A nil data removes the key.
+func SetSaveData(key string, data []byte) {
+	if impl == nil {
+		return
+	}
+	impl.SetSaveData(key, data)
+}
+
+// SaveData returns the data kept with SetSaveData in the saved game that was loaded (or set since), or nil.
+func SaveData(key string) []byte {
+	if impl == nil {
+		return nil
+	}
+	return impl.SaveData(key)
+}
+
+// HideQuestScreens hides the screens that Quest shows when a map starts, from the next map on until it's called
+// again: the stage screen (the stage, the map's title and picture) and the scores of the previous map.
+// For maps linked with exits that don't start a new stage (e.g. an open world), and for dungeons that still show
+// them, call it again. LoadMapOptions.HideTitleScreen and HideScores hide them for one map.
+func HideQuestScreens(title, scores bool) {
+	if impl == nil {
+		return
+	}
+	impl.HideQuestScreens(title, scores)
+}
+
 // LoadMap loads a map with a given name and options.
 // Name should not contain .map suffix or any other path elements.
 func LoadMap(name string, opts *LoadMapOptions) {

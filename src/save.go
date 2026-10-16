@@ -853,6 +853,7 @@ func saveCoopGame(name string) bool {
 	if !legacy.Nox_xxx_mapSaveMap_51E010(path, 0) {
 		return false
 	}
+	s.saveScriptData(path)
 	legacy.Nox_xxx_monstersAllBelongToHost_4DB6A0()
 	ppath := savePath(common.SaveTmp, common.PlayerFile)
 	save := clientCurSave()

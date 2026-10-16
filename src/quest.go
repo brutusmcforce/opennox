@@ -30,6 +30,11 @@ type questServer struct {
 	nox_xxx_questFlag_1556148 int
 	// nextStage is the stage of the next map, set by a script's LoadMap (0: the next stage, as usual)
 	nextStage int
+	// hideTitle and hideScores hide the stage screen (the stage and the map's title) and the scores between the
+	// stages when the next map starts, set by a script's LoadMap (opennox#721)
+	hideTitle, hideScores bool
+	// alwaysHideTitle and alwaysHideScores do it for every map, set by a script's HideQuestScreens
+	alwaysHideTitle, alwaysHideScores bool
 }
 
 var (
