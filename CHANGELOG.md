@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- arm64 builds (Apple Silicon and ARM Linux) compute the same floats as x86: the compiler is told not to fuse a multiply and an add into one instruction, which rounds once where x86 rounds twice. The game has to simulate identically on every platform, so that multiplayer players stay in sync and saved games play back the same. Nothing changes on x86, where the machine code is unaffected.
+
+### Internal
+
+- Every build sets `GOCOMPILEDEBUG=fmahash=qn` (`internal/noxbuild`), which turns the fused multiply-add off in all packages, Go's `math` included (`math.Sin`, `Cos`, `Atan2`, `Hypot`, `Pow` and `Acos` all fuse otherwise, and the game uses them). The arm64 build had 1226 fused instructions, from 478 expressions in the game's own code (the geometry, AI and map code) and 146 in `math`; it has none now. The amd64 `.text` section is byte for byte identical with and without the flag. `scripts/ci/lint-fma.sh` (new CI job) compiles the arm64 binary and fails if any FMA instruction is left, and checks that the build does fuse without the flag, so it cannot pass vacuously. A plain `go build`/`go test` does not get the flag; `docs/build-macos.md` says when to pass it by hand.
+
 ## v1.10.0-alpha4
 
 - The game plays audio through SDL3; OpenAL is gone. The Windows archive ships only `SDL3.dll`, and the AppImage no longer bundles OpenAL.

@@ -25,6 +25,9 @@ jobs:
         working-directory: src
     env:
       CGO_ENABLED: "0"
+      # the same codegen as the release builds (internal/noxbuild): no fused multiply-add, so that
+      # arm64 (macos-14 here) computes the same floats as x86
+      GOCOMPILEDEBUG: fmahash=qn
     steps:
       - uses: actions/checkout@v4
 
@@ -58,6 +61,9 @@ jobs:
         working-directory: src
     env:
       CGO_ENABLED: "0"
+      # the same codegen as the release builds (internal/noxbuild): no fused multiply-add, so that
+      # arm64 (macos-14 here) computes the same floats as x86
+      GOCOMPILEDEBUG: fmahash=qn
     steps:
       - uses: actions/checkout@v4
 
@@ -89,3 +95,18 @@ jobs:
       # raw 386 offsets into moved struct fields and pointers kept in 32-bit integers; see the script
       - name: Lint
         run: scripts/ci/lint-64bit.sh
+
+  fma:
+    name: Float determinism (arm64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: src/go.mod
+          cache-dependency-path: src/go.sum
+
+      # arm64 fuses multiply-add and so computes different floats than x86; see the script
+      - name: Lint
+        run: scripts/ci/lint-fma.sh

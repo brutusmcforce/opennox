@@ -149,6 +149,13 @@ func goBuild(cmd string, bin string, opts *buildOpts) error {
 	// No C compiler is needed: SDL3 is loaded at runtime (see libs/dynlib), so every target
 	// cross-compiles from any system. The release builds are 64-bit x86.
 	envs = append(envs, "CGO_ENABLED=0")
+	// arm64 (Apple Silicon, ARM Linux) fuses a multiply followed by an add into one FMA instruction,
+	// which rounds once where amd64 rounds twice, so the same code computes slightly different floats.
+	// The game has to simulate identically on every platform: multiplayer clients run the same
+	// simulation, saves and the e2e references were recorded on amd64. fmahash=qn turns the
+	// optimization off (every package, the standard library's math included); it does nothing on
+	// amd64, which never fuses. scripts/ci/lint-fma.sh checks that the build stays free of FMA.
+	envs = append(envs, "GOCOMPILEDEBUG=fmahash=qn")
 	if os.Getenv("GOARCH") == "" {
 		envs = append(envs, "GOARCH=amd64")
 	}
