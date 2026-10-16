@@ -3,10 +3,12 @@
 package ail
 
 import (
+	"math"
 	"os"
 	"path/filepath"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/shoenig/test/must"
 
@@ -24,17 +26,17 @@ func testMusicFile(t testing.TB) string {
 }
 
 // The music opens a new stream for every track, after every save load and voice line,
-// so closing a stream must free its OpenAL source.
+// so closing a stream must free its SDL stream and logical device.
 func TestStreamCloseFrees(t *testing.T) {
 	path := testMusicFile(t)
-	t.Setenv("ALSOFT_DRIVERS", "null") // no sound
+	t.Setenv("SDL_AUDIODRIVER", "dummy") // no sound
 	handles.Init()
 	dig := WaveOutOpen()
 	if dig == 0 {
-		t.Skip("no OpenAL device")
+		t.Skip("no audio device")
 	}
 	d := dig.get()
-	for i := 0; i < 600; i++ { // more than OpenAL Soft's 256 sources
+	for i := 0; i < 600; i++ { // many: leaked streams and devices would pile up
 		s := dig.OpenStream(path)
 		must.NonZero(t, s, must.Sprintf("stream %d", i))
 		s.Start()
@@ -90,14 +92,14 @@ func TestADPCMSeek(t *testing.T) {
 
 // Voices are released when the audio device closes (e.g. sound turned off in the options).
 func TestSampleReleaseFrees(t *testing.T) {
-	t.Setenv("ALSOFT_DRIVERS", "null") // no sound
+	t.Setenv("SDL_AUDIODRIVER", "dummy") // no sound
 	handles.Init()
 	dig := WaveOutOpen()
 	if dig == 0 {
-		t.Skip("no OpenAL device")
+		t.Skip("no audio device")
 	}
 	d := dig.get()
-	for i := 0; i < 600; i++ { // more than OpenAL Soft's 256 sources
+	for i := 0; i < 600; i++ { // many: leaked streams and devices would pile up
 		s := dig.AllocateSample()
 		must.NonZero(t, s, must.Sprintf("sample %d", i))
 		d.doWork()
@@ -119,4 +121,66 @@ func TestADPCMCorruptBlock(t *testing.T) {
 	block[2], block[6] = 253, 255
 	must.NotEq(t, 0, len(decodeADPCMStereo(nil, block)))
 	must.NotEq(t, 0, len(decodeADPCMMono(nil, block)))
+}
+
+// Sound effects (ADPCM blocks) are decoded, panned and queued, and play on the device.
+func TestSamplePlays(t *testing.T) {
+	t.Setenv("SDL_AUDIODRIVER", "dummy") // no sound
+	handles.Init()
+	dig := WaveOutOpen()
+	if dig == 0 {
+		t.Skip("no audio device")
+	}
+	d := dig.get()
+	h := dig.AllocateSample()
+	must.NonZero(t, h)
+	defer h.Release()
+	const block = 512
+	h.SetType(4, 0) // mono ADPCM
+	h.SetADPCMBlockSize(block)
+	h.SetPlaybackRate(22050)
+	h.Init()
+	h.SetPan(0) // all left
+	data := make([]byte, 4*block)
+	for i := range data {
+		data[i] = byte(i * 37)
+	}
+	n := h.BufferReady() // the game asks which buffer to fill first
+	must.EqOp(t, 0, n)
+	h.LoadBuffer(uint32(n), data)
+	d.doWork()
+	s := h.get()
+	must.True(t, s.stream.Queued() > 0, must.Sprint("nothing queued"))
+	must.False(t, s.stream.Paused(), must.Sprint("the stream must play"))
+	// mono data is turned into stereo with the pan: pan 0 (-63/64, nearly all left) leaves the right channel quiet
+	var left, right float64
+	for i := 0; i+1 < len(s.stereoBuf); i += 2 {
+		left += math.Abs(float64(s.stereoBuf[i]))
+		right += math.Abs(float64(s.stereoBuf[i+1]))
+	}
+	must.True(t, left > 0, must.Sprint("no sound"))
+	must.True(t, right < left/20, must.Sprintf("left %.0f, right %.0f", left, right))
+}
+
+// The movie player's stream counts the frames it played.
+func TestPCMStreamPlayed(t *testing.T) {
+	t.Setenv("SDL_AUDIODRIVER", "dummy") // no sound
+	handles.Init()
+	dig := WaveOutOpen()
+	if dig == 0 {
+		t.Skip("no audio device")
+	}
+	p := dig.OpenPCMStream(22050, 2)
+	must.NotNil(t, p)
+	defer p.Close()
+	p.QueueStereo16(make([][2]int16, 22050)) // 1 s
+	must.EqOp(t, 0, p.Played())
+	must.EqOp(t, 22050, p.Queued())
+	p.Start()
+	deadline := time.Now().Add(3 * time.Second)
+	for p.Played() == 0 && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	must.True(t, p.Played() > 0, must.Sprint("nothing played"))
+	must.EqOp(t, 22050, p.Played()+p.Queued())
 }

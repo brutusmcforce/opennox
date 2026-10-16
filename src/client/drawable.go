@@ -2,8 +2,13 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"image"
+	"maps"
 	"math"
+	"slices"
+	"strconv"
+	"strings"
 	"unsafe"
 
 	"github.com/brutusmcforce/opennox/libs/object"
@@ -112,9 +117,14 @@ type clientDrawables struct {
 	Index2D      [][]*Drawable
 	Index2DSize  int
 	LoadError    bool
+	warnedFull   bool
 }
 
 func (c *clientDrawables) New() *Drawable {
+	if !c.warnedFull && c.Alloc.Active() >= c.Alloc.Cap() {
+		c.warnedFull = true
+		c.logFull()
+	}
 	dr := c.Alloc.NewObject()
 	if dr == nil {
 		return nil
@@ -123,12 +133,34 @@ func (c *clientDrawables) New() *Drawable {
 	return dr
 }
 
+// logFull logs the types that use the most drawables, when the preallocated ones run out (opennox#715: a solo quest
+// ran out of the 5000, which crashed before; now the pool grows, but so many drawables may be a leak).
+func (c *clientDrawables) logFull() {
+	cnt := make(map[uint32]int)
+	c.Alloc.EachActive(func(dr *Drawable) {
+		cnt[dr.TypeIDVal]++
+	})
+	types := slices.SortedFunc(maps.Keys(cnt), func(a, b uint32) int { return cnt[b] - cnt[a] })
+	var top []string
+	for _, typ := range types[:min(len(types), 10)] {
+		name := strconv.Itoa(int(typ))
+		if t := c.c.Things.TypeByInd(int(typ)); t != nil {
+			name = t.ID()
+		}
+		top = append(top, fmt.Sprintf("%s:%d", name, cnt[typ]))
+	}
+	c.c.Log.Warn("drawables: all preallocated are used, allocating more", "active", c.Alloc.Active(),
+		"types", len(cnt), "top", strings.Join(top, " "))
+}
+
 func (c *clientDrawables) init(cli *Client) {
 	c.c = cli
 }
 
 func (c *clientDrawables) Init(cnt int) {
-	c.Alloc = alloc.NewClassT("drawableClass", Drawable{}, cnt)
+	// it grows when needed; the original game had no drawable (and no sprite) when all were used
+	c.Alloc = alloc.NewDynamicClassT("drawableClass", Drawable{}, cnt)
+	c.warnedFull = false
 	c.initIndex2D()
 	c.Ext.init(c)
 }

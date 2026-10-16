@@ -7,13 +7,13 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+	"unsafe"
 
-	"github.com/brutusmcforce/opennox/libs/openal"
+	"github.com/brutusmcforce/opennox/libs/sdl"
 
 	"github.com/brutusmcforce/opennox/libs/env"
 	"github.com/brutusmcforce/opennox/libs/log"
@@ -93,10 +93,11 @@ func (h Timer) get() *audioTimer {
 	return s
 }
 
+// Audio plays through SDL3 audio streams (libs/sdl): each sample and stream has its own, which SDL mixes and converts
+// to the device's format. The streams are kept about 100-150 ms ahead by the driver's work, 20 times a second.
+
 type audioDriver struct {
 	h          Driver
-	dev        *openal.Device
-	ctx        *openal.Context
 	mu         sync.Mutex
 	sampleHead *audioSample
 	streamHead *audioStream
@@ -113,11 +114,12 @@ type audioSample struct {
 	d       *audioDriver
 	playing uint32 // atomic
 
-	next    *audioSample
-	source  openal.Source
-	hwbuf   openal.Buffers // hwbuf[:hwready] are free; unqueuing rewrites the names, so the rest may repeat them
-	hwall   openal.Buffers // all buffers, to delete them
-	hwready int
+	next      *audioSample
+	stream    *sdl.AudioStream
+	rate      int32   // sample rate of the queued data (see SetPlaybackRate)
+	panL      float32 // gains of the left and right channels for mono data (see SetPan)
+	panR      float32
+	stereoBuf []int16
 
 	bmu     sync.Mutex
 	buffers [2]audioSampleBuf
@@ -176,11 +178,8 @@ type audioStream struct {
 	h Stream
 	d *audioDriver
 
-	next    *audioStream
-	source  openal.Source
-	hwbuf   openal.Buffers // hwbuf[:hwready] are free; unqueuing rewrites the names, so the rest may repeat them
-	hwall   openal.Buffers // all buffers, to delete them
-	hwready int
+	next   *audioStream
+	stream *sdl.AudioStream
 
 	playing bool
 	paused  bool
@@ -200,40 +199,14 @@ type audioTimer struct {
 	user uint32
 }
 
-func audioCheckError() bool {
-	if err := openal.Err(); err != nil {
-		audioLog.Println(err)
-		return false
-	}
-	return true
-}
+// sampleQueueAhead is how much sound effect data is kept queued (the driver works 20 times a second).
+const sampleQueueAhead = 150 * time.Millisecond
 
-func (s *audioSample) unqueueBuffers() {
-	processed := int(s.source.Geti(openal.AlBuffersProcessed))
-	if !audioCheckError() {
-		return
-	}
-	if processed != 0 {
-		s.source.UnqueueBuffers(s.hwbuf[s.hwready : s.hwready+processed])
-		if !audioCheckError() {
-			return
-		}
-	}
-	s.hwready += processed
-}
+// streamQueueAhead is how much music and speech is kept queued.
+const streamQueueAhead = 200 * time.Millisecond
 
-func (s *audioStream) unqueueBuffers() {
-	processed := int(s.source.Geti(openal.AlBuffersProcessed))
-	if !audioCheckError() {
-		return
-	}
-	if processed != 0 {
-		s.source.UnqueueBuffers(s.hwbuf[s.hwready : s.hwready+processed])
-		if !audioCheckError() {
-			return
-		}
-	}
-	s.hwready += processed
+func queueBytes(rate, channels int, d time.Duration) int {
+	return int(int64(rate) * int64(channels) * 2 * int64(d) / int64(time.Second))
 }
 
 func (dig Driver) AllocateSample() Sample {
@@ -249,22 +222,19 @@ func (dig Driver) AllocateSample() Sample {
 		return 0
 	}
 
+	// sound effects are mono or stereo; mono is turned into stereo with the pan applied, see queue
+	stream, err := sdl.OpenAudioStream(sdl.AudioSpec{Format: sdl.AUDIO_S16, Channels: 2, Freq: 22050})
+	if err != nil {
+		audioLog.Println("cannot open audio stream:", err)
+		return 0
+	}
 	s := &audioSample{
 		h:      Sample(handles.New()),
 		d:      d,
-		source: openal.NewSource(),
+		stream: stream,
+		rate:   22050,
 	}
-	if !audioCheckError() {
-		return 0
-	}
-
-	s.hwbuf = openal.NewBuffers(4)
-	s.hwall = slices.Clone(s.hwbuf)
-	s.hwready = 4
-	if !audioCheckError() {
-		s.source.Delete()
-		return 0
-	}
+	s.setPan(63)
 
 	d.mu.Lock()
 	s.next = d.sampleHead
@@ -300,11 +270,7 @@ func (s Sample) Release() {
 		}
 	}
 	atomic.StoreUint32(&v.playing, 0)
-	v.source.Stop()
-	v.source.Seti(openal.AlBuffer, 0)
-	v.hwall.Delete()
-	v.source.Delete()
-	audioCheckError()
+	v.stream.Destroy()
 }
 
 func openAudio(path string) (audioDecoder, error) {
@@ -339,21 +305,17 @@ func (dig Driver) OpenStream(name string) Stream {
 		return 0
 	}
 
+	stream, err := sdl.OpenAudioStream(sdl.AudioSpec{Format: sdl.AUDIO_S16, Channels: int32(dec.Channels()), Freq: int32(dec.SampleRate())})
+	if err != nil {
+		audioLog.Println("cannot open audio stream:", err)
+		dec.Close()
+		return 0
+	}
 	s := &audioStream{
-		d:   d,
-		h:   Stream(handles.New()),
-		dec: dec,
-	}
-	s.source = openal.NewSource()
-	if !audioCheckError() {
-		return 0
-	}
-	s.hwbuf = openal.NewBuffers(2)
-	s.hwall = slices.Clone(s.hwbuf)
-	s.hwready = 2
-	if !audioCheckError() {
-		s.source.Delete()
-		return 0
+		d:      d,
+		h:      Stream(handles.New()),
+		dec:    dec,
+		stream: stream,
 	}
 
 	d.mu.Lock()
@@ -383,12 +345,8 @@ func (h Stream) Close() error {
 	d.mu.Lock()
 	s.playing = false
 	s.dec.Close()
-	// free the OpenAL source and buffers, or every stream leaks them until OpenAL runs out (AL_OUT_OF_MEMORY)
-	s.source.Stop()
-	s.source.Seti(openal.AlBuffer, 0) // unqueues all buffers
-	s.hwall.Delete()
-	s.source.Delete()
-	audioCheckError()
+	// every stream has its own SDL stream and logical device: free them, or they pile up
+	s.stream.Destroy()
 	for p := &d.streamHead; *p != nil; p = &(*p).next {
 		if *p == s {
 			*p = s.next
@@ -432,17 +390,6 @@ func (h Timer) Release() {
 	}
 }
 
-func (h Sample) GetSource() *uint32 {
-	if env.IsE2E() {
-		return nil
-	}
-	s := h.get()
-	if s == nil {
-		return nil
-	}
-	return (*uint32)(&s.source)
-}
-
 func (h Sample) End() {
 	if audioDebug {
 		audioLog.Println("AIL_end_sample")
@@ -483,13 +430,13 @@ func (h Sample) Init() {
 	s.ready = 2
 	s.bmu.Unlock()
 
-	s.source.Setf(openal.AlPitch, 1)
-	s.source.Setf(openal.AlGain, 1)
-	h.SetPan(63)
+	s.stream.SetGain(1)
+	s.setPan(63)
 
 	s.Stop()
-	s.source.Stop()
-	s.unqueueBuffers()
+	// drop what's still queued, like stopping the OpenAL source did
+	s.stream.Pause()
+	s.stream.Clear()
 }
 
 func LastError() string {
@@ -536,11 +483,10 @@ func (h Stream) Pause(pause bool) {
 	}
 	s.paused = pause
 	if pause {
-		s.source.Pause()
-	} else if s.playing && s.source.State() == openal.Paused {
-		s.source.Play()
+		s.stream.Pause()
+	} else if s.playing {
+		s.stream.Resume()
 	}
-	audioCheckError()
 }
 
 func (h Sample) RegisterEOBCallback(f func()) {
@@ -658,9 +604,19 @@ func (h Sample) SetPan(pan int) {
 	if s == nil {
 		return
 	}
-	pos := [3]float32{float32(pan-63) / 64.0, 0, 0}
-	pos[2] = float32(math.Sqrt(float64(1 - pos[0]*pos[0])))
-	s.source.Setfv(openal.AlPosition, pos[:])
+	s.d.mu.Lock()
+	defer s.d.mu.Unlock()
+	s.setPan(pan)
+}
+
+// setPan sets the left and right gains for mono data with a constant power pan law, like OpenAL panned a mono source
+// placed on a unit circle in front of the listener (pan 0 is left, 63 the center, 127 right).
+// It applies to the data queued from now on.
+func (s *audioSample) setPan(pan int) {
+	x := min(max(float64(pan-63)/64.0, -1), 1)
+	angle := (x + 1) * math.Pi / 4
+	s.panL = float32(math.Cos(angle))
+	s.panR = float32(math.Sin(angle))
 }
 
 func (h Sample) SetPlaybackRate(rate int) {
@@ -720,7 +676,7 @@ func (h Sample) SetVolume(volume int) {
 	if s == nil {
 		return
 	}
-	s.source.Setf(openal.AlGain, float32(volume)/127.0)
+	s.stream.SetGain(float32(volume) / 127.0)
 }
 
 func (h Stream) SetPosition(offset int) {
@@ -750,7 +706,7 @@ func (h Stream) SetVolume(volume int) {
 	if s == nil {
 		return
 	}
-	s.source.Setf(openal.AlGain, float32(volume)/127.0)
+	s.stream.SetGain(float32(volume) / 127.0)
 }
 
 func (h Timer) SetFrequency(hertz uint) {
@@ -908,34 +864,32 @@ func (dig Driver) Close() error {
 	return nil
 }
 
-func (s *audioSample) playADPCM(data []byte) {
+// queue decodes an ADPCM block and queues it, in stereo with the pan applied to mono data.
+func (s *audioSample) queue(data []byte) {
 	if !s.adpcm {
 		panic("abort")
 	}
-
 	var decoded []int16
 	if s.stereo {
 		decoded = decodeADPCMStereo(decoded, data)
 	} else {
 		decoded = decodeADPCMMono(decoded, data)
+		out := s.stereoBuf[:0]
+		for _, v := range decoded {
+			out = append(out, int16(float32(v)*s.panL), int16(float32(v)*s.panR))
+		}
+		s.stereoBuf = out
+		decoded = out
 	}
-
-	s.hwready--
-
-	format := openal.FormatMono16
-	if s.stereo {
-		format = openal.FormatStereo16
+	if rate := int32(s.playbackRate); rate > 0 && rate != s.rate {
+		if err := s.stream.SetFormat(sdl.AudioSpec{Format: sdl.AUDIO_S16, Channels: 2, Freq: rate}); err != nil {
+			audioLog.Println("cannot set the sample rate:", err)
+			return
+		}
+		s.rate = rate
 	}
-
-	s.hwbuf[s.hwready].SetDataInt16(format, decoded, int32(s.playbackRate))
-	if !audioCheckError() {
-		s.hwready++
-		return
-	}
-	s.source.QueueBuffer(s.hwbuf[s.hwready])
-	if !audioCheckError() {
-		s.hwready++
-		return
+	if err := s.stream.PutInt16(decoded); err != nil {
+		audioLog.Println("cannot queue audio:", err)
 	}
 }
 
@@ -959,14 +913,14 @@ func (s *audioSample) work() {
 		return
 	}
 	defer s.bmu.Unlock()
-	s.unqueueBuffers()
 
-	for s.hwready != 0 {
-		s.playADPCM(buf.buf[buf.pos : buf.pos+int(s.blockSize)])
+	ahead := queueBytes(int(s.rate), 2, sampleQueueAhead)
+	for s.stream.Queued() < ahead {
+		s.queue(buf.buf[buf.pos : buf.pos+int(s.blockSize)])
 		buf.pos += int(s.blockSize)
 
-		if s.IsPlaying() && s.source.State() != openal.Playing {
-			s.source.Play()
+		if s.IsPlaying() && s.stream.Paused() {
+			s.stream.Resume()
 		}
 
 		if buf.pos >= len(buf.buf) {
@@ -987,15 +941,13 @@ func (s *audioStream) work() {
 	}
 	var buffer [16 * 1024 * 3]int16
 	channels := s.Channels()
-	// We need to queue 100ms of audio data.
 	sampleRate := s.dec.SampleRate()
+	// decode in chunks of 100 ms
 	minSamples := sampleRate * channels / 10
+	ahead := queueBytes(sampleRate, channels, streamQueueAhead)
 
-	s.unqueueBuffers()
-
-	for s.hwready != 0 {
+	for s.stream.Queued() < ahead {
 		offset := 0
-
 		for offset < minSamples {
 			samples, ok := s.dec.Decode(buffer[offset : minSamples*2])
 			if !ok {
@@ -1006,32 +958,15 @@ func (s *audioStream) work() {
 			}
 			offset += int(samples)
 		}
-
 		if offset == 0 {
 			break
 		}
-
-		s.hwready--
-
-		format := openal.FormatMono16
-		if channels != 1 {
-			format = openal.FormatStereo16
-		}
-
-		s.hwbuf[s.hwready].SetDataInt16(format, buffer[:offset], int32(sampleRate))
-		if !audioCheckError() {
-			s.hwready++
+		if err := s.stream.PutInt16(buffer[:offset]); err != nil {
+			audioLog.Println("cannot queue audio:", err)
 			return
 		}
-		s.source.QueueBuffer(s.hwbuf[s.hwready])
-		if !audioCheckError() {
-			s.hwready++
-			return
-		}
-
-		state := s.source.State()
-		if s.playing && state != openal.Playing {
-			s.source.Play()
+		if s.stream.Paused() {
+			s.stream.Resume()
 		}
 	}
 }
@@ -1056,35 +991,20 @@ func WaveOutOpen() Driver {
 	}
 	h := Driver(handles.New())
 
-	d := &audioDriver{h: h}
-	d.dev = openal.OpenDevice("")
-	if d.dev == nil {
-		if err := openal.Err(); err != nil {
-			audioLog.Println("error opening device:", err)
-		} else {
-			audioLog.Println("cannot open device")
-		}
+	if err := sdl.InitSubSystem(sdl.INIT_AUDIO); err != nil {
+		audioLog.Println("cannot open the audio device:", err)
 		return 0
 	}
+	// check that a stream can be opened: without a device, SDL fails here
+	test, err := sdl.OpenAudioStream(sdl.AudioSpec{Format: sdl.AUDIO_S16, Channels: 2, Freq: 22050})
+	if err != nil {
+		audioLog.Println("cannot open the audio device:", err)
+		return 0
+	}
+	test.Destroy()
 	audioLog.Println("device ok")
-	d.ctx = d.dev.CreateContext()
-	if d.ctx == nil {
-		if err := openal.Err(); err != nil {
-			audioLog.Println("error creating context:", err)
-		} else {
-			audioLog.Println("cannot create context")
-		}
-		return 0
-	}
-	audioLog.Println("context ok")
-	d.ctx.Activate()
-	if err := openal.Err(); err != nil {
-		audioLog.Println("error activating context:", err)
-		return 0
-	}
 
-	openal.Listener{}.Setf(openal.AlGain, 1)
-	openal.Listener{}.Setfv(openal.AlPosition, []float32{0, 0, 0})
+	d := &audioDriver{h: h}
 	d.t = time.NewTicker(time.Second / 20)
 
 	audioDrivers.Lock()
@@ -1093,3 +1013,50 @@ func WaveOutOpen() Driver {
 
 	return h
 }
+
+// PCMStream plays 16-bit PCM data that the caller queues itself (the movie player).
+type PCMStream struct {
+	s          *sdl.AudioStream
+	frameBytes int
+	put        atomic.Int64 // sample frames queued so far
+}
+
+// OpenPCMStream opens a stream for 16-bit PCM data. It returns nil without audio. Call Start to play.
+func (dig Driver) OpenPCMStream(rate, channels int) *PCMStream {
+	if env.IsE2E() || dig.get() == nil {
+		return nil
+	}
+	s, err := sdl.OpenAudioStream(sdl.AudioSpec{Format: sdl.AUDIO_S16, Channels: int32(channels), Freq: int32(rate)})
+	if err != nil {
+		audioLog.Println("cannot open audio stream:", err)
+		return nil
+	}
+	return &PCMStream{s: s, frameBytes: 2 * channels}
+}
+
+// QueueStereo16 queues stereo sample frames.
+func (p *PCMStream) QueueStereo16(frames [][2]int16) {
+	if len(frames) == 0 {
+		return
+	}
+	if err := p.s.PutInt16(unsafe.Slice(&frames[0][0], len(frames)*2)); err != nil {
+		audioLog.Println("cannot queue audio:", err)
+		return
+	}
+	p.put.Add(int64(len(frames)))
+}
+
+// Played returns the number of sample frames played so far.
+func (p *PCMStream) Played() int {
+	return max(int(p.put.Load())-p.s.Queued()/p.frameBytes, 0)
+}
+
+// Queued returns the number of sample frames not played yet.
+func (p *PCMStream) Queued() int {
+	return p.s.Queued() / p.frameBytes
+}
+
+func (p *PCMStream) SetGain(gain float32) { p.s.SetGain(gain) }
+func (p *PCMStream) Start()               { p.s.Resume() }
+func (p *PCMStream) Pause()               { p.s.Pause() }
+func (p *PCMStream) Close()               { p.s.Destroy() }

@@ -3,11 +3,13 @@
 package noxmovie
 
 import (
+	"errors"
 	"image"
 	"image/draw"
 	"io"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/brutusmcforce/opennox/libs/client/seat"
@@ -15,9 +17,8 @@ import (
 
 	"github.com/brutusmcforce/opennox/legacy/client/audio/ail"
 
-	"github.com/brutusmcforce/opennox/libs/openal"
+	"github.com/brutusmcforce/opennox/libs/env"
 	"github.com/brutusmcforce/opennox/vqa-decode/movies"
-	"github.com/youpy/go-wav"
 )
 
 type Frame struct {
@@ -29,17 +30,17 @@ type Frame struct {
 type DisplayFunc func(img *noximage.Image16)
 
 type MoviePlayer struct {
-	queue        chan *Frame
-	movie        *movies.VqaFile
-	file         io.Closer
-	seat         seat.Seat
-	oldInputs    seat.InputConfig
-	display      DisplayFunc
-	audioDrv     ail.Driver
-	audioSrc     ail.Sample
-	audioBuffers openal.Buffers
-	audioGain    float32
-	stop         chan struct{}
+	queue     chan *Frame
+	movie     *movies.VqaFile
+	file      io.Closer
+	seat      seat.Seat
+	oldInputs seat.InputConfig
+	display   DisplayFunc
+	audioDrv  ail.Driver
+	audio     *ail.PCMStream // nil in E2E tests: the movie is skipped
+	audioGain float32
+	playing   atomic.Bool // Play owns the audio stream and frees it
+	stop      chan struct{}
 }
 
 func (player *MoviePlayer) Start() {
@@ -79,13 +80,9 @@ func NewPlayerWithHandle(file io.ReadSeekCloser, mvSeat seat.Seat, audioDrv ail.
 	queue := make(chan *Frame, vqa.Header.Fps*2)
 	stop := make(chan struct{})
 
-	// Consuming dangling errors
-	openal.Err()
-
-	audioSrc := audioDrv.AllocateSample()
-
-	if audioSrc == 0 {
-		return nil, openal.Err()
+	audio := audioDrv.OpenPCMStream(int(vqa.Header.SampleRate), 2)
+	if audio == nil && !env.IsE2E() {
+		return nil, errors.New("cannot play movie: no audio")
 	}
 
 	oldInputs := mvSeat.ReplaceInputs(nil)
@@ -97,7 +94,7 @@ func NewPlayerWithHandle(file io.ReadSeekCloser, mvSeat seat.Seat, audioDrv ail.
 		seat:      mvSeat,
 		display:   display,
 		audioDrv:  audioDrv,
-		audioSrc:  audioSrc,
+		audio:     audio,
 		stop:      stop,
 		oldInputs: oldInputs,
 		audioGain: 1,
@@ -145,36 +142,14 @@ func (player *MoviePlayer) Close() {
 	}
 	close(player.stop)
 	player.file.Close()
-	player.audioSrc.Stop()
-
-	// First we need to release the audio source, and only then delete the (possibly) attached buffers
-	player.audioSrc.Release()
-	if len(player.audioBuffers) > 0 {
-		player.audioBuffers.Delete()
-	}
-
-	// Consuming dangling errors
-	_ = openal.Err()
-
-	player.seat.ReplaceInputs(player.oldInputs)
-}
-
-func convertSampleToData(samples []wav.Sample, format openal.Format) []byte {
-	var output = make([]byte, len(samples)*2*2)
-	for i := 0; i < len(samples); i++ {
-		left := samples[i].Values[0]
-		right := samples[i].Values[1]
-		output[i*4] = byte(left & 0xFF)
-		output[i*4+1] = byte((left >> 8) & 0xFF)
-		if format == openal.FormatMono16 {
-			output[i*4+2] = output[i*2]
-			output[i*4+3] = output[i*2+1]
-		} else {
-			output[i*4+2] = byte(right & 0xFF)
-			output[i*4+3] = byte((right >> 8) & 0xFF)
+	if player.audio != nil {
+		// silence now; the stream is freed once the audio goroutine of Play is done with it
+		player.audio.Pause()
+		if !player.playing.Load() {
+			player.audio.Close()
 		}
 	}
-	return output
+	player.seat.ReplaceInputs(player.oldInputs)
 }
 
 func (player *MoviePlayer) SetAudioGain(v float32) {
@@ -184,22 +159,17 @@ func (player *MoviePlayer) SetAudioGain(v float32) {
 func (player *MoviePlayer) Play() {
 	// TODO: if we got no audio, we could probably still keep displaying frames...
 	// Note that the frame delays are all calculated based on sound position
-	audioSrc := player.audioSrc.GetSource()
-	if audioSrc == nil {
+	audio := player.audio
+	if audio == nil {
 		player.Close()
 		return
 	}
-	alSrc := openal.Source(*audioSrc)
-	alSrc.SetPosition(&openal.Vector{0, 0, 0})
-	alSrc.SetGain(player.audioGain)
+	player.playing.Store(true)
+	defer audio.Close() // runs after wg.Wait below: the audio goroutine is done with the stream
+	audio.SetGain(player.audioGain)
 
 	framesChan := make(chan *Frame, player.movie.Header.Fps)
 
-	var (
-		samplesMu       sync.RWMutex
-		finishedSamples = 0
-		queuedSamples   = 0
-	)
 	select {
 	case <-player.stop:
 		return
@@ -211,62 +181,25 @@ func (player *MoviePlayer) Play() {
 	wg.Add(1)
 	defer wg.Wait()
 
-	// Audio thread
+	// Audio thread: queue the audio of each frame, then pass the frame on to be displayed
 	go func() {
 		defer wg.Done()
-		var freeBuffers openal.Buffers
+		started := false
 		for {
 			select {
 			case <-player.stop:
 				close(framesChan)
 				return
 			case newFrame, ok := <-player.queue:
-				if processed := alSrc.BuffersProcessed(); processed > 0 {
-					processedBuffers := make(openal.Buffers, processed)
-					alSrc.UnqueueBuffers(processedBuffers)
-					finished := 0
-					for _, b := range processedBuffers {
-						bits, chans := b.GetBits(), b.GetChannels()
-						if bits == 0 || chans == 0 || bits > 64 {
-							continue // this is a workaround for crashes in case we use buffers incorrectly (see #470)
-						}
-						samples := b.GetSize() / ((bits / 8) * chans)
-						finished += int(samples)
-					}
-					samplesMu.Lock()
-					finishedSamples += finished
-					samplesMu.Unlock()
-					freeBuffers = append(freeBuffers, processedBuffers...)
-				}
-
 				if !ok {
-					// If we end up here, means the whole file is already decoded
-					// we have nothing left in buffers
-					// Time to finish the playback
-
-					// Let's notify the main thread that the buffer is "done":
+					// the whole file is decoded: let the main loop finish the playback
 					close(framesChan)
 					return
 				}
-
-				// Let's buffer all the received audio, and move the frames to the main thread channel
-				var buffer openal.Buffer
-				if len(freeBuffers) == 0 {
-					buffer = openal.NewBuffer()
-					player.audioBuffers = append(player.audioBuffers, buffer)
-				} else {
-					buffer = freeBuffers[0]
-					freeBuffers = freeBuffers[1:]
-				}
-				sampleRate := int32(player.movie.Header.SampleRate)
-				buffer.SetDataStereo16(newFrame.Audio, sampleRate)
-				samplesMu.Lock()
-				queuedSamples += len(newFrame.Audio)
-				alSrc.QueueBuffer(buffer)
-				samplesMu.Unlock()
-				if alSrc.State() != openal.Playing {
-					alSrc.Play()
-					alSrc.SetLooping(false)
+				audio.QueueStereo16(newFrame.Audio)
+				if !started {
+					audio.Start()
+					started = true
 				}
 				select {
 				case <-player.stop:
@@ -287,8 +220,8 @@ loop:
 	for {
 		// Process input events.
 		player.seat.InputTick()
-		// A key may have closed the player, which released the audio source. Check it before the select below:
-		// it picks randomly when a frame is ready too, and the loop would then use the released source.
+		// A key may have closed the player. Check it before the select below:
+		// it picks randomly when a frame is ready too.
 		select {
 		case <-player.stop:
 			break loop
@@ -302,15 +235,8 @@ loop:
 			break loop
 		case newFrame, ok := <-framesChan:
 			if !ok {
-				// If we end up here, means the whole file is already displayed
-				// we have nothing left in buffers
-				// Let's calculate how much time left in the audio buffers
-				samplesMu.Lock()
-				samplesLeft := queuedSamples - finishedSamples - int(alSrc.GetOffsetSamples())
-				samplesMu.Unlock()
-				timeToSleepBeforeAudioEnd := time.Duration(samplesLeft) * sampleDuration
-
-				// ...And we just sleep before the audio finishes playing
+				// The whole file is displayed: wait until the queued audio has played
+				timeToSleepBeforeAudioEnd := time.Duration(audio.Queued()) * sampleDuration
 				select {
 				case <-player.stop:
 				case <-time.After(timeToSleepBeforeAudioEnd):
@@ -323,17 +249,9 @@ loop:
 		// Run audio callbacks.
 		ail.Serve()
 
-		// Now let's calculate the sleep time
-		// First let's get where we are at our playback
-		samplesMu.Lock()
-		currentPosition := time.Duration(int(alSrc.GetOffsetSamples())+finishedSamples) * sampleDuration
-		samplesMu.Unlock()
-		// Now let's determine when the next frame should be displayed
-		// We assume it should be no later than the next audio queue up
-		expectedSamplesCount := samplesWithCommitedFrames
-		expectedPosition := time.Duration(expectedSamplesCount) * sampleDuration
-
-		// Now let's determine the next wakeup call time
+		// The frames follow the audio: wait until the audio played up to this frame
+		currentPosition := time.Duration(audio.Played()) * sampleDuration
+		expectedPosition := time.Duration(samplesWithCommitedFrames) * sampleDuration
 		if sleep := expectedPosition - currentPosition; sleep > 0 {
 			select {
 			case <-player.stop:

@@ -1,7 +1,7 @@
 # Building for Windows on Linux
 
 This is the main build procedure for the Windows version cross-compiled on Linux.
-No C compiler is needed: OpenNox loads SDL3 and OpenAL when it starts.
+No C compiler is needed: OpenNox loads SDL3 when it starts.
 
 For building on Windows, see [this page](./build-windows.md).
 
@@ -22,6 +22,6 @@ This should produce `opennox.exe`, `opennox-server.exe` and `opennox-debug.exe`.
 
 ## Running
 
-Put `SDL3.dll` and `OpenAL32.dll` next to the executables, see [building on Windows](./build-windows.md#running).
+Put `SDL3.dll` next to the executables, see [building on Windows](./build-windows.md#running).
 
-The release build does the same in a container: `scripts/ci/build-windows.sh` downloads the DLLs and checks them.
+The release build does the same in a container: `scripts/ci/build-windows.sh` downloads the DLL and checks it.

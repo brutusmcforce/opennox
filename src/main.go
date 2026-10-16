@@ -199,6 +199,10 @@ func runArgs(args []string, loopFunc func() error) (gerr error) {
 	} else {
 		path = datapath.FindData()
 		if path == "" {
+			// e.g. the first start on macOS, or a copy of the game in an unusual place: let the player point to it
+			path = askDataDir()
+		}
+		if path == "" {
 			err := errors.New("cannot find Nox data dir")
 			datapath.Log.Println(err)
 			switch runtime.GOOS {
@@ -387,10 +391,7 @@ func runArgs(args []string, loopFunc func() error) (gerr error) {
 	if env.IsE2E() {
 		noxClient.videoSetGameMode(e2eScreenSize)
 	} else {
-		noxClient.videoSetGameMode(image.Point{
-			X: viper.GetInt(configVideoWidth),
-			Y: viper.GetInt(configVideoHeight),
-		})
+		noxClient.videoSetGameMode(configVideoSize(viper.GetInt(configVideoWidth), viper.GetInt(configVideoHeight)))
 	}
 	if err := gameexReadConfig("game_ex.cfg"); err != nil {
 		return fmt.Errorf("failed to load gameex config file: %w", err)

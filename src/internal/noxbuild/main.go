@@ -146,7 +146,7 @@ func goBuild(cmd string, bin string, opts *buildOpts) error {
 	envs = append(envs,
 		"GOOS="+goos,
 	)
-	// No C compiler is needed: SDL3 and OpenAL are loaded at runtime (see libs/dynlib), so every target
+	// No C compiler is needed: SDL3 is loaded at runtime (see libs/dynlib), so every target
 	// cross-compiles from any system. The release builds are 64-bit x86.
 	envs = append(envs, "CGO_ENABLED=0")
 	if os.Getenv("GOARCH") == "" {

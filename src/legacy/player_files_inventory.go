@@ -54,11 +54,20 @@ func playerFileInventory(u *server.Object) int {
 				}
 				it.PosVec.X = 2944
 				it.PosVec.Y = 2944
-				if noxflags.HasGame(4096) && !questEligibilityItem(it) {
-					return 0
+				dropped := false
+				if noxflags.HasGame(4096) && !QuestAllowAnyItems && !questEligibilityItem(it) {
+					// opennox#670: the original rejected the whole character (it started over from level 1)
+					// for one item that can't be found in a quest, e.g. one placed on a custom quest map;
+					// only that item is dropped now
+					questItemLog.Printf("dropping item %q from the saved inventory: not allowed in quests (server.quest.allow_any_items in the config, or \"set questanyitems on\" to keep such items)", name)
+					dropped = true
 				}
 				objectXferPlace(it, u.CObj(), nil)
 				GetServer().ObjectsAddPending()
+				if dropped {
+					GetServer().DelayedDelete(it)
+					continue
+				}
 				if !Nox_xxx_inventoryServPlace_4F36F0(u, it, 1, 1) {
 					if !noxflags.HasGame(4096) {
 						return 0

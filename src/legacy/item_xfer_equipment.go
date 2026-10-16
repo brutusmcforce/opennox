@@ -50,10 +50,12 @@ func itemXferHealth(r objectXferStream, u *server.Object, armor bool) {
 		mod = GetServer().S().Modif.Nox_xxx_getProjectileClassById413250(int(uint16(u.TypeInd)))
 	}
 	if mod != nil {
-		hp = uint16(mod.Durability52)
-		u.HealthData.Max = hp
-		u.HealthData.Field2 = hp
-		resourceSetHP(u, hp)
+		// opennox#740: the original reset it to the base durability here, also in quests, where items are created
+		// with QuestDurabilityMultiplier times it; so an item placed on a quest map was saved with a third of its
+		// durability, and the character loaded it as damaged
+		creationScaleDurability(u, mod)
+		u.HealthData.Field2 = u.HealthData.Max
+		resourceSetHP(u, u.HealthData.Max)
 	}
 }
 func itemXferWeapon(u *server.Object) int {

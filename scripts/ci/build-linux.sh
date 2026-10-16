@@ -7,14 +7,19 @@ set -e
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 cache="$root/gocache"
 
-# no C compiler or libraries: SDL3 and OpenAL are loaded at runtime (the AppImage bundles them)
+# no C compiler or libraries: SDL3 is loaded at runtime (the AppImage bundles it)
 apt-get update -qq
 apt-get install -y -qq --no-install-recommends ca-certificates curl jq git >/dev/null
 
 goroot="$("$root/scripts/ci/install-go.sh" "$cache/toolchain")"
 export PATH="$goroot/bin:$PATH" GOTOOLCHAIN=local
 export GOMODCACHE="$cache/mod" GOCACHE="$cache/build"
-export CGO_ENABLED=0 GOARCH=amd64
+# the architecture of the system it runs on: amd64, or arm64 on an ARM runner
+case "$(uname -m)" in
+aarch64) goarch=arm64 ;;
+*) goarch=amd64 ;;
+esac
+export CGO_ENABLED=0 GOARCH=$goarch
 git config --global --add safe.directory "$root"
 
 mkdir -p "$root/build"

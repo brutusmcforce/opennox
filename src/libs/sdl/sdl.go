@@ -83,12 +83,15 @@ var fn struct {
 var (
 	loadOnce sync.Once
 	loadErr  error
+	// loadedLib is the loaded SDL library, for the optional parts that are looked up when used (see audio.go)
+	loadedLib *dynlib.Lib
 )
 
 // Load loads the SDL3 library. Other functions call it as needed.
 func Load() error {
 	loadOnce.Do(func() {
 		lib, err := dynlib.Open(libNames()...)
+		loadedLib = lib
 		if err != nil {
 			loadErr = err
 			return

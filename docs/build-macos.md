@@ -1,6 +1,6 @@
 # Building for macOS
 
-No C compiler is needed: OpenNox loads SDL3 and OpenAL when it starts. macOS includes OpenAL.
+No C compiler is needed: OpenNox loads SDL3 when it starts.
 
 ## Installing Go and SDL3
 

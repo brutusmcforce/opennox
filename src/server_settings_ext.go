@@ -20,6 +20,7 @@ const configBookMaxSpellLevel = "server.spells.book_max_level"
 func init() {
 	configBoolPtr("server.spells.friendly_fire", "NOX_FRIENDLY_FIRE", false, &legacy.SpellFriendlyFire)
 	configBoolPtr("server.afk_observer", "NOX_AFK_OBSERVER", true, &legacy.AFKObserver)
+	configBoolPtr("server.quest.allow_any_items", "NOX_QUEST_ALLOW_ANY_ITEMS", false, &legacy.QuestAllowAnyItems)
 	viper.SetDefault(configBookMaxSpellLevel, 0)
 	setLvl := func() { legacy.BookMaxSpellLevel = min(max(viper.GetInt(configBookMaxSpellLevel), 0), 5) }
 	setLvl()
@@ -36,6 +37,12 @@ func init() {
 		Help:  "set afkobserver [on|off]: idle players go to observer mode automatically after 90 seconds",
 		Flags: console.Server,
 		Func:  consoleSetBool("observer mode for idle players", &legacy.AFKObserver),
+	})
+	noxCmdSet.Register(&console.Command{
+		Token: "questanyitems",
+		Help:  "set questanyitems [on|off]: Quest characters keep saved items that can't be found in quests (by default they are dropped on load)",
+		Flags: console.Server,
+		Func:  consoleSetBool("any items in quest saves", &legacy.QuestAllowAnyItems),
 	})
 	noxCmdSet.Register(&console.Command{
 		Token: "spelllevel",

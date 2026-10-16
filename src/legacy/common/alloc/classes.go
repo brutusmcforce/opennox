@@ -43,6 +43,12 @@ func (c ClassT[T]) NewObject() *T {
 	return (*T)(c.Class.NewObject())
 }
 
+func (c ClassT[T]) EachActive(fnc func(p *T)) {
+	c.Class.EachActive(func(p unsafe.Pointer) {
+		fnc((*T)(p))
+	})
+}
+
 func (c ClassT[T]) FreeObjectFirst(p *T) {
 	c.Class.FreeObjectFirst(unsafe.Pointer(p))
 }
@@ -322,6 +328,23 @@ func (al *Class) NewObject() unsafe.Pointer {
 	obj.Zero()
 	layout.Track(obj.ptr, al.size, al.typ, al.name)
 	return obj.ptr
+}
+
+// Active returns the number of objects in use.
+func (al *Class) Active() int {
+	return al.active.n
+}
+
+// Cap returns the number of preallocated objects.
+func (al *Class) Cap() int {
+	return al.cnt
+}
+
+// EachActive calls fnc for the objects in use. fnc must not allocate or free objects of the class.
+func (al *Class) EachActive(fnc func(p unsafe.Pointer)) {
+	al.active.Each(func(it *object) {
+		fnc(it.ptr)
+	})
 }
 
 func (al *Class) FreeObjectFirst(p unsafe.Pointer) {

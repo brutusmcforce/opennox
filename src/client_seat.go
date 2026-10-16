@@ -3,6 +3,7 @@
 package opennox
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"unicode/utf16"
@@ -72,6 +73,14 @@ func (c *Client) initGPU() error {
 
 func (c *Client) initSeat(sz image.Point) error {
 	sst, err := sdl.New(c.Log, "OpenNox "+version.ClientVersion(), sz)
+	if errors.Is(err, sdl.ErrOpenGL) {
+		// opennox#692: old GPUs (e.g. Intel before Sandy Bridge) only have OpenGL 2.1; Mesa's software renderer
+		// has 3.3, and it's fast enough for the game. It only returns if the restart can't be done.
+		c.Log.Warn("no OpenGL 3.3, restarting with software rendering", "err", err)
+		restartWithSoftwareGL()
+		errorMessage("OpenNox needs OpenGL 3.3, which your graphics card or its driver doesn't support. Updating the graphics driver may help.\n\n%s", err.Error())
+		return err
+	}
 	if err != nil {
 		// e.g. SDL is missing: the Windows and macOS apps have no console to print it to
 		errorMessage("%s", err.Error())

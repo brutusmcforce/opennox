@@ -2,7 +2,7 @@
 
 This is the main build procedure for Windows version.
 
-No C compiler is needed: OpenNox loads SDL3 and OpenAL when it starts.
+No C compiler is needed: OpenNox loads SDL3 when it starts.
 
 For cross-compilation from Linux to Windows (including WSL), see [this page](./build-windows-on-linux.md).
 
@@ -52,15 +52,14 @@ To build only the game: `go run ./internal/noxbuild client`.
 
 ## Running
 
-The game loads two DLLs, which must be next to `opennox.exe`:
+The game loads one DLL, which must be next to `opennox.exe`:
 
 - `SDL3.dll`: from the SDL3 release for Windows (`SDL3-<version>-win32-x64.zip` on the [SDL releases page](https://github.com/libsdl-org/SDL/releases)).
-- `OpenAL32.dll`: OpenAL Soft's `bin/Win64/soft_oal.dll` from the [OpenAL Soft releases](https://github.com/kcat/openal-soft/releases), renamed to `OpenAL32.dll`.
 
-Both are also in every OpenNox release for Windows.
+It is also in every OpenNox release for Windows.
 
 1. Create a new folder for OpenNox, let's say `C:\Games\OpenNox`.
-2. Copy `opennox.exe` and `opennox-server.exe` from `C:\Dev\opennox\src`, and the two DLLs.
+2. Copy `opennox.exe` and `opennox-server.exe` from `C:\Dev\opennox\src`, and the DLL.
 3. Run `opennox.exe`.
    - If it says that the Nox directory was not found, it works!
      Check [this guide](https://mod.io/g/nox/r/how-to-install-opennox-windows) to set the Nox game path.

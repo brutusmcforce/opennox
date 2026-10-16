@@ -86,6 +86,37 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  linux_arm64_appimage:
+    # The Linux binaries and the AppImage for 64-bit ARM (Raspberry Pi and other ARM computers), built natively on an
+    # ARM runner in Debian 12, like the x86_64 ones (scripts/ci/build-linux.sh, scripts/appimage/build.sh)
+    name: Build for Linux ARM64 (AppImage)
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Get go cache
+        uses: actions/cache@v4
+        with:
+          path: gocache
+          key: linux-arm64-gocache-v1-${{ hashFiles('**/go.sum', 'src/go.mod', 'scripts/ci/*', 'scripts/appimage/*') }}
+          restore-keys: |
+            linux-arm64-gocache-v1-
+
+      - name: Build
+        run: docker run --rm --platform linux/arm64 -v "$PWD:/w" -w /w debian:bookworm sh -c 'scripts/ci/build-linux.sh && scripts/appimage/build.sh'
+
+      - uses: actions/upload-artifact@v4
+        name: Upload the AppImage
+        if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/dev') || (github.ref == 'refs/heads/ci_tests')
+        with:
+          name: opennox-release-linux-appimage-arm64
+          path: build/opennox-bundle-aarch64.AppImage
+          if-no-files-found: error
+          retention-days: 1
+
   macos:
     # Universal (Apple Silicon and Intel) OpenNox.app with SDL3, see scripts/ci/build-macos.sh
     name: Build for macOS
@@ -269,7 +300,7 @@ jobs:
           name: opennox-linux
           path: build
 
-      # bundles SDL3 (built from source) and OpenAL from Debian 12, see scripts/appimage/build.sh
+      # bundles SDL3 (built from source on Debian 12), see scripts/appimage/build.sh
       - name: Build the AppImage
         run: docker run --rm --platform linux/amd64 -v "$PWD:/w" -w /w debian:bookworm scripts/appimage/build.sh
 
@@ -339,7 +370,7 @@ jobs:
     permissions:
       contents: write # create the release
     if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/dev')
-    needs: [release_repackage_linux_appimage, release_repackage_linux_gzip, release_repackage_win, macos]
+    needs: [release_repackage_linux_appimage, release_repackage_linux_gzip, release_repackage_win, macos, linux_arm64_appimage]
     # pushes to dev replace the same pre-release, so they must not run at the same time
     concurrency:
       group: release-${{ github.ref }}
@@ -369,6 +400,12 @@ jobs:
           path: /tmp/release-tmp/
 
       - uses: actions/download-artifact@v4
+        name: Preparing Linux ARM64 (AppImage) file for release.
+        with:
+          name: opennox-release-linux-appimage-arm64
+          path: /tmp/release-tmp/
+
+      - uses: actions/download-artifact@v4
         name: Preparing macOS (Zip archive) file for release.
         with:
           name: opennox-release-macos
@@ -390,6 +427,7 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             /tmp/release-tmp/opennox-bundle-x86_64.AppImage
+            /tmp/release-tmp/opennox-bundle-aarch64.AppImage
             /tmp/release-tmp/OpenNox-linux-*.tar.gz
             /tmp/release-tmp/OpenNox-*.zip
             /tmp/release-tmp/OpenNox-*.exe
@@ -410,6 +448,7 @@ jobs:
             --title "Development build" \
             --notes "Automatic build of the dev branch at ${GITHUB_SHA::8}. It may be unstable; see the releases with version tags for stable builds." \
             /tmp/release-tmp/opennox-bundle-x86_64.AppImage \
+            /tmp/release-tmp/opennox-bundle-aarch64.AppImage \
             /tmp/release-tmp/OpenNox-linux-*.tar.gz \
             /tmp/release-tmp/OpenNox-*.zip \
             /tmp/release-tmp/OpenNox-*.exe

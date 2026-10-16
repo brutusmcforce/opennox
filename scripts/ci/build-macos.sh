@@ -3,7 +3,6 @@
 # universal opennox-server.
 # Runs on a macOS runner from the repository root, see .github/workflows/build-and-release.yml. Needs Go and the
 # macOS tools (lipo, hdiutil, sips, iconutil, codesign, ditto); no C compiler.
-# OpenAL comes with macOS (OpenAL.framework), so it isn't bundled.
 set -e
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 cache="$root/gocache/macos-deps"

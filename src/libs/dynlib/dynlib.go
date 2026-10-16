@@ -1,4 +1,4 @@
-// Package dynlib loads native libraries (SDL3, OpenAL) at runtime, without cgo.
+// Package dynlib loads native libraries (SDL3) at runtime, without cgo.
 package dynlib
 
 import (

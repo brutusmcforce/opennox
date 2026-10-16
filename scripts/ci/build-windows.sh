@@ -1,6 +1,6 @@
 #!/bin/sh
 # Cross-compiles the Windows binaries (opennox.exe, opennox-server.exe, opennox-debug.exe) into build/,
-# together with the DLLs they load. No C compiler is needed.
+# together with the DLL they load (SDL3). No C compiler is needed.
 # Runs in a Debian container from the repository root, see .github/workflows/build-and-release.yml:
 #   docker run --rm --platform linux/amd64 -v "$PWD:/w" -w /w debian:bookworm scripts/ci/build-windows.sh
 set -e
@@ -11,12 +11,10 @@ deps="$cache/windows-deps"
 # official builds of the DLLs (the 64-bit parts are used); update the versions and checksums together
 SDL3_VERSION=3.4.18
 SDL3_SHA256=049b9dd711e3fb3f8d84feb998dfec54a75e17cf539c4a80ff4d058d839771cf
-OPENAL_VERSION=1.25.2
-OPENAL_SHA256=67a0c4b800bd860c93c04f38caf8cbe4875f9c84700ac430efc451f70e265434
 
-# no C compiler: the executables load SDL3.dll and OpenAL32.dll at runtime, which are shipped next to them
+# no C compiler: the executables load SDL3.dll at runtime, which is shipped next to them
 apt-get update -qq
-apt-get install -y -qq --no-install-recommends ca-certificates curl jq git unzip >/dev/null
+apt-get install -y -qq --no-install-recommends ca-certificates curl jq git >/dev/null
 
 # download <url> <sha256> <file>: downloads a file once and checks it
 download() {
@@ -31,11 +29,6 @@ sdl="$deps/SDL3-$SDL3_VERSION/x86_64-w64-mingw32"
 download "https://github.com/libsdl-org/SDL/releases/download/release-$SDL3_VERSION/SDL3-devel-$SDL3_VERSION-mingw.tar.gz" \
 	"$SDL3_SHA256" "$deps/SDL3-devel-$SDL3_VERSION-mingw.tar.gz"
 tar -xzf "$deps/SDL3-devel-$SDL3_VERSION-mingw.tar.gz" -C "$deps" "SDL3-$SDL3_VERSION/x86_64-w64-mingw32"
-al="$deps/openal-soft-$OPENAL_VERSION-bin"
-download "https://github.com/kcat/openal-soft/releases/download/$OPENAL_VERSION/openal-soft-$OPENAL_VERSION-bin.zip" \
-	"$OPENAL_SHA256" "$deps/openal-soft-$OPENAL_VERSION-bin.zip"
-rm -rf "$al"
-unzip -q "$deps/openal-soft-$OPENAL_VERSION-bin.zip" -d "$deps"
 
 goroot="$("$root/scripts/ci/install-go.sh" "$cache/toolchain")"
 export PATH="$goroot/bin:$PATH" GOTOOLCHAIN=local
@@ -47,9 +40,7 @@ mkdir -p "$out"
 cd "$root/src"
 go run ./internal/noxbuild --os windows -o "$out"
 
-# Ship the DLLs the executables load. OpenAL Soft's own DLL is distributed as OpenAL32.dll.
-# Both official builds are self-contained: they only need DLLs that come with Windows.
+# Ship the DLL the executables load. The official build is self-contained: it only needs DLLs that come with Windows.
 cp "$sdl/bin/SDL3.dll" "$out/"
-cp "$al/bin/Win64/soft_oal.dll" "$out/OpenAL32.dll"
 ls -l "$out"
 chmod -R a+rX "$cache" "$out"

@@ -1,6 +1,7 @@
 package sdl
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"log/slog"
@@ -18,6 +19,10 @@ var (
 )
 
 var _ seat.Seat = &Window{}
+
+// ErrOpenGL is wrapped by the errors of New when the window was created, but not an OpenGL 3.3 core context for it
+// (e.g. the GPU or its driver only supports an older version).
+var ErrOpenGL = errors.New("OpenGL 3.3 is not available")
 
 // New creates a new SDL window which implements a Seat interface.
 func New(log *slog.Logger, title string, sz image.Point) (*Window, error) {
@@ -65,7 +70,7 @@ func New(log *slog.Logger, title string, sz image.Point) (*Window, error) {
 	if err := h.initGL(); err != nil {
 		_ = win.Destroy()
 		sdl.Quit()
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", ErrOpenGL, err)
 	}
 	// game controllers: SDL reports the connected ones as added devices; E2E tests inject their own events
 	if !env.IsE2E() {

@@ -26,14 +26,14 @@ type testMusic struct {
 }
 
 func newTestMusic(t *testing.T, dir string) *testMusic {
-	t.Setenv("ALSOFT_DRIVERS", "null") // no sound
+	t.Setenv("SDL_AUDIODRIVER", "dummy") // no sound
 	handles.Init()
 	tm := &testMusic{}
 	timer.PlatformTicks = func() uint64 { return tm.ticks }
 	t.Cleanup(func() { timer.PlatformTicks = nil })
 	dig := ail.WaveOutOpen()
 	if dig == 0 {
-		t.Skip("no OpenAL device")
+		t.Skip("no audio device")
 	}
 	var (
 		v816368, v816372, v93156, v93160, v816340 uint32
@@ -120,7 +120,7 @@ func TestMusicRestartFromStart(t *testing.T) {
 	must.NonZero(t, first)
 	deadline := time.Now().Add(5 * time.Second)
 	for tm.playingStream == first && time.Now().Before(deadline) {
-		time.Sleep(10 * time.Millisecond) // OpenAL plays the stream in real time
+		time.Sleep(10 * time.Millisecond) // the audio device plays the stream in real time
 		tm.update(10)
 	}
 	for (tm.state != 1 || tm.playingStream == first) && time.Now().Before(deadline) {

@@ -34,9 +34,17 @@ func (h Timer) Release() {
 	handles.AssertValid(uintptr(h))
 }
 
-func (h Sample) GetSource() *uint32 {
-	return nil
-}
+// PCMStream is not available on the server.
+type PCMStream struct{}
+
+func (dig Driver) OpenPCMStream(rate, channels int) *PCMStream { return nil }
+func (p *PCMStream) QueueStereo16(frames [][2]int16)           {}
+func (p *PCMStream) Played() int                               { return 0 }
+func (p *PCMStream) Queued() int                               { return 0 }
+func (p *PCMStream) SetGain(gain float32)                      {}
+func (p *PCMStream) Start()                                    {}
+func (p *PCMStream) Pause()                                    {}
+func (p *PCMStream) Close()                                    {}
 
 func (h Sample) End() {}
 

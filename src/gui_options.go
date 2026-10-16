@@ -24,6 +24,15 @@ const (
 	configVideoGamma  = "video.gamma"
 )
 
+// configVideoSize checks the game resolution from the config: a size the game can't use (smaller than 640x480,
+// e.g. 0x0 from a broken config, or larger than the maximum) is replaced (opennox#668).
+func configVideoSize(w, h int) image.Point {
+	if w < noxDefaultWidth || h < noxDefaultHeight {
+		return image.Point{X: 1024, Y: 768}
+	}
+	return image.Point{X: min(w, noxMaxWidth), Y: min(h, noxMaxHeight)}
+}
+
 func init() {
 	viper.SetDefault(configVideoWidth, 1024)
 	viper.SetDefault(configVideoHeight, 768)

@@ -42,8 +42,8 @@ jobs:
           wc -l < "$RUNNER_TEMP/packages.txt"
 
       - name: Vet
-        # unsafeptr is off: the native bindings (libs/sdl, libs/gl, libs/openal, libs/dynlib) turn addresses that come
-        # from SDL, OpenGL and OpenAL into pointers, which is what the check warns about and cannot be written any
+        # unsafeptr is off: the native bindings (libs/sdl, libs/gl, libs/dynlib) turn addresses that come
+        # from SDL and OpenGL into pointers, which is what the check warns about and cannot be written any
         # other way. It cannot be turned off per package, because go vet also reports a package's dependencies.
         run: go vet -unsafeptr=false $(cat "$RUNNER_TEMP/packages.txt")
 

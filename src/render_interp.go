@@ -238,15 +238,24 @@ func (r *renderInterp) presented(now time.Duration) {
 	if !r.enabled() {
 		return
 	}
-	period := r.framePeriod()
-	// Frames follow a fixed schedule, so that a frame delayed by a game tick is caught up later.
-	// Don't catch up if we are too far behind, it would only cause a burst of frames.
-	if r.nextFrame == 0 || now-r.nextFrame > 2*period {
-		r.nextFrame = now
+	r.nextFrame = nextFrameTime(r.nextFrame, now, r.framePeriod())
+}
+
+// nextFrameTime returns when the frame after one presented at now is due, given when it was due (next) and the
+// frame period.
+//
+// Frames follow a fixed schedule, so that a frame delayed by a game tick is caught up later. Don't catch up if we
+// are too far behind, it would only cause a burst of frames.
+//
+// A frame presented before it was due (the game tick frames, which are drawn on their own schedule) takes that slot:
+// restarting the schedule from it instead added a frame per tick whenever the tick period isn't a multiple of the
+// frame period (144 fps ran at 150, 165 at 180). Early frames may move the schedule at most 2 periods ahead, so that
+// a run of them (e.g. while the game is paused) doesn't stop the additional frames until the time catches up.
+func nextFrameTime(next, now, period time.Duration) time.Duration {
+	if next == 0 || now-next > 2*period {
+		next = now
 	}
-	// Frames presented early (e.g. while the game is paused) must not move the schedule into the future,
-	// otherwise no additional frames would be drawn until the time catches up with it.
-	r.nextFrame = min(r.nextFrame+period, now+period)
+	return min(next+period, now+2*period)
 }
 
 // framePeriod returns the minimal time between presented frames.

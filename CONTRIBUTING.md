@@ -31,7 +31,7 @@ Nox was originally written for Windows, DirectX and other proprietary technologi
 
 In this port we aim to build a **cross-platform Nox version**.
 
-Thus, we use Go for the build (no C compiler), SDL3 for graphics and input and OpenAL for audio, which are loaded at runtime. This ensures that we can run on Windows, Linux, Mac and even the browser (WASM).
+Thus, we use Go for the build (no C compiler), SDL3 for graphics, input and audio, which is loaded at runtime. This ensures that we can run on Windows, Linux, Mac and even the browser (WASM).
 
 If another external library is needed, such library MUST be open source under such a license which is compatible with the original code.
 Examples of allowed licenses are MIT, BSD, MPL. Examples of disallowed licenses are GPL (including LGPL) and any commercial licenses.

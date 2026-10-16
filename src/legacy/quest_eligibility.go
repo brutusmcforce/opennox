@@ -2,9 +2,16 @@ package legacy
 
 import (
 	"github.com/brutusmcforce/opennox/common/memmap"
+	"github.com/brutusmcforce/opennox/libs/log"
 	"github.com/brutusmcforce/opennox/server"
 	"unsafe"
 )
+
+// QuestAllowAnyItems keeps items in the saved quest inventories that can't be found in quests (e.g. placed on
+// custom quest maps); by default they are dropped when the character is loaded.
+var QuestAllowAnyItems = false
+
+var questItemLog = log.New("quest")
 
 // Eligibility shares the production reward tables, but uses their enabled
 // fields rather than reward tier/chance filtering.

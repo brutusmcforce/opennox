@@ -20,6 +20,9 @@ func errorMessage(format string, args ...any) {
 	log.Printf(format, args...)
 }
 
+// askDataDir: a dedicated server doesn't ask, it needs the data path in the config or -data.
+func askDataDir() string { return "" }
+
 func (c *Client) DrawGeneral(a1 bool) error {
 	return nil
 }
